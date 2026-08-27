@@ -2,12 +2,12 @@
 id: ninanatur-wave-2
 title: "Wave 2: The data layer answers questions"
 initiative: ninanatur
-initiative_version: 1
+initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-1
 demo_state: "The API answers 'which plants suit these site conditions' from the ingested open data, every value citing its source"
 created: 2026-08-27
-hash: e5bb59b2
+hash: 003791bd
 ---
 
 # Wave 2 — The data layer answers questions
@@ -23,13 +23,19 @@ exposing it. Until that exists no UI wave can be built against anything real.
 **In:**
 - `resolve_trait()` — read-time priority across sources, returning the value
   *and* which source won. Disagreement is displayed, never hidden.
-- Close the flower-colour gap (currently ~13%) — see the initiative's open questions
-- Intersect GloBI relations with a German insect checklist so counts mean
-  "visits this in Germany", not "has been studied worldwide"
+- Flower colour: keep the 527 known values, give the rest an explicit *unknown*
+  placeholder. Colour never excludes a species — see the initiative decision.
+- German insect checklist from the GBIF occurrence facet (`taxonKey=216`,
+  11.6M records), then intersect GloBI relations against it so counts mean
+  "visits this in Germany", not "has been studied worldwide". This generalises
+  `fetch_german_species_keys()` rather than adding a source.
 - FastAPI under `/api/v1/`: plant search by site conditions, plant detail with provenance
 - A typed client module as the single frontend/backend contract
 
 **Out:** scoring, garden geometry, shops.
+
+The catalogue is all 3,087 core-complete species — no curated subset. Commercial
+availability is a Wave 6 concern.
 
 ## Key decisions to make here
 

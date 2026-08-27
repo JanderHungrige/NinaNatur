@@ -2,12 +2,12 @@
 id: ninanatur-wave-5
 title: "Wave 5: The insect score and how to raise it"
 initiative: ninanatur
-initiative_version: 1
+initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-4
 demo_state: "A planting shows an insect score and concrete swaps that measurably raise it"
 created: 2026-08-27
-hash: 9156a003
+hash: 8eef7b14
 ---
 
 # Wave 5 — The insect score and how to raise it

@@ -2,12 +2,12 @@
 id: ninanatur-wave-4
 title: "Wave 4: Suggestions and the bloom year"
 initiative: ninanatur
-initiative_version: 1
+initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-3
 demo_state: "A bed shows fitting species plus a bloom calendar for the year, with gaps marked"
 created: 2026-08-27
-hash: 93724ba3
+hash: bf9c80f1
 ---
 
 # Wave 4 — Suggestions and the bloom year
@@ -30,11 +30,16 @@ Bloom gaps are the feature that sells the product: they turn an abstract "plant
 more natives" into one concrete, actionable sentence ("nothing flowers in your
 garden between mid-March and April").
 
-## Risk
+## Colour, honestly
 
-Flower colour covers only ~13% of candidates unless Wave 2 closed it. The colour
-simulation degrades to "flowering / not flowering" for the rest — decide whether
-that ships or whether colour becomes a hard filter that shrinks the pool.
+Colour is known for 527 species and unknown for the rest — that is settled and
+will not be closed before this wave. Two rules follow:
+
+- Colour **filters softly**. Selecting "blue" must not silently drop every species
+  whose colour merely was never recorded, which is most of the catalogue.
+- The timeline renders unknown-colour species in a neutral tone labelled as
+  unknown, never in an invented colour. A guessed colour would be the one thing
+  in this product a user could not tell apart from a fact.
 
 ## Definition of done
 

@@ -2,12 +2,12 @@
 id: ninanatur-wave-6
 title: "Wave 6: One plan, fewest possible parcels"
 initiative: ninanatur
-initiative_version: 1
+initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-5
 demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
 created: 2026-08-27
-hash: 18148ff0
+hash: 6cce2dab
 ---
 
 # Wave 6 — One plan, fewest possible parcels
