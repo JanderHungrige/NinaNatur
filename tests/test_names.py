@@ -1,0 +1,105 @@
+"""Name resolution decides whether a source's rows attach to anything at all."""
+import sqlite3
+
+import pytest
+
+from dbnatura.ingest.db import connect, init_schema
+from dbnatura.ingest.names import MIN_MATCH_CONFIDENCE, NameResolver
+
+GOOD_MATCH: dict[str, object] = {
+    "usageKey": 3120060,
+    "canonicalName": "Achillea millefolium",
+    "scientificName": "Achillea millefolium L.",
+    "matchType": "EXACT",
+    "confidence": 98,
+    "rank": "SPECIES",
+    "status": "ACCEPTED",
+    "family": "Asteraceae",
+    "genus": "Achillea",
+}
+
+
+class FakeGbif:
+    """Records calls so the cache can be proven to prevent repeat lookups."""
+
+    def __init__(self, response: dict[str, object]) -> None:
+        self.response = response
+        self.calls: list[str] = []
+
+    def match(self, name: str) -> dict[str, object]:
+        self.calls.append(name)
+        return self.response
+
+
+@pytest.fixture()
+def conn() -> sqlite3.Connection:
+    c = connect(":memory:")
+    init_schema(c)
+    return c
+
+
+def test_resolver_returns_taxon_id_for_a_confident_match(conn: sqlite3.Connection) -> None:
+    resolver = NameResolver(conn, FakeGbif(GOOD_MATCH))
+    assert resolver.resolve("Achillea millefolium", source="EIVE") == 3120060
+
+
+def test_resolver_writes_the_taxon_row_it_matched(conn: sqlite3.Connection) -> None:
+    resolver = NameResolver(conn, FakeGbif(GOOD_MATCH))
+    resolver.resolve("Achillea millefolium", source="EIVE")
+    row = conn.execute("SELECT canonical_name, family FROM taxon WHERE taxon_id=3120060").fetchone()
+    assert row is not None
+    assert row["canonical_name"] == "Achillea millefolium"
+    assert row["family"] == "Asteraceae"
+
+
+def test_resolver_caches_and_does_not_call_api_twice(conn: sqlite3.Connection) -> None:
+    api = FakeGbif(GOOD_MATCH)
+    resolver = NameResolver(conn, api)
+    resolver.resolve("Achillea millefolium", source="EIVE")
+    resolver.resolve("Achillea millefolium", source="EIVE")
+    assert len(api.calls) == 1, "second lookup must be served from the taxon_name cache"
+
+
+def test_resolver_rejects_low_confidence_match(conn: sqlite3.Connection) -> None:
+    api = FakeGbif({"usageKey": 1, "canonicalName": "Something", "matchType": "FUZZY",
+                    "confidence": MIN_MATCH_CONFIDENCE - 1, "rank": "SPECIES"})
+    resolver = NameResolver(conn, api)
+    assert resolver.resolve("Zzz qqq", source="EIVE") is None
+
+
+def test_resolver_rejects_higherrank_match(conn: sqlite3.Connection) -> None:
+    """A family-level match must not silently absorb species-level traits."""
+    api = FakeGbif({"usageKey": 3065, "canonicalName": "Asteraceae", "matchType": "HIGHERRANK",
+                    "confidence": 99, "rank": "FAMILY"})
+    resolver = NameResolver(conn, api)
+    assert resolver.resolve("Asteraceae sp.", source="EIVE") is None
+
+
+def test_unresolved_names_are_recorded_for_the_coverage_report(conn: sqlite3.Connection) -> None:
+    resolver = NameResolver(conn, FakeGbif({"matchType": "NONE", "confidence": 0}))
+    resolver.resolve("Nonexistent plantus", source="EIVE")
+    row = conn.execute(
+        "SELECT taxon_id, match_type FROM taxon_name WHERE raw_name=?", ("Nonexistent plantus",)
+    ).fetchone()
+    assert row is not None
+    assert row["taxon_id"] is None
+    assert row["match_type"] == "NONE"
+
+
+def test_resolver_matches_local_canonical_name_without_api(conn: sqlite3.Connection) -> None:
+    """A name already in `taxon` must resolve from the table, not over the network."""
+    conn.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, occurs_de)"
+        " VALUES (555, 'Salvia pratensis', 1)"
+    )
+    api = FakeGbif(GOOD_MATCH)
+    resolver = NameResolver(conn, api)
+    assert resolver.resolve("Salvia pratensis", source="EIVE") == 555
+    assert api.calls == [], "local match must not trigger an API call"
+
+
+def test_only_known_skips_the_network_for_unknown_names(conn: sqlite3.Connection) -> None:
+    api = FakeGbif(GOOD_MATCH)
+    resolver = NameResolver(conn, api)
+    assert resolver.resolve("Achillea millefolium", source="EIVE", only_known=True) is None
+    assert api.calls == [], "only_known must never reach the API"
