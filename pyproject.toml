@@ -3,7 +3,13 @@ name = "ninanatur"
 version = "0.1.0"
 description = "Open-data plant trait database for insect-friendly garden planning"
 requires-python = ">=3.11"
-dependencies = ["requests>=2.31", "pandas>=2.0", "openpyxl>=3.1"]
+dependencies = [
+    "requests>=2.31",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
 
 [project.scripts]
 ninanatur-ingest = "ninanatur.ingest.cli:main"

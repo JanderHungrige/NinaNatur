@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NinaNatur Logo">
+        <title>NinaNatur</title>
+        <path fill="#3f7d47" d="M32 58C32 40 40 26 56 20 56 40 46 54 32 58Z"/>
+        <path fill="#78a55b" d="M32 58C32 40 24 26 8 20 8 40 18 54 32 58Z"/>
+        <path stroke="#3f7d47" stroke-width="3" fill="none" d="M32 58V30"/>
+        <path stroke="#1c2419" stroke-width="3.4" fill="none" d="M14 24V8l12 16V8M38 24V8l12 16V8"/>
+      </svg>

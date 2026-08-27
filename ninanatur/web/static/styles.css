@@ -1,0 +1,173 @@
+/* NinaNatur — Wave 1 shell.
+   Light palette on bare :root, dark redefined under prefers-color-scheme, so the
+   page follows the visitor's system setting without a toggle. */
+:root {
+  --bg: #fbfaf6;
+  --bg-raised: #ffffff;
+  --ink: #1c2419;
+  --ink-muted: #5c6b56;
+  --leaf: #3f7d47;
+  --leaf-alt: #78a55b;
+  --line: #e2e4da;
+  --focus: #1f5fbf;
+  --radius: 14px;
+  --measure: 34rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12160f;
+    --bg-raised: #1b211a;
+    --ink: #e9eee3;
+    --ink-muted: #9dab95;
+    --leaf: #7fc98a;
+    --leaf-alt: #a9d47f;
+    --line: #2c342a;
+    --focus: #8ab4f8;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 6vw, 4rem);
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 clamp(1rem, 0.95rem + 0.25vw, 1.0625rem)/1.65
+        system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 10;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--ink);
+}
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---- header ---- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.brand__mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+}
+.mark__leaf   { fill: var(--leaf); }
+.mark__leaf--alt { fill: var(--leaf-alt); }
+.mark__stem   { stroke: var(--leaf); stroke-width: 3; stroke-linecap: round; fill: none; }
+.mark__letters{ stroke: var(--ink); stroke-width: 3.4; stroke-linecap: round;
+                stroke-linejoin: round; fill: none; }
+
+.brand__name {
+  font-size: 1.2rem;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+}
+
+.badge {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* ---- main ---- */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: var(--measure);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2.1rem, 1.4rem + 3.2vw, 3.6rem);
+  font-weight: 660;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.2rem);
+  text-wrap: pretty;
+}
+
+/* ---- stats ---- */
+.stats {
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+.stat {
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+
+.stat__label {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.stat__value {
+  margin: 0.35rem 0 0;
+  color: var(--leaf);
+  font-size: 1.7rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.note, .site-footer p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.site-footer {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}

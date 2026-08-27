@@ -12,8 +12,10 @@ venv/
 .ruff_cache/
 .pytest_cache/
 
-# Secrets
+# Secrets — real env files never, templates always
 .env
+deploy/.env.*
+!deploy/.env.*.example
 
 # Data — never commit downloaded source dumps or the built DB
 data/raw/

@@ -1,0 +1,24 @@
+# One NinaNatur environment, deployed from a prebuilt GHCR image and kept current
+# by deploy/auto-deploy.sh. Used twice on the host — once per env, each with its
+# own --env-file:
+#
+#   docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml up -d   # :4000
+#   docker compose --env-file deploy/.env.dev  -f deploy/compose.app.yml up -d   # :4001
+#
+# COMPOSE_PROJECT_NAME (set in the env-file) keeps the two stacks isolated.
+# Publishing on the host port means Nginx Proxy Manager reaches the app at
+# 172.17.0.1:<APP_PORT> — the docker bridge gateway — with no shared network.
+services:
+  app:
+    image: ${REGISTRY:-ghcr.io}/${OWNER:-janderhungrige}/${IMAGE:-ninanatur}:${IMAGE_TAG}
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT}:4000"
+    environment:
+      NINANATUR_ENV: ${NINANATUR_ENV:-prod}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4000/healthz', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

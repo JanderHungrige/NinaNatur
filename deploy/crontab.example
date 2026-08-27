@@ -1,0 +1,6 @@
+# NinaNatur auto-deploy — poll GHCR every minute for both envs and roll new images.
+# Install on the host with:  crontab -e   (paths must be absolute)
+# Assumes the repo is cloned at /opt/ninanatur — adjust if you cloned elsewhere.
+#
+# * * * * * /opt/ninanatur/deploy/auto-deploy.sh /opt/ninanatur/deploy/.env.prod >> /var/log/ninanatur-deploy.log 2>&1
+# * * * * * /opt/ninanatur/deploy/auto-deploy.sh /opt/ninanatur/deploy/.env.dev  >> /var/log/ninanatur-deploy.log 2>&1

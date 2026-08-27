@@ -1,6 +1,27 @@
 # NinaNatur
 
-Open-data plant trait database for insect-friendly garden planning.
+Garden planning on openly licensed plant data — native species matched to the
+site, a bloom calendar for the year, and a measurable insect score.
+
+**Live:** https://ninanatur.w3rth.de
+
+## Run locally
+
+```bash
+python -m uvicorn ninanatur.web.app:app --reload --port 4000
+```
+
+## Deployment
+
+Push to `main` → GitHub Actions builds and pushes `ghcr.io/janderhungrige/ninanatur:main`
+→ the host's cron `deploy/auto-deploy.sh` pulls and rolls the container.
+CI never SSHes into the host. See [deploy/SERVER-SETUP.md](deploy/SERVER-SETUP.md).
+
+| Branch | Image tag | Host port |
+|---|---|---|
+| `main` | `:main` | 4000 (prod) |
+| `dev-deployment` | `:dev` | 4001 (dev) |
+
 
 ## Ingest pipeline
 

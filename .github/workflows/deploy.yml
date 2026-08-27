@@ -1,0 +1,89 @@
+name: build-and-push
+
+# Build the NinaNatur image and push it to GHCR on every push to a deploy branch.
+# The host runs a cron-driven deploy/auto-deploy.sh that polls GHCR and rolls the
+# container — this workflow never SSHes into the host.
+#
+#   main            -> image tagged :main -> prod stack on 172.17.0.1:4000
+#   dev-deployment  -> image tagged :dev  -> dev  stack on 172.17.0.1:4001
+#
+# TLS and domains are handled in front by Nginx Proxy Manager.
+
+on:
+  push:
+    branches: [main, dev-deployment]
+    # Planning docs and deploy config do not change the image.
+    paths-ignore:
+      - '.mdd/**'
+      - 'deploy/**'
+      - '**.md'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-and-push-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: janderhungrige
+  IMAGE: ninanatur
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install
+        run: pip install -e . pytest ruff mypy types-requests httpx
+      - name: Lint, type-check, test
+        run: |
+          ruff check .
+          mypy ninanatur
+          pytest -q
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select image tag for this branch
+        id: cfg
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "tag=main" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build with the runner's built-in BuildKit — no docker-container builder to
+      # boot, avoiding an extra buildkit pull from Docker Hub.
+      - name: Build & push image
+        env:
+          DOCKER_BUILDKIT: "1"
+          IMG: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE }}
+          TAG: ${{ steps.cfg.outputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker build -t "$IMG:$TAG" -t "$IMG:$SHA" .
+          docker push "$IMG:$TAG"
+          docker push "$IMG:$SHA"
+
+      - name: Summary
+        run: |
+          echo "Pushed :${{ steps.cfg.outputs.tag }} to ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE }}." >> "$GITHUB_STEP_SUMMARY"
+          echo "deploy/auto-deploy.sh on the host will pull and roll it on its next tick." >> "$GITHUB_STEP_SUMMARY"
