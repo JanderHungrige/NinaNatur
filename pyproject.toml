@@ -11,6 +11,15 @@ dependencies = [
     "uvicorn[standard]>=0.30",
 ]
 
+# Explicit, not auto-discovered: setuptools' flat-layout discovery sees every
+# top-level directory as a package candidate and refuses to build when it finds
+# more than one — here `deploy/` alongside `ninanatur/`.
+[tool.setuptools.packages.find]
+include = ["ninanatur*"]
+
+[tool.setuptools.package-data]
+"ninanatur.web" = ["static/*"]
+
 [project.scripts]
 ninanatur-ingest = "ninanatur.ingest.cli:main"
 

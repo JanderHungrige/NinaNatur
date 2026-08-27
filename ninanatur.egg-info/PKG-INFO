@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: ninanatur
+Version: 0.1.0
+Summary: Open-data plant trait database for insect-friendly garden planning
+Requires-Python: >=3.11
+Requires-Dist: requests>=2.31
+Requires-Dist: pandas>=2.0
+Requires-Dist: openpyxl>=3.1
+Requires-Dist: fastapi>=0.115
+Requires-Dist: uvicorn[standard]>=0.30

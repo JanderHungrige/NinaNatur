@@ -1,0 +1,2 @@
+[console_scripts]
+ninanatur-ingest = ninanatur.ingest.cli:main
