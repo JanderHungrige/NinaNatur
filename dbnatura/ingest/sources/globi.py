@@ -10,6 +10,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
+from dbnatura.ingest.coverage import core_complete_ids
 from dbnatura.ingest.http import HttpError, get_json
 from dbnatura.ingest.provenance import record_interaction
 from dbnatura.ingest.sources.base import finish_run, start_run
@@ -51,12 +52,25 @@ class GlobiSource:
     license = LICENSE
 
     def run(self, conn: sqlite3.Connection, limit: int | None = None) -> int:
+        """Query only core-complete taxa.
+
+        A taxon missing site conditions or a flowering window can never be
+        suggested for a bed, so its interaction records could never reach the
+        score. Restricting here turns a multi-hour crawl into a targeted one.
+        """
         started = start_run(conn, self.name)
-        rows = conn.execute(
-            "SELECT taxon_id, canonical_name FROM taxon WHERE occurs_de = 1 ORDER BY canonical_name"
-        ).fetchall()
+        wanted = core_complete_ids(conn)
+        rows = [
+            r
+            for r in conn.execute(
+                "SELECT taxon_id, canonical_name FROM taxon WHERE occurs_de = 1"
+                " ORDER BY canonical_name"
+            ).fetchall()
+            if int(r["taxon_id"]) in wanted
+        ]
         if limit is not None:
             rows = rows[:limit]
+        print(f"  GloBI: querying {len(rows)} core-complete taxa", flush=True)
 
         written = 0
         failures = 0

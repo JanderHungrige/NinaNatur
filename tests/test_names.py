@@ -103,3 +103,52 @@ def test_only_known_skips_the_network_for_unknown_names(conn: sqlite3.Connection
     resolver = NameResolver(conn, api)
     assert resolver.resolve("Achillea millefolium", source="EIVE", only_known=True) is None
     assert api.calls == [], "only_known must never reach the API"
+
+
+def test_backbone_allows_homonyms_sharing_a_canonical_name(conn: sqlite3.Connection) -> None:
+    """Regression: a UNIQUE canonical_name aborted the GBIF ingest partway through.
+
+    198 of the 8939 German candidate keys share a canonical name with another
+    key, almost all as an ACCEPTED/DOUBTFUL pair — e.g. Huperzia selago carries
+    both 8190643 (accepted) and 2688495 (doubtful).
+    """
+    conn.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, status, family)"
+        " VALUES (8190643, 'Huperzia selago', 'ACCEPTED', 'Lycopodiaceae')"
+    )
+    conn.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, status, family)"
+        " VALUES (2688495, 'Huperzia selago', 'DOUBTFUL', 'Lycopodiaceae')"
+    )
+    assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 2
+
+
+def test_resolver_prefers_the_accepted_taxon_among_homonyms(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, status)"
+        " VALUES (11, 'Rosa canina', 'DOUBTFUL')"
+    )
+    conn.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, status)"
+        " VALUES (12, 'Rosa canina', 'ACCEPTED')"
+    )
+    api = FakeGbif(GOOD_MATCH)
+    assert NameResolver(conn, api).resolve("Rosa canina", source="EIVE") == 12
+    assert api.calls == []
+
+
+def test_resolver_refuses_to_guess_between_two_accepted_homonyms(
+    conn: sqlite3.Connection,
+) -> None:
+    for taxon_id in (21, 22):
+        conn.execute(
+            "INSERT INTO taxon (taxon_id, canonical_name, status)"
+            " VALUES (?, 'Aster sp', 'ACCEPTED')",
+            (taxon_id,),
+        )
+    resolver = NameResolver(conn, FakeGbif(GOOD_MATCH))
+    assert resolver.resolve("Aster sp", source="EIVE") is None
+    row = conn.execute(
+        "SELECT match_type FROM taxon_name WHERE raw_name = 'Aster sp'"
+    ).fetchone()
+    assert row["match_type"] == "AMBIGUOUS", "ambiguity must stay visible, not vanish"

@@ -1,7 +1,13 @@
 """The coverage report — the number that decides whether open data carries the product.
 
-Candidate set: taxa that occur in Germany. A taxon counts as covered for a trait
-if at least one source supplied it, regardless of how many did.
+The candidate set is EIVE-intersect-Germany: taxa recorded in Germany for which
+site-condition data exists at all. A taxon with no indicator values can never be
+matched to a bed, so counting it in the denominator would measure the size of
+the German flora rather than the usability of the data. The full German taxon
+count is reported alongside it for context.
+
+A taxon counts as covered for a trait if at least one source supplied it,
+regardless of how many did.
 """
 from __future__ import annotations
 
@@ -33,6 +39,7 @@ class CoverageReport:
     """Per-trait and per-threshold coverage over the candidate set."""
 
     candidates: int
+    german_taxa: int = 0
     per_trait: dict[str, int] = field(default_factory=dict)
     core_complete: int = 0
     full_complete: int = 0
@@ -54,24 +61,22 @@ class CoverageReport:
         return self._pct(self.per_trait.get(key, 0))
 
 
-def compute_coverage(conn: sqlite3.Connection) -> CoverageReport:
-    """Measure how much of the needed field set exists for German taxa."""
-    candidates = conn.execute("SELECT COUNT(*) AS n FROM taxon WHERE occurs_de = 1").fetchone()["n"]
-    report = CoverageReport(candidates=int(candidates))
+CANDIDATE_SQL = """
+    SELECT DISTINCT x.taxon_id
+    FROM taxon x JOIN trait t ON t.taxon_id = x.taxon_id
+    WHERE x.occurs_de = 1 AND t.trait_key LIKE 'ellenberg_%'
+"""
 
-    for key in REPORTED_TRAITS:
-        row = conn.execute(
-            """
-            SELECT COUNT(DISTINCT t.taxon_id) AS n
-            FROM trait t JOIN taxon x ON x.taxon_id = t.taxon_id
-            WHERE t.trait_key = ? AND x.occurs_de = 1
-            """,
-            (key,),
-        ).fetchone()
-        report.per_trait[key] = int(row["n"])
 
+def candidate_ids(conn: sqlite3.Connection) -> set[int]:
+    """German taxa with at least one indicator value — the set the app can work with."""
+    return {int(r["taxon_id"]) for r in conn.execute(CANDIDATE_SQL).fetchall()}
+
+
+def core_complete_ids(conn: sqlite3.Connection) -> set[int]:
+    """Candidates carrying every core trait — the only ones a bed can be planted with."""
     placeholders = ",".join("?" for _ in CORE_TRAITS)
-    core_rows = conn.execute(
+    rows = conn.execute(
         f"""
         SELECT t.taxon_id
         FROM trait t JOIN taxon x ON x.taxon_id = t.taxon_id
@@ -81,7 +86,22 @@ def compute_coverage(conn: sqlite3.Connection) -> CoverageReport:
         """,
         (*CORE_TRAITS, len(CORE_TRAITS)),
     ).fetchall()
-    core_ids = {int(r["taxon_id"]) for r in core_rows}
+    return {int(r["taxon_id"]) for r in rows} & candidate_ids(conn)
+
+
+def compute_coverage(conn: sqlite3.Connection) -> CoverageReport:
+    """Measure how much of the needed field set exists for the candidate set."""
+    candidates = candidate_ids(conn)
+    german = conn.execute("SELECT COUNT(*) AS n FROM taxon WHERE occurs_de = 1").fetchone()["n"]
+    report = CoverageReport(candidates=len(candidates), german_taxa=int(german))
+
+    for key in REPORTED_TRAITS:
+        rows = conn.execute(
+            "SELECT DISTINCT taxon_id FROM trait WHERE trait_key = ?", (key,)
+        ).fetchall()
+        report.per_trait[key] = len({int(r["taxon_id"]) for r in rows} & candidates)
+
+    core_ids = core_complete_ids(conn)
     report.core_complete = len(core_ids)
 
     colour_ids = {
@@ -96,15 +116,7 @@ def compute_coverage(conn: sqlite3.Connection) -> CoverageReport:
     }
     report.full_complete = len(core_ids & colour_ids & interaction_ids)
 
-    report.with_interactions = int(
-        conn.execute(
-            """
-            SELECT COUNT(DISTINCT i.taxon_id) AS n
-            FROM interaction i JOIN taxon x ON x.taxon_id = i.taxon_id
-            WHERE x.occurs_de = 1
-            """
-        ).fetchone()["n"]
-    )
+    report.with_interactions = len(interaction_ids & candidates)
     report.unresolved_names = int(
         conn.execute("SELECT COUNT(*) AS n FROM taxon_name WHERE taxon_id IS NULL").fetchone()["n"]
     )
@@ -114,7 +126,8 @@ def compute_coverage(conn: sqlite3.Connection) -> CoverageReport:
 def format_report(report: CoverageReport) -> str:
     """Render the report as the CLI prints it."""
     lines = [
-        "Coverage — candidate set: taxa occurring in Germany",
+        "Coverage — candidate set: German taxa with indicator values (EIVE n DE)",
+        f"  German taxa (all):     {report.german_taxa}",
         f"  Candidates:            {report.candidates}",
         "",
         "  Per trait:",

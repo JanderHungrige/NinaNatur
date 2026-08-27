@@ -58,17 +58,24 @@ class NameResolver:
         if cached is not None:
             return int(cached["taxon_id"]) if cached["taxon_id"] is not None else None
 
-        local = self.conn.execute(
-            "SELECT taxon_id FROM taxon WHERE canonical_name = ?", (raw_name,)
-        ).fetchone()
-        if local is not None:
-            local_id = int(local["taxon_id"])
+        local_id, ambiguous = self._resolve_local(raw_name)
+        if local_id is not None:
             self.conn.execute(
                 "INSERT OR REPLACE INTO taxon_name"
                 " (raw_name, source, taxon_id, match_type, confidence) VALUES (?, ?, ?, ?, ?)",
                 (raw_name, source, local_id, "LOCAL", 100),
             )
             return local_id
+
+        if ambiguous:
+            # Several accepted taxa share this name — attaching a trait would be a
+            # coin flip. Record it so the coverage report can show the cost.
+            self.conn.execute(
+                "INSERT OR REPLACE INTO taxon_name"
+                " (raw_name, source, taxon_id, match_type, confidence) VALUES (?, ?, ?, ?, ?)",
+                (raw_name, source, None, "AMBIGUOUS", None),
+            )
+            return None
 
         if only_known:
             return None
@@ -84,6 +91,27 @@ class NameResolver:
             (raw_name, source, taxon_id, match.get("matchType"), match.get("confidence")),
         )
         return taxon_id
+
+    def _resolve_local(self, raw_name: str) -> tuple[int | None, bool]:
+        """Match against taxa already stored, returning (taxon_id, ambiguous).
+
+        Canonical names are not unique in a taxonomic backbone. A single hit is
+        used as-is; several hits resolve to the one accepted taxon among them;
+        two or more accepted taxa sharing a name are reported as ambiguous
+        rather than resolved arbitrarily.
+        """
+        rows = self.conn.execute(
+            "SELECT taxon_id, status FROM taxon WHERE canonical_name = ? ORDER BY taxon_id",
+            (raw_name,),
+        ).fetchall()
+        if not rows:
+            return None, False
+        if len(rows) == 1:
+            return int(rows[0]["taxon_id"]), False
+        accepted = [r for r in rows if str(r["status"] or "").upper() == "ACCEPTED"]
+        if len(accepted) == 1:
+            return int(accepted[0]["taxon_id"]), False
+        return None, True
 
     @staticmethod
     def _accept(match: dict[str, Any]) -> int | None:

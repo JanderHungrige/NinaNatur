@@ -14,7 +14,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS taxon (
     taxon_id        INTEGER PRIMARY KEY,
     scientific_name TEXT,
-    canonical_name  TEXT NOT NULL UNIQUE,
+    canonical_name  TEXT NOT NULL,
     rank            TEXT,
     status          TEXT,
     family          TEXT,
@@ -22,6 +22,11 @@ CREATE TABLE IF NOT EXISTS taxon (
     accepted_id     INTEGER,
     occurs_de       INTEGER NOT NULL DEFAULT 0
 );
+
+-- Deliberately NOT unique: a taxonomic backbone contains homonyms, and the same
+-- canonical name legitimately appears under several usage keys (accepted plus
+-- synonyms). Uniqueness here crashes the ingest partway through.
+CREATE INDEX IF NOT EXISTS idx_taxon_canonical ON taxon(canonical_name);
 
 CREATE TABLE IF NOT EXISTS taxon_name (
     raw_name    TEXT    NOT NULL,
