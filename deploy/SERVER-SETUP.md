@@ -7,10 +7,21 @@ about a minute with no manual action.
 
 ```bash
 sudo git clone https://github.com/JanderHungrige/NinaNatur.git /opt/ninanatur
+sudo chown -R "$USER":"$(id -gn)" /opt/ninanatur
 cd /opt/ninanatur
 cp deploy/.env.prod.example deploy/.env.prod
 cp deploy/.env.dev.example  deploy/.env.dev
 ```
+
+The `chown` is not cosmetic. `sudo git clone` leaves the tree owned by root, so
+every following step fails with `Permission denied` — and more importantly the
+cron in step 4 runs from **your** crontab, not root's, so it needs to read the
+env files and write the lock as your user.
+
+If you would rather keep the tree root-owned, install the cron lines in
+`sudo crontab -e` instead, and run every command below with `sudo`. Do not mix
+the two — a root-owned tree with a user crontab is the configuration that fails
+silently once a minute.
 
 `.env.prod` publishes on **4000**, `.env.dev` on **4001**. The real env files are
 gitignored; only the `.example` templates are tracked.
@@ -86,3 +97,4 @@ roll within a minute or two.
 | `skipping this tick` repeatedly | a previous run is stuck holding `/tmp/ninanatur-auto-deploy.lock` |
 | 502 from NPM | container down, or forwarding to the wrong port |
 | Port already allocated | something else on the host publishes 4000 |
+| `Permission denied` on an env file, or cron log shows `couldn't find env file` | tree still owned by root after `sudo git clone` — see step 1 |
