@@ -15,29 +15,24 @@ cp deploy/.env.dev.example  deploy/.env.dev
 `.env.prod` publishes on **4000**, `.env.dev` on **4001**. The real env files are
 gitignored; only the `.example` templates are tracked.
 
-## 2. Confirm the image pulls anonymously
+## 2. GHCR access — nothing to do
 
-The repository is public, but a GHCR package does **not** reliably inherit that
-visibility — a package created by a workflow can still land private. Check it
-after the first successful Actions run, under
-`github.com/users/JanderHungrige/packages/container/ninanatur/settings`, and set
-it to public if it is not already.
+Verified against the registry on 2026-08-27: an anonymous token pulls the
+manifest for `ghcr.io/janderhungrige/ninanatur:main` successfully, so the package
+is public and **the host needs no docker login**.
 
-Then verify from the host, as an unauthenticated pull:
+Re-check with:
 
 ```bash
 docker logout ghcr.io
 docker pull ghcr.io/janderhungrige/ninanatur:main
 ```
 
-If that succeeds, no login is needed and step 2 is done.
-
-If the package stays private instead, the host must log in once — otherwise the
-cron fails **silently every minute** and the site simply never updates:
-
-```bash
-echo "$GHCR_TOKEN" | docker login ghcr.io -u JanderHungrige --password-stdin
-```
+If this ever starts failing with `denied` / `unauthorized`, the package turned
+private — set it back under
+`github.com/users/JanderHungrige/packages/container/ninanatur/settings`, or log
+the host in once. A private package with no login makes the cron fail **silently
+every minute** while the site simply never updates.
 
 ## 3. First start
 
