@@ -42,7 +42,7 @@ SSHes into the host. TLS and domains are handled by Nginx Proxy Manager.
 
 | Wave | File | Demo-state | Status |
 |------|------|------------|--------|
-| Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute | planned |
+| Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute | complete |
 | Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions" from the ingested open data, every value citing its source | planned |
 | Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden floor plan, sets each bed's conditions, and the plan persists | planned |
 | Wave 4 | waves/ninanatur-wave-4.md | A bed shows fitting species plus a bloom calendar for the year, with gaps marked | planned |
