@@ -3,6 +3,25 @@
 One-time steps on the host. After this, every push to `main` is live within
 about a minute with no manual action.
 
+## 0. Prerequisite: docker without sudo
+
+The operator account must be in the `docker` group:
+
+```bash
+sudo usermod -aG docker "$USER" && newgrp docker
+docker ps        # must work with no sudo
+```
+
+This is not optional and it is not cosmetic. The cron in step 4 runs from your
+crontab as your user — if docker only works under `sudo`, the setup will appear
+to succeed while the cron fails **silently every minute**. Verify `docker ps`
+without sudo before continuing.
+
+Being in the `docker` group is effectively root-equivalent access on this host.
+That is the accepted trade for an unattended deploy; if it is not acceptable,
+run the cron from `sudo crontab -e` and keep the tree root-owned instead — but
+choose one, do not mix them.
+
 ## 1. Clone and configure
 
 ```bash
@@ -110,3 +129,4 @@ docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml port app 40
 | 502 from NPM | container down, or forwarding to the wrong port |
 | Port already allocated | something else on the host publishes 4000 |
 | `Permission denied` on an env file, or cron log shows `couldn't find env file` | tree still owned by root after `sudo git clone` — see step 1 |
+| `permission denied ... /var/run/docker.sock` | operator not in the `docker` group — see step 0 |
