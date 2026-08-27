@@ -1,6 +1,14 @@
-# NinaNatur auto-deploy — poll GHCR every minute for both envs and roll new images.
-# Install on the host with:  crontab -e   (paths must be absolute)
-# Assumes the repo is cloned at /opt/ninanatur — adjust if you cloned elsewhere.
+# NinaNatur auto-deploy — poll GHCR every minute and roll new images.
 #
-# * * * * * /opt/ninanatur/deploy/auto-deploy.sh /opt/ninanatur/deploy/.env.prod >> /var/log/ninanatur-deploy.log 2>&1
-# * * * * * /opt/ninanatur/deploy/auto-deploy.sh /opt/ninanatur/deploy/.env.dev  >> /var/log/ninanatur-deploy.log 2>&1
+# Install in ROOT's crontab (sudo crontab -e), matching the other deploys on this
+# host (battlefuel, funding-tender-tracker, 3dmap2). Do not use a user crontab —
+# four deploys in three mechanisms is what makes the next debugging session hard.
+#
+# The `sleep 15` is not padding. Each project's auto-deploy.sh holds its own lock,
+# which only protects it against itself; the offsets keep the deploys from all
+# pulling from GHCR in the same second. Taken slots on this host:
+#   :00  battlefuel     :30  funding-tender-tracker     :45  3dmap2
+# NinaNatur takes :15.
+#
+# * * * * * sleep 15; cd /opt/ninanatur && /usr/bin/env bash deploy/auto-deploy.sh deploy/.env.prod >> /var/log/ninanatur-deploy.log 2>&1
+# * * * * * sleep 15; cd /opt/ninanatur && /usr/bin/env bash deploy/auto-deploy.sh deploy/.env.dev  >> /var/log/ninanatur-deploy.log 2>&1

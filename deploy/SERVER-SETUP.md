@@ -5,22 +5,19 @@ about a minute with no manual action.
 
 ## 0. Prerequisite: docker without sudo
 
-The operator account must be in the `docker` group:
+Put the operator account in the `docker` group so the manual steps below work:
 
 ```bash
 sudo usermod -aG docker "$USER" && newgrp docker
 docker ps        # must work with no sudo
 ```
 
-This is not optional and it is not cosmetic. The cron in step 4 runs from your
-crontab as your user — if docker only works under `sudo`, the setup will appear
-to succeed while the cron fails **silently every minute**. Verify `docker ps`
-without sudo before continuing.
+`newgrp` opens a new shell, usually back in your home directory — `cd` again
+before continuing.
 
-Being in the `docker` group is effectively root-equivalent access on this host.
-That is the accepted trade for an unattended deploy; if it is not acceptable,
-run the cron from `sudo crontab -e` and keep the tree root-owned instead — but
-choose one, do not mix them.
+This is for working on the host by hand. The cron itself runs as root (step 4),
+so it is unaffected either way. Being in the `docker` group is effectively
+root-equivalent access; that is the accepted trade for convenient manual ops.
 
 ## 1. Clone and configure
 
@@ -74,9 +71,20 @@ curl -i --max-time 5 http://localhost:4000/healthz
 
 ## 4. Cron
 
+The other deploys on this host (battlefuel, funding-tender-tracker, 3dmap2) all
+live in **root's** crontab. Match them:
+
 ```bash
-crontab -e     # paste the two lines from deploy/crontab.example
+sudo crontab -e     # paste the two lines from deploy/crontab.example
 ```
+
+Because cron runs as root, the tree's ownership does not matter for the deploy —
+root reads it either way. Step 0's docker group membership is still worth having
+for working on the host by hand.
+
+Note the `sleep 15`: every project's `auto-deploy.sh` holds its own lock, which
+only guards against itself. The staggered offsets are what stop four deploys
+pulling from GHCR simultaneously. `:00`, `:30` and `:45` are taken.
 
 Check that it is actually running:
 
