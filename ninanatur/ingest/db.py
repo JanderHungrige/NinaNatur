@@ -8,7 +8,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-DEFAULT_DB_PATH = Path("data/dbnatura.sqlite")
+DEFAULT_DB_PATH = Path("data/ninanatur.sqlite")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS taxon (

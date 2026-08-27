@@ -9,10 +9,10 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-from dbnatura.ingest.http import get_json
-from dbnatura.ingest.names import NameResolver
-from dbnatura.ingest.provenance import upsert_trait
-from dbnatura.ingest.sources.base import finish_run, start_run
+from ninanatur.ingest.http import get_json
+from ninanatur.ingest.names import NameResolver
+from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.ingest.sources.base import finish_run, start_run
 
 SOURCE_NAME = "GIFT"
 LICENSE = "CC-BY-4.0"

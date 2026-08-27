@@ -3,8 +3,8 @@ import sqlite3
 
 import pytest
 
-from dbnatura.ingest.db import connect, init_schema
-from dbnatura.ingest.provenance import ProvenanceError, upsert_trait
+from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.provenance import ProvenanceError, upsert_trait
 
 
 @pytest.fixture()

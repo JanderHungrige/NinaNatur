@@ -15,7 +15,7 @@ from typing import Any
 import requests
 
 CACHE_DIR = Path("data/cache")
-USER_AGENT = "dbNatura-ingest/0.1 (open-data garden planning; contact: local dev)"
+USER_AGENT = "NinaNatur-ingest/0.1 (open-data garden planning; contact: local dev)"
 REQUEST_DELAY_S = 0.2
 MAX_RETRIES = 3
 

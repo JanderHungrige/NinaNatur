@@ -5,17 +5,17 @@ edition: MDD
 depends_on: []
 relates: []
 source_files:
-  - dbnatura/ingest/db.py
-  - dbnatura/ingest/provenance.py
-  - dbnatura/ingest/names.py
-  - dbnatura/ingest/http.py
-  - dbnatura/ingest/sources/base.py
-  - dbnatura/ingest/sources/gbif.py
-  - dbnatura/ingest/sources/eive.py
-  - dbnatura/ingest/sources/gift.py
-  - dbnatura/ingest/sources/globi.py
-  - dbnatura/ingest/coverage.py
-  - dbnatura/ingest/cli.py
+  - ninanatur/ingest/db.py
+  - ninanatur/ingest/provenance.py
+  - ninanatur/ingest/names.py
+  - ninanatur/ingest/http.py
+  - ninanatur/ingest/sources/base.py
+  - ninanatur/ingest/sources/gbif.py
+  - ninanatur/ingest/sources/eive.py
+  - ninanatur/ingest/sources/gift.py
+  - ninanatur/ingest/sources/globi.py
+  - ninanatur/ingest/coverage.py
+  - ninanatur/ingest/cli.py
 routes: []
 models:
   - taxon
@@ -41,7 +41,11 @@ integration_contracts:
     note: every trait write must carry source, license and confidence — no bare inserts
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "flower_colour covers only ~13% of candidates (590 taxa) — GIFT holds the trait for 1810 taxa worldwide. Blocks the bloom-colour simulation until a second source is added."
+  - "GloBI interaction records are global, not German. Achillea millefolium returns 1504 flower visitors including New Zealand taxa; the raw count overstates German relevance and must be intersected with a German insect checklist before it drives a score."
+  - "pollination_syndrome covers ~27% — not on the critical path, since GloBI supplies counted relations directly, which is the harder evidence."
+  - "One candidate name remains unresolvable (two accepted homonyms); recorded as AMBIGUOUS in taxon_name."
 sister_projects: []
 ---
 
@@ -151,7 +155,24 @@ of the four sources requires a key.
 
 ## Known Issues
 
-(populated by audit)
+Measured on the first full run (2026-08-27, candidate set 4425 taxa):
+
+| Gap | Extent | Consequence |
+|---|---|---|
+| `flower_colour` | 590 taxa (~13%) | The bloom-colour simulation cannot run on the open data alone. Candidate second sources: Wikidata, structured German determination floras, or hand-curating the ~600 horticulturally relevant species. |
+| GloBI geographic bias | all interaction rows | Records are worldwide. Counting them directly would rank a plant by how well-studied it is globally, not by what visits it in a German garden. Intersect with a German insect checklist before scoring. |
+| `pollination_syndrome` | ~27% | Not blocking — GloBI's counted relations are stronger evidence for the same question. |
+| Ambiguous names | 1 taxon | Two accepted homonyms; recorded as `AMBIGUOUS` rather than resolved arbitrarily. |
+
+### Resolved during the first run
+
+- **GIFT truncates lists at 10,000 rows** without signalling it. Flowering-start
+  data silently arrived at exactly half its documented size until paging was
+  added. Treat every undocumented list endpoint as truncating.
+- **`canonical_name UNIQUE` is invalid for a taxonomic backbone.** 198 of 8939
+  German candidate keys share a name with another key, mostly ACCEPTED/DOUBTFUL
+  pairs. See the fix commit for why dropping the constraint alone would have
+  replaced a crash with a silent wrong-taxon attachment.
 
 ## Bugs
 

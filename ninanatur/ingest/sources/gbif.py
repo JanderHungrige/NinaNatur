@@ -10,8 +10,8 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-from dbnatura.ingest.http import get_json
-from dbnatura.ingest.sources.base import finish_run, start_run
+from ninanatur.ingest.http import get_json
+from ninanatur.ingest.sources.base import finish_run, start_run
 
 SOURCE_NAME = "GBIF"
 LICENSE = "CC-BY-4.0"

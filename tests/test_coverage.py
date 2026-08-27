@@ -8,9 +8,9 @@ import sqlite3
 
 import pytest
 
-from dbnatura.ingest.coverage import CORE_TRAITS, compute_coverage
-from dbnatura.ingest.db import connect, init_schema
-from dbnatura.ingest.provenance import upsert_trait
+from ninanatur.ingest.coverage import CORE_TRAITS, compute_coverage
+from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.provenance import upsert_trait
 
 
 @pytest.fixture()

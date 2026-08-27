@@ -1,12 +1,12 @@
-# dbNatura
+# NinaNatur
 
 Open-data plant trait database for insect-friendly garden planning.
 
 ## Ingest pipeline
 
 ```bash
-python -m dbnatura.ingest.cli run all
-python -m dbnatura.ingest.cli coverage
+python -m ninanatur.ingest.cli run all
+python -m ninanatur.ingest.cli coverage
 ```
 
 Sources, in run order:
@@ -24,5 +24,5 @@ Every value stored carries its source, licence and retrieval date.
 
 ```bash
 python3.13 -m venv .venv && .venv/bin/pip install -e . pytest ruff mypy
-.venv/bin/python -m pytest -q && .venv/bin/ruff check . && .venv/bin/mypy dbnatura
+.venv/bin/python -m pytest -q && .venv/bin/ruff check . && .venv/bin/mypy ninanatur
 ```

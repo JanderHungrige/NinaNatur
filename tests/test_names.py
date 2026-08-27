@@ -3,8 +3,8 @@ import sqlite3
 
 import pytest
 
-from dbnatura.ingest.db import connect, init_schema
-from dbnatura.ingest.names import MIN_MATCH_CONFIDENCE, NameResolver
+from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.names import MIN_MATCH_CONFIDENCE, NameResolver
 
 GOOD_MATCH: dict[str, object] = {
     "usageKey": 3120060,

@@ -21,3 +21,8 @@ data/cache/
 *.sqlite
 *.sqlite3
 *.db
+# SQLite side files — a journal/WAL is as much data as the DB itself
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db-journal

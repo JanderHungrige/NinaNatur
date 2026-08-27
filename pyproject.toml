@@ -1,12 +1,12 @@
 [project]
-name = "dbnatura"
+name = "ninanatur"
 version = "0.1.0"
 description = "Open-data plant trait database for insect-friendly garden planning"
 requires-python = ">=3.11"
 dependencies = ["requests>=2.31", "pandas>=2.0", "openpyxl>=3.1"]
 
 [project.scripts]
-dbnatura-ingest = "dbnatura.ingest.cli:main"
+ninanatur-ingest = "ninanatur.ingest.cli:main"
 
 [tool.ruff]
 line-length = 100

@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any, Protocol
 
-from dbnatura.ingest.http import get_json
+from ninanatur.ingest.http import get_json
 
 GBIF_MATCH_URL = "https://api.gbif.org/v1/species/match"
 MIN_MATCH_CONFIDENCE = 90

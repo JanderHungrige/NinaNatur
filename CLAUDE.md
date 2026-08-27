@@ -1,4 +1,4 @@
-# CLAUDE.md — dbNatura
+# CLAUDE.md — NinaNatur
 
 Garden planning on open plant-trait data: lay out a garden as beds, get native
 plant suggestions that fit the site, simulate the bloom year, find bloom gaps,
@@ -8,7 +8,7 @@ nurseries as possible.
 ## Stack
 
 - **Backend/ML → Python 3.11+**, full type hints, `ruff` + `mypy --strict`
-- **Data store:** SQLite (one schema module, `dbnatura/ingest/db.py`)
+- **Data store:** SQLite (one schema module, `ninanatur/ingest/db.py`)
 - **API (planned):** FastAPI under `/api/v1/`
 - **Frontend (planned):** React + TypeScript, strict mode, no `any`
 

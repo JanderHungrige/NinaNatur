@@ -10,10 +10,10 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-from dbnatura.ingest.coverage import core_complete_ids
-from dbnatura.ingest.http import HttpError, get_json
-from dbnatura.ingest.provenance import record_interaction
-from dbnatura.ingest.sources.base import finish_run, start_run
+from ninanatur.ingest.coverage import core_complete_ids
+from ninanatur.ingest.http import HttpError, get_json
+from ninanatur.ingest.provenance import record_interaction
+from ninanatur.ingest.sources.base import finish_run, start_run
 
 SOURCE_NAME = "GloBI"
 LICENSE = "CC0-1.0"

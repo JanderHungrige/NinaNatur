@@ -1,8 +1,8 @@
 """Command-line entry point for the ingest pipeline.
 
-    dbnatura-ingest init
-    dbnatura-ingest run gbif|eive|gift|globi|all
-    dbnatura-ingest coverage
+    ninanatur-ingest init
+    ninanatur-ingest run gbif|eive|gift|globi|all
+    ninanatur-ingest coverage
 """
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from dbnatura.ingest.coverage import compute_coverage, format_report
-from dbnatura.ingest.db import DEFAULT_DB_PATH, connect, init_schema
-from dbnatura.ingest.sources.eive import EiveSource
-from dbnatura.ingest.sources.gbif import GbifSource
-from dbnatura.ingest.sources.gift import GiftSource
-from dbnatura.ingest.sources.globi import GlobiSource
+from ninanatur.ingest.coverage import compute_coverage, format_report
+from ninanatur.ingest.db import DEFAULT_DB_PATH, connect, init_schema
+from ninanatur.ingest.sources.eive import EiveSource
+from ninanatur.ingest.sources.gbif import GbifSource
+from ninanatur.ingest.sources.gift import GiftSource
+from ninanatur.ingest.sources.globi import GlobiSource
 
 # GBIF defines the candidate set, so it must run before anything joins against it.
 RUN_ORDER = ("gbif", "eive", "gift", "globi")
@@ -37,7 +37,7 @@ def run_source(conn: sqlite3.Connection, name: str, limit: int | None) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="dbnatura-ingest", description=__doc__)
+    parser = argparse.ArgumentParser(prog="ninanatur-ingest", description=__doc__)
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="SQLite path")
     sub = parser.add_subparsers(dest="command", required=True)
 

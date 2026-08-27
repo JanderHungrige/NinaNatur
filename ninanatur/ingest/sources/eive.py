@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from dbnatura.ingest.http import download
-from dbnatura.ingest.names import NameResolver
-from dbnatura.ingest.provenance import upsert_trait
-from dbnatura.ingest.sources.base import TraitRecord, finish_run, start_run
+from ninanatur.ingest.http import download
+from ninanatur.ingest.names import NameResolver
+from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.ingest.sources.base import TraitRecord, finish_run, start_run
 
 SOURCE_NAME = "EIVE-1.0"
 LICENSE = "CC-BY-4.0"

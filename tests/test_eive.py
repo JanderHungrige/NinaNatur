@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from dbnatura.ingest.sources.eive import EIVE_TRAIT_MAP, parse_eive_frame
+from ninanatur.ingest.sources.eive import EIVE_TRAIT_MAP, parse_eive_frame
 
 
 def _frame() -> pd.DataFrame:
