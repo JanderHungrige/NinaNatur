@@ -10,6 +10,10 @@ name: build-and-push
 # TLS and domains are handled in front by Nginx Proxy Manager.
 
 on:
+  # Manual trigger: a path-filtered workflow does not run on a branch-creation
+  # push (there is no predecessor commit to diff paths against), and rebuilding
+  # without a code change is worth having anyway.
+  workflow_dispatch:
   push:
     branches: [main, dev-deployment]
     # Planning docs and deploy config do not change the image.
