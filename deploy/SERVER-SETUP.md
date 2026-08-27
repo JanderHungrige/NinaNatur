@@ -15,17 +15,28 @@ cp deploy/.env.dev.example  deploy/.env.dev
 `.env.prod` publishes on **4000**, `.env.dev` on **4001**. The real env files are
 gitignored; only the `.example` templates are tracked.
 
-## 2. Log in to GHCR — do not skip
+## 2. Confirm the image pulls anonymously
+
+The repository is public, but a GHCR package does **not** reliably inherit that
+visibility — a package created by a workflow can still land private. Check it
+after the first successful Actions run, under
+`github.com/users/JanderHungrige/packages/container/ninanatur/settings`, and set
+it to public if it is not already.
+
+Then verify from the host, as an unauthenticated pull:
+
+```bash
+docker logout ghcr.io
+docker pull ghcr.io/janderhungrige/ninanatur:main
+```
+
+If that succeeds, no login is needed and step 2 is done.
+
+If the package stays private instead, the host must log in once — otherwise the
+cron fails **silently every minute** and the site simply never updates:
 
 ```bash
 echo "$GHCR_TOKEN" | docker login ghcr.io -u JanderHungrige --password-stdin
-```
-
-If the GHCR package is private and the host is not logged in, the cron fails
-**silently every minute** and the site simply never updates. Verify with:
-
-```bash
-docker pull ghcr.io/janderhungrige/ninanatur:main
 ```
 
 ## 3. First start
@@ -76,7 +87,7 @@ roll within a minute or two.
 | Symptom | Likely cause |
 |---|---|
 | Site never updates, cron log empty | crontab not installed, or absolute paths wrong |
-| `denied` / `unauthorized` in the log | host not logged in to GHCR (step 2) |
+| `denied` / `unauthorized` in the log | GHCR package is private and the host is not logged in (step 2) |
 | `skipping this tick` repeatedly | a previous run is stuck holding `/tmp/ninanatur-auto-deploy.lock` |
 | 502 from NPM | container down, or forwarding to the wrong port |
 | Port already allocated | something else on the host publishes 4000 |
