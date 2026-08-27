@@ -50,7 +50,7 @@ every minute** while the site simply never updates.
 ```bash
 cd /opt/ninanatur
 docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml up -d
-curl -s localhost:4000/healthz
+curl -i --max-time 5 http://localhost:4000/healthz
 ```
 
 ## 4. Cron
@@ -82,13 +82,25 @@ publishes on the host without sharing a network.
 ## Verify the whole chain
 
 ```bash
-curl -s https://ninanatur.w3rth.de/healthz
+curl -i --max-time 5 https://ninanatur.w3rth.de/healthz
 ```
 
 Then push a trivial change to `main` and watch the log — the container should
 roll within a minute or two.
 
 ## Troubleshooting
+
+Never diagnose with `curl -s`. On a refused connection it prints **nothing at
+all**, which is indistinguishable from an empty 200 — use `curl -i` and check
+the exit code (`7` = could not connect).
+
+```bash
+cd /opt/ninanatur
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml ps -a
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml logs --tail=50 app
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml port app 4000
+```
+
 
 | Symptom | Likely cause |
 |---|---|
