@@ -4,6 +4,69 @@
  */
 
 export interface paths {
+    "/api/v1/plants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Plants
+         * @description Species ranked by how well they fit the given site conditions.
+         */
+        get: operations["search_plants_api_v1_plants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plants/{taxon_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plant Detail
+         * @description One species, every trait with the source behind it.
+         */
+        get: operations["plant_detail_api_v1_plants__taxon_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plants/{taxon_id}/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plant Info
+         * @description A description and photograph, from Wikipedia, cached on this deployment.
+         *
+         *     404 when no article exists in either language — an honest absence rather than
+         *     an empty panel that looks like a loading failure.
+         */
+        get: operations["plant_info_api_v1_plants__taxon_id__info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens": {
         parameters: {
             query?: never;
@@ -69,76 +132,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Planting
-         * @description Put a species in a bed. An unknown taxon raises ValueError -> 422.
-         */
-        post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Bed Suggestions
-         * @description Species that suit this bed, ranked by fit against its own site vector.
-         *
-         *     The bed's derived axes are the query, so the user never types an Ellenberg
-         *     number. Trees and shrubs are excluded by default: a bed is a few square
-         *     metres, and a hemlock that fits the light perfectly is still a useless
-         *     suggestion. Introduced species are excluded for a different reason: the
-         *     product promises native plants, and a third of the catalogue is not.
-         */
-        get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/improvements": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Improvements
-         * @description What to plant, and what it would gain.
-         *
-         *     Additions come first because they are the safer advice: a swap removes
-         *     something, and the score will recommend removing a valuable plant whose month
-         *     is already saturated. See the known issue in 19-swap-suggestions.
-         */
-        get: operations["improvements_api_v1_gardens__token__improvements_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/gardens/{token}/obstacles": {
         parameters: {
             query?: never;
@@ -156,6 +149,43 @@ export interface paths {
          *     longer match its own obstacles — and nothing would make that visible.
          */
         post: operations["create_obstacle_api_v1_gardens__token__obstacles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute */
+        post: operations["recompute_api_v1_gardens__token__recompute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Planting
+         * @description Put a species in a bed. An unknown taxon raises ValueError -> 422.
+         */
+        post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -182,24 +212,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/gardens/{token}/recompute": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recompute */
-        post: operations["recompute_api_v1_gardens__token__recompute_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/score": {
+    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
         parameters: {
             query?: never;
             header?: never;
@@ -207,10 +220,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Score
-         * @description What this planting is worth to insects, with its components.
+         * Bed Suggestions
+         * @description Species that suit this bed, ranked by fit against its own site vector.
+         *
+         *     The bed's derived axes are the query, so the user never types an Ellenberg
+         *     number. Trees and shrubs are excluded by default: a bed is a few square
+         *     metres, and a hemlock that fits the light perfectly is still a useless
+         *     suggestion. Introduced species are excluded for a different reason: the
+         *     product promises native plants, and a third of the catalogue is not.
          */
-        get: operations["score_api_v1_gardens__token__score_get"];
+        get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -243,7 +262,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/plants": {
+    "/api/v1/gardens/{token}/score": {
         parameters: {
             query?: never;
             header?: never;
@@ -251,10 +270,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Search Plants
-         * @description Species ranked by how well they fit the given site conditions.
+         * Score
+         * @description What this planting is worth to insects, with its components.
          */
-        get: operations["search_plants_api_v1_plants_get"];
+        get: operations["score_api_v1_gardens__token__score_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -263,7 +282,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/plants/{taxon_id}": {
+    "/api/v1/gardens/{token}/improvements": {
         parameters: {
             query?: never;
             header?: never;
@@ -271,33 +290,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Plant Detail
-         * @description One species, every trait with the source behind it.
-         */
-        get: operations["plant_detail_api_v1_plants__taxon_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/plants/{taxon_id}/info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Plant Info
-         * @description A description and photograph, from Wikipedia, cached on this deployment.
+         * Improvements
+         * @description What to plant, and what it would gain.
          *
-         *     404 when no article exists in either language — an honest absence rather than
-         *     an empty panel that looks like a loading failure.
+         *     Additions come first because they are the safer advice: a swap removes
+         *     something, and the score will recommend removing a valuable plant whose month
+         *     is already saturated. See the known issue in 19-swap-suggestions.
          */
-        get: operations["plant_info_api_v1_plants__taxon_id__info_get"];
+        get: operations["improvements_api_v1_gardens__token__improvements_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -340,32 +340,40 @@ export interface components {
         AxisFitOut: {
             /** Band */
             band: string;
-            /** Half Widths Away */
-            half_widths_away: number;
-            /** Niche Width */
-            niche_width: number;
             /** Score */
             score: number;
+            /** Half Widths Away */
+            half_widths_away: number;
             /** Species Value */
             species_value: number;
+            /** Niche Width */
+            niche_width: number;
             /** Width Estimated */
             width_estimated: boolean;
         };
         /** BedCreate */
         BedCreate: {
-            /** Moisture */
-            moisture?: string | null;
             /** Name */
             name: string;
             /** Polygon */
             polygon: number[][];
             /** Soil Type */
             soil_type?: string | null;
+            /** Moisture */
+            moisture?: string | null;
         };
         /** BedOut */
         BedOut: {
             /** Bed Id */
             bed_id: number;
+            /** Name */
+            name: string;
+            /** Polygon */
+            polygon: number[][];
+            /** Soil Type */
+            soil_type: string | null;
+            /** Moisture */
+            moisture: string | null;
             /** Ellenberg L */
             ellenberg_l: number | null;
             /** Ellenberg M */
@@ -374,20 +382,12 @@ export interface components {
             ellenberg_n: number | null;
             /** Ellenberg R */
             ellenberg_r: number | null;
-            /** Light Computed At */
-            light_computed_at: string | null;
-            /** Moisture */
-            moisture: string | null;
-            /** Name */
-            name: string;
-            /** Plantings */
-            plantings: components["schemas"]["PlantingOut"][];
-            /** Polygon */
-            polygon: number[][];
-            /** Soil Type */
-            soil_type: string | null;
             /** Sun Hours */
             sun_hours: number | null;
+            /** Light Computed At */
+            light_computed_at: string | null;
+            /** Plantings */
+            plantings: components["schemas"]["PlantingOut"][];
         };
         /**
          * BedSuggestions
@@ -399,53 +399,76 @@ export interface components {
             bed_id: number;
             /** Bed Name */
             bed_name: string;
-            /** Items */
-            items: components["schemas"]["PlantSummary"][];
             /** Site Axes */
             site_axes: {
                 [key: string]: number;
             };
             /** Total */
             total: number;
+            /** Items */
+            items: components["schemas"]["PlantSummary"][];
+            /**
+             * Filters
+             * @default {}
+             */
+            filters: {
+                [key: string]: components["schemas"]["FilterCountsOut"];
+            };
         };
         /** ChangeOut */
         ChangeOut: {
+            /** Taxon Id */
+            taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
             /** Bed Id */
             bed_id: number;
             /** Bed Name */
             bed_name: string;
-            /** Canonical Name */
-            canonical_name: string;
             /** Gain */
             gain: number;
-            /** German Partners */
-            german_partners: number | null;
-            /** Reason */
-            reason: string;
-            /** Replaces Name */
-            replaces_name: string | null;
-            /** Replaces Planting Id */
-            replaces_planting_id: number | null;
             /** Resulting Score */
             resulting_score: number;
-            /** Taxon Id */
-            taxon_id: number;
+            /** Reason */
+            reason: string;
+            /** German Partners */
+            german_partners: number | null;
+            /** Replaces Planting Id */
+            replaces_planting_id: number | null;
+            /** Replaces Name */
+            replaces_name: string | null;
+        };
+        /**
+         * FilterCountsOut
+         * @description How one active filter divided the candidate set.
+         *
+         *     Reported so the UI can say what was left out. `unknown` is not a rounding
+         *     error: height is recorded for 44% of German species and colour for 6.6%, and
+         *     a filter that hides that is indistinguishable from one that is broken.
+         */
+        FilterCountsOut: {
+            /** Matched */
+            matched: number;
+            /** Unknown */
+            unknown: number;
+            /** Excluded */
+            excluded: number;
         };
         /** FitOut */
         FitOut: {
+            /** Score */
+            score: number;
             /** Axes */
             axes: {
                 [key: string]: components["schemas"]["AxisFitOut"];
             };
-            /** Score */
-            score: number;
         };
         /** GapOut */
         GapOut: {
-            /** Length */
-            length: number;
             /** Months */
             months: number[];
+            /** Length */
+            length: number;
         };
         /**
          * GardenCreate
@@ -453,42 +476,52 @@ export interface components {
          *     they reach solar code that would happily compute a sun path for latitude 500.
          */
         GardenCreate: {
+            /** Name */
+            name: string;
             /** Latitude */
             latitude: number;
             /** Longitude */
             longitude: number;
-            /** Name */
-            name: string;
         };
         /**
          * GardenCreated
          * @description The token is returned; the numeric id deliberately is not.
          */
         GardenCreated: {
-            /** Name */
-            name: string;
             /** Share Token */
             share_token: string;
+            /** Name */
+            name: string;
         };
         /** GardenOut */
         GardenOut: {
-            /** Beds */
-            beds: components["schemas"]["BedOut"][];
-            /** Created At */
-            created_at: string;
+            /** Share Token */
+            share_token: string;
+            /** Name */
+            name: string;
             /** Latitude */
             latitude: number;
             /** Longitude */
             longitude: number;
-            /** Name */
-            name: string;
-            /** Obstacles */
-            obstacles: components["schemas"]["ObstacleOut"][];
-            /** Share Token */
-            share_token: string;
+            /** Created At */
+            created_at: string;
             /** Updated At */
             updated_at: string;
+            /** Beds */
+            beds: components["schemas"]["BedOut"][];
+            /** Obstacles */
+            obstacles: components["schemas"]["ObstacleOut"][];
         };
+        /**
+         * GrowthForm
+         * @description The growth forms the catalogue actually records.
+         *
+         *     A closed set rather than a free string. The value never reaches SQL, but an
+         *     unbounded parameter that silently matches nothing is its own kind of lie —
+         *     the user cannot tell a typo from an empty catalogue.
+         * @enum {string}
+         */
+        GrowthForm: "forb" | "herb" | "graminoid" | "shrub" | "subshrub" | "tree";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -496,134 +529,141 @@ export interface components {
         };
         /** ImprovementsOut */
         ImprovementsOut: {
-            /** Additions */
-            additions: components["schemas"]["ChangeOut"][];
             /** Current Score */
             current_score: number;
+            /** Additions */
+            additions: components["schemas"]["ChangeOut"][];
             /** Swaps */
             swaps: components["schemas"]["ChangeOut"][];
         };
         /** MonthOut */
         MonthOut: {
-            /** Coverage */
-            coverage: number;
             /** Month */
             month: number;
+            /** Coverage */
+            coverage: number;
             /** Species */
             species: string[];
         };
         /** ObstacleCreate */
         ObstacleCreate: {
-            /** Height */
-            height: number;
             /** Kind */
             kind: string;
-            /** Radius */
-            radius: number;
             /** X */
             x: number;
             /** Y */
             y: number;
+            /** Radius */
+            radius: number;
+            /** Height */
+            height: number;
         };
         /** ObstacleOut */
         ObstacleOut: {
-            /** Height */
-            height: number;
-            /** Kind */
-            kind: string;
             /** Obstacle Id */
             obstacle_id: number;
-            /** Radius */
-            radius: number;
+            /** Kind */
+            kind: string;
             /** X */
             x: number;
             /** Y */
             y: number;
+            /** Radius */
+            radius: number;
+            /** Height */
+            height: number;
         };
         /** PartnersOut */
         PartnersOut: {
-            /** By Kind */
-            by_kind: {
-                [key: string]: number;
-            };
             /** German */
             german: number;
             /** Global Total */
             global_total: number;
-            /** Match Rate */
-            match_rate: number;
             /** Unmatched */
             unmatched: number;
+            /** Match Rate */
+            match_rate: number;
+            /** By Kind */
+            by_kind: {
+                [key: string]: number;
+            };
         };
         /** PlantDetail */
         PlantDetail: {
-            /** Canonical Name */
-            canonical_name: string;
-            /** Family */
-            family: string | null;
-            partners: components["schemas"]["PartnersOut"] | null;
-            /** Scientific Name */
-            scientific_name: string | null;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Scientific Name */
+            scientific_name: string | null;
+            /** Family */
+            family: string | null;
             /** Traits */
             traits: {
                 [key: string]: components["schemas"]["TraitOut"];
             };
+            partners: components["schemas"]["PartnersOut"] | null;
         };
         /** PlantSearchResponse */
         PlantSearchResponse: {
-            /** Items */
-            items: components["schemas"]["PlantSummary"][];
+            /** Total */
+            total: number;
             /** Limit */
             limit: number;
             /** Offset */
             offset: number;
-            /** Total */
-            total: number;
+            /** Items */
+            items: components["schemas"]["PlantSummary"][];
+            /**
+             * Filters
+             * @default {}
+             */
+            filters: {
+                [key: string]: components["schemas"]["FilterCountsOut"];
+            };
         };
         /** PlantSummary */
         PlantSummary: {
-            /** Canonical Name */
-            canonical_name: string;
-            /** Colour Known */
-            colour_known: boolean;
-            /** Family */
-            family: string | null;
-            fit: components["schemas"]["FitOut"];
-            /** Flower Colour */
-            flower_colour: string | null;
-            /** Flowering End Month */
-            flowering_end_month: number | null;
-            /** Flowering Start Month */
-            flowering_start_month: number | null;
-            /** Height Max M */
-            height_max_m: number | null;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Family */
+            family: string | null;
+            /** Height Max M */
+            height_max_m: number | null;
+            /** Flowering Start Month */
+            flowering_start_month: number | null;
+            /** Flowering End Month */
+            flowering_end_month: number | null;
+            /** Flower Colour */
+            flower_colour: string | null;
+            /** Colour Known */
+            colour_known: boolean;
+            fit: components["schemas"]["FitOut"];
         };
         /** PlantingCreate */
         PlantingCreate: {
+            /** Taxon Id */
+            taxon_id: number;
             /**
              * Quantity
              * @default 1
              */
             quantity: number;
-            /** Taxon Id */
-            taxon_id: number;
         };
         /** PlantingOut */
         PlantingOut: {
-            /** Added At */
-            added_at: string;
-            /** Canonical Name */
-            canonical_name: string;
             /** Planting Id */
             planting_id: number;
-            /** Quantity */
-            quantity: number;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Quantity */
+            quantity: number;
+            /** Added At */
+            added_at: string;
         };
         /**
          * ScoreOut
@@ -631,39 +671,39 @@ export interface components {
          *     interrogate is decoration, and this one will be trusted more than it deserves.
          */
         ScoreOut: {
-            /** By Group */
-            by_group: {
-                [key: string]: number;
-            };
+            /** Score */
+            score: number;
             /** By Month */
             by_month: {
                 [key: string]: number;
             };
             /** By Species */
             by_species: components["schemas"]["SpeciesContributionOut"][];
-            /** Is Empty */
-            is_empty: boolean;
+            /** By Group */
+            by_group: {
+                [key: string]: number;
+            };
             /** Plantings Total */
             plantings_total: number;
             /** Plantings Without Interaction Data */
             plantings_without_interaction_data: number;
-            /** Score */
-            score: number;
+            /** Is Empty */
+            is_empty: boolean;
         };
         /** SpeciesContributionOut */
         SpeciesContributionOut: {
-            /** Canonical Name */
-            canonical_name: string;
-            /** Forage */
-            forage: number;
-            /** German Partners */
-            german_partners: number | null;
-            /** Months */
-            months: number[];
-            /** Origin */
-            origin: string;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** German Partners */
+            german_partners: number | null;
+            /** Origin */
+            origin: string;
+            /** Forage */
+            forage: number;
+            /** Months */
+            months: number[];
         };
         /**
          * SpeciesInfoOut
@@ -671,18 +711,18 @@ export interface components {
          *     not decoration — the UI may not show the extract without them.
          */
         SpeciesInfoOut: {
+            /** Title */
+            title: string;
             /** Extract */
             extract: string;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+            /** Page Url */
+            page_url: string;
             /** Language */
             language: string;
             /** Licence */
             licence: string;
-            /** Page Url */
-            page_url: string;
-            /** Thumbnail Url */
-            thumbnail_url: string | null;
-            /** Title */
-            title: string;
         };
         /**
          * TimelineOut
@@ -690,46 +730,46 @@ export interface components {
          *     timeline built mostly on unknowns is visible rather than merely optimistic.
          */
         TimelineOut: {
-            /** Gaps */
-            gaps: components["schemas"]["GapOut"][];
-            /** Is Empty */
-            is_empty: boolean;
             /** Mode */
             mode: string;
             /** Months */
             months: components["schemas"]["MonthOut"][];
+            /** Gaps */
+            gaps: components["schemas"]["GapOut"][];
             /** Plantings Total */
             plantings_total: number;
             /** Plantings Without Interaction Data */
             plantings_without_interaction_data: number;
+            /** Is Empty */
+            is_empty: boolean;
         };
         /** TraitOut */
         TraitOut: {
+            /** Value */
+            value: number | string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Source */
+            source: string;
+            /** License */
+            license: string;
             /** Alternatives */
             alternatives?: {
                 [key: string]: unknown;
             }[];
-            /** License */
-            license: string;
-            /** Source */
-            source: string;
-            /** Unit */
-            unit?: string | null;
-            /** Value */
-            value: number | string | null;
         };
         /** ValidationError */
         ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -740,6 +780,111 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    search_plants_api_v1_plants_get: {
+        parameters: {
+            query?: {
+                light?: number | null;
+                moisture?: number | null;
+                nutrients?: number | null;
+                reaction?: number | null;
+                temperature?: number | null;
+                height_min?: number | null;
+                height_max?: number | null;
+                flowering_month?: number | null;
+                growth_form?: components["schemas"]["GrowthForm"] | null;
+                include_unknown?: boolean;
+                colour?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plant_detail_api_v1_plants__taxon_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxon_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plant_info_api_v1_plants__taxon_id__info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxon_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesInfoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_api_v1_gardens_post: {
         parameters: {
             query?: never;
@@ -868,19 +1013,18 @@ export interface operations {
             };
         };
     };
-    create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
+    create_obstacle_api_v1_gardens__token__obstacles_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 token: string;
-                bed_id: number;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PlantingCreate"];
+                "application/json": components["schemas"]["ObstacleCreate"];
             };
         };
         responses: {
@@ -904,15 +1048,40 @@ export interface operations {
             };
         };
     };
-    bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get: {
+    recompute_api_v1_gardens__token__recompute_post: {
         parameters: {
-            query?: {
-                limit?: number;
-                colour?: string | null;
-                include_trees?: boolean;
-                include_introduced?: boolean;
-                exclude_planted?: boolean;
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
+        parameters: {
+            query?: never;
             header?: never;
             path: {
                 token: string;
@@ -920,71 +1089,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BedSuggestions"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    improvements_api_v1_gardens__token__improvements_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImprovementsOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_obstacle_api_v1_gardens__token__obstacles_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ObstacleCreate"];
+                "application/json": components["schemas"]["PlantingCreate"];
             };
         };
         responses: {
@@ -1040,12 +1147,24 @@ export interface operations {
             };
         };
     };
-    recompute_api_v1_gardens__token__recompute_post: {
+    bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                colour?: string | null;
+                height_min?: number | null;
+                height_max?: number | null;
+                flowering_month?: number | null;
+                growth_form?: components["schemas"]["GrowthForm"] | null;
+                include_unknown?: boolean;
+                include_trees?: boolean;
+                include_introduced?: boolean;
+                exclude_planted?: boolean;
+            };
             header?: never;
             path: {
                 token: string;
+                bed_id: number;
             };
             cookie?: never;
         };
@@ -1057,38 +1176,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GardenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    score_api_v1_gardens__token__score_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScoreOut"];
+                    "application/json": components["schemas"]["BedSuggestions"];
                 };
             };
             /** @description Validation Error */
@@ -1135,23 +1223,13 @@ export interface operations {
             };
         };
     };
-    search_plants_api_v1_plants_get: {
+    score_api_v1_gardens__token__score_get: {
         parameters: {
-            query?: {
-                light?: number | null;
-                moisture?: number | null;
-                nutrients?: number | null;
-                reaction?: number | null;
-                temperature?: number | null;
-                height_min?: number | null;
-                height_max?: number | null;
-                flowering_month?: number | null;
-                colour?: string | null;
-                limit?: number;
-                offset?: number;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                token: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1162,7 +1240,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantSearchResponse"];
+                    "application/json": components["schemas"]["ScoreOut"];
                 };
             };
             /** @description Validation Error */
@@ -1176,12 +1254,12 @@ export interface operations {
             };
         };
     };
-    plant_detail_api_v1_plants__taxon_id__get: {
+    improvements_api_v1_gardens__token__improvements_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                taxon_id: number;
+                token: string;
             };
             cookie?: never;
         };
@@ -1193,38 +1271,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    plant_info_api_v1_plants__taxon_id__info_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                taxon_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SpeciesInfoOut"];
+                    "application/json": components["schemas"]["ImprovementsOut"];
                 };
             };
             /** @description Validation Error */

@@ -17,8 +17,10 @@ from ninanatur.api.plants import to_summary
 from ninanatur.api.schemas import (
     BedSuggestions,
     ChangeOut,
+    FilterCountsOut,
     GapOut,
     GardenOut,
+    GrowthForm,
     ImprovementsOut,
     MonthOut,
     PlantingCreate,
@@ -82,6 +84,11 @@ def bed_suggestions(
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     colour: str | None = None,
+    height_min: Annotated[float | None, Query(ge=0)] = None,
+    height_max: Annotated[float | None, Query(ge=0)] = None,
+    flowering_month: Annotated[int | None, Query(ge=1, le=12)] = None,
+    growth_form: GrowthForm | None = None,
+    include_unknown: bool = False,
     include_trees: bool = False,
     include_introduced: bool = False,
     exclude_planted: bool = True,
@@ -105,10 +112,15 @@ def bed_suggestions(
         )
 
     planted = frozenset(p.taxon_id for p in bed.plantings) if exclude_planted else frozenset()
-    scored = rank_plants(
+    ranked = rank_plants(
         load_candidates(conn),
         SiteVector(values=axes),
         SearchFilters(
+            height_min=height_min,
+            height_max=height_max,
+            flowering_month=flowering_month,
+            growth_form=growth_form.value if growth_form is not None else None,
+            include_unknown=include_unknown,
             exclude_woody=not include_trees,
             exclude_introduced=not include_introduced,
             exclude_taxa=planted,
@@ -119,8 +131,9 @@ def bed_suggestions(
         bed_id=bed.bed_id,
         bed_name=bed.name,
         site_axes=axes,
-        total=len(scored),
-        items=[to_summary(s) for s in scored[:limit]],
+        total=len(ranked.items),
+        items=[to_summary(s) for s in ranked.items[:limit]],
+        filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
     )
 
 

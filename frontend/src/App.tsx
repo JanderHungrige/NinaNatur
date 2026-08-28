@@ -4,6 +4,7 @@ import type {
   BedSuggestions,
   ChangeOut,
   GardenOut,
+  SuggestionFilters,
   ImprovementsOut,
   ScoreOut,
   TimelineOut,
@@ -15,6 +16,8 @@ import { GardenCanvas } from './components/GardenCanvas';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
 import { SpeciesInfo } from './components/SpeciesInfo';
+import { FilterBar } from './components/FilterBar';
+import { FilterControls } from './components/FilterControls';
 import { SuggestionList } from './components/SuggestionList';
 
 const client = new NinaNaturClient();
@@ -41,6 +44,7 @@ export function App() {
   const [version, setVersion] = useState<string | null>(null);
   const [infoFor, setInfoFor] = useState<{ taxonId: number; name: string } | null>(null);
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
+  const [filters, setFilters] = useState<SuggestionFilters>({});
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
@@ -84,11 +88,30 @@ export function App() {
       setSelectedBedId(bedId);
       if (garden === null) return;
       void run('Vorschläge laden', async () => {
-        setSuggestions(await client.bedSuggestions(garden.share_token, bedId));
+        setSuggestions(await client.bedSuggestions(garden.share_token, bedId, filters));
         setImprovements(await client.improvements(garden.share_token));
       });
     },
-    [garden, run],
+    [garden, filters, run],
+  );
+
+  /**
+   * Refetch when the filters change.
+   *
+   * Done here rather than in an effect keyed on `filters`: the suggestion panel
+   * already cost this project one runaway request loop from an effect whose
+   * dependency was recreated on every render. An explicit call happens exactly
+   * when the user changes something.
+   */
+  const changeFilters = useCallback(
+    (next: SuggestionFilters) => {
+      setFilters(next);
+      if (garden === null || selectedBedId === null) return;
+      void run('Vorschläge laden', async () => {
+        setSuggestions(await client.bedSuggestions(garden.share_token, selectedBedId, next));
+      });
+    },
+    [garden, selectedBedId, run],
   );
 
   /** Everything the server derives, re-read together after any change. */
@@ -119,11 +142,11 @@ export function App() {
         const updated = await client.plant(garden.share_token, selectedBedId, taxonId);
         setGarden(updated);
         await refresh(garden.share_token, forage);
-        setSuggestions(await client.bedSuggestions(garden.share_token, selectedBedId));
+        setSuggestions(await client.bedSuggestions(garden.share_token, selectedBedId, filters));
         setStatus(`${name} gepflanzt.`);
       });
     },
-    [garden, selectedBedId, forage, refresh, run],
+    [garden, selectedBedId, forage, filters, refresh, run],
   );
 
   const toggleForage = useCallback(
@@ -210,6 +233,12 @@ export function App() {
                 onAddBed={addBed}
                 onAddObstacle={addObstacle}
                 busy={busy}
+              />
+              <FilterControls filters={filters} onChange={changeFilters} disabled={busy} />
+              <FilterBar
+                filters={filters}
+                counts={suggestions?.filters ?? {}}
+                onChange={changeFilters}
               />
               <SuggestionList
                 suggestions={suggestions}

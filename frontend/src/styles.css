@@ -228,3 +228,88 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 }
 .info-panel__extract { margin: 0.5rem 0; font-size: 0.92rem; text-wrap: pretty; }
 .attribution a { color: var(--ink-muted); }
+
+/* --- Wave 6: filters --------------------------------------------------- */
+
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.filter-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.filter-controls select {
+  min-width: 8rem;
+}
+
+/* Specificity: `.filter-controls label` sets column, so the row override has to
+   match on the element too or the checkbox sits above its own text. */
+.filter-controls label.filter-controls__toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.35rem;
+}
+
+.filter-bar__empty {
+  margin: 0 0 0.75rem;
+}
+
+.filter-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2, #eef3ec);
+  font-size: 0.85rem;
+}
+
+.chip__remove {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  color: var(--muted);
+}
+
+.chip__remove:hover {
+  color: var(--text);
+}
+
+.filter-bar__coverage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0 0 0.5rem;
+}
+
+.filter-bar__unknown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}

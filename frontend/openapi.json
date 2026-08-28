@@ -1,34 +1,1091 @@
 {
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NinaNatur",
+    "version": "V0.5.9"
+  },
+  "paths": {
+    "/api/v1/plants": {
+      "get": {
+        "tags": [
+          "plants"
+        ],
+        "summary": "Search Plants",
+        "description": "Species ranked by how well they fit the given site conditions.",
+        "operationId": "search_plants_api_v1_plants_get",
+        "parameters": [
+          {
+            "name": "light",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 10,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Light"
+            }
+          },
+          {
+            "name": "moisture",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 10,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Moisture"
+            }
+          },
+          {
+            "name": "nutrients",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 10,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nutrients"
+            }
+          },
+          {
+            "name": "reaction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 10,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reaction"
+            }
+          },
+          {
+            "name": "temperature",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 10,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          {
+            "name": "height_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Min"
+            }
+          },
+          {
+            "name": "height_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Max"
+            }
+          },
+          {
+            "name": "flowering_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flowering Month"
+            }
+          },
+          {
+            "name": "growth_form",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GrowthForm"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Growth Form"
+            }
+          },
+          {
+            "name": "include_unknown",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Unknown"
+            }
+          },
+          {
+            "name": "colour",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Colour"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plants/{taxon_id}": {
+      "get": {
+        "tags": [
+          "plants"
+        ],
+        "summary": "Plant Detail",
+        "description": "One species, every trait with the source behind it.",
+        "operationId": "plant_detail_api_v1_plants__taxon_id__get",
+        "parameters": [
+          {
+            "name": "taxon_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Taxon Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plants/{taxon_id}/info": {
+      "get": {
+        "tags": [
+          "plants"
+        ],
+        "summary": "Plant Info",
+        "description": "A description and photograph, from Wikipedia, cached on this deployment.\n\n404 when no article exists in either language \u2014 an honest absence rather than\nan empty panel that looks like a loading failure.",
+        "operationId": "plant_info_api_v1_plants__taxon_id__info_get",
+        "parameters": [
+          {
+            "name": "taxon_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Taxon Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesInfoOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens": {
+      "post": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Create",
+        "description": "Create a garden. The token comes back here and is the only way back in.",
+        "operationId": "create_api_v1_gardens_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GardenCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}": {
+      "get": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Read",
+        "operationId": "read_api_v1_gardens__token__get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Remove",
+        "operationId": "remove_api_v1_gardens__token__delete",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/beds": {
+      "post": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Create Bed",
+        "description": "Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\n`add_bed` computes the light itself, so the invariant does not depend on which\nentry point created the bed \u2014 it used to live here, and a bed made through the\nstore had no light at all.",
+        "operationId": "create_bed_api_v1_gardens__token__beds_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/obstacles": {
+      "post": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Create Obstacle",
+        "description": "Add an obstacle and recompute in the same call.\n\nRequiring a second request would leave the plan showing light values that no\nlonger match its own obstacles \u2014 and nothing would make that visible.",
+        "operationId": "create_obstacle_api_v1_gardens__token__obstacles_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObstacleCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/recompute": {
+      "post": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Recompute",
+        "operationId": "recompute_api_v1_gardens__token__recompute_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
+      "post": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Create Planting",
+        "description": "Put a species in a bed. An unknown taxon raises ValueError -> 422.",
+        "operationId": "create_planting_api_v1_gardens__token__beds__bed_id__plantings_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "bed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bed Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlantingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/plantings/{planting_id}": {
+      "delete": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Delete Planting",
+        "description": "Remove a planting. Reached through its garden, never by a bare id.",
+        "operationId": "delete_planting_api_v1_gardens__token__plantings__planting_id__delete",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "planting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Planting Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
+      "get": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Bed Suggestions",
+        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.",
+        "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "bed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bed Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "colour",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Colour"
+            }
+          },
+          {
+            "name": "height_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Min"
+            }
+          },
+          {
+            "name": "height_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Max"
+            }
+          },
+          {
+            "name": "flowering_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flowering Month"
+            }
+          },
+          {
+            "name": "growth_form",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GrowthForm"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Growth Form"
+            }
+          },
+          {
+            "name": "include_unknown",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Unknown"
+            }
+          },
+          {
+            "name": "include_trees",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Trees"
+            }
+          },
+          {
+            "name": "include_introduced",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Introduced"
+            }
+          },
+          {
+            "name": "exclude_planted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Exclude Planted"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BedSuggestions"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/timeline": {
+      "get": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Timeline",
+        "description": "The garden's bloom year, month by month, with gaps marked.\n\n`forage=true` (the default) weights each flowering planting by its counted\nGerman insect partners, so a month of nectarless cultivars is correctly a\ngap. `forage=false` counts every planting equally, for planning by looks.",
+        "operationId": "timeline_api_v1_gardens__token__timeline_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "forage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Forage"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/score": {
+      "get": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Score",
+        "description": "What this planting is worth to insects, with its components.",
+        "operationId": "score_api_v1_gardens__token__score_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/improvements": {
+      "get": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Improvements",
+        "description": "What to plant, and what it would gain.\n\nAdditions come first because they are the safer advice: a swap removes\nsomething, and the score will recommend removing a valuable plant whose month\nis already saturated. See the known issue in 19-swap-suggestions.",
+        "operationId": "improvements_api_v1_gardens__token__improvements_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImprovementsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "summary": "Healthz",
+        "description": "Liveness probe for the deploy cron and the reverse proxy.\n\nDeliberately dependency-free: it must answer while the app is otherwise\nbroken, or a failing deploy looks identical to a failing database.",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "components": {
     "schemas": {
       "AxisFitOut": {
-        "description": "Why one axis scored what it did \u2014 Wave 4 renders the band, not the number.",
         "properties": {
           "band": {
-            "title": "Band",
-            "type": "string"
-          },
-          "half_widths_away": {
-            "title": "Half Widths Away",
-            "type": "number"
-          },
-          "niche_width": {
-            "title": "Niche Width",
-            "type": "number"
+            "type": "string",
+            "title": "Band"
           },
           "score": {
-            "title": "Score",
-            "type": "number"
+            "type": "number",
+            "title": "Score"
+          },
+          "half_widths_away": {
+            "type": "number",
+            "title": "Half Widths Away"
           },
           "species_value": {
-            "title": "Species Value",
-            "type": "number"
+            "type": "number",
+            "title": "Species Value"
+          },
+          "niche_width": {
+            "type": "number",
+            "title": "Niche Width"
           },
           "width_estimated": {
-            "title": "Width Estimated",
-            "type": "boolean"
+            "type": "boolean",
+            "title": "Width Estimated"
           }
         },
+        "type": "object",
         "required": [
           "band",
           "score",
@@ -38,26 +1095,15 @@
           "width_estimated"
         ],
         "title": "AxisFitOut",
-        "type": "object"
+        "description": "Why one axis scored what it did \u2014 Wave 4 renders the band, not the number."
       },
       "BedCreate": {
         "properties": {
-          "moisture": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Moisture"
-          },
           "name": {
+            "type": "string",
             "maxLength": 200,
             "minLength": 1,
-            "title": "Name",
-            "type": "string"
+            "title": "Name"
           },
           "polygon": {
             "items": {
@@ -66,8 +1112,8 @@
               },
               "type": "array"
             },
-            "title": "Polygon",
-            "type": "array"
+            "type": "array",
+            "title": "Polygon"
           },
           "soil_type": {
             "anyOf": [
@@ -79,20 +1125,67 @@
               }
             ],
             "title": "Soil Type"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
           }
         },
+        "type": "object",
         "required": [
           "name",
           "polygon"
         ],
-        "title": "BedCreate",
-        "type": "object"
+        "title": "BedCreate"
       },
       "BedOut": {
         "properties": {
           "bed_id": {
-            "title": "Bed Id",
-            "type": "integer"
+            "type": "integer",
+            "title": "Bed Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "polygon": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Polygon"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
           },
           "ellenberg_l": {
             "anyOf": [
@@ -138,6 +1231,17 @@
             ],
             "title": "Ellenberg R"
           },
+          "sun_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun Hours"
+          },
           "light_computed_at": {
             "anyOf": [
               {
@@ -149,61 +1253,15 @@
             ],
             "title": "Light Computed At"
           },
-          "moisture": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Moisture"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
           "plantings": {
             "items": {
               "$ref": "#/components/schemas/PlantingOut"
             },
-            "title": "Plantings",
-            "type": "array"
-          },
-          "polygon": {
-            "items": {
-              "items": {
-                "type": "number"
-              },
-              "type": "array"
-            },
-            "title": "Polygon",
-            "type": "array"
-          },
-          "soil_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Soil Type"
-          },
-          "sun_hours": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sun Hours"
+            "type": "array",
+            "title": "Plantings"
           }
         },
+        "type": "object",
         "required": [
           "bed_id",
           "name",
@@ -218,39 +1276,46 @@
           "light_computed_at",
           "plantings"
         ],
-        "title": "BedOut",
-        "type": "object"
+        "title": "BedOut"
       },
       "BedSuggestions": {
-        "description": "Suggestions for one bed, with the site vector they were ranked against \u2014\nso the UI can say what it matched on rather than showing a bare list.",
         "properties": {
           "bed_id": {
-            "title": "Bed Id",
-            "type": "integer"
+            "type": "integer",
+            "title": "Bed Id"
           },
           "bed_name": {
-            "title": "Bed Name",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PlantSummary"
-            },
-            "title": "Items",
-            "type": "array"
+            "type": "string",
+            "title": "Bed Name"
           },
           "site_axes": {
             "additionalProperties": {
               "type": "number"
             },
-            "title": "Site Axes",
-            "type": "object"
+            "type": "object",
+            "title": "Site Axes"
           },
           "total": {
-            "title": "Total",
-            "type": "integer"
+            "type": "integer",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlantSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "filters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FilterCountsOut"
+            },
+            "type": "object",
+            "title": "Filters",
+            "default": {}
           }
         },
+        "type": "object",
         "required": [
           "bed_id",
           "bed_name",
@@ -259,25 +1324,37 @@
           "items"
         ],
         "title": "BedSuggestions",
-        "type": "object"
+        "description": "Suggestions for one bed, with the site vector they were ranked against \u2014\nso the UI can say what it matched on rather than showing a bare list."
       },
       "ChangeOut": {
         "properties": {
-          "bed_id": {
-            "title": "Bed Id",
-            "type": "integer"
-          },
-          "bed_name": {
-            "title": "Bed Name",
-            "type": "string"
+          "taxon_id": {
+            "type": "integer",
+            "title": "Taxon Id"
           },
           "canonical_name": {
-            "title": "Canonical Name",
-            "type": "string"
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "bed_id": {
+            "type": "integer",
+            "title": "Bed Id"
+          },
+          "bed_name": {
+            "type": "string",
+            "title": "Bed Name"
           },
           "gain": {
-            "title": "Gain",
-            "type": "number"
+            "type": "number",
+            "title": "Gain"
+          },
+          "resulting_score": {
+            "type": "number",
+            "title": "Resulting Score"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
           },
           "german_partners": {
             "anyOf": [
@@ -289,21 +1366,6 @@
               }
             ],
             "title": "German Partners"
-          },
-          "reason": {
-            "title": "Reason",
-            "type": "string"
-          },
-          "replaces_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Replaces Name"
           },
           "replaces_planting_id": {
             "anyOf": [
@@ -316,15 +1378,19 @@
             ],
             "title": "Replaces Planting Id"
           },
-          "resulting_score": {
-            "title": "Resulting Score",
-            "type": "number"
-          },
-          "taxon_id": {
-            "title": "Taxon Id",
-            "type": "integer"
+          "replaces_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces Name"
           }
         },
+        "type": "object",
         "required": [
           "taxon_id",
           "canonical_name",
@@ -337,141 +1403,165 @@
           "replaces_planting_id",
           "replaces_name"
         ],
-        "title": "ChangeOut",
-        "type": "object"
+        "title": "ChangeOut"
+      },
+      "FilterCountsOut": {
+        "properties": {
+          "matched": {
+            "type": "integer",
+            "title": "Matched"
+          },
+          "unknown": {
+            "type": "integer",
+            "title": "Unknown"
+          },
+          "excluded": {
+            "type": "integer",
+            "title": "Excluded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matched",
+          "unknown",
+          "excluded"
+        ],
+        "title": "FilterCountsOut",
+        "description": "How one active filter divided the candidate set.\n\nReported so the UI can say what was left out. `unknown` is not a rounding\nerror: height is recorded for 44% of German species and colour for 6.6%, and\na filter that hides that is indistinguishable from one that is broken."
       },
       "FitOut": {
         "properties": {
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
           "axes": {
             "additionalProperties": {
               "$ref": "#/components/schemas/AxisFitOut"
             },
-            "title": "Axes",
-            "type": "object"
-          },
-          "score": {
-            "title": "Score",
-            "type": "number"
+            "type": "object",
+            "title": "Axes"
           }
         },
+        "type": "object",
         "required": [
           "score",
           "axes"
         ],
-        "title": "FitOut",
-        "type": "object"
+        "title": "FitOut"
       },
       "GapOut": {
         "properties": {
-          "length": {
-            "title": "Length",
-            "type": "integer"
-          },
           "months": {
             "items": {
               "type": "integer"
             },
-            "title": "Months",
-            "type": "array"
+            "type": "array",
+            "title": "Months"
+          },
+          "length": {
+            "type": "integer",
+            "title": "Length"
           }
         },
+        "type": "object",
         "required": [
           "months",
           "length"
         ],
-        "title": "GapOut",
-        "type": "object"
+        "title": "GapOut"
       },
       "GardenCreate": {
-        "description": "Creating a garden. Latitude and longitude are range-checked here, before\nthey reach solar code that would happily compute a sun path for latitude 500.",
         "properties": {
-          "latitude": {
-            "maximum": 90.0,
-            "minimum": -90.0,
-            "title": "Latitude",
-            "type": "number"
-          },
-          "longitude": {
-            "maximum": 180.0,
-            "minimum": -180.0,
-            "title": "Longitude",
-            "type": "number"
-          },
           "name": {
+            "type": "string",
             "maxLength": 200,
             "minLength": 1,
-            "title": "Name",
-            "type": "string"
+            "title": "Name"
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
           }
         },
+        "type": "object",
         "required": [
           "name",
           "latitude",
           "longitude"
         ],
         "title": "GardenCreate",
-        "type": "object"
+        "description": "Creating a garden. Latitude and longitude are range-checked here, before\nthey reach solar code that would happily compute a sun path for latitude 500."
       },
       "GardenCreated": {
-        "description": "The token is returned; the numeric id deliberately is not.",
         "properties": {
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
           "share_token": {
-            "title": "Share Token",
-            "type": "string"
+            "type": "string",
+            "title": "Share Token"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
           }
         },
+        "type": "object",
         "required": [
           "share_token",
           "name"
         ],
         "title": "GardenCreated",
-        "type": "object"
+        "description": "The token is returned; the numeric id deliberately is not."
       },
       "GardenOut": {
         "properties": {
+          "share_token": {
+            "type": "string",
+            "title": "Share Token"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
           "beds": {
             "items": {
               "$ref": "#/components/schemas/BedOut"
             },
-            "title": "Beds",
-            "type": "array"
-          },
-          "created_at": {
-            "title": "Created At",
-            "type": "string"
-          },
-          "latitude": {
-            "title": "Latitude",
-            "type": "number"
-          },
-          "longitude": {
-            "title": "Longitude",
-            "type": "number"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
+            "type": "array",
+            "title": "Beds"
           },
           "obstacles": {
             "items": {
               "$ref": "#/components/schemas/ObstacleOut"
             },
-            "title": "Obstacles",
-            "type": "array"
-          },
-          "share_token": {
-            "title": "Share Token",
-            "type": "string"
-          },
-          "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "type": "array",
+            "title": "Obstacles"
           }
         },
+        "type": "object",
         "required": [
           "share_token",
           "name",
@@ -482,8 +1572,20 @@
           "beds",
           "obstacles"
         ],
-        "title": "GardenOut",
-        "type": "object"
+        "title": "GardenOut"
+      },
+      "GrowthForm": {
+        "type": "string",
+        "enum": [
+          "forb",
+          "herb",
+          "graminoid",
+          "shrub",
+          "subshrub",
+          "tree"
+        ],
+        "title": "GrowthForm",
+        "description": "The growth forms the catalogue actually records.\n\nA closed set rather than a free string. The value never reaches SQL, but an\nunbounded parameter that silently matches nothing is its own kind of lie \u2014\nthe user cannot tell a typo from an empty catalogue."
       },
       "HTTPValidationError": {
         "properties": {
@@ -491,97 +1593,98 @@
             "items": {
               "$ref": "#/components/schemas/ValidationError"
             },
-            "title": "Detail",
-            "type": "array"
+            "type": "array",
+            "title": "Detail"
           }
         },
-        "title": "HTTPValidationError",
-        "type": "object"
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "ImprovementsOut": {
         "properties": {
+          "current_score": {
+            "type": "number",
+            "title": "Current Score"
+          },
           "additions": {
             "items": {
               "$ref": "#/components/schemas/ChangeOut"
             },
-            "title": "Additions",
-            "type": "array"
-          },
-          "current_score": {
-            "title": "Current Score",
-            "type": "number"
+            "type": "array",
+            "title": "Additions"
           },
           "swaps": {
             "items": {
               "$ref": "#/components/schemas/ChangeOut"
             },
-            "title": "Swaps",
-            "type": "array"
+            "type": "array",
+            "title": "Swaps"
           }
         },
+        "type": "object",
         "required": [
           "current_score",
           "additions",
           "swaps"
         ],
-        "title": "ImprovementsOut",
-        "type": "object"
+        "title": "ImprovementsOut"
       },
       "MonthOut": {
         "properties": {
-          "coverage": {
-            "title": "Coverage",
-            "type": "number"
-          },
           "month": {
-            "title": "Month",
-            "type": "integer"
+            "type": "integer",
+            "title": "Month"
+          },
+          "coverage": {
+            "type": "number",
+            "title": "Coverage"
           },
           "species": {
             "items": {
               "type": "string"
             },
-            "title": "Species",
-            "type": "array"
+            "type": "array",
+            "title": "Species"
           }
         },
+        "type": "object",
         "required": [
           "month",
           "coverage",
           "species"
         ],
-        "title": "MonthOut",
-        "type": "object"
+        "title": "MonthOut"
       },
       "ObstacleCreate": {
         "properties": {
-          "height": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 200.0,
-            "title": "Height",
-            "type": "number"
-          },
           "kind": {
+            "type": "string",
             "maxLength": 50,
             "minLength": 1,
-            "title": "Kind",
-            "type": "string"
-          },
-          "radius": {
-            "exclusiveMinimum": 0.0,
-            "maximum": 500.0,
-            "title": "Radius",
-            "type": "number"
+            "title": "Kind"
           },
           "x": {
-            "title": "X",
-            "type": "number"
+            "type": "number",
+            "title": "X"
           },
           "y": {
-            "title": "Y",
-            "type": "number"
+            "type": "number",
+            "title": "Y"
+          },
+          "radius": {
+            "type": "number",
+            "maximum": 500.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Radius"
+          },
+          "height": {
+            "type": "number",
+            "maximum": 200.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Height"
           }
         },
+        "type": "object",
         "required": [
           "kind",
           "x",
@@ -589,36 +1692,36 @@
           "radius",
           "height"
         ],
-        "title": "ObstacleCreate",
-        "type": "object"
+        "title": "ObstacleCreate"
       },
       "ObstacleOut": {
         "properties": {
-          "height": {
-            "title": "Height",
-            "type": "number"
+          "obstacle_id": {
+            "type": "integer",
+            "title": "Obstacle Id"
           },
           "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
-          "obstacle_id": {
-            "title": "Obstacle Id",
-            "type": "integer"
-          },
-          "radius": {
-            "title": "Radius",
-            "type": "number"
+            "type": "string",
+            "title": "Kind"
           },
           "x": {
-            "title": "X",
-            "type": "number"
+            "type": "number",
+            "title": "X"
           },
           "y": {
-            "title": "Y",
-            "type": "number"
+            "type": "number",
+            "title": "Y"
+          },
+          "radius": {
+            "type": "number",
+            "title": "Radius"
+          },
+          "height": {
+            "type": "number",
+            "title": "Height"
           }
         },
+        "type": "object",
         "required": [
           "obstacle_id",
           "kind",
@@ -627,35 +1730,35 @@
           "radius",
           "height"
         ],
-        "title": "ObstacleOut",
-        "type": "object"
+        "title": "ObstacleOut"
       },
       "PartnersOut": {
         "properties": {
+          "german": {
+            "type": "integer",
+            "title": "German"
+          },
+          "global_total": {
+            "type": "integer",
+            "title": "Global Total"
+          },
+          "unmatched": {
+            "type": "integer",
+            "title": "Unmatched"
+          },
+          "match_rate": {
+            "type": "number",
+            "title": "Match Rate"
+          },
           "by_kind": {
             "additionalProperties": {
               "type": "integer"
             },
-            "title": "By Kind",
-            "type": "object"
-          },
-          "german": {
-            "title": "German",
-            "type": "integer"
-          },
-          "global_total": {
-            "title": "Global Total",
-            "type": "integer"
-          },
-          "match_rate": {
-            "title": "Match Rate",
-            "type": "number"
-          },
-          "unmatched": {
-            "title": "Unmatched",
-            "type": "integer"
+            "type": "object",
+            "title": "By Kind"
           }
         },
+        "type": "object",
         "required": [
           "german",
           "global_total",
@@ -663,35 +1766,17 @@
           "match_rate",
           "by_kind"
         ],
-        "title": "PartnersOut",
-        "type": "object"
+        "title": "PartnersOut"
       },
       "PlantDetail": {
         "properties": {
+          "taxon_id": {
+            "type": "integer",
+            "title": "Taxon Id"
+          },
           "canonical_name": {
-            "title": "Canonical Name",
-            "type": "string"
-          },
-          "family": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Family"
-          },
-          "partners": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PartnersOut"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "string",
+            "title": "Canonical Name"
           },
           "scientific_name": {
             "anyOf": [
@@ -704,18 +1789,36 @@
             ],
             "title": "Scientific Name"
           },
-          "taxon_id": {
-            "title": "Taxon Id",
-            "type": "integer"
+          "family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family"
           },
           "traits": {
             "additionalProperties": {
               "$ref": "#/components/schemas/TraitOut"
             },
-            "title": "Traits",
-            "type": "object"
+            "type": "object",
+            "title": "Traits"
+          },
+          "partners": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartnersOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
+        "type": "object",
         "required": [
           "taxon_id",
           "canonical_name",
@@ -724,49 +1827,56 @@
           "traits",
           "partners"
         ],
-        "title": "PlantDetail",
-        "type": "object"
+        "title": "PlantDetail"
       },
       "PlantSearchResponse": {
         "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/PlantSummary"
             },
-            "title": "Items",
-            "type": "array"
+            "type": "array",
+            "title": "Items"
           },
-          "limit": {
-            "title": "Limit",
-            "type": "integer"
-          },
-          "offset": {
-            "title": "Offset",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
+          "filters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FilterCountsOut"
+            },
+            "type": "object",
+            "title": "Filters",
+            "default": {}
           }
         },
+        "type": "object",
         "required": [
           "total",
           "limit",
           "offset",
           "items"
         ],
-        "title": "PlantSearchResponse",
-        "type": "object"
+        "title": "PlantSearchResponse"
       },
       "PlantSummary": {
         "properties": {
-          "canonical_name": {
-            "title": "Canonical Name",
-            "type": "string"
+          "taxon_id": {
+            "type": "integer",
+            "title": "Taxon Id"
           },
-          "colour_known": {
-            "title": "Colour Known",
-            "type": "boolean"
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
           },
           "family": {
             "anyOf": [
@@ -779,30 +1889,16 @@
             ],
             "title": "Family"
           },
-          "fit": {
-            "$ref": "#/components/schemas/FitOut"
-          },
-          "flower_colour": {
+          "height_max_m": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "number"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Flower Colour"
-          },
-          "flowering_end_month": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Flowering End Month"
+            "title": "Height Max M"
           },
           "flowering_start_month": {
             "anyOf": [
@@ -815,22 +1911,37 @@
             ],
             "title": "Flowering Start Month"
           },
-          "height_max_m": {
+          "flowering_end_month": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Height Max M"
+            "title": "Flowering End Month"
           },
-          "taxon_id": {
-            "title": "Taxon Id",
-            "type": "integer"
+          "flower_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flower Colour"
+          },
+          "colour_known": {
+            "type": "boolean",
+            "title": "Colour Known"
+          },
+          "fit": {
+            "$ref": "#/components/schemas/FitOut"
           }
         },
+        "type": "object",
         "required": [
           "taxon_id",
           "canonical_name",
@@ -842,53 +1953,53 @@
           "colour_known",
           "fit"
         ],
-        "title": "PlantSummary",
-        "type": "object"
+        "title": "PlantSummary"
       },
       "PlantingCreate": {
         "properties": {
+          "taxon_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Taxon Id"
+          },
           "quantity": {
-            "default": 1,
+            "type": "integer",
             "maximum": 10000.0,
             "minimum": 1.0,
             "title": "Quantity",
-            "type": "integer"
-          },
-          "taxon_id": {
-            "exclusiveMinimum": 0.0,
-            "title": "Taxon Id",
-            "type": "integer"
+            "default": 1
           }
         },
+        "type": "object",
         "required": [
           "taxon_id"
         ],
-        "title": "PlantingCreate",
-        "type": "object"
+        "title": "PlantingCreate"
       },
       "PlantingOut": {
         "properties": {
-          "added_at": {
-            "title": "Added At",
-            "type": "string"
-          },
-          "canonical_name": {
-            "title": "Canonical Name",
-            "type": "string"
-          },
           "planting_id": {
-            "title": "Planting Id",
-            "type": "integer"
-          },
-          "quantity": {
-            "title": "Quantity",
-            "type": "integer"
+            "type": "integer",
+            "title": "Planting Id"
           },
           "taxon_id": {
-            "title": "Taxon Id",
-            "type": "integer"
+            "type": "integer",
+            "title": "Taxon Id"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "added_at": {
+            "type": "string",
+            "title": "Added At"
           }
         },
+        "type": "object",
         "required": [
           "planting_id",
           "taxon_id",
@@ -896,50 +2007,49 @@
           "quantity",
           "added_at"
         ],
-        "title": "PlantingOut",
-        "type": "object"
+        "title": "PlantingOut"
       },
       "ScoreOut": {
-        "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves.",
         "properties": {
-          "by_group": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "title": "By Group",
-            "type": "object"
+          "score": {
+            "type": "number",
+            "title": "Score"
           },
           "by_month": {
             "additionalProperties": {
               "type": "number"
             },
-            "title": "By Month",
-            "type": "object"
+            "type": "object",
+            "title": "By Month"
           },
           "by_species": {
             "items": {
               "$ref": "#/components/schemas/SpeciesContributionOut"
             },
-            "title": "By Species",
-            "type": "array"
+            "type": "array",
+            "title": "By Species"
           },
-          "is_empty": {
-            "title": "Is Empty",
-            "type": "boolean"
+          "by_group": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Group"
           },
           "plantings_total": {
-            "title": "Plantings Total",
-            "type": "integer"
+            "type": "integer",
+            "title": "Plantings Total"
           },
           "plantings_without_interaction_data": {
-            "title": "Plantings Without Interaction Data",
-            "type": "integer"
+            "type": "integer",
+            "title": "Plantings Without Interaction Data"
           },
-          "score": {
-            "title": "Score",
-            "type": "number"
+          "is_empty": {
+            "type": "boolean",
+            "title": "Is Empty"
           }
         },
+        "type": "object",
         "required": [
           "score",
           "by_month",
@@ -950,17 +2060,17 @@
           "is_empty"
         ],
         "title": "ScoreOut",
-        "type": "object"
+        "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves."
       },
       "SpeciesContributionOut": {
         "properties": {
-          "canonical_name": {
-            "title": "Canonical Name",
-            "type": "string"
+          "taxon_id": {
+            "type": "integer",
+            "title": "Taxon Id"
           },
-          "forage": {
-            "title": "Forage",
-            "type": "number"
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
           },
           "german_partners": {
             "anyOf": [
@@ -973,22 +2083,23 @@
             ],
             "title": "German Partners"
           },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "forage": {
+            "type": "number",
+            "title": "Forage"
+          },
           "months": {
             "items": {
               "type": "integer"
             },
-            "title": "Months",
-            "type": "array"
-          },
-          "origin": {
-            "title": "Origin",
-            "type": "string"
-          },
-          "taxon_id": {
-            "title": "Taxon Id",
-            "type": "integer"
+            "type": "array",
+            "title": "Months"
           }
         },
+        "type": "object",
         "required": [
           "taxon_id",
           "canonical_name",
@@ -997,27 +2108,17 @@
           "forage",
           "months"
         ],
-        "title": "SpeciesContributionOut",
-        "type": "object"
+        "title": "SpeciesContributionOut"
       },
       "SpeciesInfoOut": {
-        "description": "A description and photo. `licence` and `page_url` are conditions of use,\nnot decoration \u2014 the UI may not show the extract without them.",
         "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
           "extract": {
-            "title": "Extract",
-            "type": "string"
-          },
-          "language": {
-            "title": "Language",
-            "type": "string"
-          },
-          "licence": {
-            "title": "Licence",
-            "type": "string"
-          },
-          "page_url": {
-            "title": "Page Url",
-            "type": "string"
+            "type": "string",
+            "title": "Extract"
           },
           "thumbnail_url": {
             "anyOf": [
@@ -1030,11 +2131,20 @@
             ],
             "title": "Thumbnail Url"
           },
-          "title": {
-            "title": "Title",
-            "type": "string"
+          "page_url": {
+            "type": "string",
+            "title": "Page Url"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "licence": {
+            "type": "string",
+            "title": "Licence"
           }
         },
+        "type": "object",
         "required": [
           "title",
           "extract",
@@ -1044,42 +2154,42 @@
           "licence"
         ],
         "title": "SpeciesInfoOut",
-        "type": "object"
+        "description": "A description and photo. `licence` and `page_url` are conditions of use,\nnot decoration \u2014 the UI may not show the extract without them."
       },
       "TimelineOut": {
-        "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic.",
         "properties": {
-          "gaps": {
-            "items": {
-              "$ref": "#/components/schemas/GapOut"
-            },
-            "title": "Gaps",
-            "type": "array"
-          },
-          "is_empty": {
-            "title": "Is Empty",
-            "type": "boolean"
-          },
           "mode": {
-            "title": "Mode",
-            "type": "string"
+            "type": "string",
+            "title": "Mode"
           },
           "months": {
             "items": {
               "$ref": "#/components/schemas/MonthOut"
             },
-            "title": "Months",
-            "type": "array"
+            "type": "array",
+            "title": "Months"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapOut"
+            },
+            "type": "array",
+            "title": "Gaps"
           },
           "plantings_total": {
-            "title": "Plantings Total",
-            "type": "integer"
+            "type": "integer",
+            "title": "Plantings Total"
           },
           "plantings_without_interaction_data": {
-            "title": "Plantings Without Interaction Data",
-            "type": "integer"
+            "type": "integer",
+            "title": "Plantings Without Interaction Data"
+          },
+          "is_empty": {
+            "type": "boolean",
+            "title": "Is Empty"
           }
         },
+        "type": "object",
         "required": [
           "mode",
           "months",
@@ -1089,37 +2199,10 @@
           "is_empty"
         ],
         "title": "TimelineOut",
-        "type": "object"
+        "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic."
       },
       "TraitOut": {
         "properties": {
-          "alternatives": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Alternatives",
-            "type": "array"
-          },
-          "license": {
-            "title": "License",
-            "type": "string"
-          },
-          "source": {
-            "title": "Source",
-            "type": "string"
-          },
-          "unit": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Unit"
-          },
           "value": {
             "anyOf": [
               {
@@ -1133,25 +2216,45 @@
               }
             ],
             "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "license": {
+            "type": "string",
+            "title": "License"
+          },
+          "alternatives": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Alternatives"
           }
         },
+        "type": "object",
         "required": [
           "value",
           "source",
           "license"
         ],
-        "title": "TraitOut",
-        "type": "object"
+        "title": "TraitOut"
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -1163,978 +2266,32 @@
                 }
               ]
             },
-            "title": "Location",
-            "type": "array"
+            "type": "array",
+            "title": "Location"
           },
           "msg": {
-            "title": "Message",
-            "type": "string"
+            "type": "string",
+            "title": "Message"
           },
           "type": {
-            "title": "Error Type",
-            "type": "string"
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
+        "type": "object",
         "required": [
           "loc",
           "msg",
           "type"
         ],
-        "title": "ValidationError",
-        "type": "object"
-      }
-    }
-  },
-  "info": {
-    "title": "NinaNatur",
-    "version": "V0.5.9"
-  },
-  "openapi": "3.1.0",
-  "paths": {
-    "/api/v1/gardens": {
-      "post": {
-        "description": "Create a garden. The token comes back here and is the only way back in.",
-        "operationId": "create_api_v1_gardens_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GardenCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenCreated"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create",
-        "tags": [
-          "gardens"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}": {
-      "delete": {
-        "operationId": "remove_api_v1_gardens__token__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Remove",
-        "tags": [
-          "gardens"
-        ]
-      },
-      "get": {
-        "operationId": "read_api_v1_gardens__token__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Read",
-        "tags": [
-          "gardens"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/beds": {
-      "post": {
-        "description": "Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\n`add_bed` computes the light itself, so the invariant does not depend on which\nentry point created the bed \u2014 it used to live here, and a bed made through the\nstore had no light at all.",
-        "operationId": "create_bed_api_v1_gardens__token__beds_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BedCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Bed",
-        "tags": [
-          "gardens"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
-      "post": {
-        "description": "Put a species in a bed. An unknown taxon raises ValueError -> 422.",
-        "operationId": "create_planting_api_v1_gardens__token__beds__bed_id__plantings_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "bed_id",
-            "required": true,
-            "schema": {
-              "title": "Bed Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlantingCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Planting",
-        "tags": [
-          "planning"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
-      "get": {
-        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.",
-        "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "bed_id",
-            "required": true,
-            "schema": {
-              "title": "Bed Id",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 20,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "colour",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Colour"
-            }
-          },
-          {
-            "in": "query",
-            "name": "include_trees",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Include Trees",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
-            "name": "include_introduced",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Include Introduced",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
-            "name": "exclude_planted",
-            "required": false,
-            "schema": {
-              "default": true,
-              "title": "Exclude Planted",
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BedSuggestions"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Bed Suggestions",
-        "tags": [
-          "planning"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/improvements": {
-      "get": {
-        "description": "What to plant, and what it would gain.\n\nAdditions come first because they are the safer advice: a swap removes\nsomething, and the score will recommend removing a valuable plant whose month\nis already saturated. See the known issue in 19-swap-suggestions.",
-        "operationId": "improvements_api_v1_gardens__token__improvements_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImprovementsOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Improvements",
-        "tags": [
-          "planning"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/obstacles": {
-      "post": {
-        "description": "Add an obstacle and recompute in the same call.\n\nRequiring a second request would leave the plan showing light values that no\nlonger match its own obstacles \u2014 and nothing would make that visible.",
-        "operationId": "create_obstacle_api_v1_gardens__token__obstacles_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ObstacleCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Obstacle",
-        "tags": [
-          "gardens"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/plantings/{planting_id}": {
-      "delete": {
-        "description": "Remove a planting. Reached through its garden, never by a bare id.",
-        "operationId": "delete_planting_api_v1_gardens__token__plantings__planting_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "planting_id",
-            "required": true,
-            "schema": {
-              "title": "Planting Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Delete Planting",
-        "tags": [
-          "planning"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/recompute": {
-      "post": {
-        "operationId": "recompute_api_v1_gardens__token__recompute_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GardenOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Recompute",
-        "tags": [
-          "gardens"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/score": {
-      "get": {
-        "description": "What this planting is worth to insects, with its components.",
-        "operationId": "score_api_v1_gardens__token__score_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScoreOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Score",
-        "tags": [
-          "planning"
-        ]
-      }
-    },
-    "/api/v1/gardens/{token}/timeline": {
-      "get": {
-        "description": "The garden's bloom year, month by month, with gaps marked.\n\n`forage=true` (the default) weights each flowering planting by its counted\nGerman insect partners, so a month of nectarless cultivars is correctly a\ngap. `forage=false` counts every planting equally, for planning by looks.",
-        "operationId": "timeline_api_v1_gardens__token__timeline_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "forage",
-            "required": false,
-            "schema": {
-              "default": true,
-              "title": "Forage",
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TimelineOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Timeline",
-        "tags": [
-          "planning"
-        ]
-      }
-    },
-    "/api/v1/plants": {
-      "get": {
-        "description": "Species ranked by how well they fit the given site conditions.",
-        "operationId": "search_plants_api_v1_plants_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "light",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Light"
-            }
-          },
-          {
-            "in": "query",
-            "name": "moisture",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Moisture"
-            }
-          },
-          {
-            "in": "query",
-            "name": "nutrients",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Nutrients"
-            }
-          },
-          {
-            "in": "query",
-            "name": "reaction",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Reaction"
-            }
-          },
-          {
-            "in": "query",
-            "name": "temperature",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Temperature"
-            }
-          },
-          {
-            "in": "query",
-            "name": "height_min",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Height Min"
-            }
-          },
-          {
-            "in": "query",
-            "name": "height_max",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Height Max"
-            }
-          },
-          {
-            "in": "query",
-            "name": "flowering_month",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 12,
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Flowering Month"
-            }
-          },
-          {
-            "in": "query",
-            "name": "colour",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Colour"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 200,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlantSearchResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Search Plants",
-        "tags": [
-          "plants"
-        ]
-      }
-    },
-    "/api/v1/plants/{taxon_id}": {
-      "get": {
-        "description": "One species, every trait with the source behind it.",
-        "operationId": "plant_detail_api_v1_plants__taxon_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "taxon_id",
-            "required": true,
-            "schema": {
-              "title": "Taxon Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlantDetail"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Plant Detail",
-        "tags": [
-          "plants"
-        ]
-      }
-    },
-    "/api/v1/plants/{taxon_id}/info": {
-      "get": {
-        "description": "A description and photograph, from Wikipedia, cached on this deployment.\n\n404 when no article exists in either language \u2014 an honest absence rather than\nan empty panel that looks like a loading failure.",
-        "operationId": "plant_info_api_v1_plants__taxon_id__info_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "taxon_id",
-            "required": true,
-            "schema": {
-              "title": "Taxon Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SpeciesInfoOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Plant Info",
-        "tags": [
-          "plants"
-        ]
-      }
-    },
-    "/healthz": {
-      "get": {
-        "description": "Liveness probe for the deploy cron and the reverse proxy.\n\nDeliberately dependency-free: it must answer while the app is otherwise\nbroken, or a failing deploy looks identical to a failing database.",
-        "operationId": "healthz_healthz_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Healthz"
+        "title": "ValidationError"
       }
     }
   }

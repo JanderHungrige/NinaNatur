@@ -40,6 +40,16 @@ type FetchLike = typeof globalThis.fetch;
  * a form has undefined values in hand, and forcing them to strip the keys first
  * would push that chore onto every call site.
  */
+/** What the user asked the catalogue for. Every field is removable in the UI. */
+export interface SuggestionFilters {
+  colour?: string | undefined;
+  heightMax?: number | undefined;
+  floweringMonth?: number | undefined;
+  growthForm?: string | undefined;
+  includeUnknown?: boolean | undefined;
+  includeTrees?: boolean | undefined;
+}
+
 export interface PlantQuery {
   light?: number | undefined;
   moisture?: number | undefined;
@@ -170,11 +180,24 @@ export class NinaNaturClient {
   async bedSuggestions(
     token: string,
     bedId: number,
-    options: { limit?: number; includeTrees?: boolean } = {},
+    options: { limit?: number } & SuggestionFilters = {},
   ): Promise<BedSuggestions> {
     const params = new URLSearchParams({ limit: String(options.limit ?? 20) });
-    if (options.includeTrees === true) {
-      params.set('include_trees', 'true');
+    // Only what the user actually chose is sent. An omitted filter and a filter
+    // left at its default are the same request, so the server's defaults stay
+    // the single source of truth and the URL says what was asked.
+    const chosen: Array<[string, string | number | boolean | undefined]> = [
+      ['colour', options.colour],
+      ['height_max', options.heightMax],
+      ['flowering_month', options.floweringMonth],
+      ['growth_form', options.growthForm],
+      ['include_unknown', options.includeUnknown === true ? true : undefined],
+      ['include_trees', options.includeTrees === true ? true : undefined],
+    ];
+    for (const [key, value] of chosen) {
+      if (value !== undefined && value !== '') {
+        params.set(key, String(value));
+      }
     }
     return this.request<BedSuggestions>(
       `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/suggestions?${params.toString()}`,

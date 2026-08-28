@@ -13,7 +13,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     AxisFitOut,
+    FilterCountsOut,
     FitOut,
+    GrowthForm,
     PartnersOut,
     PlantDetail,
     PlantSearchResponse,
@@ -79,6 +81,8 @@ def search_plants(
     height_min: Annotated[float | None, Query(ge=0)] = None,
     height_max: Annotated[float | None, Query(ge=0)] = None,
     flowering_month: Annotated[int | None, Query(ge=1, le=12)] = None,
+    growth_form: GrowthForm | None = None,
+    include_unknown: bool = False,
     colour: str | None = None,
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -100,19 +104,25 @@ def search_plants(
             "(light, moisture, nutrients, reaction, temperature)"
         )
 
-    scored = rank_plants(
+    ranked = rank_plants(
         load_candidates(conn),
         SiteVector(values=axes),
-        SearchFilters(height_min=height_min, height_max=height_max,
-                      flowering_month=flowering_month),
+        SearchFilters(
+            height_min=height_min,
+            height_max=height_max,
+            flowering_month=flowering_month,
+            growth_form=growth_form,
+            include_unknown=include_unknown,
+        ),
         colour=colour,
     )
-    page = scored[offset : offset + limit]
+    page = ranked.items[offset : offset + limit]
     return PlantSearchResponse(
-        total=len(scored),
+        total=len(ranked.items),
         limit=limit,
         offset=offset,
         items=[to_summary(s) for s in page],
+        filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
     )
 
 

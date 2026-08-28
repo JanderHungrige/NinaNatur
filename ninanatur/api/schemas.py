@@ -6,6 +6,8 @@ is partly unknown.
 """
 from __future__ import annotations
 
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 
@@ -45,11 +47,41 @@ class PlantSummary(BaseModel):
     fit: FitOut
 
 
+class GrowthForm(StrEnum):
+    """The growth forms the catalogue actually records.
+
+    A closed set rather than a free string. The value never reaches SQL, but an
+    unbounded parameter that silently matches nothing is its own kind of lie —
+    the user cannot tell a typo from an empty catalogue.
+    """
+
+    forb = "forb"
+    herb = "herb"
+    graminoid = "graminoid"
+    shrub = "shrub"
+    subshrub = "subshrub"
+    tree = "tree"
+
+
+class FilterCountsOut(BaseModel):
+    """How one active filter divided the candidate set.
+
+    Reported so the UI can say what was left out. `unknown` is not a rounding
+    error: height is recorded for 44% of German species and colour for 6.6%, and
+    a filter that hides that is indistinguishable from one that is broken.
+    """
+
+    matched: int
+    unknown: int
+    excluded: int
+
+
 class PlantSearchResponse(BaseModel):
     total: int
     limit: int
     offset: int
     items: list[PlantSummary]
+    filters: dict[str, FilterCountsOut] = {}
 
 
 class BedSuggestions(BaseModel):
@@ -61,6 +93,7 @@ class BedSuggestions(BaseModel):
     site_axes: dict[str, float]
     total: int
     items: list[PlantSummary]
+    filters: dict[str, FilterCountsOut] = {}
 
 
 class MonthOut(BaseModel):
