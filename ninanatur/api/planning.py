@@ -77,6 +77,7 @@ def bed_suggestions(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     colour: str | None = None,
     include_trees: bool = False,
+    include_introduced: bool = False,
     exclude_planted: bool = True,
 ) -> BedSuggestions:
     """Species that suit this bed, ranked by fit against its own site vector.
@@ -84,7 +85,8 @@ def bed_suggestions(
     The bed's derived axes are the query, so the user never types an Ellenberg
     number. Trees and shrubs are excluded by default: a bed is a few square
     metres, and a hemlock that fits the light perfectly is still a useless
-    suggestion.
+    suggestion. Introduced species are excluded for a different reason: the
+    product promises native plants, and a third of the catalogue is not.
     """
     garden = require_garden(conn, token)
     bed = require_bed(garden, bed_id)
@@ -100,7 +102,11 @@ def bed_suggestions(
     scored = rank_plants(
         load_candidates(conn),
         SiteVector(values=axes),
-        SearchFilters(exclude_woody=not include_trees, exclude_taxa=planted),
+        SearchFilters(
+            exclude_woody=not include_trees,
+            exclude_introduced=not include_introduced,
+            exclude_taxa=planted,
+        ),
         colour=colour,
     )
     return BedSuggestions(

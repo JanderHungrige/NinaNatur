@@ -4,7 +4,7 @@ title: Native or Introduced in Germany
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-5
-wave_status: active
+wave_status: complete
 depends_on: [01-trait-ingest]
 relates: [13-bed-suggestions, 18-insect-score]
 source_files:
@@ -19,8 +19,8 @@ models:
   - trait
 data_flow: mixed
 last_synced: 2026-08-28
-status: draft
-phase: "1"
+status: complete
+phase: all
 mdd_version: 11
 tags: [nativeness, gbif, wcvp, establishment, suggestions]
 path: Data/Nativeness
@@ -108,6 +108,20 @@ was trusted:
 |---|---|---|
 | Achillea millefolium, Salix caprea, Quercus robur, Primula veris | native | native |
 | Vitis riparia, Impatiens glandulifera, Tsuga canadensis, Solidago canadensis | introduced | introduced |
+
+## What the full ingest found
+
+Across the 3,087 species the app can actually suggest:
+
+| | count |
+|---|---:|
+| native | 1,755 |
+| **introduced** | **1,071** |
+| unknown | 261 |
+
+**A third of everything the product has been calling "heimisch" is not.** Native
+became the default filter, taking a dry sunny bed from 3,734 candidates to 2,549
+and dropping *Trifolium striatum* out of the top four.
 
 ## Bugs
 

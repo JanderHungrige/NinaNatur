@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-4
 demo_state: "A planting shows an insect score built on counted German relations, and suggested swaps that measurably raise it — each explained in a sentence"
 created: 2026-08-27
-hash: 17d1c7b8
+hash: 302ceb68
 ---
 
 # Wave 5 — What the planting is worth to insects
@@ -40,8 +40,8 @@ Both are obtainable, verified before planning rather than assumed:
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | nativeness | 16-nativeness | planned | — |
-| 2 | insect-groups | 17-insect-groups | planned | — |
+| 1 | nativeness | .mdd/docs/16-nativeness.md | complete | — |
+| 2 | insect-groups | .mdd/docs/17-insect-groups.md | complete | — |
 | 3 | insect-score | 18-insect-score | planned | 16, 17 |
 | 4 | swap-suggestions | 19-swap-suggestions | planned | 18 |
 | 5 | score-ui | 20-score-ui | planned | 19 |

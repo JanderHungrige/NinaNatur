@@ -4,7 +4,7 @@ title: Which Insects Are Which
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-5
-wave_status: active
+wave_status: complete
 depends_on: [05-insect-checklist-de]
 relates: [18-insect-score]
 source_files:
@@ -20,8 +20,8 @@ models:
   - partner_summary
 data_flow: mixed
 last_synced: 2026-08-28
-status: draft
-phase: "1"
+status: complete
+phase: all
 mdd_version: 11
 tags: [insects, bees, lepidoptera, syrphidae, gbif, groups]
 path: Data/Insects
