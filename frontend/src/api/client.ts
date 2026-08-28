@@ -13,6 +13,9 @@ export type GardenCreated = components['schemas']['GardenCreated'];
 export type BedOut = components['schemas']['BedOut'];
 export type PlantSearchResponse = components['schemas']['PlantSearchResponse'];
 export type PlantSummary = components['schemas']['PlantSummary'];
+export type TimelineOut = components['schemas']['TimelineOut'];
+export type BedSuggestions = components['schemas']['BedSuggestions'];
+export type MonthOut = components['schemas']['MonthOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -144,6 +147,40 @@ export class NinaNaturClient {
     await this.request<void>(`/api/v1/gardens/${encodeURIComponent(token)}`, {
       method: 'DELETE',
     });
+  }
+
+  /** Suggestions for one bed, ranked against its own conditions. */
+  async bedSuggestions(
+    token: string,
+    bedId: number,
+    options: { limit?: number; includeTrees?: boolean } = {},
+  ): Promise<BedSuggestions> {
+    const params = new URLSearchParams({ limit: String(options.limit ?? 20) });
+    if (options.includeTrees === true) {
+      params.set('include_trees', 'true');
+    }
+    return this.request<BedSuggestions>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/suggestions?${params.toString()}`,
+    );
+  }
+
+  async plant(
+    token: string,
+    bedId: number,
+    taxonId: number,
+    quantity = 1,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/plantings`,
+      { method: 'POST', body: JSON.stringify({ taxon_id: taxonId, quantity }) },
+    );
+  }
+
+  /** The bloom year. `forage` weights by insect partners; false counts blooms. */
+  async timeline(token: string, forage = true): Promise<TimelineOut> {
+    return this.request<TimelineOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/timeline?forage=${String(forage)}`,
+    );
   }
 
   /** Plant suggestions for a bed's site axes. */

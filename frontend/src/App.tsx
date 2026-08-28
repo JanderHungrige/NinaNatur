@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { GardenOut } from './api/client';
+import type { BedSuggestions, GardenOut, TimelineOut } from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
+import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
 import { NewGardenForm } from './components/NewGardenForm';
+import { SuggestionList } from './components/SuggestionList';
 
 const client = new NinaNaturClient();
 
@@ -23,14 +25,18 @@ export function App() {
   const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [timeline, setTimeline] = useState<TimelineOut | null>(null);
+  const [suggestions, setSuggestions] = useState<BedSuggestions | null>(null);
+  const [forage, setForage] = useState(true);
 
-  const load = useCallback(async (token: string) => {
+  const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
     if (found === null) {
       setStatus('Dieser Link gehört zu keinem Garten (mehr).');
       return;
     }
     setGarden(found);
+    setTimeline(await client.timeline(token, weighted));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -53,6 +59,50 @@ export function App() {
     }
   }, []);
 
+  /** Selecting a bed fetches its suggestions — the bed's own conditions are the query. */
+  const selectBed = useCallback(
+    (bedId: number) => {
+      setSelectedBedId(bedId);
+      if (garden === null) return;
+      void run('Vorschläge laden', async () => {
+        setSuggestions(await client.bedSuggestions(garden.share_token, bedId));
+      });
+    },
+    [garden, run],
+  );
+
+  const plant = useCallback(
+    async (taxonId: number, name: string) => {
+      if (garden === null || selectedBedId === null) return;
+      await run('Pflanzen', async () => {
+        // Re-read from the server: the timeline depends on data only it has.
+        const updated = await client.plant(garden.share_token, selectedBedId, taxonId);
+        setGarden(updated);
+        setTimeline(await client.timeline(garden.share_token, forage));
+        setSuggestions(await client.bedSuggestions(garden.share_token, selectedBedId));
+        setStatus(`${name} gepflanzt.`);
+      });
+    },
+    [garden, selectedBedId, forage, run],
+  );
+
+  const toggleForage = useCallback(
+    (weighted: boolean) => {
+      setForage(weighted);
+      if (garden === null) return;
+      void run('Gewichtung wechseln', async () => {
+        const next = await client.timeline(garden.share_token, weighted);
+        setTimeline(next);
+        setStatus(
+          next.gaps.length === 0
+            ? 'Keine Lücke zwischen März und Oktober.'
+            : `${next.gaps.length} Lücke(n) in dieser Ansicht.`,
+        );
+      });
+    },
+    [garden, run],
+  );
+
   const createGarden = useCallback(
     async (input: { name: string; latitude: number; longitude: number }) => {
       await run('Anlegen', async () => {
@@ -73,10 +123,11 @@ export function App() {
         // data does not support.
         const updated = await client.addBed(garden.share_token, bed);
         setGarden(updated);
+        setTimeline(await client.timeline(garden.share_token, forage));
         setStatus(`Beet ${bed.name} hinzugefügt.`);
       });
     },
-    [garden, run],
+    [garden, forage, run],
   );
 
   const addObstacle = useCallback(
@@ -101,7 +152,7 @@ export function App() {
         <span className="brand">
           <span className="brand__name">NinaNatur</span>
         </span>
-        <span className="badge">Wave&nbsp;3</span>
+        <span className="badge">Wave&nbsp;4</span>
       </header>
 
       <main id="main" className="layout">
@@ -109,19 +160,32 @@ export function App() {
           <NewGardenForm onCreate={createGarden} busy={busy} />
         ) : (
           <>
-            <BedPanel
-              garden={garden}
-              selectedBedId={selectedBedId}
-              onSelectBed={setSelectedBedId}
-              onAddBed={addBed}
-              onAddObstacle={addObstacle}
-              busy={busy}
-            />
-            <GardenCanvas
-              garden={garden}
-              selectedBedId={selectedBedId}
-              onSelectBed={setSelectedBedId}
-            />
+            <div className="column">
+              <BedPanel
+                garden={garden}
+                selectedBedId={selectedBedId}
+                onSelectBed={selectBed}
+                onAddBed={addBed}
+                onAddObstacle={addObstacle}
+                busy={busy}
+              />
+              <SuggestionList suggestions={suggestions} onPlant={plant} busy={busy} />
+            </div>
+            <div className="column">
+              <GardenCanvas
+                garden={garden}
+                selectedBedId={selectedBedId}
+                onSelectBed={selectBed}
+              />
+              {timeline !== null ? (
+                <BloomTimeline
+                  timeline={timeline}
+                  forage={forage}
+                  onToggleForage={toggleForage}
+                  busy={busy}
+                />
+              ) : null}
+            </div>
           </>
         )}
       </main>

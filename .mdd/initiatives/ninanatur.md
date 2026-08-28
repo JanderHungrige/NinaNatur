@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 7
-hash: e8a82a28
+version: 8
+hash: 890ac597
 created: 2026-08-27
 ---
 
@@ -140,6 +140,6 @@ sun-hour derivation in Wave 3, nursery partners in Wave 6.
 | Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute | complete |
 | Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions" from the ingested open data, every value citing its source | complete |
 | Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path | complete |
-| Wave 4 | waves/ninanatur-wave-4.md | A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked | planned |
+| Wave 4 | waves/ninanatur-wave-4.md | A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked | complete |
 | Wave 5 | waves/ninanatur-wave-5.md | A planting shows an insect score and concrete swaps that measurably raise it | planned |
 | Wave 6 | waves/ninanatur-wave-6.md | A finished plan turns into a shopping list split across as few nurseries as possible | planned |

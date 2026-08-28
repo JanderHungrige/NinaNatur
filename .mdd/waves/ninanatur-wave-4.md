@@ -3,11 +3,11 @@ id: ninanatur-wave-4
 title: "Wave 4: Plantings and the bloom year"
 initiative: ninanatur
 initiative_version: 6
-status: planned
+status: complete
 depends_on: ninanatur-wave-3
 demo_state: "A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked and explained"
 created: 2026-08-27
-hash: d32d8f4f
+hash: 77054cc6
 ---
 
 # Wave 4 — Plantings and the bloom year
@@ -32,7 +32,7 @@ could be drawn from. That is the first feature, not an afterthought.
 | 1 | planting-model | .mdd/docs/12-planting-model.md | complete | — |
 | 2 | bed-suggestions | .mdd/docs/13-bed-suggestions.md | complete | 12 |
 | 3 | bloom-timeline | .mdd/docs/14-bloom-timeline.md | complete | 12 |
-| 4 | timeline-ui | 15-timeline-ui | planned | 13, 14 |
+| 4 | timeline-ui | .mdd/docs/15-timeline-ui.md | complete | 13, 14 |
 
 ### 1 — planting-model
 

@@ -4,23 +4,6 @@
  */
 
 export interface paths {
-    "/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Index */
-        get: operations["index__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/gardens": {
         parameters: {
             query?: never;
@@ -70,10 +53,62 @@ export interface paths {
         put?: never;
         /**
          * Create Bed
-         * @description Add a bed. PolygonError, SoilTypeError and MoistureError all subclass
-         *     ValueError, so they surface as 422 with their reason rather than as a 500.
+         * @description Add a bed and compute its light immediately.
+         *
+         *     PolygonError, SoilTypeError and MoistureError all subclass ValueError, so they
+         *     surface as 422 with their reason rather than as a 500.
+         *
+         *     The recompute is not optional. Only adding an *obstacle* used to trigger it, so
+         *     a garden with no obstacles left every bed on "not yet computed" forever — and
+         *     suggestions for such a bed were then scored on soil alone, which is both worse
+         *     and silently so.
          */
         post: operations["create_bed_api_v1_gardens__token__beds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Planting
+         * @description Put a species in a bed. An unknown taxon raises ValueError -> 422.
+         */
+        post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bed Suggestions
+         * @description Species that suit this bed, ranked by fit against its own site vector.
+         *
+         *     The bed's derived axes are the query, so the user never types an Ellenberg
+         *     number. Trees and shrubs are excluded by default: a bed is a few square
+         *     metres, and a hemlock that fits the light perfectly is still a useless
+         *     suggestion.
+         */
+        get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -103,6 +138,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/plantings/{planting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Planting
+         * @description Remove a planting. Reached through its garden, never by a bare id.
+         */
+        delete: operations["delete_planting_api_v1_gardens__token__plantings__planting_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/recompute": {
         parameters: {
             query?: never;
@@ -114,6 +169,30 @@ export interface paths {
         put?: never;
         /** Recompute */
         post: operations["recompute_api_v1_gardens__token__recompute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Timeline
+         * @description The garden's bloom year, month by month, with gaps marked.
+         *
+         *     `forage=true` (the default) weights each flowering planting by its counted
+         *     German insect partners, so a month of nectarless cultivars is correctly a
+         *     gap. `forage=false` counts every planting equally, for planning by looks.
+         */
+        get: operations["timeline_api_v1_gardens__token__timeline_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -234,12 +313,33 @@ export interface components {
             moisture: string | null;
             /** Name */
             name: string;
+            /** Plantings */
+            plantings: components["schemas"]["PlantingOut"][];
             /** Polygon */
             polygon: number[][];
             /** Soil Type */
             soil_type: string | null;
             /** Sun Hours */
             sun_hours: number | null;
+        };
+        /**
+         * BedSuggestions
+         * @description Suggestions for one bed, with the site vector they were ranked against —
+         *     so the UI can say what it matched on rather than showing a bare list.
+         */
+        BedSuggestions: {
+            /** Bed Id */
+            bed_id: number;
+            /** Bed Name */
+            bed_name: string;
+            /** Items */
+            items: components["schemas"]["PlantSummary"][];
+            /** Site Axes */
+            site_axes: {
+                [key: string]: number;
+            };
+            /** Total */
+            total: number;
         };
         /** FitOut */
         FitOut: {
@@ -249,6 +349,13 @@ export interface components {
             };
             /** Score */
             score: number;
+        };
+        /** GapOut */
+        GapOut: {
+            /** Length */
+            length: number;
+            /** Months */
+            months: number[];
         };
         /**
          * GardenCreate
@@ -296,6 +403,15 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** MonthOut */
+        MonthOut: {
+            /** Coverage */
+            coverage: number;
+            /** Month */
+            month: number;
+            /** Species */
+            species: string[];
         };
         /** ObstacleCreate */
         ObstacleCreate: {
@@ -387,6 +503,48 @@ export interface components {
             /** Taxon Id */
             taxon_id: number;
         };
+        /** PlantingCreate */
+        PlantingCreate: {
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Taxon Id */
+            taxon_id: number;
+        };
+        /** PlantingOut */
+        PlantingOut: {
+            /** Added At */
+            added_at: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Planting Id */
+            planting_id: number;
+            /** Quantity */
+            quantity: number;
+            /** Taxon Id */
+            taxon_id: number;
+        };
+        /**
+         * TimelineOut
+         * @description The bloom year. `plantings_without_interaction_data` is reported so a
+         *     timeline built mostly on unknowns is visible rather than merely optimistic.
+         */
+        TimelineOut: {
+            /** Gaps */
+            gaps: components["schemas"]["GapOut"][];
+            /** Is Empty */
+            is_empty: boolean;
+            /** Mode */
+            mode: string;
+            /** Months */
+            months: components["schemas"]["MonthOut"][];
+            /** Plantings Total */
+            plantings_total: number;
+            /** Plantings Without Interaction Data */
+            plantings_without_interaction_data: number;
+        };
         /** TraitOut */
         TraitOut: {
             /** Alternatives */
@@ -424,26 +582,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    index__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
     create_api_v1_gardens_post: {
         parameters: {
             query?: never;
@@ -572,6 +710,79 @@ export interface operations {
             };
         };
     };
+    create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlantingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                colour?: string | null;
+                include_trees?: boolean;
+                exclude_planted?: boolean;
+            };
+            header?: never;
+            path: {
+                token: string;
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BedSuggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_obstacle_api_v1_gardens__token__obstacles_post: {
         parameters: {
             query?: never;
@@ -589,6 +800,38 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_planting_api_v1_gardens__token__plantings__planting_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                planting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -625,6 +868,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    timeline_api_v1_gardens__token__timeline_get: {
+        parameters: {
+            query?: {
+                forage?: boolean;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelineOut"];
                 };
             };
             /** @description Validation Error */

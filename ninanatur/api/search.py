@@ -56,6 +56,11 @@ class ScoredPlant:
 # fits its light and moisture perfectly and is still a useless suggestion.
 WOODY_FORMS: frozenset[str] = frozenset({"tree", "shrub"})
 
+# Above this a plant is not going in a flower bed whatever its recorded form.
+# Used as a second signal because growth form is missing for part of the
+# catalogue — 25 German candidates are this tall with no form recorded.
+WOODY_HEIGHT_M = 3.0
+
 
 @dataclass(frozen=True)
 class SearchFilters:
@@ -116,12 +121,8 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
 def _passes(plant: PlantRow, filters: SearchFilters) -> bool:
     if plant.taxon_id in filters.exclude_taxa:
         return False
-    if filters.exclude_woody:
-        form = plant.text("growth_form")
-        # An unrecorded growth form is kept: absent data is not a property of the
-        # plant, the same rule that keeps flower colour a soft filter.
-        if form is not None and form.lower() in WOODY_FORMS:
-            return False
+    if filters.exclude_woody and _is_woody(plant):
+        return False
     height = plant.number("height_max_m")
     if filters.height_min is not None and (height is None or height < filters.height_min):
         return False
@@ -133,6 +134,23 @@ def _passes(plant: PlantRow, filters: SearchFilters) -> bool:
         if start is None or end is None or not start <= filters.flowering_month <= end:
             return False
     return True
+
+
+def _is_woody(plant: PlantRow) -> bool:
+    """Whether this is a tree or shrub, from whichever signal the data has.
+
+    Three sources because no single one covers the catalogue: growth form is the
+    most direct, woodiness is by far the best covered, and height catches what
+    neither records. A species with none of the three is kept — absent data is
+    not a property of the plant, the rule that also keeps flower colour soft.
+    """
+    form = plant.text("growth_form")
+    if form is not None and form.lower() in WOODY_FORMS:
+        return True
+    if (plant.text("woodiness") or "").lower() == "woody":
+        return True
+    height = plant.number("height_max_m")
+    return height is not None and height >= WOODY_HEIGHT_M
 
 
 def _colour_rank(plant: PlantRow, colour: str | None) -> int:

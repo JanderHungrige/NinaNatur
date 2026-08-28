@@ -20,7 +20,7 @@ SOURCE_PRIORITY: tuple[str, ...] = ("EIVE-1.0", "GIFT")
 
 KNOWN_TRAIT_KEYS: frozenset[str] = frozenset(
     {*AXES, *(f"{a}_nw" for a in AXES),
-     "height_max_m", "flowering_start_month", "flowering_end_month",
+     "height_max_m", "flowering_start_month", "flowering_end_month", "woodiness",
      "flower_colour", "growth_form", "life_form", "lifecycle",
      "pollination_syndrome"}
 )

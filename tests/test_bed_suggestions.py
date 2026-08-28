@@ -112,3 +112,33 @@ def test_a_bed_from_another_garden_is_404(client: TestClient) -> None:
     ).json()["share_token"]
     response = client.get(f"/api/v1/gardens/{other}/beds/{bed_id}/suggestions")
     assert response.status_code == 404
+
+
+def test_woodiness_excludes_what_growth_form_misses(client: TestClient) -> None:
+    """Growth form is absent for part of the catalogue; woodiness covers most of
+    the rest. Abies nephrolepis reached a bed's top suggestions through that gap."""
+    conn = app.dependency_overrides[get_connection]()
+    _species(conn, 10, "Tannenartig", light=8.0, form=None)
+    upsert_trait(conn, 10, "woodiness", value_text="woody", source="GIFT", license="CC-BY-4.0")
+    conn.commit()
+    token, bed_id = _sunny_bed(client)
+    assert "Tannenartig" not in _names(client, token, bed_id)
+
+
+def test_height_excludes_what_neither_form_nor_woodiness_records(
+    client: TestClient,
+) -> None:
+    conn = app.dependency_overrides[get_connection]()
+    _species(conn, 11, "Hochgewachsen", light=8.0, form=None)
+    upsert_trait(conn, 11, "height_max_m", value_num=12.0, source="GIFT", license="CC-BY-4.0")
+    conn.commit()
+    token, bed_id = _sunny_bed(client)
+    assert "Hochgewachsen" not in _names(client, token, bed_id)
+
+
+def test_a_species_with_no_woody_signal_at_all_is_still_kept(
+    client: TestClient,
+) -> None:
+    """Absent data is not a property of the plant."""
+    token, bed_id = _sunny_bed(client)
+    assert "Unbekanntwuchs" in _names(client, token, bed_id)

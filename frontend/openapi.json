@@ -164,6 +164,13 @@
             "title": "Name",
             "type": "string"
           },
+          "plantings": {
+            "items": {
+              "$ref": "#/components/schemas/PlantingOut"
+            },
+            "title": "Plantings",
+            "type": "array"
+          },
           "polygon": {
             "items": {
               "items": {
@@ -208,9 +215,50 @@
           "ellenberg_n",
           "ellenberg_r",
           "sun_hours",
-          "light_computed_at"
+          "light_computed_at",
+          "plantings"
         ],
         "title": "BedOut",
+        "type": "object"
+      },
+      "BedSuggestions": {
+        "description": "Suggestions for one bed, with the site vector they were ranked against \u2014\nso the UI can say what it matched on rather than showing a bare list.",
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "bed_name": {
+            "title": "Bed Name",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlantSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "site_axes": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Site Axes",
+            "type": "object"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bed_id",
+          "bed_name",
+          "site_axes",
+          "total",
+          "items"
+        ],
+        "title": "BedSuggestions",
         "type": "object"
       },
       "FitOut": {
@@ -232,6 +280,27 @@
           "axes"
         ],
         "title": "FitOut",
+        "type": "object"
+      },
+      "GapOut": {
+        "properties": {
+          "length": {
+            "title": "Length",
+            "type": "integer"
+          },
+          "months": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "months",
+          "length"
+        ],
+        "title": "GapOut",
         "type": "object"
       },
       "GardenCreate": {
@@ -348,6 +417,32 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "MonthOut": {
+        "properties": {
+          "coverage": {
+            "title": "Coverage",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "integer"
+          },
+          "species": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Species",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "coverage",
+          "species"
+        ],
+        "title": "MonthOut",
         "type": "object"
       },
       "ObstacleCreate": {
@@ -642,6 +737,105 @@
         "title": "PlantSummary",
         "type": "object"
       },
+      "PlantingCreate": {
+        "properties": {
+          "quantity": {
+            "default": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "taxon_id": {
+            "exclusiveMinimum": 0.0,
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "taxon_id"
+        ],
+        "title": "PlantingCreate",
+        "type": "object"
+      },
+      "PlantingOut": {
+        "properties": {
+          "added_at": {
+            "title": "Added At",
+            "type": "string"
+          },
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "planting_id": {
+            "title": "Planting Id",
+            "type": "integer"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "planting_id",
+          "taxon_id",
+          "canonical_name",
+          "quantity",
+          "added_at"
+        ],
+        "title": "PlantingOut",
+        "type": "object"
+      },
+      "TimelineOut": {
+        "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic.",
+        "properties": {
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapOut"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "is_empty": {
+            "title": "Is Empty",
+            "type": "boolean"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "plantings_total": {
+            "title": "Plantings Total",
+            "type": "integer"
+          },
+          "plantings_without_interaction_data": {
+            "title": "Plantings Without Interaction Data",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mode",
+          "months",
+          "gaps",
+          "plantings_total",
+          "plantings_without_interaction_data",
+          "is_empty"
+        ],
+        "title": "TimelineOut",
+        "type": "object"
+      },
       "TraitOut": {
         "properties": {
           "alternatives": {
@@ -742,22 +936,6 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/": {
-      "get": {
-        "operationId": "index__get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Index"
-      }
-    },
     "/api/v1/gardens": {
       "post": {
         "description": "Create a garden. The token comes back here and is the only way back in.",
@@ -877,7 +1055,7 @@
     },
     "/api/v1/gardens/{token}/beds": {
       "post": {
-        "description": "Add a bed. PolygonError, SoilTypeError and MoistureError all subclass\nValueError, so they surface as 422 with their reason rather than as a 500.",
+        "description": "Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\nThe recompute is not optional. Only adding an *obstacle* used to trigger it, so\na garden with no obstacles left every bed on \"not yet computed\" forever \u2014 and\nsuggestions for such a bed were then scored on soil alone, which is both worse\nand silently so.",
         "operationId": "create_bed_api_v1_gardens__token__beds_post",
         "parameters": [
           {
@@ -925,6 +1103,168 @@
         "summary": "Create Bed",
         "tags": [
           "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
+      "post": {
+        "description": "Put a species in a bed. An unknown taxon raises ValueError -> 422.",
+        "operationId": "create_planting_api_v1_gardens__token__beds__bed_id__plantings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bed_id",
+            "required": true,
+            "schema": {
+              "title": "Bed Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlantingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Planting",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
+      "get": {
+        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion.",
+        "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bed_id",
+            "required": true,
+            "schema": {
+              "title": "Bed Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "colour",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Colour"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_trees",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Trees",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "exclude_planted",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Exclude Planted",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BedSuggestions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bed Suggestions",
+        "tags": [
+          "planning"
         ]
       }
     },
@@ -981,6 +1321,58 @@
         ]
       }
     },
+    "/api/v1/gardens/{token}/plantings/{planting_id}": {
+      "delete": {
+        "description": "Remove a planting. Reached through its garden, never by a bare id.",
+        "operationId": "delete_planting_api_v1_gardens__token__plantings__planting_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "planting_id",
+            "required": true,
+            "schema": {
+              "title": "Planting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Planting",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
     "/api/v1/gardens/{token}/recompute": {
       "post": {
         "operationId": "recompute_api_v1_gardens__token__recompute_post",
@@ -1020,6 +1412,59 @@
         "summary": "Recompute",
         "tags": [
           "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/timeline": {
+      "get": {
+        "description": "The garden's bloom year, month by month, with gaps marked.\n\n`forage=true` (the default) weights each flowering planting by its counted\nGerman insect partners, so a month of nectarless cultivars is correctly a\ngap. `forage=false` counts every planting equally, for planning by looks.",
+        "operationId": "timeline_api_v1_gardens__token__timeline_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "forage",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Forage",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Timeline",
+        "tags": [
+          "planning"
         ]
       }
     },

@@ -111,3 +111,58 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .obstacle { fill: color-mix(in srgb, var(--ink) 25%, transparent); stroke: var(--ink-muted); stroke-width: 1.5; }
 
 .status { margin-top: 1rem; color: var(--ink-muted); font-size: 0.9rem; min-height: 1.4em; }
+
+/* ---- wave 4: timeline and suggestions ---- */
+
+.column { display: grid; gap: 1.5rem; align-content: start; min-width: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+.checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.25rem; }
+.checkbox-row input { width: auto; }
+.checkbox-row label { margin: 0; color: var(--ink); font-size: 0.9rem; }
+
+.empty {
+  margin: 0.5rem 0 0; padding: 1rem;
+  border: 1px dashed var(--line); border-radius: var(--radius);
+  color: var(--ink-muted); font-size: 0.9rem;
+}
+
+.timeline { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.timeline th, .timeline td { padding: 0.3rem 0.4rem; text-align: left; vertical-align: middle; }
+.timeline thead th { color: var(--ink-muted); font-weight: 500; font-size: 0.78rem; }
+.timeline tbody th { font-weight: 500; width: 3rem; }
+.timeline tbody tr + tr { border-top: 1px solid var(--line); }
+.timeline .is-gap { background: color-mix(in srgb, #c2410c 10%, transparent); }
+
+.bar {
+  display: inline-block; width: 6rem; height: 0.55rem; margin-right: 0.5rem;
+  border-radius: 999px; background: var(--line); vertical-align: middle;
+  background-image: linear-gradient(to right, var(--leaf) var(--fill, 0%), transparent var(--fill, 0%));
+}
+.bar-value { font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+.gap-tag {
+  margin-left: 0.5rem; padding: 0.05rem 0.4rem; border-radius: 999px;
+  background: color-mix(in srgb, #c2410c 22%, transparent); font-size: 0.72rem;
+}
+.timeline .species { color: var(--ink-muted); font-size: 0.78rem; }
+
+.gap-list { margin: 0.75rem 0 0; padding-left: 1.1rem; color: var(--ink); font-size: 0.88rem; }
+
+.suggestion-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.suggestion {
+  display: grid; gap: 0.3rem;
+  grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px;
+}
+.suggestion__main { grid-column: 1; min-width: 0; }
+.suggestion__name { display: block; font-weight: 560; }
+.suggestion__fit { display: block; color: var(--ink-muted); font-size: 0.78rem; }
+.suggestion__meta {
+  grid-column: 1; display: flex; gap: 0.75rem;
+  color: var(--ink-muted); font-size: 0.76rem;
+}
+.suggestion button { grid-column: 2; grid-row: 1 / span 2; margin: 0; padding: 0.35rem 0.8rem; font-size: 0.85rem; }

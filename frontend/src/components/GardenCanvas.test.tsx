@@ -17,6 +17,7 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
     ellenberg_r: 6.5,
     sun_hours: 6.4,
     light_computed_at: '2026-08-28T10:00:00+00:00',
+    plantings: [],
     ...overrides,
   };
 }

@@ -108,12 +108,31 @@ def test_adding_an_obstacle_recomputes_light_without_a_second_call(
     assert after["light_computed_at"] is not None
 
 
-def test_a_bed_without_computed_light_reports_null_not_zero(client: TestClient) -> None:
+def test_a_new_bed_gets_its_light_straight_away(client: TestClient) -> None:
+    """Regression: only adding an obstacle triggered the computation, so a garden
+    with no obstacles left every bed on "not yet computed" forever — and its
+    suggestions were then scored on soil alone, silently."""
     token = _new_garden(client)
     client.post(f"/api/v1/gardens/{token}/beds", json={"name": "Neu", "polygon": SQUARE})
     bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
-    assert "ellenberg_l" in bed
+    assert bed["ellenberg_l"] is not None
+    assert bed["sun_hours"] is not None
+    assert bed["light_computed_at"] is not None
+
+
+def test_light_stays_null_until_it_is_computed(client: TestClient) -> None:
+    """The transport rule still holds: unknown is null, never zero."""
+    from ninanatur.garden.models import BedInput
+    from ninanatur.garden.store import add_bed, garden_by_token
+
+    conn = app.dependency_overrides[get_connection]()
+    token = _new_garden(client)
+    garden = garden_by_token(conn, token)
+    assert garden is not None
+    add_bed(conn, garden.garden_id, BedInput(name="Roh", polygon=SQUARE))
+    bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
     assert bed["ellenberg_l"] is None
+    assert bed["sun_hours"] is None
 
 
 def test_soil_becomes_site_axes_the_user_never_typed(client: TestClient) -> None:
