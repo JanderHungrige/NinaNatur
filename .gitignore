@@ -28,3 +28,7 @@ data/cache/
 *.sqlite-wal
 *.sqlite-shm
 *.db-journal
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
