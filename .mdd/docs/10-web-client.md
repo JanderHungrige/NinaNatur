@@ -4,7 +4,7 @@ title: Typed API Client Generated from OpenAPI
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-3
-wave_status: active
+wave_status: complete
 depends_on: [09-garden-api]
 relates: [11-garden-canvas, 06-plants-api]
 source_files:
@@ -19,8 +19,8 @@ test_files:
   - frontend/src/api/client.test.ts
 data_flow: reads-existing
 last_synced: 2026-08-28
-status: draft
-phase: "1"
+status: complete
+phase: all
 mdd_version: 11
 tags: [typescript, openapi, client, contract, vite]
 path: Frontend/Client

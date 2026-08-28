@@ -5,10 +5,22 @@ nothing else opens a database or issues DDL.
 """
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
 DEFAULT_DB_PATH = Path("data/ninanatur.sqlite")
+DB_PATH_ENV = "NINANATUR_DB"
+
+
+def database_path() -> Path:
+    """Where the database lives.
+
+    Configurable because the container mounts its data elsewhere than the repo
+    checkout, and because tests need to point at a throwaway file without
+    monkeypatching a module constant.
+    """
+    return Path(os.environ.get(DB_PATH_ENV) or DEFAULT_DB_PATH)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS taxon (

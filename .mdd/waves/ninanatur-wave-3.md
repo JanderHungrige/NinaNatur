@@ -3,11 +3,11 @@ id: ninanatur-wave-3
 title: "Wave 3: The garden as a floor plan"
 initiative: ninanatur
 initiative_version: 4
-status: planned
+status: complete
 depends_on: ninanatur-wave-2
 demo_state: "A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path — reload the page and it is all still there"
 created: 2026-08-27
-hash: def3f120
+hash: 98b45717
 ---
 
 # Wave 3 — The garden as a floor plan
@@ -27,8 +27,8 @@ still there.
 | 1 | solar-geometry | .mdd/docs/07-solar-geometry.md | complete | — |
 | 2 | garden-model | .mdd/docs/08-garden-model.md | complete | — |
 | 3 | garden-api | .mdd/docs/09-garden-api.md | complete | 07, 08 |
-| 4 | web-client | 10-web-client | planned | 09 |
-| 5 | garden-canvas | 11-garden-canvas | planned | 10 |
+| 4 | web-client | .mdd/docs/10-web-client.md | complete | 09 |
+| 5 | garden-canvas | .mdd/docs/11-garden-canvas.md | complete | 10 |
 
 ### 1 — solar-geometry
 
