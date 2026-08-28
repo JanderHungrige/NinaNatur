@@ -30,7 +30,7 @@ be built against anything real.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | niche-fit | 03-niche-fit | planned | — |
+| 1 | niche-fit | .mdd/docs/03-niche-fit.md | complete | — |
 | 2 | trait-resolve | 04-trait-resolve | planned | — |
 | 3 | insect-checklist-de | 05-insect-checklist-de | planned | — |
 | 4 | plants-api | 06-plants-api | planned | 03, 04, 05 |
