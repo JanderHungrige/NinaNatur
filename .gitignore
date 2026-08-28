@@ -29,6 +29,15 @@ data/cache/
 *.sqlite-shm
 *.db-journal
 
+# ...except the shipped runtime catalogue. Negations must come after every
+# pattern they override, or the later *.sqlite rules win and it stays ignored.
+#
+# 10 MB of binary in git is a deliberate trade: the alternative is a release
+# asset fetched at image build, which adds an external dependency to a build
+# that currently needs none. The catalogue changes when its upstream sources do
+# — roughly yearly — so few versions will accumulate. Revisit if that changes.
+!ninanatur/data/catalogue.sqlite
+
 # Frontend
 frontend/node_modules/
 frontend/dist/

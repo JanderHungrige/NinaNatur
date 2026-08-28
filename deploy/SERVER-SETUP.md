@@ -106,6 +106,24 @@ tail -f /var/log/ninanatur-deploy.log
 `172.17.0.1` is the docker bridge gateway, so NPM reaches the port the container
 publishes on the host without sharing a network.
 
+## The plant catalogue
+
+It ships inside the image and seeds itself into an empty volume at first start —
+nothing to do on the host. The startup log says so:
+
+```
+seeded catalogue: {'taxon': 8939, 'trait': 75278, ...}
+```
+
+Plant data and garden data have different lifecycles, which is why they are
+sourced differently: the catalogue is derived from static open sources and
+travels with the code built against it, while gardens belong to the person who
+made them and stay on the volume. Seeding only ever runs when there are no taxa
+at all, so it can never overwrite a newer ingest.
+
+To refresh the catalogue, re-run the ingest locally, `export-catalogue`, commit,
+and push — the next image carries it.
+
 ## Data
 
 The database lives on a named Docker volume, not in the image and not in the

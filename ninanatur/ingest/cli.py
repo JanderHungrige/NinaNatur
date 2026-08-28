@@ -11,6 +11,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, export_catalogue
 from ninanatur.ingest.coverage import compute_coverage, format_report
 from ninanatur.ingest.db import DEFAULT_DB_PATH, connect, init_schema
 from ninanatur.ingest.sources.eive import EiveSource
@@ -18,6 +19,7 @@ from ninanatur.ingest.sources.gbif import GbifSource
 from ninanatur.ingest.sources.gift import GiftSource
 from ninanatur.ingest.sources.globi import GlobiSource
 from ninanatur.ingest.sources.insects_de import InsectsDeSource
+from ninanatur.ingest.summarise import summarise_interactions
 
 # GBIF defines the candidate set, so it must run before anything joins against it.
 # insects-de must precede any use of the interaction counts; globi supplies the
@@ -53,6 +55,10 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--limit", type=int, default=None, help="cap taxa (globi, insects-de)")
 
     sub.add_parser("coverage", help="print the coverage report")
+    sub.add_parser("summarise", help="rebuild the partner aggregates")
+
+    export = sub.add_parser("export-catalogue", help="write the runtime catalogue")
+    export.add_argument("--out", type=Path, default=DEFAULT_CATALOGUE)
     return parser
 
 
@@ -71,6 +77,22 @@ def main(argv: list[str] | None = None) -> int:
             print(f"→ {name}", flush=True)
             rows = run_source(conn, name, args.limit)
             print(f"  {name}: {rows} rows written", flush=True)
+        if args.source == "all":
+            # The aggregates are the intersection of globi and insects-de, so they
+            # are only meaningful once both have run.
+            print(f"→ summarise: {summarise_interactions(conn)} plants", flush=True)
+        return 0
+
+    if args.command == "summarise":
+        print(f"summarised {summarise_interactions(conn)} plants")
+        return 0
+
+    if args.command == "export-catalogue":
+        counts = export_catalogue(conn, args.out)
+        size_mb = args.out.stat().st_size / 1048576
+        for table, n in counts.items():
+            print(f"  {table:<18} {n:>7}")
+        print(f"wrote {args.out} ({size_mb:.1f} MB)")
         return 0
 
     if args.command == "coverage":

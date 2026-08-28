@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
+from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, catalogue_is_empty, seed_catalogue
 from ninanatur.ingest.db import connect, database_path, init_schema
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -27,16 +28,28 @@ VERSION = "0.1.0"
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """Ensure the schema exists before the first request.
+    """Ensure the schema exists and the catalogue is present before serving.
 
-    Only the ingest CLI used to create tables, so a freshly deployed container
-    started against an empty database file and answered 500 to every write. The
-    statements are `CREATE TABLE IF NOT EXISTS`, so this is a no-op on an
-    existing database and costs one call at boot.
+    Two separate failures both showed up only in a real deployment: tables were
+    created solely by the ingest CLI, so a fresh container answered 500 to every
+    write; and even with a schema, a fresh volume had no plants, so every
+    suggestion list came back empty.
+
+    Both steps are idempotent — CREATE TABLE IF NOT EXISTS, and seeding only when
+    there are no taxa at all, so a newer local ingest is never overwritten.
     """
     conn = connect(database_path(), same_thread=False)
     try:
         init_schema(conn)
+        # A fresh volume has the schema but no plants, and the app then answers
+        # "0 matching species" to every request — structurally perfect, entirely
+        # useless. The catalogue ships with the image because it is derived from
+        # static sources and belongs with the code built against it; gardens stay
+        # on the volume because they belong to the person who made them.
+        if catalogue_is_empty(conn):
+            seeded = seed_catalogue(conn, DEFAULT_CATALOGUE)
+            if seeded:
+                print(f"seeded catalogue: {seeded}", flush=True)
     finally:
         conn.close()
     yield

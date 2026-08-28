@@ -147,6 +147,25 @@ CREATE TABLE IF NOT EXISTS obstacle (
 
 CREATE INDEX IF NOT EXISTS idx_obstacle_garden ON obstacle(garden_id);
 
+-- Interaction counts per plant, computed once at ingest.
+--
+-- The 600k raw `interaction` rows are ingest-time data: the runtime only ever
+-- asks "how many German partners does this plant have". Summarising them cuts
+-- the shipped catalogue from 93 MB to 10 MB and turns a scan into a lookup.
+CREATE TABLE IF NOT EXISTS partner_summary (
+    taxon_id         INTEGER NOT NULL,
+    interaction_type TEXT    NOT NULL,
+    german           INTEGER NOT NULL,
+    PRIMARY KEY (taxon_id, interaction_type)
+);
+
+CREATE TABLE IF NOT EXISTS partner_totals (
+    taxon_id     INTEGER PRIMARY KEY,
+    german       INTEGER NOT NULL,
+    global_total INTEGER NOT NULL,
+    unmatched    INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS source_run (
     source      TEXT NOT NULL,
     started_at  TEXT NOT NULL,

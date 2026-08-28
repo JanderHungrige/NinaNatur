@@ -3,6 +3,11 @@
 GloBI's records are worldwide. Reporting them raw would rank a plant by how
 thoroughly it has been studied rather than by what visits it in a German garden —
 and that number is what the insect score rests on.
+
+Reads the aggregates built by `ingest/summarise.py`, not the raw records. The
+600k interaction rows are ingest-time data; the serving path only ever asks for
+counts, and keeping the raw table out of the shipped catalogue is what takes it
+from 93 MB to 10 MB.
 """
 from __future__ import annotations
 
@@ -37,35 +42,25 @@ def german_partner_counts(conn: sqlite3.Connection, taxon_id: int) -> PartnerCou
     records but no German partners returns a count of 0 — those are different
     facts and must not render the same.
     """
-    rows = conn.execute(
-        """
-        SELECT i.partner_name,
-               i.interaction_type,
-               (d.canonical_name IS NOT NULL) AS is_german
-        FROM interaction i
-        LEFT JOIN insect_de d ON d.canonical_name = i.partner_name
-        WHERE i.taxon_id = ?
-        """,
+    totals = conn.execute(
+        "SELECT german, global_total, unmatched FROM partner_totals WHERE taxon_id = ?",
         (taxon_id,),
-    ).fetchall()
-    if not rows:
+    ).fetchone()
+    if totals is None:
         return None
 
-    german_partners: set[str] = set()
-    all_partners: set[str] = set()
-    by_kind: dict[str, int] = {}
-    for row in rows:
-        name = str(row["partner_name"])
-        all_partners.add(name)
-        if row["is_german"]:
-            german_partners.add(name)
-            kind = str(row["interaction_type"])
-            by_kind[kind] = by_kind.get(kind, 0) + 1
-
+    by_kind = {
+        str(row["interaction_type"]): int(row["german"])
+        for row in conn.execute(
+            "SELECT interaction_type, german FROM partner_summary"
+            " WHERE taxon_id = ? AND german > 0",
+            (taxon_id,),
+        )
+    }
     return PartnerCounts(
         taxon_id=taxon_id,
-        german=len(german_partners),
-        global_total=len(all_partners),
-        unmatched=len(all_partners) - len(german_partners),
+        german=int(totals["german"]),
+        global_total=int(totals["global_total"]),
+        unmatched=int(totals["unmatched"]),
         by_kind=by_kind,
     )

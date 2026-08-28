@@ -58,6 +58,21 @@ each container an anonymous one, so rolling an image would silently start from a
 empty database — with a cron that deploys every minute, nobody notices until the
 data is gone.
 
+## Catalogue vs. user data
+
+They have different lifecycles and must not share a source of truth. The plant
+catalogue is derived from static open sources, ships inside the image, and seeds
+an empty database at startup. Gardens belong to whoever made them and live on the
+volume.
+
+Putting both in one SQLite file is how the deployed app came up structurally
+perfect and answered "0 matching species" to every request.
+
+Raw GloBI interactions (600k rows) are **ingest-time** data. The serving path
+reads `partner_summary` / `partner_totals`, which is what keeps the shipped
+catalogue at 10 MB instead of 93 MB. Rebuild them with `ingest.cli summarise`
+after any change to GloBI or the insect list — they are that intersection.
+
 ## Quality gates
 
 - No file > 300 lines, no function > 50 lines.
