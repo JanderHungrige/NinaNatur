@@ -67,3 +67,71 @@ class PlantDetail(BaseModel):
     family: str | None
     traits: dict[str, TraitOut]
     partners: PartnersOut | None
+
+
+# --- gardens ---------------------------------------------------------------
+
+
+class GardenCreate(BaseModel):
+    """Creating a garden. Latitude and longitude are range-checked here, before
+    they reach solar code that would happily compute a sun path for latitude 500."""
+
+    name: str = Field(min_length=1, max_length=200)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
+class GardenCreated(BaseModel):
+    """The token is returned; the numeric id deliberately is not."""
+
+    share_token: str
+    name: str
+
+
+class BedCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    polygon: list[list[float]]
+    soil_type: str | None = None
+    moisture: str | None = None
+
+
+class ObstacleCreate(BaseModel):
+    kind: str = Field(min_length=1, max_length=50)
+    x: float
+    y: float
+    radius: float = Field(gt=0, le=500)
+    height: float = Field(gt=0, le=200)
+
+
+class BedOut(BaseModel):
+    bed_id: int
+    name: str
+    polygon: list[list[float]]
+    soil_type: str | None
+    moisture: str | None
+    ellenberg_l: float | None
+    ellenberg_m: float | None
+    ellenberg_n: float | None
+    ellenberg_r: float | None
+    sun_hours: float | None
+    light_computed_at: str | None
+
+
+class ObstacleOut(BaseModel):
+    obstacle_id: int
+    kind: str
+    x: float
+    y: float
+    radius: float
+    height: float
+
+
+class GardenOut(BaseModel):
+    share_token: str
+    name: str
+    latitude: float
+    longitude: float
+    created_at: str
+    updated_at: str
+    beds: list[BedOut]
+    obstacles: list[ObstacleOut]

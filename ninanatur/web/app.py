@@ -12,6 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.plants import router as plants_router
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -20,6 +21,7 @@ VERSION = "0.1.0"
 app = FastAPI(title="NinaNatur", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(plants_router)
+app.include_router(gardens_router)
 
 
 @app.exception_handler(ValueError)
