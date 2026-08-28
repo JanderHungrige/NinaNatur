@@ -24,17 +24,53 @@ from ninanatur.api.schemas import (
     ImprovementsOut,
     MonthOut,
     PlantingCreate,
+    PlantSummary,
     ScoreOut,
     SpeciesContributionOut,
     TimelineOut,
 )
-from ninanatur.api.search import SearchFilters, load_candidates, rank_plants
+from ninanatur.api.search import (
+    ScoredPlant,
+    SearchFilters,
+    is_woody,
+    load_candidates,
+    rank_plants,
+)
 from ninanatur.bloom.improve import Change, garden_improvements
 from ninanatur.bloom.score import garden_score
 from ninanatur.bloom.timeline import TimelineMode, garden_timeline
-from ninanatur.data.interactions import bird_counts
+from ninanatur.data.interactions import bird_counts, german_partner_totals
 from ninanatur.fit.score import SiteVector
+from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.store import add_planting, load_garden, remove_planting
+
+# A shortlist, not a second catalogue. Woody plants are a small set of large
+# decisions; twenty of them is a list nobody reads.
+WOODY_LIMIT = 8
+
+def _by_value(conn: sqlite3.Connection, woody: list[ScoredPlant]) -> list[ScoredPlant]:
+    """Order a woody shortlist by what it is worth to animals, not by site fit.
+
+    Site fit already decided which of these are candidates at all. Ordering the
+    survivors by fit again put mistletoe and Ruscus at the top of every list and
+    left Salix caprea — 1,055 German insect partners, the highest count in the
+    catalogue — below the cut, which is the invisibility this whole feature
+    exists to end. A shrub is planted for what visits it.
+
+    Room is deliberately not part of the order: the plant that is worth the most
+    is worth seeing even when it does not fit, with what it would take beside it.
+    """
+    ids = [s.plant.taxon_id for s in woody]
+    insects = german_partner_totals(conn, ids)
+    birds_by_taxon = bird_counts(conn, ids)
+    return sorted(
+        woody,
+        key=lambda s: (
+            -(insects.get(s.plant.taxon_id, 0) + birds_by_taxon.get(s.plant.taxon_id, 0)),
+            -s.score,
+        ),
+    )
+
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["planning"])
 
@@ -90,7 +126,7 @@ def bed_suggestions(
     flowering_month: Annotated[int | None, Query(ge=1, le=12)] = None,
     growth_form: GrowthForm | None = None,
     include_unknown: bool = False,
-    include_trees: bool = False,
+    include_trees: bool = True,
     include_introduced: bool = False,
     exclude_planted: bool = True,
 ) -> BedSuggestions:
@@ -113,6 +149,7 @@ def bed_suggestions(
         )
 
     planted = frozenset(p.taxon_id for p in bed.plantings) if exclude_planted else frozenset()
+    area = polygon_area(bed.polygon)
     ranked = rank_plants(
         load_candidates(conn),
         SiteVector(values=axes),
@@ -121,6 +158,7 @@ def bed_suggestions(
             height_max=height_max,
             flowering_month=flowering_month,
             growth_form=growth_form.value if growth_form is not None else None,
+            bed_area_m2=area,
             include_unknown=include_unknown,
             exclude_woody=not include_trees,
             exclude_introduced=not include_introduced,
@@ -128,16 +166,27 @@ def bed_suggestions(
         ),
         colour=colour,
     )
-    birds = bird_counts(conn, [s.plant.taxon_id for s in ranked.items[:limit]])
+    # Split for presentation, not for the model. One ranking put every woody
+    # plant below roughly 2,000 perennials — the same invisibility Wave 4 caused
+    # by excluding them, and the catalogue's best forage plants are woody:
+    # Salix caprea leads the whole database with 1,055 German partners.
+    herbaceous = [s for s in ranked.items if not is_woody(s.plant)]
+    woody_total = sum(1 for s in ranked.items if is_woody(s.plant))
+    woody = _by_value(conn, [s for s in ranked.items if is_woody(s.plant)])[:WOODY_LIMIT]
+    page = herbaceous[:limit] + woody
+    birds = bird_counts(conn, [s.plant.taxon_id for s in page])
+
+    def summarise(items: list[ScoredPlant]) -> list[PlantSummary]:
+        return [to_summary(s, birds.get(s.plant.taxon_id), area) for s in items]
+
     return BedSuggestions(
         bed_id=bed.bed_id,
         bed_name=bed.name,
         site_axes=axes,
-        total=len(ranked.items),
-        items=[
-            to_summary(s, birds.get(s.plant.taxon_id))
-            for s in ranked.items[:limit]
-        ],
+        total=len(herbaceous),
+        items=summarise(herbaceous[:limit]),
+        woody=summarise(woody),
+        woody_total=woody_total,
         filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
     )
 

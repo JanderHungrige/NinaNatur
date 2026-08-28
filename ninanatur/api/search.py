@@ -13,13 +13,15 @@ from ninanatur.api.filters import (
     SearchFilters,
     Verdict,
     excluded_outright,
+    is_woody,
     verdicts_for,
 )
 from ninanatur.fit.score import SiteVector, score_species
 
-# The one filter that orders rather than removes; named so the two places that
-# must treat it differently cannot drift apart.
+# Filters that order rather than remove. Named in one place so the sites that
+# must treat them differently cannot drift apart.
 COLOUR = "colour"
+RANKS_ONLY: frozenset[str] = frozenset({COLOUR, "space"})
 
 __all__ = [
     "AXIS_PARAMS",
@@ -29,6 +31,7 @@ __all__ = [
     "ScoredPlant",
     "SearchFilters",
     "Verdict",
+    "is_woody",
     "load_candidates",
     "rank_plants",
 ]
@@ -78,11 +81,13 @@ def rank_plants(
 
         verdicts = verdicts_for(plant, filters, colour)
         for name, verdict in verdicts.items():
-            report.setdefault(name, FilterCounts()).record(verdict, excludes=name != COLOUR)
+            report.setdefault(name, FilterCounts()).record(
+                verdict, excludes=name not in RANKS_ONLY
+            )
 
         # Colour never removes anything; the other filters remove known
         # mismatches, and remove unknowns only when the user did not ask for them.
-        hard = {n: v for n, v in verdicts.items() if n != COLOUR}
+        hard = {n: v for n, v in verdicts.items() if n not in RANKS_ONLY}
         if any(v is Verdict.MISMATCH for v in hard.values()):
             continue
         if not filters.include_unknown and any(v is Verdict.UNKNOWN for v in hard.values()):

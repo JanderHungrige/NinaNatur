@@ -99,3 +99,20 @@ def bird_counts(conn: sqlite3.Connection, taxon_ids: list[int]) -> dict[int, int
         taxon_ids,
     )
     return {int(r["taxon_id"]): int(r["german"]) for r in rows}
+
+
+def german_partner_totals(conn: sqlite3.Connection, taxon_ids: list[int]) -> dict[int, int]:
+    """German insect partners for a set of species, in one query.
+
+    For ranking a shortlist, where the reason to plant the thing is the number
+    itself rather than a breakdown of it.
+    """
+    if not taxon_ids:
+        return {}
+    unique = sorted(set(taxon_ids))
+    placeholders = ",".join("?" for _ in unique)
+    rows = conn.execute(
+        f"SELECT taxon_id, german FROM partner_totals WHERE taxon_id IN ({placeholders})",  # noqa: S608
+        unique,
+    )
+    return {int(r["taxon_id"]): int(r["german"]) for r in rows}

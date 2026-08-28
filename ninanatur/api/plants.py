@@ -34,14 +34,18 @@ from ninanatur.data.interactions import bird_counts, german_partner_counts
 from ninanatur.data.species_info import species_info
 from ninanatur.data.traits import resolve_traits_for
 from ninanatur.fit.score import SiteVector
+from ninanatur.garden.canopy import canopy_of
 
 router = APIRouter(prefix="/api/v1", tags=["plants"])
 
 MAX_LIMIT = 200
 
 
-def to_summary(scored: ScoredPlant, birds: int | None = None) -> PlantSummary:
+def to_summary(
+    scored: ScoredPlant, birds: int | None = None, bed_area_m2: float | None = None
+) -> PlantSummary:
     plant = scored.plant
+    canopy = canopy_of(plant.number("height_max_m"), plant.text("growth_form"))
     start = plant.number("flowering_start_month")
     end = plant.number("flowering_end_month")
     return PlantSummary(
@@ -54,6 +58,12 @@ def to_summary(scored: ScoredPlant, birds: int | None = None) -> PlantSummary:
         flower_colour=plant.text("flower_colour"),
         colour_known=plant.text("flower_colour") is not None,
         bird_partners=birds,
+        space_m2=canopy.area_m2 if canopy is not None else None,
+        fits_bed=(
+            None
+            if canopy is None or bed_area_m2 is None
+            else canopy.area_m2 <= bed_area_m2
+        ),
         fit=FitOut(
             score=round(scored.score, 4),
             axes={

@@ -347,3 +347,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--accent, #4a7c59);
   font-weight: 600;
 }
+
+.suggestion__space {
+  color: var(--muted);
+  font-style: italic;
+}

@@ -82,8 +82,8 @@ function chipsFor(filters: SuggestionFilters): Chip[] {
       clears: ['colour'],
     });
   }
-  if (filters.includeTrees === true) {
-    chips.push({ key: 'trees', label: 'auch Gehölze', clears: ['includeTrees'] });
+  if (filters.includeTrees === false) {
+    chips.push({ key: 'trees', label: 'ohne Gehölze', clears: ['includeTrees'] });
   }
   return chips;
 }

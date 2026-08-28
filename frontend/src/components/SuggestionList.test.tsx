@@ -15,6 +15,8 @@ function item(overrides: Partial<BedSuggestions['items'][number]> = {}) {
     flower_colour: 'white',
     colour_known: true,
     bird_partners: 100,
+    space_m2: 28.3,
+    fits_bed: true,
     fit: { score: 0.9, axes: {} },
     ...overrides,
   } as BedSuggestions['items'][number];
@@ -27,6 +29,8 @@ function suggestions(overrides: Partial<BedSuggestions> = {}): BedSuggestions {
     site_axes: { ellenberg_l: 6 },
     total: 1,
     items: [item()],
+    woody: [],
+    woody_total: 0,
     filters: {},
     ...overrides,
   } as BedSuggestions;
@@ -50,8 +54,46 @@ describe('SuggestionList', () => {
     // The sentence was hardcoded and went on asserting it after the user had
     // switched woody plants on — visible in the running app, invisible to tests.
     show({ includeTrees: true });
-    expect(screen.getByText(/Bäume und Sträucher sind dabei/)).toBeDefined();
+    expect(screen.getByText(/eigenen Liste/)).toBeDefined();
     expect(screen.queryByText(/ausgeblendet/)).toBeNull();
+  });
+
+  it('gives woody plants their own list rather than burying them', () => {
+    // Ranked into one list they sorted below ~2,000 perennials — the same
+    // invisibility as excluding them, with a better argument.
+    show({
+      suggestions: suggestions({
+        woody: [item({ taxon_id: 9, canonical_name: 'Salix caprea', fits_bed: false, space_m2: 50 })],
+        woody_total: 1,
+      }),
+    });
+    expect(screen.getByRole('heading', { name: /Gehölze für diesen Standort/ })).toBeDefined();
+    expect(screen.getByText('Salix caprea')).toBeDefined();
+  });
+
+  it('says nothing about woody plants when there are none to show', () => {
+    show();
+    expect(screen.queryByRole('heading', { name: /Gehölze/ })).toBeNull();
+  });
+
+  it('prices a plant too large for the bed instead of hiding it', () => {
+    // Wave 4 hid every woody plant from every bed, and with them the best
+    // forage plants in the catalogue. Showing what an oak would take is more
+    // use than pretending the catalogue does not contain one.
+    show({
+      suggestions: suggestions({
+        items: [],
+        woody: [item({ canonical_name: 'Quercus robur', space_m2: 201.1, fits_bed: false })],
+        woody_total: 1,
+      }),
+    });
+    expect(screen.getByText('Quercus robur')).toBeDefined();
+    expect(screen.getByText(/braucht ~201 m²/)).toBeDefined();
+  });
+
+  it('says nothing about room for a plant that fits', () => {
+    show();
+    expect(screen.queryByText(/braucht ~/)).toBeNull();
   });
 
   it('says woody plants are hidden when they are', () => {

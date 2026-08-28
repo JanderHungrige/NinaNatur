@@ -128,14 +128,17 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
         </select>
       </label>
 
+      {/* Inverted since Wave 6: woody plants are in the list by default. They
+          are the catalogue's best forage plants, and the room check — not the
+          growth form — decides where they rank. */}
       <label className="filter-controls__toggle">
         <input
           type="checkbox"
-          checked={filters.includeTrees === true}
+          checked={filters.includeTrees === false}
           disabled={disabled}
-          onChange={(e) => set('includeTrees', e.target.checked ? true : undefined)}
+          onChange={(e) => set('includeTrees', e.target.checked ? false : undefined)}
         />
-        Gehölze mitzeigen
+        Gehölze ausblenden
       </label>
     </div>
   );

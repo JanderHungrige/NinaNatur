@@ -69,6 +69,14 @@ def is_shaded(point: Point, obstacle: Obstacle, sun: SunPosition) -> bool:
     shadow_dx, shadow_dy = -math.sin(azimuth), -math.cos(azimuth)
 
     dx, dy = point.x - obstacle.x, point.y - obstacle.y
+
+    # Directly beneath it. The cast-shadow test below starts at the obstacle's
+    # centre and runs away from the sun, so a point under the canopy scored
+    # `along == 0` and came out in full sun — a bed under a recorded tree read
+    # Ellenberg 8. Ground inside the footprint is shaded whatever the sun does.
+    if math.hypot(dx, dy) <= obstacle.radius:
+        return True
+
     along = dx * shadow_dx + dy * shadow_dy
     if along <= 0 or along > length:
         return False

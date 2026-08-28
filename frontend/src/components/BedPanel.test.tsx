@@ -67,6 +67,19 @@ describe('BedPanel', () => {
       ],
     });
     render(<BedPanel garden={g} selectedBedId={null} {...noop} />);
-    expect(screen.getByRole('button', { name: /1 Art\(en\) gepflanzt/ })).toBeDefined();
+    // Singular, not "1 Art(en)". The label is read aloud by a screen reader,
+    // and the parenthetical dodge is the same bug as "1 Beete" wearing a hat.
+    expect(screen.getByRole('button', { name: /1 Art gepflanzt/ })).toBeDefined();
+  });
+
+  it('uses the plural for more than one species', () => {
+    const g = garden({
+      plantings: [
+        { planting_id: 1, taxon_id: 7, canonical_name: 'Salvia pratensis', quantity: 3, added_at: '' },
+        { planting_id: 2, taxon_id: 8, canonical_name: 'Salix caprea', quantity: 1, added_at: '' },
+      ],
+    });
+    render(<BedPanel garden={g} selectedBedId={null} {...noop} />);
+    expect(screen.getByRole('button', { name: /2 Arten gepflanzt/ })).toBeDefined();
   });
 });

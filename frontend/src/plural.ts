@@ -27,4 +27,6 @@ export const plantings = (count: number): string =>
 export const birds = (count: number): string =>
   plural(count, 'Vogelart', 'Vogelarten');
 
+export const species = (count: number): string => plural(count, 'Art', 'Arten');
+
 export const obstacles = (count: number): string => plural(count, 'Hindernis', 'Hindernisse');

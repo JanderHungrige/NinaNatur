@@ -12,6 +12,7 @@ from enum import Enum
 
 from ninanatur.api.candidates import PlantRow
 from ninanatur.bloom.timeline import flowering_months
+from ninanatur.garden.canopy import canopy_of
 
 # Growth forms that are not bed plants. A bed is a few square metres; a hemlock
 # fits its light and moisture perfectly and is still a useless suggestion.
@@ -91,6 +92,10 @@ class SearchFilters:
     height_max: float | None = None
     flowering_month: int | None = None
     growth_form: str | None = None
+    # The bed's own area. A bed is a marked area, not a category: what decides
+    # whether a plant belongs is how much room it needs, not whether it is
+    # woody. Ranks, never excludes — the plant is shown with what it would take.
+    bed_area_m2: float | None = None
     include_unknown: bool = False
     exclude_woody: bool = False
     exclude_introduced: bool = False
@@ -106,7 +111,7 @@ def excluded_outright(plant: PlantRow, filters: SearchFilters) -> bool:
     """
     if plant.taxon_id in filters.exclude_taxa:
         return True
-    if filters.exclude_woody and _is_woody(plant):
+    if filters.exclude_woody and is_woody(plant):
         return True
     return filters.exclude_introduced and (plant.text("native_de") or "") == INTRODUCED
 
@@ -151,6 +156,21 @@ def _form_verdict(plant: PlantRow, filters: SearchFilters) -> Verdict | None:
     return Verdict.MATCH if form.lower() == filters.growth_form.lower() else Verdict.MISMATCH
 
 
+def _space_verdict(plant: PlantRow, filters: SearchFilters) -> Verdict | None:
+    """Whether the plant's mature footprint fits the bed.
+
+    Ranks rather than excludes, like colour. A 24 m oak in a 4 m² bed is a bad
+    idea and the user is entitled to see it, priced — telling them what it would
+    take is more use than pretending the catalogue does not contain it.
+    """
+    if filters.bed_area_m2 is None or filters.bed_area_m2 <= 0:
+        return None
+    canopy = canopy_of(plant.number("height_max_m"), plant.text("growth_form"))
+    if canopy is None:
+        return Verdict.UNKNOWN
+    return Verdict.MATCH if canopy.area_m2 <= filters.bed_area_m2 else Verdict.MISMATCH
+
+
 def _colour_verdict(plant: PlantRow, colour: str | None) -> Verdict | None:
     """Colour ranks; a mismatch is ordered down, never removed."""
     if colour is None:
@@ -169,12 +189,13 @@ def verdicts_for(
         "height": _height_verdict(plant, filters),
         "flowering_month": _flowering_verdict(plant, filters),
         "growth_form": _form_verdict(plant, filters),
+        "space": _space_verdict(plant, filters),
         "colour": _colour_verdict(plant, colour),
     }
     return {name: v for name, v in found.items() if v is not None}
 
 
-def _is_woody(plant: PlantRow) -> bool:
+def is_woody(plant: PlantRow) -> bool:
     """Whether this is a tree or shrub, from whichever signal the data has.
 
     Three sources because no single one covers the catalogue: growth form is the

@@ -850,7 +850,7 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "default": false,
+              "default": true,
               "title": "Include Trees"
             }
           },
@@ -1305,6 +1305,19 @@
             },
             "type": "array",
             "title": "Items"
+          },
+          "woody": {
+            "items": {
+              "$ref": "#/components/schemas/PlantSummary"
+            },
+            "type": "array",
+            "title": "Woody",
+            "default": []
+          },
+          "woody_total": {
+            "type": "integer",
+            "title": "Woody Total",
+            "default": 0
           },
           "filters": {
             "additionalProperties": {
@@ -1953,6 +1966,28 @@
             ],
             "title": "Bird Partners"
           },
+          "space_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Space M2"
+          },
+          "fits_bed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fits Bed"
+          },
           "fit": {
             "$ref": "#/components/schemas/FitOut"
           }
@@ -1968,6 +2003,8 @@
           "flower_colour",
           "colour_known",
           "bird_partners",
+          "space_m2",
+          "fits_bed",
           "fit"
         ],
         "title": "PlantSummary"

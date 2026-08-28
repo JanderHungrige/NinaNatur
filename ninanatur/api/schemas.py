@@ -47,6 +47,12 @@ class PlantSummary(BaseModel):
     # German bird species recorded as partners, or None when GloBI holds no
     # relations at all. Zero and "never recorded" are different facts.
     bird_partners: int | None
+    # Estimated mature footprint in m², derived from height — the catalogue
+    # records no crown width. None when the height was never recorded.
+    space_m2: float | None
+    # Whether that fits the bed it was suggested for. None when either number is
+    # missing; False marks a plant shown anyway, with what it would take.
+    fits_bed: bool | None
     fit: FitOut
 
 
@@ -96,6 +102,15 @@ class BedSuggestions(BaseModel):
     site_axes: dict[str, float]
     total: int
     items: list[PlantSummary]
+    # Woody species, listed apart rather than mixed in or hidden.
+    #
+    # A bed is a marked area and a tree in it is a fact about the planting, not
+    # a different kind of bed — so this is a presentation split, not a second
+    # data model. Mixed into one ranking, every woody plant sorted below ~2,000
+    # perennials, which is the same invisibility Wave 4 caused by excluding
+    # them outright, only better argued.
+    woody: list[PlantSummary] = []
+    woody_total: int = 0
     filters: dict[str, FilterCountsOut] = {}
 
 

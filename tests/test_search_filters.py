@@ -58,6 +58,8 @@ def client() -> Iterator[TestClient]:
     _plant(conn, 2, "Hochstaude", height=1.8, colour="blue", form="forb", flowering=(6, 9))
     _plant(conn, 3, "Namenlos", form="forb")  # nothing recorded but the axes
     _plant(conn, 4, "Winterblueher", height=0.4, form="forb", flowering=(12, 3))
+    # 24 m: a crown of roughly 8 m radius, about 200 m², in a 16 m² bed.
+    _plant(conn, 5, "Riesenbaum", height=24.0, form="tree", flowering=(5, 6))
     conn.commit()
     app.dependency_overrides[get_connection] = lambda: conn
     yield TestClient(app)
@@ -177,5 +179,37 @@ def test_filters_combine(client: TestClient) -> None:
     assert _names(client, height_max=1.0, flowering_month=7) == ["Zwergkraut"]
 
 
-def test_no_active_filter_reports_nothing(client: TestClient) -> None:
-    assert _ask(client)["filters"] == {}
+def test_no_user_filter_reports_only_the_always_on_room_check(client: TestClient) -> None:
+    """A bed always knows its own area, so the room assessment is always running.
+
+    It is reported like any other, and like colour it ranks rather than excludes:
+    a plant too large for the bed is shown with what it would take.
+    """
+    report = _ask(client)["filters"]
+    assert set(report) == {"space"}
+    assert report["space"]["excluded"] == 0
+
+
+def test_a_tree_too_large_for_the_bed_is_priced_not_hidden(client: TestClient) -> None:
+    """A bed is a marked area, and a tree in it is not a different kind of bed.
+
+    Hiding the catalogue's best forage plants was the old answer; saying what
+    they would take is the honest one. The bed here is 16 m² and the tree needs
+    about 200.
+    """
+    tree = next(
+        i for i in _ask(client)["woody"] if i["canonical_name"] == "Riesenbaum"
+    )
+    assert tree["fits_bed"] is False
+    assert tree["space_m2"] > 100, "the room it needs is stated, not implied"
+
+
+def test_a_plant_that_fits_is_not_annotated_with_a_price(client: TestClient) -> None:
+    zwerg = next(
+        i for i in _ask(client)["items"] if i["canonical_name"] == "Zwergkraut"
+    )
+    assert zwerg["fits_bed"] is True
+
+
+def test_the_room_check_never_removes_anything(client: TestClient) -> None:
+    assert _ask(client)["filters"]["space"]["excluded"] == 0

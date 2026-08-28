@@ -241,7 +241,7 @@ export function App() {
                 onChange={changeFilters}
               />
               <SuggestionList
-                includeTrees={filters.includeTrees === true}
+                includeTrees={filters.includeTrees !== false}
                 suggestions={suggestions}
                 onPlant={plant}
                 onShowInfo={(taxonId, name) => setInfoFor({ taxonId, name })}

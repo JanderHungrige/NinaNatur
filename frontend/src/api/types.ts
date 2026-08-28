@@ -408,6 +408,16 @@ export interface components {
             /** Items */
             items: components["schemas"]["PlantSummary"][];
             /**
+             * Woody
+             * @default []
+             */
+            woody: components["schemas"]["PlantSummary"][];
+            /**
+             * Woody Total
+             * @default 0
+             */
+            woody_total: number;
+            /**
              * Filters
              * @default {}
              */
@@ -647,6 +657,10 @@ export interface components {
             colour_known: boolean;
             /** Bird Partners */
             bird_partners: number | null;
+            /** Space M2 */
+            space_m2: number | null;
+            /** Fits Bed */
+            fits_bed: boolean | null;
             fit: components["schemas"]["FitOut"];
         };
         /** PlantingCreate */

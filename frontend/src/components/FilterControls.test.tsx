@@ -30,10 +30,20 @@ describe('FilterControls', () => {
     expect(onChange).toHaveBeenCalledWith({ colour: 'yellow', heightMax: 0.5 });
   });
 
-  it('drops the woody toggle instead of sending false', () => {
-    const onChange = setup({ includeTrees: true });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Gehölze mitzeigen/ }));
+  it('drops the woody toggle instead of sending the default back', () => {
+    // Inverted in Wave 6: woody plants are in the list unless switched off, so
+    // the removable state is `false`, and unchecking it must clear the field
+    // rather than send `true` — an omitted filter and the default are the same
+    // request, and the server owns the default.
+    const onChange = setup({ includeTrees: false });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Gehölze ausblenden/ }));
     expect(onChange).toHaveBeenCalledWith({});
+  });
+
+  it('switches woody plants off when asked', () => {
+    const onChange = setup();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Gehölze ausblenden/ }));
+    expect(onChange).toHaveBeenCalledWith({ includeTrees: false });
   });
 
   it('shows the current filters as the selected options', () => {
