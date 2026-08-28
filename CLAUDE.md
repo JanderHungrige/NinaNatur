@@ -41,6 +41,23 @@ cite any number it shows, and what keeps the licence position defensible.
   local `canonical_name` → GBIF match API. A match below confidence 90, of type
   `NONE`/`HIGHERRANK`, or above species rank must not carry traits.
 
+## Container
+
+Verify the image locally before relying on CI — `docker build` plus a run against
+a **fresh empty volume**, because that is the state a new deployment starts in and
+the one a test double never reproduces. It is how the missing schema-at-startup
+was found.
+
+```bash
+docker build -t ninanatur:local .
+docker run --rm -p 4200:4000 -v ninanatur-check:/data ninanatur:local
+```
+
+The database lives on a **named** volume. `VOLUME` in the Dockerfile alone gives
+each container an anonymous one, so rolling an image would silently start from an
+empty database — with a cron that deploys every minute, nobody notices until the
+data is gone.
+
 ## Quality gates
 
 - No file > 300 lines, no function > 50 lines.

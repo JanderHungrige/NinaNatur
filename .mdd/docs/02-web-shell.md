@@ -35,8 +35,7 @@ integration_contracts:
     note: must stay dependency-free — it is the only signal that separates a broken deploy from a broken backing service
 satisfies_contracts: []
 security_read_sites: []
-known_issues:
-  - "The container CMD and HEALTHCHECK have never run locally — Docker is not installed on the dev machine, so CI and the host are their first execution."
+known_issues: []
 sister_projects:
   - /opt/3dmap2
   - /opt/battlefuel
@@ -100,8 +99,9 @@ an accepted trade for unattended deploys, documented in `deploy/SERVER-SETUP.md`
 
 ## Known Issues
 
-- The container `CMD` and `HEALTHCHECK` were never executed on the dev machine
-  (no Docker installed). CI proves the image builds; the host proved it runs.
+None outstanding. Docker became available on the dev machine on 2026-08-28 and
+the image was verified locally end to end — build, non-root start (uid 10001),
+`HEALTHCHECK` reporting `healthy`, and the full stack through `deploy/compose.app.yml`.
 
 ## Bugs
 
