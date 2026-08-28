@@ -3,6 +3,7 @@ import type { BedSuggestions } from '../api/client';
 interface Props {
   suggestions: BedSuggestions | null;
   onPlant: (taxonId: number, name: string) => Promise<void>;
+  onShowInfo: (taxonId: number, name: string) => void;
   busy: boolean;
 }
 
@@ -26,7 +27,7 @@ function describeFit(axes: BedSuggestions['items'][number]['fit']['axes']): stri
     .join(' · ');
 }
 
-export function SuggestionList({ suggestions, onPlant, busy }: Props) {
+export function SuggestionList({ suggestions, onPlant, onShowInfo, busy }: Props) {
   if (suggestions === null) {
     return (
       <section className="panel">
@@ -60,13 +61,23 @@ export function SuggestionList({ suggestions, onPlant, busy }: Props) {
                   : 'Blühzeit unbekannt'}
               </span>
             </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void onPlant(item.taxon_id, item.canonical_name)}
-            >
-              Pflanzen
-            </button>
+            <div className="suggestion__actions">
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={`Informationen zu ${item.canonical_name}`}
+                onClick={() => onShowInfo(item.taxon_id, item.canonical_name)}
+              >
+                Info
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void onPlant(item.taxon_id, item.canonical_name)}
+              >
+                Pflanzen
+              </button>
+            </div>
           </li>
         ))}
       </ul>

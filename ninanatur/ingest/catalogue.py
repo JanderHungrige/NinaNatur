@@ -28,6 +28,8 @@ CATALOGUE_TABLES: tuple[str, ...] = (
     # cannot explain its own number.
     "partner_groups",
     "insect_de",
+    # Wave 6: without these the catalogue is a list of Latin binomials.
+    "vernacular_name",
 )
 
 DEFAULT_CATALOGUE = Path("ninanatur/data/catalogue.sqlite")

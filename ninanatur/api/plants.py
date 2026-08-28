@@ -18,6 +18,7 @@ from ninanatur.api.schemas import (
     PlantDetail,
     PlantSearchResponse,
     PlantSummary,
+    SpeciesInfoOut,
     TraitOut,
 )
 from ninanatur.api.search import (
@@ -28,6 +29,7 @@ from ninanatur.api.search import (
     rank_plants,
 )
 from ninanatur.data.interactions import german_partner_counts
+from ninanatur.data.species_info import species_info
 from ninanatur.data.traits import resolve_traits_for
 from ninanatur.fit.score import SiteVector
 
@@ -159,4 +161,27 @@ def plant_detail(
             match_rate=round(counts.match_rate, 4),
             by_kind=counts.by_kind,
         ),
+    )
+
+
+@router.get("/plants/{taxon_id}/info", response_model=SpeciesInfoOut)
+def plant_info(
+    taxon_id: int,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> SpeciesInfoOut:
+    """A description and photograph, from Wikipedia, cached on this deployment.
+
+    404 when no article exists in either language — an honest absence rather than
+    an empty panel that looks like a loading failure.
+    """
+    info = species_info(conn, taxon_id)
+    if info is None:
+        raise HTTPException(status_code=404, detail=f"no article for taxon {taxon_id}")
+    return SpeciesInfoOut(
+        title=info.title,
+        extract=info.extract,
+        thumbnail_url=info.thumbnail_url,
+        page_url=info.page_url,
+        language=info.language,
+        licence=info.licence,
     )

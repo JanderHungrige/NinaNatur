@@ -187,6 +187,38 @@ CREATE TABLE IF NOT EXISTS partner_totals (
 -- local ingest being overwritten — and also meant no catalogue improvement ever
 -- reached an existing deployment. The insect group breakdown shipped and stayed
 -- invisible in production for exactly that reason.
+-- German names, so nobody has to know that Sal-Weide is Salix caprea.
+--
+-- `normalised` is stored rather than computed per query: a LIKE over a computed
+-- expression cannot use an index, and this table is what every search touches.
+CREATE TABLE IF NOT EXISTS vernacular_name (
+    taxon_id     INTEGER NOT NULL REFERENCES taxon(taxon_id),
+    name         TEXT    NOT NULL,
+    normalised   TEXT    NOT NULL,
+    is_preferred INTEGER NOT NULL DEFAULT 0,
+    source       TEXT    NOT NULL,
+    PRIMARY KEY (taxon_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vernacular_normalised ON vernacular_name(normalised);
+
+-- Wikipedia summaries, cached per deployment.
+--
+-- Deliberately NOT part of the shipped catalogue: this is derived, refreshable
+-- and per-deployment — the same shape as a garden, not the same shape as plant
+-- data. Baking it into the image would make it stale on the release cycle and
+-- re-inflate something just trimmed to 13 MB.
+CREATE TABLE IF NOT EXISTS species_info (
+    taxon_id      INTEGER PRIMARY KEY REFERENCES taxon(taxon_id),
+    title         TEXT,
+    extract       TEXT,
+    thumbnail_url TEXT,
+    page_url      TEXT,
+    language      TEXT,
+    found         INTEGER NOT NULL,
+    fetched_at    TEXT    NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS catalogue_meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL

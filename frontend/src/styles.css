@@ -205,3 +205,26 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .swaps { margin-top: 1.25rem; }
 .swaps summary { cursor: pointer; font-size: 0.9rem; color: var(--ink-muted); }
 .swaps summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---- wave 6: species info ---- */
+
+.suggestion__actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 0.4rem; align-items: center; }
+.icon-button {
+  margin: 0; padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 500;
+  background: transparent; color: var(--ink-muted); border-color: var(--line);
+}
+.icon-button:hover { color: var(--ink); border-color: var(--ink-muted); }
+
+.info-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.info-panel__head h2 { margin: 0; }
+.link-button {
+  margin: 0; padding: 0; border: none; background: none;
+  color: var(--ink-muted); font: inherit; font-size: 0.85rem;
+  text-decoration: underline; cursor: pointer;
+}
+.info-panel__image {
+  display: block; width: 100%; max-width: 20rem; height: auto;
+  margin: 0.75rem 0; border-radius: var(--radius); border: 1px solid var(--line);
+}
+.info-panel__extract { margin: 0.5rem 0; font-size: 0.92rem; text-wrap: pretty; }
+.attribution a { color: var(--ink-muted); }

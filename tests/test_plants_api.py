@@ -141,3 +141,42 @@ def test_healthz_still_answers_without_touching_the_database(client: TestClient)
     """Otherwise a broken deploy and a broken database look identical."""
     app.dependency_overrides.clear()
     assert client.get("/healthz").status_code == 200
+
+
+# --- species info ----------------------------------------------------------
+
+def test_the_info_endpoint_returns_its_licence_and_a_link_back(
+    client: TestClient, monkeypatch
+) -> None:
+    """CC-BY-SA is a condition of use. The UI may not show the extract alone."""
+    from ninanatur.data import species_info as module
+
+    class Fake:
+        def summary(self, title: str, language: str) -> dict[str, object] | None:
+            if language != "de":
+                return None
+            return {
+                "title": "Gemeine Schafgarbe",
+                "extract": "Eine Pflanzenart aus der Familie der Korbblütler.",
+                "thumbnail": {"source": "https://upload.example/a.jpg"},
+                "content_urls": {"desktop": {"page": "https://de.wikipedia.org/wiki/X"}},
+            }
+
+    monkeypatch.setattr(module, "WikipediaClient", Fake)
+    body = client.get("/api/v1/plants/1/info").json()
+    assert body["title"] == "Gemeine Schafgarbe"
+    assert body["licence"] == "CC-BY-SA-4.0"
+    assert body["page_url"].startswith("https://")
+    assert body["language"] == "de"
+
+
+def test_no_article_is_404_not_an_empty_panel(client: TestClient, monkeypatch) -> None:
+    """An honest absence rather than something that looks like a failed load."""
+    from ninanatur.data import species_info as module
+
+    class Nothing:
+        def summary(self, title: str, language: str) -> dict[str, object] | None:
+            return None
+
+    monkeypatch.setattr(module, "WikipediaClient", Nothing)
+    assert client.get("/api/v1/plants/2/info").status_code == 404

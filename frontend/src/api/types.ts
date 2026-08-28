@@ -283,6 +283,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plants/{taxon_id}/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plant Info
+         * @description A description and photograph, from Wikipedia, cached on this deployment.
+         *
+         *     404 when no article exists in either language — an honest absence rather than
+         *     an empty panel that looks like a loading failure.
+         */
+        get: operations["plant_info_api_v1_plants__taxon_id__info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -641,6 +664,25 @@ export interface components {
             origin: string;
             /** Taxon Id */
             taxon_id: number;
+        };
+        /**
+         * SpeciesInfoOut
+         * @description A description and photo. `licence` and `page_url` are conditions of use,
+         *     not decoration — the UI may not show the extract without them.
+         */
+        SpeciesInfoOut: {
+            /** Extract */
+            extract: string;
+            /** Language */
+            language: string;
+            /** Licence */
+            licence: string;
+            /** Page Url */
+            page_url: string;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+            /** Title */
+            title: string;
         };
         /**
          * TimelineOut
@@ -1152,6 +1194,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlantDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plant_info_api_v1_plants__taxon_id__info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxon_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesInfoOut"];
                 };
             };
             /** @description Validation Error */

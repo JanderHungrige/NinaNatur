@@ -135,6 +135,18 @@ class PartnersOut(BaseModel):
     by_kind: dict[str, int]
 
 
+class SpeciesInfoOut(BaseModel):
+    """A description and photo. `licence` and `page_url` are conditions of use,
+    not decoration — the UI may not show the extract without them."""
+
+    title: str
+    extract: str
+    thumbnail_url: str | None
+    page_url: str
+    language: str
+    licence: str
+
+
 class PlantDetail(BaseModel):
     taxon_id: int
     canonical_name: str

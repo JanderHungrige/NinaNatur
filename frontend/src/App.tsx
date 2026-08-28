@@ -14,6 +14,7 @@ import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
+import { SpeciesInfo } from './components/SpeciesInfo';
 import { SuggestionList } from './components/SuggestionList';
 
 const client = new NinaNaturClient();
@@ -38,6 +39,7 @@ export function App() {
   const [forage, setForage] = useState(true);
   const [score, setScore] = useState<ScoreOut | null>(null);
   const [version, setVersion] = useState<string | null>(null);
+  const [infoFor, setInfoFor] = useState<{ taxonId: number; name: string } | null>(null);
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
 
   const load = useCallback(async (token: string, weighted = true) => {
@@ -209,7 +211,19 @@ export function App() {
                 onAddObstacle={addObstacle}
                 busy={busy}
               />
-              <SuggestionList suggestions={suggestions} onPlant={plant} busy={busy} />
+              <SuggestionList
+                suggestions={suggestions}
+                onPlant={plant}
+                onShowInfo={(taxonId, name) => setInfoFor({ taxonId, name })}
+                busy={busy}
+              />
+              {infoFor !== null ? (
+                <SpeciesInfo
+                  taxonId={infoFor.taxonId}
+                  canonicalName={infoFor.name}
+                  onClose={() => setInfoFor(null)}
+                />
+              ) : null}
             </div>
             <div className="column">
               <GardenCanvas

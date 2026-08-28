@@ -19,6 +19,7 @@ export type MonthOut = components['schemas']['MonthOut'];
 export type ScoreOut = components['schemas']['ScoreOut'];
 export type ImprovementsOut = components['schemas']['ImprovementsOut'];
 export type ChangeOut = components['schemas']['ChangeOut'];
+export type SpeciesInfoOut = components['schemas']['SpeciesInfoOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -190,6 +191,23 @@ export class NinaNaturClient {
       `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/plantings`,
       { method: 'POST', body: JSON.stringify({ taxon_id: taxonId, quantity }) },
     );
+  }
+
+  /**
+   * A description and photo for one species, or null when there is no article.
+   *
+   * Null rather than throwing: a missing Wikipedia page is a normal outcome for
+   * an obscure species, not an error the user should see as one.
+   */
+  async speciesInfo(taxonId: number): Promise<SpeciesInfoOut | null> {
+    try {
+      return await this.request<SpeciesInfoOut>(`/api/v1/plants/${taxonId}/info`);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /** What this planting is worth to insects, with its components. */

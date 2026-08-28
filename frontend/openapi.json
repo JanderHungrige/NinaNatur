@@ -1000,6 +1000,52 @@
         "title": "SpeciesContributionOut",
         "type": "object"
       },
+      "SpeciesInfoOut": {
+        "description": "A description and photo. `licence` and `page_url` are conditions of use,\nnot decoration \u2014 the UI may not show the extract without them.",
+        "properties": {
+          "extract": {
+            "title": "Extract",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "page_url": {
+            "title": "Page Url",
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "extract",
+          "thumbnail_url",
+          "page_url",
+          "language",
+          "licence"
+        ],
+        "title": "SpeciesInfoOut",
+        "type": "object"
+      },
       "TimelineOut": {
         "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic.",
         "properties": {
@@ -1141,7 +1187,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.5.7"
+    "version": "V0.5.9"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -2026,6 +2072,49 @@
           }
         },
         "summary": "Plant Detail",
+        "tags": [
+          "plants"
+        ]
+      }
+    },
+    "/api/v1/plants/{taxon_id}/info": {
+      "get": {
+        "description": "A description and photograph, from Wikipedia, cached on this deployment.\n\n404 when no article exists in either language \u2014 an honest absence rather than\nan empty panel that looks like a loading failure.",
+        "operationId": "plant_info_api_v1_plants__taxon_id__info_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "taxon_id",
+            "required": true,
+            "schema": {
+              "title": "Taxon Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Plant Info",
         "tags": [
           "plants"
         ]
