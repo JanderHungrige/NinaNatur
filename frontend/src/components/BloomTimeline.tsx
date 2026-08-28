@@ -1,16 +1,34 @@
 import type { TimelineOut } from '../api/client';
+import { plantings } from '../plural';
 
 interface Props {
   timeline: TimelineOut;
   forage: boolean;
   onToggleForage: (forage: boolean) => void;
   busy: boolean;
+  /** The month currently filtering the suggestions, if any. */
+  selectedMonth?: number | null;
+  /**
+   * Choosing a month, or clearing it with null. Optional: without it the
+   * timeline stays a plain table, which is how it is used read-only elsewhere.
+   */
+  onSelectMonth?: ((month: number | null) => void) | undefined;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
+/** Spelled out for anything that gets read aloud — "Mär" is a column width, not a word. */
+const FULL_MONTHS = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+
 function monthName(month: number): string {
   return MONTHS[month - 1] ?? String(month);
+}
+
+function fullMonthName(month: number): string {
+  return FULL_MONTHS[month - 1] ?? String(month);
 }
 
 /** "März bis Mai" — a run of months named the way a person would say it. */
@@ -28,8 +46,20 @@ export function describeGap(months: readonly number[]): string {
  * with a caption. Everything a bar shows is also a number in a cell, so nothing
  * here is knowable only by looking at it.
  */
-export function BloomTimeline({ timeline, forage, onToggleForage, busy }: Props) {
+export function BloomTimeline({
+  timeline,
+  forage,
+  onToggleForage,
+  busy,
+  selectedMonth = null,
+  onSelectMonth,
+}: Props) {
   const gapMonths = new Set(timeline.gaps.flatMap((gap) => gap.months));
+
+  /** A toggle: the click that says "show me April" is the one used to undo it. */
+  const choose = (month: number) => {
+    onSelectMonth?.(selectedMonth === month ? null : month);
+  };
 
   return (
     <section className="panel" aria-labelledby="timeline-heading">
@@ -76,8 +106,30 @@ export function BloomTimeline({ timeline, forage, onToggleForage, busy }: Props)
               {timeline.months.map((month) => {
                 const isGap = gapMonths.has(month.month);
                 return (
-                  <tr key={month.month} className={isGap ? 'is-gap' : undefined}>
-                    <th scope="row">{monthName(month.month)}</th>
+                  <tr
+                    key={month.month}
+                    className={
+                      [isGap ? 'is-gap' : '', selectedMonth === month.month ? 'is-chosen' : '']
+                        .filter(Boolean)
+                        .join(' ') || undefined
+                    }
+                  >
+                    <th scope="row">
+                      {onSelectMonth === undefined ? (
+                        monthName(month.month)
+                      ) : (
+                        <button
+                          type="button"
+                          className="month-button"
+                          aria-pressed={selectedMonth === month.month}
+                          aria-label={`Vorschläge für ${fullMonthName(month.month)}`}
+                          disabled={busy}
+                          onClick={() => choose(month.month)}
+                        >
+                          {monthName(month.month)}
+                        </button>
+                      )}
+                    </th>
                     <td>
                       <span
                         className="bar"
@@ -100,7 +152,7 @@ export function BloomTimeline({ timeline, forage, onToggleForage, busy }: Props)
           <p className="hint">
             Anteil jeweils bezogen auf den besten Monat dieses Gartens.
             {timeline.plantings_without_interaction_data > 0 && forage
-              ? ` Für ${timeline.plantings_without_interaction_data} Pflanzung(en)
+              ? ` Für ${plantings(timeline.plantings_without_interaction_data)}
                   liegen keine Insektendaten vor — sie zählen einfach mit.`
               : ''}
           </p>

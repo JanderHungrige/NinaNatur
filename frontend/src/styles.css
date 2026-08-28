@@ -313,3 +313,32 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   gap: 0.3rem;
   white-space: nowrap;
 }
+
+/* Month selection in the bloom year (Wave 6). */
+.month-button {
+  width: 100%;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.month-button:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface-2, #eef3ec);
+}
+
+.month-button[aria-pressed='true'] {
+  border-color: var(--accent, #4a7c59);
+  background: var(--accent, #4a7c59);
+  color: #fff;
+}
+
+.timeline tr.is-chosen td {
+  background: var(--surface-2, #eef3ec);
+}

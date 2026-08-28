@@ -266,7 +266,15 @@ export function App() {
                   forage={forage}
                   onToggleForage={toggleForage}
                   busy={busy}
-                />
+                selectedMonth={filters.floweringMonth ?? null}
+                onSelectMonth={(month) =>
+                  changeFilters(
+                    month === null
+                      ? (({ floweringMonth: _drop, ...rest }) => rest)(filters)
+                      : { ...filters, floweringMonth: month },
+                  )
+                }
+              />
               ) : null}
               {score !== null ? (
                 <InsectScore
