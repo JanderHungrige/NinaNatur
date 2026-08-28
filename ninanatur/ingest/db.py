@@ -65,6 +65,19 @@ CREATE TABLE IF NOT EXISTS interaction (
 
 CREATE INDEX IF NOT EXISTS idx_interaction_taxon ON interaction(taxon_id);
 
+-- Insects actually recorded in Germany, from the same GBIF occurrence facet used
+-- for the plants. GloBI's relations are worldwide; without this list a plant's
+-- partner count ranks it by global research effort rather than garden value.
+-- Keyed by canonical name, because that is what the GloBI intersection joins on.
+-- The names come straight from GBIF's SCIENTIFIC_NAME occurrence facet (19 calls
+-- for ~19k species, versus one detail request each), so no backbone key is
+-- involved and inventing one would only add a column nothing reads.
+CREATE TABLE IF NOT EXISTS insect_de (
+    canonical_name  TEXT PRIMARY KEY,
+    scientific_name TEXT,
+    occurrences     INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS source_run (
     source      TEXT NOT NULL,
     started_at  TEXT NOT NULL,

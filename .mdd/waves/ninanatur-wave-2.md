@@ -32,7 +32,7 @@ be built against anything real.
 |---|---------|-----|--------|------------|
 | 1 | niche-fit | .mdd/docs/03-niche-fit.md | complete | — |
 | 2 | trait-resolve | .mdd/docs/04-trait-resolve.md | complete | — |
-| 3 | insect-checklist-de | 05-insect-checklist-de | planned | — |
+| 3 | insect-checklist-de | .mdd/docs/05-insect-checklist-de.md | complete | — |
 | 4 | plants-api | 06-plants-api | planned | 03, 04, 05 |
 
 ### 1 — niche-fit
