@@ -71,3 +71,48 @@ def test_the_spa_mount_never_shadows_the_api_or_the_health_probe() -> None:
         if getattr(route, "path", None) == "/healthz"
     )
     assert healthz < first_mount, "/healthz must be matched before the SPA mount"
+
+
+def test_a_fresh_volume_comes_up_with_a_plant_catalogue(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Regression: the deployed app answered "0 matching species" to everything.
+
+    The schema was created at startup but the catalogue was not, so a fresh volume
+    served a structurally perfect and entirely empty product.
+    """
+    import sqlite3
+
+    from ninanatur.ingest.catalogue import CATALOGUE_TABLES, seed_catalogue
+    from ninanatur.ingest.db import connect, init_schema
+
+    shipped = tmp_path / "catalogue.sqlite"
+    builder = connect(shipped, same_thread=False)
+    init_schema(builder)
+    builder.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, occurs_de) VALUES (5, 'Testus', 1)"
+    )
+    builder.commit()
+    builder.close()
+
+    target = tmp_path / "fresh.sqlite"
+    conn = connect(target, same_thread=False)
+    init_schema(conn)
+    assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 0
+
+    seeded = seed_catalogue(conn, shipped)
+    assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 1
+    assert set(seeded) <= set(CATALOGUE_TABLES)
+    assert isinstance(conn, sqlite3.Connection)
+
+
+def test_seeding_never_runs_over_existing_plants(tmp_path: Path) -> None:
+    """Seeding over a newer local ingest would silently discard it."""
+    from ninanatur.ingest.catalogue import catalogue_is_empty
+    from ninanatur.ingest.db import connect, init_schema
+
+    conn = connect(tmp_path / "has-data.sqlite", same_thread=False)
+    init_schema(conn)
+    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Vorhanden')")
+    conn.commit()
+    assert catalogue_is_empty(conn) is False

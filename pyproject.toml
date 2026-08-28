@@ -19,6 +19,9 @@ include = ["ninanatur*"]
 
 [tool.setuptools.package-data]
 "ninanatur.web" = ["static/*"]
+# The runtime catalogue travels with the code it was built against — plant data
+# is derived from static sources, gardens are not.
+"ninanatur.data" = ["catalogue.sqlite"]
 
 [project.scripts]
 ninanatur-ingest = "ninanatur.ingest.cli:main"

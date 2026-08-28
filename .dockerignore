@@ -1,6 +1,7 @@
 .git
 .venv
 data
+!ninanatur/data/catalogue.sqlite
 tests
 .mdd
 .github

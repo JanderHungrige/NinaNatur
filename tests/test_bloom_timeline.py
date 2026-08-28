@@ -14,6 +14,7 @@ from ninanatur.garden.models import BedInput
 from ninanatur.garden.store import add_bed, add_planting, create_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.ingest.summarise import summarise_interactions
 
 SQUARE = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]
 
@@ -68,6 +69,7 @@ def _species(c: sqlite3.Connection, tid: int, name: str, start: int, end: int,
             " VALUES (?, ?, 'visitedBy', 'GloBI', 'CC0-1.0')",
             (tid, f"Insectum {tid}-{i}"),
         )
+    summarise_interactions(c)
     c.commit()
 
 
@@ -132,6 +134,7 @@ def test_forage_mode_ranks_an_insect_plant_above_a_showy_one(
     _species(conn, 2, "Ziersorte", 7, 7, partners=0)
     conn.execute("INSERT INTO interaction (taxon_id, partner_name, interaction_type,"
                  " source, license) VALUES (2, 'Nichtdeutsch', 'visitedBy', 'GloBI', 'CC0-1.0')")
+    summarise_interactions(conn)
     conn.commit()
     timeline = garden_timeline(conn, load_garden(conn, _garden_with(conn, 1, 2)),
                                mode=TimelineMode.FORAGE)

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from ninanatur.api.deps import get_connection
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.ingest.summarise import summarise_interactions
 from ninanatur.web.app import app
 
 CORE = ("ellenberg_l", "ellenberg_m", "ellenberg_n", "height_max_m",
@@ -42,6 +43,8 @@ def client() -> Iterator[TestClient]:
         "INSERT INTO interaction (taxon_id, partner_name, interaction_type, source, license)"
         " VALUES (1, 'Apis mellifera', 'visitedBy', 'GloBI', 'CC0-1.0')"
     )
+    # The read path uses the aggregates, so raw records alone are invisible to it.
+    summarise_interactions(conn)
     conn.commit()
     app.dependency_overrides[get_connection] = lambda: conn
     yield TestClient(app)

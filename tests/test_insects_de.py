@@ -5,6 +5,7 @@ import pytest
 
 from ninanatur.data.interactions import PartnerCounts, german_partner_counts
 from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.summarise import summarise_interactions
 
 
 @pytest.fixture()
@@ -20,11 +21,13 @@ def conn() -> sqlite3.Connection:
 
 
 def _rel(c: sqlite3.Connection, partner: str, kind: str = "visitedBy") -> None:
+    """Record a relation and rebuild the aggregates the read path uses."""
     c.execute(
         "INSERT INTO interaction (taxon_id, partner_name, interaction_type, source, license)"
         " VALUES (1, ?, ?, 'GloBI', 'CC0-1.0')",
         (partner, kind),
     )
+    summarise_interactions(c)
 
 
 def test_only_partners_recorded_in_germany_are_counted(conn: sqlite3.Connection) -> None:
