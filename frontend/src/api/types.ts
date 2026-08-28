@@ -58,10 +58,9 @@ export interface paths {
          *     PolygonError, SoilTypeError and MoistureError all subclass ValueError, so they
          *     surface as 422 with their reason rather than as a 500.
          *
-         *     The recompute is not optional. Only adding an *obstacle* used to trigger it, so
-         *     a garden with no obstacles left every bed on "not yet computed" forever — and
-         *     suggestions for such a bed were then scored on soil alone, which is both worse
-         *     and silently so.
+         *     `add_bed` computes the light itself, so the invariant does not depend on which
+         *     entry point created the bed — it used to live here, and a bed made through the
+         *     store had no light at all.
          */
         post: operations["create_bed_api_v1_gardens__token__beds_post"];
         delete?: never;
@@ -104,9 +103,34 @@ export interface paths {
          *     The bed's derived axes are the query, so the user never types an Ellenberg
          *     number. Trees and shrubs are excluded by default: a bed is a few square
          *     metres, and a hemlock that fits the light perfectly is still a useless
-         *     suggestion.
+         *     suggestion. Introduced species are excluded for a different reason: the
+         *     product promises native plants, and a third of the catalogue is not.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/improvements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Improvements
+         * @description What to plant, and what it would gain.
+         *
+         *     Additions come first because they are the safer advice: a swap removes
+         *     something, and the score will recommend removing a valuable plant whose month
+         *     is already saturated. See the known issue in 19-swap-suggestions.
+         */
+        get: operations["improvements_api_v1_gardens__token__improvements_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -169,6 +193,26 @@ export interface paths {
         put?: never;
         /** Recompute */
         post: operations["recompute_api_v1_gardens__token__recompute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Score
+         * @description What this planting is worth to insects, with its components.
+         */
+        get: operations["score_api_v1_gardens__token__score_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -341,6 +385,29 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ChangeOut */
+        ChangeOut: {
+            /** Bed Id */
+            bed_id: number;
+            /** Bed Name */
+            bed_name: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Gain */
+            gain: number;
+            /** German Partners */
+            german_partners: number | null;
+            /** Reason */
+            reason: string;
+            /** Replaces Name */
+            replaces_name: string | null;
+            /** Replaces Planting Id */
+            replaces_planting_id: number | null;
+            /** Resulting Score */
+            resulting_score: number;
+            /** Taxon Id */
+            taxon_id: number;
+        };
         /** FitOut */
         FitOut: {
             /** Axes */
@@ -403,6 +470,15 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImprovementsOut */
+        ImprovementsOut: {
+            /** Additions */
+            additions: components["schemas"]["ChangeOut"][];
+            /** Current Score */
+            current_score: number;
+            /** Swaps */
+            swaps: components["schemas"]["ChangeOut"][];
         };
         /** MonthOut */
         MonthOut: {
@@ -523,6 +599,46 @@ export interface components {
             planting_id: number;
             /** Quantity */
             quantity: number;
+            /** Taxon Id */
+            taxon_id: number;
+        };
+        /**
+         * ScoreOut
+         * @description The score with everything needed to argue about it — a score a user cannot
+         *     interrogate is decoration, and this one will be trusted more than it deserves.
+         */
+        ScoreOut: {
+            /** By Group */
+            by_group: {
+                [key: string]: number;
+            };
+            /** By Month */
+            by_month: {
+                [key: string]: number;
+            };
+            /** By Species */
+            by_species: components["schemas"]["SpeciesContributionOut"][];
+            /** Is Empty */
+            is_empty: boolean;
+            /** Plantings Total */
+            plantings_total: number;
+            /** Plantings Without Interaction Data */
+            plantings_without_interaction_data: number;
+            /** Score */
+            score: number;
+        };
+        /** SpeciesContributionOut */
+        SpeciesContributionOut: {
+            /** Canonical Name */
+            canonical_name: string;
+            /** Forage */
+            forage: number;
+            /** German Partners */
+            german_partners: number | null;
+            /** Months */
+            months: number[];
+            /** Origin */
+            origin: string;
             /** Taxon Id */
             taxon_id: number;
         };
@@ -752,6 +868,7 @@ export interface operations {
                 limit?: number;
                 colour?: string | null;
                 include_trees?: boolean;
+                include_introduced?: boolean;
                 exclude_planted?: boolean;
             };
             header?: never;
@@ -770,6 +887,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BedSuggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    improvements_api_v1_gardens__token__improvements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImprovementsOut"];
                 };
             };
             /** @description Validation Error */
@@ -868,6 +1016,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    score_api_v1_gardens__token__score_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreOut"];
                 };
             };
             /** @description Validation Error */

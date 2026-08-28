@@ -3,11 +3,11 @@ id: ninanatur-wave-5
 title: "Wave 5: What the planting is worth to insects"
 initiative: ninanatur
 initiative_version: 8
-status: planned
+status: complete
 depends_on: ninanatur-wave-4
 demo_state: "A planting shows an insect score built on counted German relations, and suggested swaps that measurably raise it — each explained in a sentence"
 created: 2026-08-27
-hash: d9df1140
+hash: 5fc1811e
 ---
 
 # Wave 5 — What the planting is worth to insects
@@ -44,7 +44,7 @@ Both are obtainable, verified before planning rather than assumed:
 | 2 | insect-groups | .mdd/docs/17-insect-groups.md | complete | — |
 | 3 | insect-score | .mdd/docs/18-insect-score.md | complete | 16, 17 |
 | 4 | swap-suggestions | .mdd/docs/19-swap-suggestions.md | complete | 18 |
-| 5 | score-ui | 20-score-ui | planned | 19 |
+| 5 | score-ui | .mdd/docs/20-score-ui.md | complete | 19 |
 
 ### 1 — nativeness
 

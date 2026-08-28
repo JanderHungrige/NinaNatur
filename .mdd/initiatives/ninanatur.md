@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 10
-hash: b2f5ce75
+version: 11
+hash: 4d62a903
 created: 2026-08-27
 ---
 
@@ -186,7 +186,7 @@ data would be convenient.
 | Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions", every value citing its source | complete |
 | Wave 3 | waves/ninanatur-wave-3.md | Beds get a computed light value from the real sun path | complete |
 | Wave 4 | waves/ninanatur-wave-4.md | The bloom year, month by month, with forage gaps marked | complete |
-| Wave 5 | waves/ninanatur-wave-5.md | An insect score on counted German relations, and swaps that raise it | in_progress |
+| Wave 5 | waves/ninanatur-wave-5.md | An insect score on counted German relations, and swaps that raise it | complete |
 | Wave 6 | waves/ninanatur-wave-6.md | A catalogue you can browse: German names, photos, filters, month-click | planned |
 | Wave 7 | waves/ninanatur-wave-7.md | The garden drawn rather than typed, labelled by clicking, playing through the year | planned |
 | Wave 8 | waves/ninanatur-wave-8.md | An address becomes a drawing carrying the surroundings that shade it | planned |

@@ -16,6 +16,9 @@ export type PlantSummary = components['schemas']['PlantSummary'];
 export type TimelineOut = components['schemas']['TimelineOut'];
 export type BedSuggestions = components['schemas']['BedSuggestions'];
 export type MonthOut = components['schemas']['MonthOut'];
+export type ScoreOut = components['schemas']['ScoreOut'];
+export type ImprovementsOut = components['schemas']['ImprovementsOut'];
+export type ChangeOut = components['schemas']['ChangeOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -173,6 +176,18 @@ export class NinaNaturClient {
     return this.request<GardenOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/plantings`,
       { method: 'POST', body: JSON.stringify({ taxon_id: taxonId, quantity }) },
+    );
+  }
+
+  /** What this planting is worth to insects, with its components. */
+  async score(token: string): Promise<ScoreOut> {
+    return this.request<ScoreOut>(`/api/v1/gardens/${encodeURIComponent(token)}/score`);
+  }
+
+  /** What to plant, and what it would gain. */
+  async improvements(token: string): Promise<ImprovementsOut> {
+    return this.request<ImprovementsOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/improvements`,
     );
   }
 

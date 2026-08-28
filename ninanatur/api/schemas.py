@@ -86,6 +86,47 @@ class TimelineOut(BaseModel):
     is_empty: bool
 
 
+class SpeciesContributionOut(BaseModel):
+    taxon_id: int
+    canonical_name: str
+    german_partners: int | None
+    origin: str
+    forage: float
+    months: list[int]
+
+
+class ScoreOut(BaseModel):
+    """The score with everything needed to argue about it — a score a user cannot
+    interrogate is decoration, and this one will be trusted more than it deserves."""
+
+    score: float
+    by_month: dict[str, float]
+    by_species: list[SpeciesContributionOut]
+    by_group: dict[str, int]
+    plantings_total: int
+    plantings_without_interaction_data: int
+    is_empty: bool
+
+
+class ChangeOut(BaseModel):
+    taxon_id: int
+    canonical_name: str
+    bed_id: int
+    bed_name: str
+    gain: float
+    resulting_score: float
+    reason: str
+    german_partners: int | None
+    replaces_planting_id: int | None
+    replaces_name: str | None
+
+
+class ImprovementsOut(BaseModel):
+    current_score: float
+    additions: list[ChangeOut]
+    swaps: list[ChangeOut]
+
+
 class PartnersOut(BaseModel):
     german: int
     global_total: int

@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { BedSuggestions, GardenOut, TimelineOut } from './api/client';
+import type {
+  BedSuggestions,
+  ChangeOut,
+  GardenOut,
+  ImprovementsOut,
+  ScoreOut,
+  TimelineOut,
+} from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
 import { SuggestionList } from './components/SuggestionList';
 
@@ -28,6 +36,8 @@ export function App() {
   const [timeline, setTimeline] = useState<TimelineOut | null>(null);
   const [suggestions, setSuggestions] = useState<BedSuggestions | null>(null);
   const [forage, setForage] = useState(true);
+  const [score, setScore] = useState<ScoreOut | null>(null);
+  const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
@@ -37,6 +47,10 @@ export function App() {
     }
     setGarden(found);
     setTimeline(await client.timeline(token, weighted));
+    setScore(await client.score(token));
+    // Loaded here rather than on bed selection: the suggestions are the point of
+    // the score, and hiding them until something is clicked buries it.
+    setImprovements(await client.improvements(token));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -66,9 +80,30 @@ export function App() {
       if (garden === null) return;
       void run('Vorschläge laden', async () => {
         setSuggestions(await client.bedSuggestions(garden.share_token, bedId));
+        setImprovements(await client.improvements(garden.share_token));
       });
     },
     [garden, run],
+  );
+
+  /** Everything the server derives, re-read together after any change. */
+  const refresh = useCallback(async (token: string, weighted: boolean) => {
+    setTimeline(await client.timeline(token, weighted));
+    setScore(await client.score(token));
+    setImprovements(await client.improvements(token));
+  }, []);
+
+  const applyChange = useCallback(
+    async (change: ChangeOut) => {
+      if (garden === null) return;
+      await run('Pflanzen', async () => {
+        const updated = await client.plant(garden.share_token, change.bed_id, change.taxon_id);
+        setGarden(updated);
+        await refresh(garden.share_token, forage);
+        setStatus(`${change.canonical_name} gepflanzt — ${change.reason}.`);
+      });
+    },
+    [garden, forage, refresh, run],
   );
 
   const plant = useCallback(
@@ -78,12 +113,12 @@ export function App() {
         // Re-read from the server: the timeline depends on data only it has.
         const updated = await client.plant(garden.share_token, selectedBedId, taxonId);
         setGarden(updated);
-        setTimeline(await client.timeline(garden.share_token, forage));
+        await refresh(garden.share_token, forage);
         setSuggestions(await client.bedSuggestions(garden.share_token, selectedBedId));
         setStatus(`${name} gepflanzt.`);
       });
     },
-    [garden, selectedBedId, forage, run],
+    [garden, selectedBedId, forage, refresh, run],
   );
 
   const toggleForage = useCallback(
@@ -123,11 +158,11 @@ export function App() {
         // data does not support.
         const updated = await client.addBed(garden.share_token, bed);
         setGarden(updated);
-        setTimeline(await client.timeline(garden.share_token, forage));
+        await refresh(garden.share_token, forage);
         setStatus(`Beet ${bed.name} hinzugefügt.`);
       });
     },
-    [garden, forage, run],
+    [garden, forage, refresh, run],
   );
 
   const addObstacle = useCallback(
@@ -152,7 +187,7 @@ export function App() {
         <span className="brand">
           <span className="brand__name">NinaNatur</span>
         </span>
-        <span className="badge">Wave&nbsp;4</span>
+        <span className="badge">Wave&nbsp;5</span>
       </header>
 
       <main id="main" className="layout">
@@ -182,6 +217,14 @@ export function App() {
                   timeline={timeline}
                   forage={forage}
                   onToggleForage={toggleForage}
+                  busy={busy}
+                />
+              ) : null}
+              {score !== null ? (
+                <InsectScore
+                  score={score}
+                  improvements={improvements}
+                  onApply={applyChange}
                   busy={busy}
                 />
               ) : null}
