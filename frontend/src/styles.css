@@ -353,3 +353,56 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
   font-style: italic;
 }
+
+/* --- Wave 7: the drawing surface -------------------------------------- */
+
+.canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.canvas-controls__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.canvas-controls__row button {
+  padding: 0.3rem 0.6rem;
+}
+
+.canvas-controls__scale,
+.canvas-controls__draft {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  padding: 0 0.3rem;
+}
+
+.canvas-controls__problem {
+  color: var(--ink);
+  border-left: 3px solid var(--leaf);
+  padding-left: 0.6rem;
+}
+
+/* While drawing, a click means "place a vertex" — say so with the cursor. */
+.canvas--drawing {
+  cursor: crosshair;
+}
+
+.canvas {
+  cursor: grab;
+  touch-action: none; /* the pointer drag pans; the browser must not also scroll */
+}
+
+.draft__line {
+  fill: none;
+  stroke: var(--leaf);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.4 0.3;
+}
+
+.draft circle {
+  fill: var(--leaf);
+}

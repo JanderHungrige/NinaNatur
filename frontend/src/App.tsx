@@ -193,6 +193,24 @@ export function App() {
     [garden, forage, refresh, run],
   );
 
+  /**
+   * A polygon drawn on the plan becomes a bed with a placeholder name and the
+   * default soil, which the bed form then edits. Asking for a name mid-drawing
+   * would interrupt the one gesture the whole feature exists for.
+   */
+  const drawBed = useCallback(
+    (polygon: number[][]) => {
+      const nth = (garden?.beds.length ?? 0) + 1;
+      void addBed({
+        name: `Beet ${nth}`,
+        polygon,
+        soil_type: 'loam',
+        moisture: 'fresh',
+      });
+    },
+    [garden, addBed],
+  );
+
   const addObstacle = useCallback(
     async (obstacle: { kind: string; x: number; y: number; radius: number; height: number }) => {
       if (garden === null) return;
@@ -260,6 +278,7 @@ export function App() {
                 garden={garden}
                 selectedBedId={selectedBedId}
                 onSelectBed={selectBed}
+                onDrawBed={drawBed}
               />
               {timeline !== null ? (
                 <BloomTimeline

@@ -3,11 +3,11 @@ id: ninanatur-wave-7
 title: "Wave 7: The garden as a drawing"
 initiative: ninanatur
 initiative_version: 10
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-6
 demo_state: "A user draws their garden — outline, beds, trees, walls — labels each object by clicking it, enters what already grows there, and plays the bloom year as colour on the plan"
 created: 2026-08-28
-hash: c2d62beb
+hash: f3fbee91
 ---
 
 # Wave 7 — The garden as a drawing
@@ -32,7 +32,7 @@ usually dropped.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | drawing-canvas | 26-drawing-canvas | planned | — |
+| 1 | drawing-canvas | 26-drawing-canvas | complete | — |
 | 2 | object-labelling | 27-object-labelling | planned | 26 |
 | 3 | existing-plantings | 28-existing-plantings | planned | 27 |
 | 4 | bloom-playback | 29-bloom-playback | planned | 27 |
