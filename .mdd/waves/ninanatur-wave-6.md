@@ -3,11 +3,11 @@ id: ninanatur-wave-6
 title: "Wave 6: A catalogue you can actually browse"
 initiative: ninanatur
 initiative_version: 10
-status: planned
+status: complete
 depends_on: ninanatur-wave-5
 demo_state: "A user finds a plant by its German name, filters by height and colour, clicks a month to see only what flowers then, and opens any species for a description and a photo"
 created: 2026-08-28
-hash: a3e9696f
+hash: e393d583
 ---
 
 # Wave 6 — A catalogue you can actually browse
@@ -28,11 +28,11 @@ worth more once the plants behind it are findable and legible.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | german-names | 21-german-names | planned | — |
-| 2 | species-info | 22-species-info | planned | — |
-| 3 | catalogue-filters | 23-catalogue-filters | planned | 21 |
-| 4 | month-suggestions | 24-month-suggestions | planned | 23 |
-| 5 | woody-and-birds | 25-woody-and-birds | planned | — |
+| 1 | german-names | 21-german-names | complete | — |
+| 2 | species-info | 22-species-info | complete | — |
+| 3 | catalogue-filters | 23-catalogue-filters | complete | 21 |
+| 4 | month-suggestions | 24-month-suggestions | complete | 23 |
+| 5 | woody-and-birds | 25-woody-and-birds | complete | — |
 
 ### 1 — german-names (#4)
 

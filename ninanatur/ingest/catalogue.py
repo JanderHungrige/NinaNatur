@@ -28,6 +28,10 @@ CATALOGUE_TABLES: tuple[str, ...] = (
     # cannot explain its own number.
     "partner_groups",
     "insect_de",
+    # Wave 6: without these the catalogue is a list of Latin binomials.
+    "vernacular_name",
+    # Wave 6: bird partners, counted apart from the insect score.
+    "partner_birds",
 )
 
 DEFAULT_CATALOGUE = Path("ninanatur/data/catalogue.sqlite")
@@ -93,6 +97,24 @@ def _version_of(conn: sqlite3.Connection, prefix: str = "") -> str | None:
     return str(row["value"]) if row else None
 
 
+def _shared_columns(conn: sqlite3.Connection, table: str) -> list[str]:
+    """Columns present in both the shipped catalogue and this database.
+
+    Named explicitly rather than `SELECT *`, which couples the two schemas
+    positionally: adding a column to a catalogue table then makes the shipped
+    rows one value short and the sync fails outright — or, if a column was also
+    dropped, succeeds while writing every value into the wrong field.
+
+    The intersection degrades the right way in both directions. A column this
+    database has and the catalogue does not keeps its default (that is how
+    `insect_de.clade` reached an existing volume); a column the catalogue has
+    and this database does not is ignored until the schema catches up.
+    """
+    local = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]  # noqa: S608
+    shipped = {row[1] for row in conn.execute(f"PRAGMA shipped.table_info({table})")}  # noqa: S608
+    return [name for name in local if name in shipped]
+
+
 def sync_catalogue(conn: sqlite3.Connection, source: Path) -> dict[str, int]:
     """Bring the database's catalogue up to the shipped build.
 
@@ -123,7 +145,14 @@ def sync_catalogue(conn: sqlite3.Connection, source: Path) -> dict[str, int]:
             ).fetchone()
             if present is None:
                 continue
-            conn.execute(f"INSERT OR REPLACE INTO {table} SELECT * FROM shipped.{table}")  # noqa: S608
+            shared = _shared_columns(conn, table)
+            if not shared:
+                continue
+            columns = ", ".join(shared)
+            conn.execute(
+                f"INSERT OR REPLACE INTO {table} ({columns}) "  # noqa: S608
+                f"SELECT {columns} FROM shipped.{table}"
+            )
             counts[table] = int(
                 conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]  # noqa: S608
             )

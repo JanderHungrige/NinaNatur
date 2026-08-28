@@ -78,3 +78,64 @@ describe('BloomTimeline', () => {
     expect(screen.getByText(/keine Insektendaten/)).toBeDefined();
   });
 });
+
+describe('BloomTimeline — choosing a month', () => {
+  function clickable(selected: number | null = null) {
+    const onSelectMonth = vi.fn();
+    render(
+      <BloomTimeline
+        timeline={timeline()}
+        forage
+        onToggleForage={vi.fn()}
+        busy={false}
+        selectedMonth={selected}
+        onSelectMonth={onSelectMonth}
+      />,
+    );
+    return onSelectMonth;
+  }
+
+  it('makes each month a real button, not a click handler on a row', () => {
+    // A row is not focusable and announces nothing; a button is both.
+    clickable();
+    expect(screen.getByRole('button', { name: /Vorschläge für April/ })).toBeDefined();
+  });
+
+  it('selects the month that was clicked', () => {
+    const onSelectMonth = clickable();
+    screen.getByRole('button', { name: /Vorschläge für April/ }).click();
+    expect(onSelectMonth).toHaveBeenCalledWith(4);
+  });
+
+  it('clicking the selected month again clears it', () => {
+    // The same click that says "show me April" is the one reached for to undo it.
+    const onSelectMonth = clickable(4);
+    screen.getByRole('button', { name: /April/ }).click();
+    expect(onSelectMonth).toHaveBeenCalledWith(null);
+  });
+
+  it('announces which month is selected', () => {
+    clickable(4);
+    const button = screen.getByRole('button', { name: /April/ });
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('names the month in full, not the abbreviation the column shows', () => {
+    // "Mär" is fine to read in a narrow column and wrong to hear read aloud.
+    clickable();
+    expect(screen.getByRole('button', { name: 'Vorschläge für März' })).toBeDefined();
+  });
+
+  it('offers months outside the gap season too', () => {
+    // The gap analysis runs March to October; "what flowers in December" is
+    // still a real question with a real answer.
+    clickable();
+    expect(screen.getByRole('button', { name: /Dezember/ })).toBeDefined();
+  });
+
+  it('stays a plain table when no handler is given', () => {
+    // The timeline is used read-only elsewhere; it must not sprout buttons.
+    render(<BloomTimeline timeline={timeline()} forage onToggleForage={vi.fn()} busy={false} />);
+    expect(screen.queryByRole('button', { name: /Vorschläge für/ })).toBeNull();
+  });
+});

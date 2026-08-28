@@ -205,3 +205,150 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .swaps { margin-top: 1.25rem; }
 .swaps summary { cursor: pointer; font-size: 0.9rem; color: var(--ink-muted); }
 .swaps summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---- wave 6: species info ---- */
+
+.suggestion__actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 0.4rem; align-items: center; }
+.icon-button {
+  margin: 0; padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 500;
+  background: transparent; color: var(--ink-muted); border-color: var(--line);
+}
+.icon-button:hover { color: var(--ink); border-color: var(--ink-muted); }
+
+.info-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.info-panel__head h2 { margin: 0; }
+.link-button {
+  margin: 0; padding: 0; border: none; background: none;
+  color: var(--ink-muted); font: inherit; font-size: 0.85rem;
+  text-decoration: underline; cursor: pointer;
+}
+.info-panel__image {
+  display: block; width: 100%; max-width: 20rem; height: auto;
+  margin: 0.75rem 0; border-radius: var(--radius); border: 1px solid var(--line);
+}
+.info-panel__extract { margin: 0.5rem 0; font-size: 0.92rem; text-wrap: pretty; }
+.attribution a { color: var(--ink-muted); }
+
+/* --- Wave 6: filters --------------------------------------------------- */
+
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.filter-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.filter-controls select {
+  min-width: 8rem;
+}
+
+/* Specificity: `.filter-controls label` sets column, so the row override has to
+   match on the element too or the checkbox sits above its own text. */
+.filter-controls label.filter-controls__toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.35rem;
+}
+
+.filter-bar__empty {
+  margin: 0 0 0.75rem;
+}
+
+.filter-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2, #eef3ec);
+  font-size: 0.85rem;
+}
+
+.chip__remove {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  color: var(--muted);
+}
+
+.chip__remove:hover {
+  color: var(--text);
+}
+
+.filter-bar__coverage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0 0 0.5rem;
+}
+
+.filter-bar__unknown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+/* Month selection in the bloom year (Wave 6). */
+.month-button {
+  width: 100%;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.month-button:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface-2, #eef3ec);
+}
+
+.month-button[aria-pressed='true'] {
+  border-color: var(--accent, #4a7c59);
+  background: var(--accent, #4a7c59);
+  color: #fff;
+}
+
+.timeline tr.is-chosen td {
+  background: var(--surface-2, #eef3ec);
+}
+
+.suggestion__birds {
+  color: var(--accent, #4a7c59);
+  font-weight: 600;
+}
+
+.suggestion__space {
+  color: var(--muted);
+  font-style: italic;
+}

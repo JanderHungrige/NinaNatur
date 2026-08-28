@@ -133,7 +133,7 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
             ),
         )
 
-        for scored in fitting[:CANDIDATE_POOL]:
+        for scored in fitting.items[:CANDIDATE_POOL]:
             if scored.score < MIN_FIT:
                 # Ranked candidates are sorted, so everything after this is worse.
                 break

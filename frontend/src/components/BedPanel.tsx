@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import type { GardenOut } from '../api/client';
-import { beds as bedCount, obstacles as obstacleCount } from '../plural';
+import { beds as bedCount, obstacles as obstacleCount, species } from '../plural';
 
 interface Props {
   garden: GardenOut;
@@ -53,7 +53,7 @@ function bedButtonLabel(bed: GardenOut['beds'][number]): string {
   const planted =
     bed.plantings.length === 0
       ? 'nichts gepflanzt'
-      : `${bed.plantings.length} Art(en) gepflanzt`;
+      : `${species(bed.plantings.length)} gepflanzt`;
   return `Beet ${bed.name}, ${lightText(bed)}, ${planted}`;
 }
 

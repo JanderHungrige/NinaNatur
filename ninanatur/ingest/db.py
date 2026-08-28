@@ -91,10 +91,14 @@ CREATE TABLE IF NOT EXISTS insect_de (
     -- bee / butterfly / hoverfly, or NULL for everything else. Beetles and wasps
     -- are real visitors; they simply are not in a named group, and dropping them
     -- would make the total disagree with the breakdown.
-    insect_group    TEXT
+    insect_group    TEXT,
+    -- 'insect' or 'bird'. The table kept its name when birds arrived; this
+    -- column, not the name, is what every read site must go by.
+    clade           TEXT NOT NULL DEFAULT 'insect'
 );
 
 CREATE INDEX IF NOT EXISTS idx_insect_group ON insect_de(insect_group);
+CREATE INDEX IF NOT EXISTS idx_insect_clade ON insect_de(clade);
 
 -- A garden plan. `owner_id` is nullable and present from this first migration:
 -- accounts are not being built (access is by share token), but adding the column
@@ -174,6 +178,15 @@ CREATE TABLE IF NOT EXISTS partner_groups (
     PRIMARY KEY (taxon_id, insect_group)
 );
 
+-- German bird partners, counted separately and never folded into the insect
+-- numbers. Its own table rather than a clade column on partner_summary: the
+-- insect score's queries then keep working untouched, which is the difference
+-- between adding a number and silently changing every score already shown.
+CREATE TABLE IF NOT EXISTS partner_birds (
+    taxon_id INTEGER PRIMARY KEY,
+    german   INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS partner_totals (
     taxon_id     INTEGER PRIMARY KEY,
     german       INTEGER NOT NULL,
@@ -187,6 +200,38 @@ CREATE TABLE IF NOT EXISTS partner_totals (
 -- local ingest being overwritten — and also meant no catalogue improvement ever
 -- reached an existing deployment. The insect group breakdown shipped and stayed
 -- invisible in production for exactly that reason.
+-- German names, so nobody has to know that Sal-Weide is Salix caprea.
+--
+-- `normalised` is stored rather than computed per query: a LIKE over a computed
+-- expression cannot use an index, and this table is what every search touches.
+CREATE TABLE IF NOT EXISTS vernacular_name (
+    taxon_id     INTEGER NOT NULL REFERENCES taxon(taxon_id),
+    name         TEXT    NOT NULL,
+    normalised   TEXT    NOT NULL,
+    is_preferred INTEGER NOT NULL DEFAULT 0,
+    source       TEXT    NOT NULL,
+    PRIMARY KEY (taxon_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vernacular_normalised ON vernacular_name(normalised);
+
+-- Wikipedia summaries, cached per deployment.
+--
+-- Deliberately NOT part of the shipped catalogue: this is derived, refreshable
+-- and per-deployment — the same shape as a garden, not the same shape as plant
+-- data. Baking it into the image would make it stale on the release cycle and
+-- re-inflate something just trimmed to 13 MB.
+CREATE TABLE IF NOT EXISTS species_info (
+    taxon_id      INTEGER PRIMARY KEY REFERENCES taxon(taxon_id),
+    title         TEXT,
+    extract       TEXT,
+    thumbnail_url TEXT,
+    page_url      TEXT,
+    language      TEXT,
+    found         INTEGER NOT NULL,
+    fetched_at    TEXT    NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS catalogue_meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -231,6 +276,9 @@ def connect(
 # should be a deliberate, reviewed script rather than an entry here.
 COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("insect_de", "insect_group", "TEXT"),
+    # Existing rows are insects, so the default carries their meaning forward
+    # without a data migration. Birds arrive with clade='bird'.
+    ("insect_de", "clade", "TEXT NOT NULL DEFAULT 'insect'"),
 )
 
 

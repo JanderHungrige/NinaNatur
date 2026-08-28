@@ -67,17 +67,40 @@ def test_suggestions_use_the_beds_own_conditions(client: TestClient) -> None:
     assert names.index("Sonnenkraut") < names.index("Schattenkraut")
 
 
-def test_trees_and_shrubs_are_excluded_by_default(client: TestClient) -> None:
-    """Someone planning a 3 m² bed does not want a hemlock at rank 40 either."""
+def _woody(client: TestClient, token: str, bed_id: int, **params: object) -> list[str]:
+    response = client.get(f"/api/v1/gardens/{token}/beds/{bed_id}/suggestions", params=params)
+    assert response.status_code == 200, response.text
+    return [item["canonical_name"] for item in response.json()["woody"]]
+
+
+def test_woody_plants_get_their_own_list_rather_than_being_hidden(
+    client: TestClient,
+) -> None:
+    """Wave 4 hid every woody plant from every bed, and with them the best forage
+    plants in the catalogue — Salix caprea leads it with 1,055 German partners.
+
+    Ranking them into the same list did not fix it: they sorted below roughly
+    2,000 perennials, which is the same invisibility with a better argument. A
+    bed is still a marked area and a tree in it is still just a planting — this
+    is a split in how the answer is presented, not a second kind of bed.
+    """
+    token, bed_id = _sunny_bed(client)
+    assert "Riesenbaum" in _woody(client, token, bed_id)
+    assert "Grosstrauch" in _woody(client, token, bed_id)
+
+
+def test_the_main_list_stays_herbaceous(client: TestClient) -> None:
+    # Someone planning a 3 m² bed still does not want a hemlock at rank 40.
     token, bed_id = _sunny_bed(client)
     names = _names(client, token, bed_id)
+    assert "Sonnenkraut" in names
     assert "Riesenbaum" not in names
-    assert "Grosstrauch" not in names
 
 
-def test_trees_can_be_asked_for_explicitly(client: TestClient) -> None:
+def test_woody_plants_can_still_be_switched_off(client: TestClient) -> None:
+    # The gate is kept as a choice; it is no longer the default answer.
     token, bed_id = _sunny_bed(client)
-    assert "Riesenbaum" in _names(client, token, bed_id, include_trees=True)
+    assert _woody(client, token, bed_id, include_trees=False) == []
 
 
 def test_an_unrecorded_growth_form_is_kept(client: TestClient) -> None:
@@ -114,18 +137,23 @@ def test_a_bed_from_another_garden_is_404(client: TestClient) -> None:
     assert response.status_code == 404
 
 
-def test_woodiness_excludes_what_growth_form_misses(client: TestClient) -> None:
+def test_woodiness_still_identifies_what_growth_form_misses(client: TestClient) -> None:
     """Growth form is absent for part of the catalogue; woodiness covers most of
-    the rest. Abies nephrolepis reached a bed's top suggestions through that gap."""
+    the rest. Abies nephrolepis reached a bed's top suggestions through that gap.
+
+    The three signals still combine — they now decide what `include_trees=false`
+    removes, rather than what every bed silently never sees.
+    """
     conn = app.dependency_overrides[get_connection]()
     _species(conn, 10, "Tannenartig", light=8.0, form=None)
     upsert_trait(conn, 10, "woodiness", value_text="woody", source="GIFT", license="CC-BY-4.0")
     conn.commit()
     token, bed_id = _sunny_bed(client)
-    assert "Tannenartig" not in _names(client, token, bed_id)
+    assert "Tannenartig" in _woody(client, token, bed_id)
+    assert _woody(client, token, bed_id, include_trees=False) == []
 
 
-def test_height_excludes_what_neither_form_nor_woodiness_records(
+def test_height_identifies_what_neither_form_nor_woodiness_records(
     client: TestClient,
 ) -> None:
     conn = app.dependency_overrides[get_connection]()
@@ -133,7 +161,7 @@ def test_height_excludes_what_neither_form_nor_woodiness_records(
     upsert_trait(conn, 11, "height_max_m", value_num=12.0, source="GIFT", license="CC-BY-4.0")
     conn.commit()
     token, bed_id = _sunny_bed(client)
-    assert "Hochgewachsen" not in _names(client, token, bed_id)
+    assert "Hochgewachsen" in _woody(client, token, bed_id)
 
 
 def test_a_species_with_no_woody_signal_at_all_is_still_kept(

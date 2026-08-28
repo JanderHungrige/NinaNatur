@@ -20,4 +20,13 @@ export const insectGroup = (count: number, group: string): string => {
   const pair = forms[group];
   return pair === undefined ? `${count} ${group}` : plural(count, pair[0], pair[1]);
 };
+/** "1 Pflanzung(en)" is the parenthetical dodge around the same bug. */
+export const plantings = (count: number): string =>
+  plural(count, 'Pflanzung', 'Pflanzungen');
+
+export const birds = (count: number): string =>
+  plural(count, 'Vogelart', 'Vogelarten');
+
+export const species = (count: number): string => plural(count, 'Art', 'Arten');
+
 export const obstacles = (count: number): string => plural(count, 'Hindernis', 'Hindernisse');

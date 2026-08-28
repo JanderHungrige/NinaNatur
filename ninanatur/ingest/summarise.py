@@ -16,7 +16,7 @@ SUMMARY_SQL = """
 INSERT OR REPLACE INTO partner_summary (taxon_id, interaction_type, german)
 SELECT i.taxon_id, i.interaction_type, COUNT(DISTINCT i.partner_name)
 FROM interaction i
-JOIN insect_de d ON d.canonical_name = i.partner_name
+JOIN insect_de d ON d.canonical_name = i.partner_name AND d.clade = 'insect'
 GROUP BY i.taxon_id, i.interaction_type
 """
 
@@ -29,7 +29,7 @@ SELECT i.taxon_id,
        COUNT(DISTINCT i.partner_name),
        COUNT(DISTINCT CASE WHEN d.canonical_name IS NULL THEN i.partner_name END)
 FROM interaction i
-LEFT JOIN insect_de d ON d.canonical_name = i.partner_name
+LEFT JOIN insect_de d ON d.canonical_name = i.partner_name AND d.clade = 'insect'
 GROUP BY i.taxon_id
 """
 
@@ -38,9 +38,21 @@ GROUPS_SQL = """
 INSERT OR REPLACE INTO partner_groups (taxon_id, insect_group, german)
 SELECT i.taxon_id, d.insect_group, COUNT(DISTINCT i.partner_name)
 FROM interaction i
-JOIN insect_de d ON d.canonical_name = i.partner_name
+JOIN insect_de d ON d.canonical_name = i.partner_name AND d.clade = 'insect'
 WHERE d.insect_group IS NOT NULL
 GROUP BY i.taxon_id, d.insect_group
+"""
+
+
+# Birds, counted apart. Never joined into the numbers above: the metric is
+# called Insektenwert, and quietly growing every score already shown is not a
+# feature, it is a change nobody asked for and nothing explains.
+BIRDS_SQL = """
+INSERT OR REPLACE INTO partner_birds (taxon_id, german)
+SELECT i.taxon_id, COUNT(DISTINCT i.partner_name)
+FROM interaction i
+JOIN insect_de d ON d.canonical_name = i.partner_name AND d.clade = 'bird'
+GROUP BY i.taxon_id
 """
 
 
@@ -54,8 +66,10 @@ def summarise_interactions(conn: sqlite3.Connection) -> int:
     conn.execute("DELETE FROM partner_summary")
     conn.execute("DELETE FROM partner_totals")
     conn.execute("DELETE FROM partner_groups")
+    conn.execute("DELETE FROM partner_birds")
     conn.execute(SUMMARY_SQL)
     conn.execute(TOTALS_SQL)
     conn.execute(GROUPS_SQL)
+    conn.execute(BIRDS_SQL)
     conn.commit()
     return int(conn.execute("SELECT COUNT(*) AS n FROM partner_totals").fetchone()["n"])

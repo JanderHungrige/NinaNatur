@@ -13,11 +13,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     AxisFitOut,
+    FilterCountsOut,
     FitOut,
+    GrowthForm,
     PartnersOut,
     PlantDetail,
     PlantSearchResponse,
     PlantSummary,
+    SpeciesInfoOut,
     TraitOut,
 )
 from ninanatur.api.search import (
@@ -27,17 +30,22 @@ from ninanatur.api.search import (
     load_candidates,
     rank_plants,
 )
-from ninanatur.data.interactions import german_partner_counts
+from ninanatur.data.interactions import bird_counts, german_partner_counts
+from ninanatur.data.species_info import species_info
 from ninanatur.data.traits import resolve_traits_for
 from ninanatur.fit.score import SiteVector
+from ninanatur.garden.canopy import canopy_of
 
 router = APIRouter(prefix="/api/v1", tags=["plants"])
 
 MAX_LIMIT = 200
 
 
-def to_summary(scored: ScoredPlant) -> PlantSummary:
+def to_summary(
+    scored: ScoredPlant, birds: int | None = None, bed_area_m2: float | None = None
+) -> PlantSummary:
     plant = scored.plant
+    canopy = canopy_of(plant.number("height_max_m"), plant.text("growth_form"))
     start = plant.number("flowering_start_month")
     end = plant.number("flowering_end_month")
     return PlantSummary(
@@ -49,6 +57,13 @@ def to_summary(scored: ScoredPlant) -> PlantSummary:
         flowering_end_month=int(end) if end is not None else None,
         flower_colour=plant.text("flower_colour"),
         colour_known=plant.text("flower_colour") is not None,
+        bird_partners=birds,
+        space_m2=canopy.area_m2 if canopy is not None else None,
+        fits_bed=(
+            None
+            if canopy is None or bed_area_m2 is None
+            else canopy.area_m2 <= bed_area_m2
+        ),
         fit=FitOut(
             score=round(scored.score, 4),
             axes={
@@ -77,6 +92,8 @@ def search_plants(
     height_min: Annotated[float | None, Query(ge=0)] = None,
     height_max: Annotated[float | None, Query(ge=0)] = None,
     flowering_month: Annotated[int | None, Query(ge=1, le=12)] = None,
+    growth_form: GrowthForm | None = None,
+    include_unknown: bool = False,
     colour: str | None = None,
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -98,19 +115,26 @@ def search_plants(
             "(light, moisture, nutrients, reaction, temperature)"
         )
 
-    scored = rank_plants(
+    ranked = rank_plants(
         load_candidates(conn),
         SiteVector(values=axes),
-        SearchFilters(height_min=height_min, height_max=height_max,
-                      flowering_month=flowering_month),
+        SearchFilters(
+            height_min=height_min,
+            height_max=height_max,
+            flowering_month=flowering_month,
+            growth_form=growth_form,
+            include_unknown=include_unknown,
+        ),
         colour=colour,
     )
-    page = scored[offset : offset + limit]
+    page = ranked.items[offset : offset + limit]
+    birds = bird_counts(conn, [s.plant.taxon_id for s in page])
     return PlantSearchResponse(
-        total=len(scored),
+        total=len(ranked.items),
         limit=limit,
         offset=offset,
-        items=[to_summary(s) for s in page],
+        items=[to_summary(s, birds.get(s.plant.taxon_id)) for s in page],
+        filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
     )
 
 
@@ -158,5 +182,29 @@ def plant_detail(
             unmatched=counts.unmatched,
             match_rate=round(counts.match_rate, 4),
             by_kind=counts.by_kind,
+            birds=counts.birds,
         ),
+    )
+
+
+@router.get("/plants/{taxon_id}/info", response_model=SpeciesInfoOut)
+def plant_info(
+    taxon_id: int,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> SpeciesInfoOut:
+    """A description and photograph, from Wikipedia, cached on this deployment.
+
+    404 when no article exists in either language — an honest absence rather than
+    an empty panel that looks like a loading failure.
+    """
+    info = species_info(conn, taxon_id)
+    if info is None:
+        raise HTTPException(status_code=404, detail=f"no article for taxon {taxon_id}")
+    return SpeciesInfoOut(
+        title=info.title,
+        extract=info.extract,
+        thumbnail_url=info.thumbnail_url,
+        page_url=info.page_url,
+        language=info.language,
+        licence=info.licence,
     )
