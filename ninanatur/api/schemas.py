@@ -52,6 +52,17 @@ class PlantSearchResponse(BaseModel):
     items: list[PlantSummary]
 
 
+class BedSuggestions(BaseModel):
+    """Suggestions for one bed, with the site vector they were ranked against —
+    so the UI can say what it matched on rather than showing a bare list."""
+
+    bed_id: int
+    bed_name: str
+    site_axes: dict[str, float]
+    total: int
+    items: list[PlantSummary]
+
+
 class PartnersOut(BaseModel):
     german: int
     global_total: int

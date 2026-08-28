@@ -52,6 +52,11 @@ class ScoredPlant:
         return self.fit.score or 0.0
 
 
+# Growth forms that are not bed plants. A bed is a few square metres; a hemlock
+# fits its light and moisture perfectly and is still a useless suggestion.
+WOODY_FORMS: frozenset[str] = frozenset({"tree", "shrub"})
+
+
 @dataclass(frozen=True)
 class SearchFilters:
     """Hard filters. Colour is deliberately absent — it ranks, it never excludes."""
@@ -59,6 +64,8 @@ class SearchFilters:
     height_min: float | None = None
     height_max: float | None = None
     flowering_month: int | None = None
+    exclude_woody: bool = False
+    exclude_taxa: frozenset[int] = frozenset()
 
 
 def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
@@ -107,6 +114,14 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
 
 
 def _passes(plant: PlantRow, filters: SearchFilters) -> bool:
+    if plant.taxon_id in filters.exclude_taxa:
+        return False
+    if filters.exclude_woody:
+        form = plant.text("growth_form")
+        # An unrecorded growth form is kept: absent data is not a property of the
+        # plant, the same rule that keeps flower colour a soft filter.
+        if form is not None and form.lower() in WOODY_FORMS:
+            return False
     height = plant.number("height_max_m")
     if filters.height_min is not None and (height is None or height < filters.height_min):
         return False

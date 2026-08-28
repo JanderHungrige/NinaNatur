@@ -9,12 +9,14 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from ninanatur.api.deps import get_connection
+from ninanatur.api.plants import to_summary
 from ninanatur.api.schemas import (
     BedCreate,
     BedOut,
+    BedSuggestions,
     GardenCreate,
     GardenCreated,
     GardenOut,
@@ -23,7 +25,9 @@ from ninanatur.api.schemas import (
     PlantingCreate,
     PlantingOut,
 )
-from ninanatur.garden.models import BedInput, Garden, ObstacleInput
+from ninanatur.api.search import SearchFilters, load_candidates, rank_plants
+from ninanatur.fit.score import SiteVector
+from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
 from ninanatur.garden.store import (
     add_bed,
     add_obstacle,
@@ -161,15 +165,17 @@ def remove(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _require_bed(garden: Garden, bed_id: int) -> None:
+def _require_bed(garden: Garden, bed_id: int) -> Bed:
     """A bed must belong to the garden the token opened.
 
-    Without this, a valid token for one garden would let its holder plant into
-    any bed in the database by guessing an id — the capability would leak past
-    the thing it names.
+    Without this, a valid token for one garden would let its holder reach any bed
+    in the database by guessing an id — the capability would leak past the thing
+    it names.
     """
-    if not any(bed.bed_id == bed_id for bed in garden.beds):
-        raise HTTPException(status_code=404, detail=f"no such bed in this garden: {bed_id}")
+    for bed in garden.beds:
+        if bed.bed_id == bed_id:
+            return bed
+    raise HTTPException(status_code=404, detail=f"no such bed in this garden: {bed_id}")
 
 
 @router.post(
@@ -209,3 +215,46 @@ def delete_planting(
         raise HTTPException(status_code=404, detail=f"no such planting: {planting_id}")
     remove_planting(conn, planting_id)
     return _to_out(load_garden(conn, garden.garden_id))
+
+
+@router.get("/{token}/beds/{bed_id}/suggestions", response_model=BedSuggestions)
+def bed_suggestions(
+    token: str,
+    bed_id: int,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    colour: str | None = None,
+    include_trees: bool = False,
+    exclude_planted: bool = True,
+) -> BedSuggestions:
+    """Species that suit this bed, ranked by fit against its own site vector.
+
+    The bed's derived axes are the query, so the user never types an Ellenberg
+    number. Trees and shrubs are excluded by default: a bed is a few square
+    metres, and a hemlock that fits the light perfectly is still a useless
+    suggestion.
+    """
+    garden = _require(conn, token)
+    bed = _require_bed(garden, bed_id)
+
+    axes = bed.site_axes
+    if not axes:
+        raise ValueError(
+            f"bed {bed_id} has no site conditions yet — set soil and moisture, "
+            "or recompute light, before asking for suggestions"
+        )
+
+    planted = frozenset(p.taxon_id for p in bed.plantings) if exclude_planted else frozenset()
+    scored = rank_plants(
+        load_candidates(conn),
+        SiteVector(values=axes),
+        SearchFilters(exclude_woody=not include_trees, exclude_taxa=planted),
+        colour=colour,
+    )
+    return BedSuggestions(
+        bed_id=bed.bed_id,
+        bed_name=bed.name,
+        site_axes=axes,
+        total=len(scored),
+        items=[to_summary(s) for s in scored[:limit]],
+    )

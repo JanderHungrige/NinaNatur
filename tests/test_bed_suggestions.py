@@ -1,0 +1,114 @@
+"""Suggestions for a bed — the connection missing since Wave 2."""
+import sqlite3
+from collections.abc import Iterator
+
+import pytest
+from fastapi.testclient import TestClient
+
+from ninanatur.api.deps import get_connection
+from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.web.app import app
+
+SQUARE = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]
+
+
+def _species(c: sqlite3.Connection, tid: int, name: str, light: float,
+             form: str | None) -> None:
+    c.execute(
+        "INSERT INTO taxon (taxon_id, canonical_name, occurs_de) VALUES (?, ?, 1)",
+        (tid, name),
+    )
+    for key, val in (("ellenberg_l", light), ("ellenberg_m", 5.0), ("ellenberg_n", 5.0)):
+        upsert_trait(c, tid, key, value_num=val, source="EIVE-1.0", license="CC-BY-4.0")
+    upsert_trait(c, tid, "ellenberg_l_nw", value_num=3.0, source="EIVE-1.0", license="CC-BY-4.0")
+    if form is not None:
+        upsert_trait(c, tid, "growth_form", value_text=form, source="GIFT", license="CC-BY-4.0")
+
+
+@pytest.fixture()
+def client() -> Iterator[TestClient]:
+    conn = connect(":memory:", same_thread=False)
+    init_schema(conn)
+    _species(conn, 1, "Sonnenkraut", light=8.0, form="forb")
+    _species(conn, 2, "Schattenkraut", light=2.0, form="forb")
+    _species(conn, 3, "Riesenbaum", light=8.0, form="tree")
+    _species(conn, 4, "Grosstrauch", light=8.0, form="shrub")
+    _species(conn, 5, "Unbekanntwuchs", light=8.0, form=None)
+    conn.commit()
+    app.dependency_overrides[get_connection] = lambda: conn
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+def _sunny_bed(client: TestClient) -> tuple[str, int]:
+    token = client.post(
+        "/api/v1/gardens", json={"name": "G", "latitude": 52.5, "longitude": 13.4}
+    ).json()["share_token"]
+    bed = client.post(
+        f"/api/v1/gardens/{token}/beds",
+        json={"name": "Sonnenbeet", "polygon": SQUARE, "soil_type": "loam", "moisture": "fresh"},
+    ).json()["beds"][0]
+    client.post(f"/api/v1/gardens/{token}/recompute")
+    return token, bed["bed_id"]
+
+
+def _names(client: TestClient, token: str, bed_id: int, **params: object) -> list[str]:
+    response = client.get(f"/api/v1/gardens/{token}/beds/{bed_id}/suggestions", params=params)
+    assert response.status_code == 200, response.text
+    return [item["canonical_name"] for item in response.json()["items"]]
+
+
+def test_suggestions_use_the_beds_own_conditions(client: TestClient) -> None:
+    """The user never types an Ellenberg number."""
+    token, bed_id = _sunny_bed(client)
+    names = _names(client, token, bed_id)
+    assert names[0] == "Sonnenkraut"
+    assert names.index("Sonnenkraut") < names.index("Schattenkraut")
+
+
+def test_trees_and_shrubs_are_excluded_by_default(client: TestClient) -> None:
+    """Someone planning a 3 m² bed does not want a hemlock at rank 40 either."""
+    token, bed_id = _sunny_bed(client)
+    names = _names(client, token, bed_id)
+    assert "Riesenbaum" not in names
+    assert "Grosstrauch" not in names
+
+
+def test_trees_can_be_asked_for_explicitly(client: TestClient) -> None:
+    token, bed_id = _sunny_bed(client)
+    assert "Riesenbaum" in _names(client, token, bed_id, include_trees=True)
+
+
+def test_an_unrecorded_growth_form_is_kept(client: TestClient) -> None:
+    """Absent data is not a property of the plant."""
+    token, bed_id = _sunny_bed(client)
+    assert "Unbekanntwuchs" in _names(client, token, bed_id)
+
+
+def test_species_already_in_the_bed_are_not_suggested_again(client: TestClient) -> None:
+    token, bed_id = _sunny_bed(client)
+    assert "Sonnenkraut" in _names(client, token, bed_id)
+    client.post(f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 1})
+    assert "Sonnenkraut" not in _names(client, token, bed_id)
+
+
+def test_planted_species_can_be_included_for_comparison(client: TestClient) -> None:
+    token, bed_id = _sunny_bed(client)
+    client.post(f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 1})
+    assert "Sonnenkraut" in _names(client, token, bed_id, exclude_planted=False)
+
+
+def test_each_suggestion_explains_its_fit(client: TestClient) -> None:
+    token, bed_id = _sunny_bed(client)
+    item = client.get(f"/api/v1/gardens/{token}/beds/{bed_id}/suggestions").json()["items"][0]
+    assert item["fit"]["axes"]["ellenberg_l"]["band"] == "optimal"
+
+
+def test_a_bed_from_another_garden_is_404(client: TestClient) -> None:
+    token, bed_id = _sunny_bed(client)
+    other = client.post(
+        "/api/v1/gardens", json={"name": "Fremd", "latitude": 52.5, "longitude": 13.4}
+    ).json()["share_token"]
+    response = client.get(f"/api/v1/gardens/{other}/beds/{bed_id}/suggestions")
+    assert response.status_code == 404
