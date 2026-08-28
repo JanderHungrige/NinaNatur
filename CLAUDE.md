@@ -95,6 +95,23 @@ CI computes it and passes it as a build arg; the container has neither git nor
 running, and a baked-in frontend version would keep claiming the old one after a
 partial rollout.
 
+## Tests must not depend on their environment
+
+A test that passes locally and fails in CI is worse than no test: it costs a red
+build and teaches people to distrust the suite. Two have slipped through here,
+both the same shape — an assertion about ambient state rather than about
+behaviour:
+
+- Wave 1's page tests asserted on `/` after Wave 3 could serve a built bundle
+  there, so the result depended on whether someone had run `npm run build`.
+- The version test asserted `merges >= 7`, freezing the repository's history into
+  it. CI checks out shallow, counts zero, and fails.
+
+Assert **self-consistency** instead: that the value agrees with the sources it
+claims to come from. And when a test does depend on the environment, reproduce
+that environment before believing the fix — a shallow `git clone --depth 1` is a
+one-line way to be sure.
+
 ## Quality gates
 
 - No file > 300 lines, no function > 50 lines.
