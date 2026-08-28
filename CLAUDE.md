@@ -68,6 +68,15 @@ volume.
 Putting both in one SQLite file is how the deployed app came up structurally
 perfect and answered "0 matching species" to every request.
 
+The catalogue is **versioned, not merely seeded**. It carries a build stamp, and
+startup syncs whenever the stamps differ. Seeding only into an empty database was
+the obvious first design and the wrong one: a shipped improvement then never
+reaches an existing volume, which is how the insect group breakdown went live in
+the image and stayed absent in production.
+
+Rows are upserted, never deleted: `taxon` is referenced by `planting`, so
+replacing it would fail on the foreign key or take someone's garden with it.
+
 Raw GloBI interactions (600k rows) are **ingest-time** data. The serving path
 reads `partner_summary` / `partner_totals`, which is what keeps the shipped
 catalogue at 10 MB instead of 93 MB. Rebuild them with `ingest.cli summarise`

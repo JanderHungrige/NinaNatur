@@ -122,7 +122,16 @@ made them and stay on the volume. Seeding only ever runs when there are no taxa
 at all, so it can never overwrite a newer ingest.
 
 To refresh the catalogue, re-run the ingest locally, `export-catalogue`, commit,
-and push — the next image carries it.
+and push — the next image carries it, and the next container start applies it.
+`export-catalogue` stamps a build time; startup compares that stamp and syncs only
+when it differs, so a restart costs nothing when nothing changed. The log says
+which:
+
+```
+catalogue synced: {'taxon': 8939, 'trait': 84217, ...}
+```
+
+Gardens on the volume are never touched by a sync.
 
 ## Data
 
