@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-5
 demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
 created: 2026-08-27
-hash: 6cce2dab
+hash: 32627991
 ---
 
 # Wave 6 — One plan, fewest possible parcels
@@ -34,6 +34,11 @@ nursery carries. Near-identical score, one parcel fewer.
 - Availability and price sync
 - The optimisation, with the substitution option
 - Order list export
+
+## Open — must be settled in this wave
+
+Which nurseries to approach and on what terms. Deliberately left until now:
+deciding earlier binds the design to assumptions that will have changed.
 
 ## Constraint
 

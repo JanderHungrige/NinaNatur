@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 2
-hash: 6b887abf
+version: 3
+hash: 24a80387
 created: 2026-08-27
 ---
 
@@ -76,16 +76,31 @@ unusual but fitting species stay visible. Commercial availability is a Wave 6
 concern, where the shopping list already has to reason about what is stocked —
 filtering for it earlier would be guessing.
 
+### Bed fit — per-species niche width, scored not thresholded
+
+EIVE ships a niche width per species per axis (0.48-10.0, median 3.03) alongside
+each indicator value. Fit uses that width rather than one fixed tolerance band, so
+a generalist like *Urtica dioica* (light niche width 7.91) is treated differently
+from a species with a narrow one.
+
+Expressed as a **graded score, not a yes/no**: how centrally the bed sits within
+the species' niche. This is what keeps a very wide niche from making a species
+match everywhere and dilute every suggestion — it does match widely, but never
+outranks a species whose optimum is exactly this bed.
+
+Requires ingesting the `*.nw3` columns, which are in the EIVE file already on disk.
+
+### Source priority — measured, not assumed
+
+Checked against the database: EIVE and GIFT overlap in **zero** trait keys. EIVE
+owns the Ellenberg axes, GIFT owns height, phenology, colour and form. There is no
+conflict to resolve today. `resolve_trait()` still exists for when a third source
+arrives, but it needs no arbitration policy yet.
+
 ## Open Product Questions
 
-- [ ] Which nurseries to approach for Wave 6, and on what terms. Deliberately
-      deferred — deciding now binds us to assumptions that will have changed by
-      then. The constraint is fixed regardless: feeds by agreement, not scraping.
-- [ ] Wave 2 must settle source priority when EIVE and GIFT disagree on the same
-      axis, and how wide a tolerance band around a bed's values still counts as
-      "fits". That single number decides how generous every suggestion feels.
-- [ ] Wave 3 must settle whether light is computed from orientation and obstacle
-      geometry, or simply picked by the user as sunny/partial/shade.
+None blocking. Remaining decisions are recorded in the wave that must answer them:
+sun-hour derivation in Wave 3, nursery partners in Wave 6.
 
 ## Waves
 
