@@ -37,6 +37,7 @@ export function App() {
   const [suggestions, setSuggestions] = useState<BedSuggestions | null>(null);
   const [forage, setForage] = useState(true);
   const [score, setScore] = useState<ScoreOut | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
 
   const load = useCallback(async (token: string, weighted = true) => {
@@ -59,6 +60,8 @@ export function App() {
     if (token !== null) {
       void load(token);
     }
+    // A failed version lookup must not stop the app from loading — it is a label.
+    void client.version().then(setVersion).catch(() => setVersion(null));
   }, [load]);
 
   /** Wrap every mutation so a failed request always reaches the live region. */
@@ -187,7 +190,9 @@ export function App() {
         <span className="brand">
           <span className="brand__name">NinaNatur</span>
         </span>
-        <span className="badge">Wave&nbsp;5</span>
+        {version !== null ? (
+          <span className="badge" title="Version · Wave · Merges auf main">{version}</span>
+        ) : null}
       </header>
 
       <main id="main" className="layout">

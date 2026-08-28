@@ -82,6 +82,19 @@ reads `partner_summary` / `partner_totals`, which is what keeps the shipped
 catalogue at 10 MB instead of 93 MB. Rebuild them with `ingest.cli summarise`
 after any change to GloBI or the insect list — they are that intersection.
 
+## Version
+
+The header shows `V<major>.<wave>.<merges>` — product generation, highest
+completed MDD wave, merges on main. **Derived, never edited.** A hand-maintained
+number drifts the first time someone forgets, and this one exists so the page can
+be trusted to say what is actually deployed.
+
+CI computes it and passes it as a build arg; the container has neither git nor
+`.mdd`, so it cannot be worked out at runtime. The frontend reads it from
+`/healthz` rather than compiling it in — only the server knows which build is
+running, and a baked-in frontend version would keep claiming the old one after a
+partial rollout.
+
 ## Quality gates
 
 - No file > 300 lines, no function > 50 lines.
