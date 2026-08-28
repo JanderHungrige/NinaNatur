@@ -25,6 +25,10 @@ class PartnerCounts:
     unmatched: int
     by_kind: dict[str, int]
     by_group: dict[str, int]
+    # Counted, deliberately not added to `german`. The metric this feeds is
+    # called Insektenwert; birds are a separate fact shown beside it, and what
+    # one is worth relative to the other is a judgement nobody here has made.
+    birds: int
 
     @property
     def match_rate(self) -> float:
@@ -65,6 +69,9 @@ def german_partner_counts(conn: sqlite3.Connection, taxon_id: int) -> PartnerCou
             (taxon_id,),
         )
     }
+    bird_row = conn.execute(
+        "SELECT german FROM partner_birds WHERE taxon_id = ?", (taxon_id,)
+    ).fetchone()
     return PartnerCounts(
         taxon_id=taxon_id,
         german=int(totals["german"]),
@@ -72,4 +79,23 @@ def german_partner_counts(conn: sqlite3.Connection, taxon_id: int) -> PartnerCou
         unmatched=int(totals["unmatched"]),
         by_kind=by_kind,
         by_group=by_group,
+        birds=0 if bird_row is None else int(bird_row["german"]),
     )
+
+
+def bird_counts(conn: sqlite3.Connection, taxon_ids: list[int]) -> dict[int, int]:
+    """German bird partners for a page of species, in one query.
+
+    Batched because the alternative is one lookup per row of a suggestion list,
+    which is twenty round trips to answer a question the caller asked once.
+    Species with no bird partners are absent rather than zero — the caller
+    decides how to render "none recorded".
+    """
+    if not taxon_ids:
+        return {}
+    placeholders = ",".join("?" for _ in taxon_ids)
+    rows = conn.execute(
+        f"SELECT taxon_id, german FROM partner_birds WHERE taxon_id IN ({placeholders})",  # noqa: S608
+        taxon_ids,
+    )
+    return {int(r["taxon_id"]): int(r["german"]) for r in rows}

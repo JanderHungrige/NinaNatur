@@ -14,6 +14,7 @@ from pathlib import Path
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, export_catalogue
 from ninanatur.ingest.coverage import compute_coverage, format_report
 from ninanatur.ingest.db import DEFAULT_DB_PATH, connect, init_schema
+from ninanatur.ingest.sources.birds_de import BirdsDeSource
 from ninanatur.ingest.sources.eive import EiveSource
 from ninanatur.ingest.sources.gbif import GbifSource
 from ninanatur.ingest.sources.gift import GiftSource
@@ -29,7 +30,7 @@ from ninanatur.ingest.summarise import summarise_interactions
 # raw relations, insects-de supplies what makes them mean anything here.
 RUN_ORDER = (
     "gbif", "eive", "gift", "nativeness", "vernacular",
-    "globi", "insects-de", "insect-groups",
+    "globi", "insects-de", "insect-groups", "birds-de",
 )
 
 
@@ -44,6 +45,8 @@ def run_source(conn: sqlite3.Connection, name: str, limit: int | None) -> int:
         return GiftSource().run(conn)
     if name == "globi":
         return GlobiSource().run(conn, limit=limit)
+    if name == "birds-de":
+        return BirdsDeSource().run(conn, limit=limit)
     if name == "insects-de":
         return InsectsDeSource().run(conn, limit=limit)
     if name == "nativeness":

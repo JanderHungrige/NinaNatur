@@ -32,6 +32,7 @@ from ninanatur.api.search import SearchFilters, load_candidates, rank_plants
 from ninanatur.bloom.improve import Change, garden_improvements
 from ninanatur.bloom.score import garden_score
 from ninanatur.bloom.timeline import TimelineMode, garden_timeline
+from ninanatur.data.interactions import bird_counts
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.store import add_planting, load_garden, remove_planting
 
@@ -127,12 +128,16 @@ def bed_suggestions(
         ),
         colour=colour,
     )
+    birds = bird_counts(conn, [s.plant.taxon_id for s in ranked.items[:limit]])
     return BedSuggestions(
         bed_id=bed.bed_id,
         bed_name=bed.name,
         site_axes=axes,
         total=len(ranked.items),
-        items=[to_summary(s) for s in ranked.items[:limit]],
+        items=[
+            to_summary(s, birds.get(s.plant.taxon_id))
+            for s in ranked.items[:limit]
+        ],
         filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
     )
 

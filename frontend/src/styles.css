@@ -342,3 +342,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .timeline tr.is-chosen td {
   background: var(--surface-2, #eef3ec);
 }
+
+.suggestion__birds {
+  color: var(--accent, #4a7c59);
+  font-weight: 600;
+}

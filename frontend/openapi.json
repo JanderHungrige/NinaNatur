@@ -1756,6 +1756,11 @@
             },
             "type": "object",
             "title": "By Kind"
+          },
+          "birds": {
+            "type": "integer",
+            "title": "Birds",
+            "default": 0
           }
         },
         "type": "object",
@@ -1937,6 +1942,17 @@
             "type": "boolean",
             "title": "Colour Known"
           },
+          "bird_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bird Partners"
+          },
           "fit": {
             "$ref": "#/components/schemas/FitOut"
           }
@@ -1951,6 +1967,7 @@
           "flowering_end_month",
           "flower_colour",
           "colour_known",
+          "bird_partners",
           "fit"
         ],
         "title": "PlantSummary"

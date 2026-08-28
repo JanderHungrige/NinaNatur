@@ -587,6 +587,11 @@ export interface components {
             by_kind: {
                 [key: string]: number;
             };
+            /**
+             * Birds
+             * @default 0
+             */
+            birds: number;
         };
         /** PlantDetail */
         PlantDetail: {
@@ -640,6 +645,8 @@ export interface components {
             flower_colour: string | null;
             /** Colour Known */
             colour_known: boolean;
+            /** Bird Partners */
+            bird_partners: number | null;
             fit: components["schemas"]["FitOut"];
         };
         /** PlantingCreate */

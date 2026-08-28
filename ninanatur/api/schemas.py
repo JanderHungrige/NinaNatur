@@ -44,6 +44,9 @@ class PlantSummary(BaseModel):
     flowering_end_month: int | None
     flower_colour: str | None
     colour_known: bool
+    # German bird species recorded as partners, or None when GloBI holds no
+    # relations at all. Zero and "never recorded" are different facts.
+    bird_partners: int | None
     fit: FitOut
 
 
@@ -166,6 +169,10 @@ class PartnersOut(BaseModel):
     unmatched: int
     match_rate: float
     by_kind: dict[str, int]
+    # German bird species recorded as partners. Reported next to `german`, never
+    # inside it: this product's number is called Insektenwert, and folding birds
+    # in would change every score already shown without explaining why.
+    birds: int = 0
 
 
 class SpeciesInfoOut(BaseModel):

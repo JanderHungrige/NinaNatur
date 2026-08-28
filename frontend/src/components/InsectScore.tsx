@@ -1,5 +1,5 @@
 import type { ChangeOut, ImprovementsOut, ScoreOut } from '../api/client';
-import { insectGroup } from '../plural';
+import { insectGroup, plantings } from '../plural';
 
 interface Props {
   score: ScoreOut;
@@ -75,7 +75,7 @@ export function InsectScore({ score, improvements, onApply, busy }: Props) {
 
       {score.plantings_without_interaction_data > 0 && (
         <p className="hint">
-          Für {score.plantings_without_interaction_data} Pflanzung(en) liegen keine
+          Für {plantings(score.plantings_without_interaction_data)} liegen keine
           Beziehungsdaten vor. Sie zählen mit ihrem Grundwert — unbekannt ist nicht
           wertlos.
         </p>

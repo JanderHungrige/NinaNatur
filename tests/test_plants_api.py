@@ -180,3 +180,36 @@ def test_no_article_is_404_not_an_empty_panel(client: TestClient, monkeypatch) -
 
     monkeypatch.setattr(module, "WikipediaClient", Nothing)
     assert client.get("/api/v1/plants/2/info").status_code == 404
+
+
+def test_bird_partners_are_reported_beside_the_insect_count() -> None:
+    """Beside, never inside. The number this product shows is an insect number,
+    and adding birds must not move it."""
+    conn = connect(":memory:", same_thread=False)
+    init_schema(conn)
+    _plant(conn, 1, "Sambucus testensis", light=6.0, moisture=5.0)
+    conn.execute(
+        "INSERT INTO insect_de (canonical_name, occurrences, clade)"
+        " VALUES ('Apis mellifera', 9, 'insect')"
+    )
+    conn.execute(
+        "INSERT INTO insect_de (canonical_name, occurrences, clade)"
+        " VALUES ('Turdus merula', 900, 'bird')"
+    )
+    for partner, kind in (("Apis mellifera", "visitedBy"), ("Turdus merula", "eatenBy")):
+        conn.execute(
+            "INSERT INTO interaction (taxon_id, partner_name, interaction_type,"
+            " source, license) VALUES (1, ?, ?, 'GloBI', 'CC0-1.0')",
+            (partner, kind),
+        )
+    conn.commit()
+    summarise_interactions(conn)
+
+    app.dependency_overrides[get_connection] = lambda: conn
+    try:
+        partners = TestClient(app).get("/api/v1/plants/1").json()["partners"]
+    finally:
+        app.dependency_overrides.clear()
+
+    assert partners["birds"] == 1
+    assert partners["german"] == 1, "the blackbird was counted as an insect"

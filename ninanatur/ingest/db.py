@@ -91,10 +91,14 @@ CREATE TABLE IF NOT EXISTS insect_de (
     -- bee / butterfly / hoverfly, or NULL for everything else. Beetles and wasps
     -- are real visitors; they simply are not in a named group, and dropping them
     -- would make the total disagree with the breakdown.
-    insect_group    TEXT
+    insect_group    TEXT,
+    -- 'insect' or 'bird'. The table kept its name when birds arrived; this
+    -- column, not the name, is what every read site must go by.
+    clade           TEXT NOT NULL DEFAULT 'insect'
 );
 
 CREATE INDEX IF NOT EXISTS idx_insect_group ON insect_de(insect_group);
+CREATE INDEX IF NOT EXISTS idx_insect_clade ON insect_de(clade);
 
 -- A garden plan. `owner_id` is nullable and present from this first migration:
 -- accounts are not being built (access is by share token), but adding the column
@@ -172,6 +176,15 @@ CREATE TABLE IF NOT EXISTS partner_groups (
     insect_group TEXT    NOT NULL,
     german       INTEGER NOT NULL,
     PRIMARY KEY (taxon_id, insect_group)
+);
+
+-- German bird partners, counted separately and never folded into the insect
+-- numbers. Its own table rather than a clade column on partner_summary: the
+-- insect score's queries then keep working untouched, which is the difference
+-- between adding a number and silently changing every score already shown.
+CREATE TABLE IF NOT EXISTS partner_birds (
+    taxon_id INTEGER PRIMARY KEY,
+    german   INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS partner_totals (
@@ -263,6 +276,9 @@ def connect(
 # should be a deliberate, reviewed script rather than an entry here.
 COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("insect_de", "insect_group", "TEXT"),
+    # Existing rows are insects, so the default carries their meaning forward
+    # without a data migration. Birds arrive with clade='bird'.
+    ("insect_de", "clade", "TEXT NOT NULL DEFAULT 'insect'"),
 )
 
 

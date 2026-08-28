@@ -30,7 +30,7 @@ from ninanatur.api.search import (
     load_candidates,
     rank_plants,
 )
-from ninanatur.data.interactions import german_partner_counts
+from ninanatur.data.interactions import bird_counts, german_partner_counts
 from ninanatur.data.species_info import species_info
 from ninanatur.data.traits import resolve_traits_for
 from ninanatur.fit.score import SiteVector
@@ -40,7 +40,7 @@ router = APIRouter(prefix="/api/v1", tags=["plants"])
 MAX_LIMIT = 200
 
 
-def to_summary(scored: ScoredPlant) -> PlantSummary:
+def to_summary(scored: ScoredPlant, birds: int | None = None) -> PlantSummary:
     plant = scored.plant
     start = plant.number("flowering_start_month")
     end = plant.number("flowering_end_month")
@@ -53,6 +53,7 @@ def to_summary(scored: ScoredPlant) -> PlantSummary:
         flowering_end_month=int(end) if end is not None else None,
         flower_colour=plant.text("flower_colour"),
         colour_known=plant.text("flower_colour") is not None,
+        bird_partners=birds,
         fit=FitOut(
             score=round(scored.score, 4),
             axes={
@@ -117,11 +118,12 @@ def search_plants(
         colour=colour,
     )
     page = ranked.items[offset : offset + limit]
+    birds = bird_counts(conn, [s.plant.taxon_id for s in page])
     return PlantSearchResponse(
         total=len(ranked.items),
         limit=limit,
         offset=offset,
-        items=[to_summary(s) for s in page],
+        items=[to_summary(s, birds.get(s.plant.taxon_id)) for s in page],
         filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
     )
 
@@ -170,6 +172,7 @@ def plant_detail(
             unmatched=counts.unmatched,
             match_rate=round(counts.match_rate, 4),
             by_kind=counts.by_kind,
+            birds=counts.birds,
         ),
     )
 
