@@ -48,6 +48,9 @@ class ScoreResult:
 
     score: float
     by_month: dict[int, float] = field(default_factory=dict)
+    # Uncapped sums, so a candidate's marginal gain can be computed without
+    # rescoring the whole garden. See ninanatur/bloom/improve.py.
+    raw_month: dict[int, float] = field(default_factory=dict)
     by_species: list[SpeciesContribution] = field(default_factory=list)
     by_group: dict[str, int] = field(default_factory=dict)
     plantings_total: int = 0
@@ -132,6 +135,7 @@ def garden_score(conn: sqlite3.Connection, garden: Garden) -> ScoreResult:
     return ScoreResult(
         score=round(score, 1),
         by_month={m: round(v, 2) for m, v in capped.items()},
+        raw_month=dict(per_month),
         by_species=sorted(contributions, key=lambda c: -c.forage),
         by_group=groups,
         plantings_total=total,

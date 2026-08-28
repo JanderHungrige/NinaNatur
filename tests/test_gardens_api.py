@@ -120,17 +120,28 @@ def test_a_new_bed_gets_its_light_straight_away(client: TestClient) -> None:
     assert bed["light_computed_at"] is not None
 
 
-def test_light_stays_null_until_it_is_computed(client: TestClient) -> None:
-    """The transport rule still holds: unknown is null, never zero."""
-    from ninanatur.garden.models import BedInput
-    from ninanatur.garden.store import add_bed, garden_by_token
+def test_uncomputed_light_is_transported_as_null_never_zero(client: TestClient) -> None:
+    """The transport rule, independent of how a bed came to have no light.
+
+    `add_bed` now computes it, so the uncomputed state is written directly — the
+    rule under test is the serialisation, not the creation path.
+    """
+    import json
+
+    from ninanatur.garden.store import garden_by_token
 
     conn = app.dependency_overrides[get_connection]()
     token = _new_garden(client)
     garden = garden_by_token(conn, token)
     assert garden is not None
-    add_bed(conn, garden.garden_id, BedInput(name="Roh", polygon=SQUARE))
+    conn.execute(
+        "INSERT INTO bed (garden_id, name, polygon) VALUES (?, 'Roh', ?)",
+        (garden.garden_id, json.dumps(SQUARE)),
+    )
+    conn.commit()
+
     bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    assert "ellenberg_l" in bed
     assert bed["ellenberg_l"] is None
     assert bed["sun_hours"] is None
 

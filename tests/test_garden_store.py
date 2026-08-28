@@ -122,3 +122,20 @@ def test_an_obstacle_to_the_south_lowers_the_light_value(
     recompute_light(conn, gid)
     after = load_garden(conn, gid).beds[0].sun_hours
     assert after < before
+
+
+def test_a_bed_gets_its_light_from_the_store_not_only_from_the_api(
+    conn: sqlite3.Connection,
+) -> None:
+    """The invariant must not depend on which entry point created the bed.
+
+    It used to be the route's job, so a bed made through the store had none — and
+    everything downstream then scored it on soil alone, silently, because a
+    missing axis is skipped rather than flagged.
+    """
+    gid = _garden(conn)
+    add_bed(conn, gid, BedInput(name="Direkt", polygon=SQUARE))
+    bed = load_garden(conn, gid).beds[0]
+    assert bed.ellenberg_l is not None
+    assert bed.sun_hours is not None
+    assert "ellenberg_l" in bed.site_axes
