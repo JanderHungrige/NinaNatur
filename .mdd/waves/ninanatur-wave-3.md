@@ -25,7 +25,7 @@ still there.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 1 | solar-geometry | .mdd/docs/07-solar-geometry.md | complete | — |
-| 2 | garden-model | 08-garden-model | planned | — |
+| 2 | garden-model | .mdd/docs/08-garden-model.md | complete | — |
 | 3 | garden-api | 09-garden-api | planned | 07, 08 |
 | 4 | web-client | 10-web-client | planned | 09 |
 | 5 | garden-canvas | 11-garden-canvas | planned | 10 |
