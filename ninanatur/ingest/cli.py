@@ -18,13 +18,15 @@ from ninanatur.ingest.sources.eive import EiveSource
 from ninanatur.ingest.sources.gbif import GbifSource
 from ninanatur.ingest.sources.gift import GiftSource
 from ninanatur.ingest.sources.globi import GlobiSource
+from ninanatur.ingest.sources.insect_groups import InsectGroupsSource
 from ninanatur.ingest.sources.insects_de import InsectsDeSource
+from ninanatur.ingest.sources.nativeness import NativenessSource
 from ninanatur.ingest.summarise import summarise_interactions
 
 # GBIF defines the candidate set, so it must run before anything joins against it.
 # insects-de must precede any use of the interaction counts; globi supplies the
 # raw relations, insects-de supplies what makes them mean anything here.
-RUN_ORDER = ("gbif", "eive", "gift", "globi", "insects-de")
+RUN_ORDER = ("gbif", "eive", "gift", "nativeness", "globi", "insects-de", "insect-groups")
 
 
 def run_source(conn: sqlite3.Connection, name: str, limit: int | None) -> int:
@@ -40,6 +42,10 @@ def run_source(conn: sqlite3.Connection, name: str, limit: int | None) -> int:
         return GlobiSource().run(conn, limit=limit)
     if name == "insects-de":
         return InsectsDeSource().run(conn, limit=limit)
+    if name == "nativeness":
+        return NativenessSource().run(conn, limit=limit)
+    if name == "insect-groups":
+        return InsectGroupsSource().run(conn, limit=limit)
     raise ValueError(f"unknown source: {name}")
 
 

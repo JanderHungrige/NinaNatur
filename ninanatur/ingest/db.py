@@ -87,8 +87,14 @@ CREATE INDEX IF NOT EXISTS idx_interaction_taxon ON interaction(taxon_id);
 CREATE TABLE IF NOT EXISTS insect_de (
     canonical_name  TEXT PRIMARY KEY,
     scientific_name TEXT,
-    occurrences     INTEGER NOT NULL DEFAULT 0
+    occurrences     INTEGER NOT NULL DEFAULT 0,
+    -- bee / butterfly / hoverfly, or NULL for everything else. Beetles and wasps
+    -- are real visitors; they simply are not in a named group, and dropping them
+    -- would make the total disagree with the breakdown.
+    insect_group    TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_insect_group ON insect_de(insect_group);
 
 -- A garden plan. `owner_id` is nullable and present from this first migration:
 -- accounts are not being built (access is by share token), but adding the column
@@ -159,6 +165,15 @@ CREATE TABLE IF NOT EXISTS partner_summary (
     PRIMARY KEY (taxon_id, interaction_type)
 );
 
+-- Counts per insect group, so "1,055 partners" can become "40 wild bee species,
+-- 12 butterflies" — a statement a gardener can act on.
+CREATE TABLE IF NOT EXISTS partner_groups (
+    taxon_id     INTEGER NOT NULL,
+    insect_group TEXT    NOT NULL,
+    german       INTEGER NOT NULL,
+    PRIMARY KEY (taxon_id, insect_group)
+);
+
 CREATE TABLE IF NOT EXISTS partner_totals (
     taxon_id     INTEGER PRIMARY KEY,
     german       INTEGER NOT NULL,
@@ -196,7 +211,47 @@ def connect(
     return conn
 
 
-def init_schema(conn: sqlite3.Connection) -> None:
-    """Create every table and index. Safe to call on an existing database."""
+# Columns added to tables that already existed in a shipped release.
+#
+# CREATE TABLE IF NOT EXISTS silently does nothing when the table is there, so a
+# new column never reaches an existing database — including the production
+# volume, where startup would then fail on the first statement referencing it.
+# Additive migrations are all this project has needed; anything destructive
+# should be a deliberate, reviewed script rather than an entry here.
+COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
+    ("insect_de", "insect_group", "TEXT"),
+)
+
+
+def _apply_column_migrations(conn: sqlite3.Connection) -> list[str]:
+    """Add any missing columns. Returns what was added, for the startup log."""
+    applied: list[str] = []
+    for table, column, column_type in COLUMN_MIGRATIONS:
+        exists = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+        ).fetchone()
+        if exists is None:
+            continue  # the table itself is about to be created with the column
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if column in columns:
+            continue
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+        applied.append(f"{table}.{column}")
+    if applied:
+        conn.commit()
+    return applied
+
+
+def init_schema(conn: sqlite3.Connection) -> list[str]:
+    """Create every table and index, and add columns missing from older databases.
+
+    Migrations run first: the schema script includes indexes over columns that an
+    existing table may not have yet, and executescript would fail on those before
+    reaching anything else.
+
+    Returns the migrations applied, so a deployment can say what it changed.
+    """
+    applied = _apply_column_migrations(conn)
     conn.executescript(SCHEMA)
     conn.commit()
+    return applied

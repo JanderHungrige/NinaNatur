@@ -34,16 +34,28 @@ GROUP BY i.taxon_id
 """
 
 
+GROUPS_SQL = """
+INSERT OR REPLACE INTO partner_groups (taxon_id, insect_group, german)
+SELECT i.taxon_id, d.insect_group, COUNT(DISTINCT i.partner_name)
+FROM interaction i
+JOIN insect_de d ON d.canonical_name = i.partner_name
+WHERE d.insect_group IS NOT NULL
+GROUP BY i.taxon_id, d.insect_group
+"""
+
+
 def summarise_interactions(conn: sqlite3.Connection) -> int:
     """Rebuild the partner aggregates. Returns the number of plants summarised.
 
-    Must run after both `globi` and `insects-de`: it is their intersection, so
-    running it before either leaves every count at zero — silently, because zero
-    German partners is a legitimate answer.
+    Must run after `globi`, `insects-de` and `insect-groups`: it is their
+    intersection, so running it earlier leaves counts at zero — silently, because
+    zero German partners is a legitimate answer.
     """
     conn.execute("DELETE FROM partner_summary")
     conn.execute("DELETE FROM partner_totals")
+    conn.execute("DELETE FROM partner_groups")
     conn.execute(SUMMARY_SQL)
     conn.execute(TOTALS_SQL)
+    conn.execute(GROUPS_SQL)
     conn.commit()
     return int(conn.execute("SELECT COUNT(*) AS n FROM partner_totals").fetchone()["n"])
