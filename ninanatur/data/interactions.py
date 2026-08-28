@@ -24,6 +24,7 @@ class PartnerCounts:
     global_total: int
     unmatched: int
     by_kind: dict[str, int]
+    by_group: dict[str, int]
 
     @property
     def match_rate(self) -> float:
@@ -57,10 +58,18 @@ def german_partner_counts(conn: sqlite3.Connection, taxon_id: int) -> PartnerCou
             (taxon_id,),
         )
     }
+    by_group = {
+        str(row["insect_group"]): int(row["german"])
+        for row in conn.execute(
+            "SELECT insect_group, german FROM partner_groups WHERE taxon_id = ?",
+            (taxon_id,),
+        )
+    }
     return PartnerCounts(
         taxon_id=taxon_id,
         german=int(totals["german"]),
         global_total=int(totals["global_total"]),
         unmatched=int(totals["unmatched"]),
         by_kind=by_kind,
+        by_group=by_group,
     )

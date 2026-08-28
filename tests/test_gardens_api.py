@@ -120,17 +120,28 @@ def test_a_new_bed_gets_its_light_straight_away(client: TestClient) -> None:
     assert bed["light_computed_at"] is not None
 
 
-def test_light_stays_null_until_it_is_computed(client: TestClient) -> None:
-    """The transport rule still holds: unknown is null, never zero."""
-    from ninanatur.garden.models import BedInput
-    from ninanatur.garden.store import add_bed, garden_by_token
+def test_uncomputed_light_is_transported_as_null_never_zero(client: TestClient) -> None:
+    """The transport rule, independent of how a bed came to have no light.
+
+    `add_bed` now computes it, so the uncomputed state is written directly — the
+    rule under test is the serialisation, not the creation path.
+    """
+    import json
+
+    from ninanatur.garden.store import garden_by_token
 
     conn = app.dependency_overrides[get_connection]()
     token = _new_garden(client)
     garden = garden_by_token(conn, token)
     assert garden is not None
-    add_bed(conn, garden.garden_id, BedInput(name="Roh", polygon=SQUARE))
+    conn.execute(
+        "INSERT INTO bed (garden_id, name, polygon) VALUES (?, 'Roh', ?)",
+        (garden.garden_id, json.dumps(SQUARE)),
+    )
+    conn.commit()
+
     bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    assert "ellenberg_l" in bed
     assert bed["ellenberg_l"] is None
     assert bed["sun_hours"] is None
 
@@ -238,3 +249,79 @@ def test_removing_another_gardens_planting_is_404(client: TestClient) -> None:
     assert client.delete(
         f"/api/v1/gardens/{mine}/plantings/{their_planting}"
     ).status_code == 404
+
+
+# --- score and improvements ------------------------------------------------
+
+def _scoreable(client: TestClient) -> tuple[str, int]:
+    """A garden with one bed and a catalogue worth scoring against."""
+    from ninanatur.ingest.provenance import upsert_trait
+
+    conn = app.dependency_overrides[get_connection]()
+    for tid, name, start, end, partners in (
+        (101, "Sommerkraut", 7, 8, 400),
+        (102, "Fruehlingskraut", 4, 5, 400),
+    ):
+        conn.execute(
+            "INSERT OR IGNORE INTO taxon (taxon_id, canonical_name, occurs_de)"
+            " VALUES (?, ?, 1)", (tid, name),
+        )
+        for key, val in (("ellenberg_l", 8.0), ("ellenberg_m", 5.0), ("ellenberg_n", 5.5)):
+            upsert_trait(conn, tid, key, value_num=val, source="EIVE-1.0", license="CC-BY-4.0")
+        upsert_trait(conn, tid, "ellenberg_l_nw", value_num=3.0,
+                     source="EIVE-1.0", license="CC-BY-4.0")
+        upsert_trait(conn, tid, "flowering_start_month", value_num=float(start),
+                     source="GIFT", license="CC-BY-4.0")
+        upsert_trait(conn, tid, "flowering_end_month", value_num=float(end),
+                     source="GIFT", license="CC-BY-4.0")
+        upsert_trait(conn, tid, "native_de", value_text="native",
+                     source="GBIF-WCVP", license="CC-BY-4.0")
+        upsert_trait(conn, tid, "growth_form", value_text="forb",
+                     source="GIFT", license="CC-BY-4.0")
+        conn.execute("INSERT OR REPLACE INTO partner_totals (taxon_id, german,"
+                     " global_total, unmatched) VALUES (?, ?, ?, 0)", (tid, partners, partners))
+        conn.execute("INSERT OR REPLACE INTO partner_groups (taxon_id, insect_group,"
+                     " german) VALUES (?, 'bee', ?)", (tid, partners // 2))
+    conn.commit()
+
+    token = _new_garden(client)
+    bed_id = client.post(
+        f"/api/v1/gardens/{token}/beds",
+        json={"name": "Beet", "polygon": SQUARE, "soil_type": "loam", "moisture": "fresh"},
+    ).json()["beds"][0]["bed_id"]
+    return token, bed_id
+
+
+def test_an_empty_garden_scores_zero_and_says_it_is_empty(client: TestClient) -> None:
+    token = _new_garden(client)
+    body = client.get(f"/api/v1/gardens/{token}/score").json()
+    assert body["score"] == 0.0
+    assert body["is_empty"] is True
+
+
+def test_the_score_reports_its_components(client: TestClient) -> None:
+    """A score a user cannot interrogate is decoration."""
+    token, bed_id = _scoreable(client)
+    client.post(f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 101})
+    body = client.get(f"/api/v1/gardens/{token}/score").json()
+    assert body["score"] > 0
+    assert body["by_species"][0]["canonical_name"] == "Sommerkraut"
+    assert body["by_species"][0]["german_partners"] == 400
+    assert body["by_group"]["bee"] == 200
+    assert body["by_month"]["7"] > 0
+
+
+def test_improvements_name_the_gap_they_close(client: TestClient) -> None:
+    token, bed_id = _scoreable(client)
+    client.post(f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 101})
+    body = client.get(f"/api/v1/gardens/{token}/improvements").json()
+    best = body["additions"][0]
+    assert best["canonical_name"] == "Fruehlingskraut"
+    assert best["gain"] > 0
+    assert "Lücke" in best["reason"]
+    assert best["resulting_score"] > body["current_score"]
+
+
+def test_an_unknown_token_is_404_for_score_and_improvements(client: TestClient) -> None:
+    assert client.get("/api/v1/gardens/nope/score").status_code == 404
+    assert client.get("/api/v1/gardens/nope/improvements").status_code == 404

@@ -40,7 +40,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """
     conn = connect(database_path(), same_thread=False)
     try:
-        init_schema(conn)
+        migrated = init_schema(conn)
+        if migrated:
+            print(f"schema migrated: {', '.join(migrated)}", flush=True)
         # A fresh volume has the schema but no plants, and the app then answers
         # "0 matching species" to every request — structurally perfect, entirely
         # useless. The catalogue ships with the image because it is derived from

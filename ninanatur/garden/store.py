@@ -95,7 +95,14 @@ def create_garden(
 
 
 def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
-    """Add a bed, deriving its soil axes if a soil description was given."""
+    """Add a bed, deriving its soil axes and computing its light.
+
+    The light computation lives here rather than in the API so the invariant
+    holds whatever the entry point. It used to be the route's job, which meant a
+    bed created through the store had no light value — and everything downstream
+    then scored it on soil alone, silently, because a missing axis is skipped
+    rather than flagged.
+    """
     _validate_polygon(bed.polygon)
     axes: dict[str, float] = {}
     if bed.soil_type and bed.moisture:
@@ -119,6 +126,7 @@ def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
         ),
     )
     _touch(conn, garden_id)
+    recompute_light(conn, garden_id)
     return int(cursor.lastrowid or 0)
 
 

@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 8
-hash: 890ac597
+version: 11
+hash: 4d62a903
 created: 2026-08-27
 ---
 
@@ -100,6 +100,20 @@ Wave 4 outline would have been invented precision; and 132 species have flowerin
 intervals that wrap the year end, which naive range arithmetic drops silently —
 precisely the species covering the hardest part of the year.
 
+### Native means native, and the site has been claiming it without evidence
+
+`occurs_de` means *recorded in Germany*, which is true of *Vitis riparia*, a
+North American grape. The landing page promises "heimischen Pflanzen" and nothing
+in the database backs it. Wave 5 ingests `establishmentMeans` from GBIF/WCVP and
+makes native the default for suggestions — not a new product decision, the
+existing promise finally kept.
+
+Insect taxonomy was lost in Wave 2 when the checklist switched to the name facet,
+so a bee and a fly are currently indistinguishable. Restored the same way the
+plants were: one occurrence facet per clade.
+
+Both were verified obtainable before being planned, not assumed.
+
 ### Catalogue — all 3,087 core-complete species
 
 No curated subset. Filtering is by site conditions and design intent only, so
@@ -133,13 +147,48 @@ arrives, but it needs no arbitration policy yet.
 None blocking. Remaining decisions are recorded in the wave that must answer them:
 sun-hour derivation in Wave 3, nursery partners in Wave 6.
 
+### Species information comes from an API and is cached, not crawled
+
+Asked and answered while planning Wave 6. Wikipedia's REST API returns a summary
+and a thumbnail and redirects the scientific name to the German article
+(*Achillea millefolium* → *Gemeine Schafgarbe*). It is CC-BY-SA 4.0, so
+attribution and a link back are required.
+
+Fetched on demand and cached **on the volume**, not baked into the shipped
+catalogue: a live fetch per view adds latency and a dependency to a page that has
+neither, and storing summaries would go stale and re-inflate an image just
+trimmed to 10 MB. Same lifecycle split as gardens, for the same reason.
+
+### Heights come from objects, not from terrain
+
+Open elevation data describes the ground. Over the twenty metres of a garden the
+ground barely changes — what shades a bed is the twelve-metre building beside it.
+Heights are therefore sourced from user input, then OSM `height`, then
+`building:levels`, then a type default, each carrying its confidence.
+
+Measured before deciding: of six central Berlin buildings, one carried `height`,
+two `building:levels`, three neither. A model that trusted OSM heights would
+silently under-shade half the gardens in the country.
+
+### Aerial imagery is blocked until its licence is established
+
+OSM is open data; aerial imagery generally is not. German state orthophotos exist
+under Datenlizenz Deutschland with terms varying by Bundesland, and the federal
+WMS refused an anonymous request. No imagery is used until that is settled — the
+same rule that kept this project off NaturaDB, and it does not bend because the
+data would be convenient.
+
 ## Waves
 
 | Wave | File | Demo-state | Status |
 |------|------|------------|--------|
-| Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute | complete |
-| Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions" from the ingested open data, every value citing its source | complete |
-| Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path | complete |
-| Wave 4 | waves/ninanatur-wave-4.md | A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked | complete |
-| Wave 5 | waves/ninanatur-wave-5.md | A planting shows an insect score and concrete swaps that measurably raise it | planned |
-| Wave 6 | waves/ninanatur-wave-6.md | A finished plan turns into a shopping list split across as few nurseries as possible | planned |
+| Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded page, and a push to main replaces it automatically | complete |
+| Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions", every value citing its source | complete |
+| Wave 3 | waves/ninanatur-wave-3.md | Beds get a computed light value from the real sun path | complete |
+| Wave 4 | waves/ninanatur-wave-4.md | The bloom year, month by month, with forage gaps marked | complete |
+| Wave 5 | waves/ninanatur-wave-5.md | An insect score on counted German relations, and swaps that raise it | complete |
+| Wave 6 | waves/ninanatur-wave-6.md | A catalogue you can browse: German names, photos, filters, month-click | planned |
+| Wave 7 | waves/ninanatur-wave-7.md | The garden drawn rather than typed, labelled by clicking, playing through the year | planned |
+| Wave 8 | waves/ninanatur-wave-8.md | An address becomes a drawing carrying the surroundings that shade it | planned |
+| Wave 9 | waves/ninanatur-wave-9.md | What is visible from where you stand, and accounts without a required email | planned |
+| Wave 10 | waves/ninanatur-wave-10.md | A finished plan split across as few nurseries as possible | planned |

@@ -166,3 +166,42 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted); font-size: 0.76rem;
 }
 .suggestion button { grid-column: 2; grid-row: 1 / span 2; margin: 0; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+
+/* ---- wave 5: the insect score ---- */
+
+.score-value { margin: 0.25rem 0 0.5rem; }
+.score-value strong { font-size: 2.4rem; font-weight: 660; color: var(--leaf); letter-spacing: -0.03em; }
+.score-of { color: var(--ink-muted); font-size: 0.9rem; }
+
+.group-list {
+  list-style: none; margin: 0.75rem 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1rem;
+  font-size: 0.85rem; color: var(--ink-muted);
+}
+.group-list li { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.contributions { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.contributions th, .contributions td { padding: 0.3rem 0.4rem; text-align: left; }
+.contributions thead th { color: var(--ink-muted); font-weight: 500; font-size: 0.78rem; }
+.contributions tbody th { font-weight: 500; }
+.contributions tbody tr + tr { border-top: 1px solid var(--line); }
+.contributions td { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+.change-list { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
+.change {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.7rem; border: 1px solid var(--line); border-radius: 8px;
+}
+.change__main { min-width: 0; }
+.change__name { display: block; font-weight: 560; font-size: 0.9rem; }
+.change__reason { display: block; color: var(--ink-muted); font-size: 0.78rem; }
+.change__gain {
+  color: var(--leaf); font-weight: 600; font-size: 0.85rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.change button { margin: 0; padding: 0.3rem 0.7rem; font-size: 0.82rem; }
+
+.swaps { margin-top: 1.25rem; }
+.swaps summary { cursor: pointer; font-size: 0.9rem; color: var(--ink-muted); }
+.swaps summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

@@ -22,6 +22,11 @@ CATALOGUE_TABLES: tuple[str, ...] = (
     "trait",
     "partner_summary",
     "partner_totals",
+    # Wave 5: the group breakdown, and the checklist it is derived from — the
+    # score needs both, and a catalogue missing them would serve a product that
+    # cannot explain its own number.
+    "partner_groups",
+    "insect_de",
 )
 
 DEFAULT_CATALOGUE = Path("ninanatur/data/catalogue.sqlite")

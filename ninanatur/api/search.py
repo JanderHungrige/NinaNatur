@@ -61,6 +61,14 @@ WOODY_FORMS: frozenset[str] = frozenset({"tree", "shrub"})
 # catalogue — 25 German candidates are this tall with no form recorded.
 WOODY_HEIGHT_M = 3.0
 
+# Species whose German origin is recorded as introduced. Excluded by default,
+# because the product promises native plants — 1,071 of the 3,087 suggestible
+# species are introduced, and every one of them was being offered as heimisch.
+#
+# Unknown is NOT excluded: that is a gap in the data, not a property of the
+# plant, the same rule that keeps flower colour a soft filter.
+INTRODUCED = "introduced"
+
 
 @dataclass(frozen=True)
 class SearchFilters:
@@ -70,6 +78,7 @@ class SearchFilters:
     height_max: float | None = None
     flowering_month: int | None = None
     exclude_woody: bool = False
+    exclude_introduced: bool = False
     exclude_taxa: frozenset[int] = frozenset()
 
 
@@ -122,6 +131,8 @@ def _passes(plant: PlantRow, filters: SearchFilters) -> bool:
     if plant.taxon_id in filters.exclude_taxa:
         return False
     if filters.exclude_woody and _is_woody(plant):
+        return False
+    if filters.exclude_introduced and (plant.text("native_de") or "") == INTRODUCED:
         return False
     height = plant.number("height_max_m")
     if filters.height_min is not None and (height is None or height < filters.height_min):

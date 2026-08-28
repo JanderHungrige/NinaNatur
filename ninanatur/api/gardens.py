@@ -114,17 +114,15 @@ def create_bed(
     PolygonError, SoilTypeError and MoistureError all subclass ValueError, so they
     surface as 422 with their reason rather than as a 500.
 
-    The recompute is not optional. Only adding an *obstacle* used to trigger it, so
-    a garden with no obstacles left every bed on "not yet computed" forever — and
-    suggestions for such a bed were then scored on soil alone, which is both worse
-    and silently so.
+    `add_bed` computes the light itself, so the invariant does not depend on which
+    entry point created the bed — it used to live here, and a bed made through the
+    store had no light at all.
     """
     garden = require_garden(conn, token)
     add_bed(conn, garden.garden_id, BedInput(
         name=payload.name, polygon=payload.polygon,
         soil_type=payload.soil_type, moisture=payload.moisture,
     ))
-    recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
 
 

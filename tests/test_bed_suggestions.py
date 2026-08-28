@@ -142,3 +142,40 @@ def test_a_species_with_no_woody_signal_at_all_is_still_kept(
     """Absent data is not a property of the plant."""
     token, bed_id = _sunny_bed(client)
     assert "Unbekanntwuchs" in _names(client, token, bed_id)
+
+
+def test_introduced_species_are_not_suggested_by_default(client: TestClient) -> None:
+    """The product promises native plants and a third of the catalogue is not."""
+    conn = app.dependency_overrides[get_connection]()
+    _species(conn, 20, "Eingefuehrte Art", light=8.0, form="forb")
+    upsert_trait(conn, 20, "native_de", value_text="introduced",
+                 source="GBIF-WCVP", license="CC-BY-4.0")
+    conn.commit()
+    token, bed_id = _sunny_bed(client)
+    assert "Eingefuehrte Art" not in _names(client, token, bed_id)
+
+
+def test_introduced_species_can_be_asked_for(client: TestClient) -> None:
+    conn = app.dependency_overrides[get_connection]()
+    _species(conn, 21, "Auf Wunsch", light=8.0, form="forb")
+    upsert_trait(conn, 21, "native_de", value_text="introduced",
+                 source="GBIF-WCVP", license="CC-BY-4.0")
+    conn.commit()
+    token, bed_id = _sunny_bed(client)
+    assert "Auf Wunsch" in _names(client, token, bed_id, include_introduced=True)
+
+
+def test_unknown_origin_is_still_suggested(client: TestClient) -> None:
+    """A gap in the data is not a property of the plant."""
+    conn = app.dependency_overrides[get_connection]()
+    _species(conn, 22, "Herkunft unbekannt", light=8.0, form="forb")
+    upsert_trait(conn, 22, "native_de", value_text="unknown",
+                 source="GBIF-WCVP", license="CC-BY-4.0")
+    conn.commit()
+    token, bed_id = _sunny_bed(client)
+    assert "Herkunft unbekannt" in _names(client, token, bed_id)
+
+
+def test_a_species_with_no_origin_record_is_still_suggested(client: TestClient) -> None:
+    token, bed_id = _sunny_bed(client)
+    assert "Sonnenkraut" in _names(client, token, bed_id)

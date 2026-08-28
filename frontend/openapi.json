@@ -261,6 +261,85 @@
         "title": "BedSuggestions",
         "type": "object"
       },
+      "ChangeOut": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "bed_name": {
+            "title": "Bed Name",
+            "type": "string"
+          },
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "gain": {
+            "title": "Gain",
+            "type": "number"
+          },
+          "german_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "German Partners"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "replaces_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces Name"
+          },
+          "replaces_planting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces Planting Id"
+          },
+          "resulting_score": {
+            "title": "Resulting Score",
+            "type": "number"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "taxon_id",
+          "canonical_name",
+          "bed_id",
+          "bed_name",
+          "gain",
+          "resulting_score",
+          "reason",
+          "german_partners",
+          "replaces_planting_id",
+          "replaces_name"
+        ],
+        "title": "ChangeOut",
+        "type": "object"
+      },
       "FitOut": {
         "properties": {
           "axes": {
@@ -417,6 +496,35 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ImprovementsOut": {
+        "properties": {
+          "additions": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeOut"
+            },
+            "title": "Additions",
+            "type": "array"
+          },
+          "current_score": {
+            "title": "Current Score",
+            "type": "number"
+          },
+          "swaps": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeOut"
+            },
+            "title": "Swaps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "current_score",
+          "additions",
+          "swaps"
+        ],
+        "title": "ImprovementsOut",
         "type": "object"
       },
       "MonthOut": {
@@ -791,6 +899,107 @@
         "title": "PlantingOut",
         "type": "object"
       },
+      "ScoreOut": {
+        "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves.",
+        "properties": {
+          "by_group": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Group",
+            "type": "object"
+          },
+          "by_month": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "By Month",
+            "type": "object"
+          },
+          "by_species": {
+            "items": {
+              "$ref": "#/components/schemas/SpeciesContributionOut"
+            },
+            "title": "By Species",
+            "type": "array"
+          },
+          "is_empty": {
+            "title": "Is Empty",
+            "type": "boolean"
+          },
+          "plantings_total": {
+            "title": "Plantings Total",
+            "type": "integer"
+          },
+          "plantings_without_interaction_data": {
+            "title": "Plantings Without Interaction Data",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "by_month",
+          "by_species",
+          "by_group",
+          "plantings_total",
+          "plantings_without_interaction_data",
+          "is_empty"
+        ],
+        "title": "ScoreOut",
+        "type": "object"
+      },
+      "SpeciesContributionOut": {
+        "properties": {
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "forage": {
+            "title": "Forage",
+            "type": "number"
+          },
+          "german_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "German Partners"
+          },
+          "months": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "taxon_id",
+          "canonical_name",
+          "german_partners",
+          "origin",
+          "forage",
+          "months"
+        ],
+        "title": "SpeciesContributionOut",
+        "type": "object"
+      },
       "TimelineOut": {
         "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic.",
         "properties": {
@@ -1055,7 +1264,7 @@
     },
     "/api/v1/gardens/{token}/beds": {
       "post": {
-        "description": "Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\nThe recompute is not optional. Only adding an *obstacle* used to trigger it, so\na garden with no obstacles left every bed on \"not yet computed\" forever \u2014 and\nsuggestions for such a bed were then scored on soil alone, which is both worse\nand silently so.",
+        "description": "Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\n`add_bed` computes the light itself, so the invariant does not depend on which\nentry point created the bed \u2014 it used to live here, and a bed made through the\nstore had no light at all.",
         "operationId": "create_bed_api_v1_gardens__token__beds_post",
         "parameters": [
           {
@@ -1170,7 +1379,7 @@
     },
     "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
       "get": {
-        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion.",
+        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.",
         "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
         "parameters": [
           {
@@ -1231,6 +1440,16 @@
           },
           {
             "in": "query",
+            "name": "include_introduced",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Introduced",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
             "name": "exclude_planted",
             "required": false,
             "schema": {
@@ -1263,6 +1482,49 @@
           }
         },
         "summary": "Bed Suggestions",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/improvements": {
+      "get": {
+        "description": "What to plant, and what it would gain.\n\nAdditions come first because they are the safer advice: a swap removes\nsomething, and the score will recommend removing a valuable plant whose month\nis already saturated. See the known issue in 19-swap-suggestions.",
+        "operationId": "improvements_api_v1_gardens__token__improvements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImprovementsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Improvements",
         "tags": [
           "planning"
         ]
@@ -1412,6 +1674,49 @@
         "summary": "Recompute",
         "tags": [
           "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/score": {
+      "get": {
+        "description": "What this planting is worth to insects, with its components.",
+        "operationId": "score_api_v1_gardens__token__score_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Score",
+        "tags": [
+          "planning"
         ]
       }
     },
