@@ -83,7 +83,7 @@ def test_a_fresh_volume_comes_up_with_a_plant_catalogue(
     """
     import sqlite3
 
-    from ninanatur.ingest.catalogue import CATALOGUE_TABLES, seed_catalogue
+    from ninanatur.ingest.catalogue import CATALOGUE_TABLES, sync_catalogue
     from ninanatur.ingest.db import connect, init_schema
 
     shipped = tmp_path / "catalogue.sqlite"
@@ -100,19 +100,80 @@ def test_a_fresh_volume_comes_up_with_a_plant_catalogue(
     init_schema(conn)
     assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 0
 
-    seeded = seed_catalogue(conn, shipped)
+    seeded = sync_catalogue(conn, shipped)
     assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 1
     assert set(seeded) <= set(CATALOGUE_TABLES)
     assert isinstance(conn, sqlite3.Connection)
 
 
-def test_seeding_never_runs_over_existing_plants(tmp_path: Path) -> None:
-    """Seeding over a newer local ingest would silently discard it."""
-    from ninanatur.ingest.catalogue import catalogue_is_empty
+def _shipped(tmp_path: Path, name: str, taxa: list[tuple[int, str]]):
+    """A catalogue file as `export-catalogue` would write it, with a build stamp."""
+    from ninanatur.ingest.catalogue import VERSION_KEY, export_catalogue
     from ninanatur.ingest.db import connect, init_schema
 
-    conn = connect(tmp_path / "has-data.sqlite", same_thread=False)
+    builder = connect(tmp_path / f"build-{name}.sqlite", same_thread=False)
+    init_schema(builder)
+    for taxon_id, canonical in taxa:
+        builder.execute(
+            "INSERT INTO taxon (taxon_id, canonical_name, occurs_de) VALUES (?, ?, 1)",
+            (taxon_id, canonical),
+        )
+    builder.commit()
+    dest = tmp_path / f"{name}.sqlite"
+    export_catalogue(builder, dest)
+    # Make the stamp distinct so two builds are distinguishable within one second.
+    out = connect(dest, same_thread=False)
+    out.execute("INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
+                (VERSION_KEY, name))
+    out.commit()
+    out.close()
+    return dest
+
+
+def test_a_newer_catalogue_reaches_a_database_that_already_has_plants(
+    tmp_path: Path,
+) -> None:
+    """Regression: sync ran only on an empty database, so the insect group
+    breakdown shipped in the image and stayed invisible in production."""
+    from ninanatur.ingest.catalogue import sync_catalogue
+    from ninanatur.ingest.db import connect, init_schema
+
+    first = _shipped(tmp_path, "v1", [(1, "Alte Art")])
+    second = _shipped(tmp_path, "v2", [(1, "Alte Art"), (2, "Neue Art")])
+
+    conn = connect(tmp_path / "live.sqlite", same_thread=False)
     init_schema(conn)
-    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Vorhanden')")
-    conn.commit()
-    assert catalogue_is_empty(conn) is False
+    sync_catalogue(conn, first)
+    assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 1
+
+    synced = sync_catalogue(conn, second)
+    assert synced, "a different build must be applied"
+    assert conn.execute("SELECT COUNT(*) AS n FROM taxon").fetchone()["n"] == 2
+
+
+def test_the_same_catalogue_is_not_reapplied(tmp_path: Path) -> None:
+    """Re-copying 13 MB on every boot would be waste, not safety."""
+    from ninanatur.ingest.catalogue import sync_catalogue
+    from ninanatur.ingest.db import connect, init_schema
+
+    shipped = _shipped(tmp_path, "v1", [(1, "Art")])
+    conn = connect(tmp_path / "live.sqlite", same_thread=False)
+    init_schema(conn)
+    assert sync_catalogue(conn, shipped)
+    assert sync_catalogue(conn, shipped) == {}, "a second sync of the same build is a no-op"
+
+
+def test_syncing_never_touches_gardens(tmp_path: Path) -> None:
+    """The catalogue is the shipped truth; a garden belongs to whoever made it."""
+    from ninanatur.garden.store import create_garden, load_garden
+    from ninanatur.ingest.catalogue import sync_catalogue
+    from ninanatur.ingest.db import connect, init_schema
+
+    conn = connect(tmp_path / "live.sqlite", same_thread=False)
+    init_schema(conn)
+    garden_id = create_garden(conn, name="Meiner", latitude=52.5, longitude=13.4)
+
+    sync_catalogue(conn, _shipped(tmp_path, "v1", [(1, "Art")]))
+    sync_catalogue(conn, _shipped(tmp_path, "v2", [(1, "Art"), (2, "Noch eine")]))
+
+    assert load_garden(conn, garden_id).name == "Meiner"

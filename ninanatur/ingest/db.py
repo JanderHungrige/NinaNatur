@@ -181,6 +181,17 @@ CREATE TABLE IF NOT EXISTS partner_totals (
     unmatched    INTEGER NOT NULL
 );
 
+-- Which build of the shipped catalogue this database currently holds.
+--
+-- Seeding used to run only when there were no taxa at all, which stopped a newer
+-- local ingest being overwritten — and also meant no catalogue improvement ever
+-- reached an existing deployment. The insect group breakdown shipped and stayed
+-- invisible in production for exactly that reason.
+CREATE TABLE IF NOT EXISTS catalogue_meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS source_run (
     source      TEXT NOT NULL,
     started_at  TEXT NOT NULL,

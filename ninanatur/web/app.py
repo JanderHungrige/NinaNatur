@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
-from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, catalogue_is_empty, seed_catalogue
+from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, init_schema
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -44,14 +44,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         if migrated:
             print(f"schema migrated: {', '.join(migrated)}", flush=True)
         # A fresh volume has the schema but no plants, and the app then answers
-        # "0 matching species" to every request — structurally perfect, entirely
-        # useless. The catalogue ships with the image because it is derived from
-        # static sources and belongs with the code built against it; gardens stay
-        # on the volume because they belong to the person who made them.
-        if catalogue_is_empty(conn):
-            seeded = seed_catalogue(conn, DEFAULT_CATALOGUE)
-            if seeded:
-                print(f"seeded catalogue: {seeded}", flush=True)
+        # "0 matching species" to every request. An *existing* volume has plants
+        # but not the ones a newer image ships — which is how the insect group
+        # breakdown went live in the image and stayed invisible in production.
+        # Both are the same problem: the shipped catalogue is the truth, gardens
+        # on the volume are not touched.
+        synced = sync_catalogue(conn, DEFAULT_CATALOGUE)
+        if synced:
+            print(f"catalogue synced: {synced}", flush=True)
     finally:
         conn.close()
     yield
