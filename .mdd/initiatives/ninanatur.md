@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 4
-hash: 65e76901
+version: 5
+hash: a076e51b
 created: 2026-08-27
 ---
 
@@ -69,6 +69,23 @@ to protect, no auth wave before the product has proven anyone wants it.
 `owner_id` from the first migration. Adding it later means migrating live plans;
 adding it now costs one column that stays empty until accounts exist.
 
+### Bed light — computed from the real sun path
+
+Not three categories, and not an orientation lookup: sun altitude and azimuth for
+the garden's location, shadows cast by placed obstacles, sampled across the
+growing season.
+
+The mapping from sun hours to Ellenberg L stays a documented convention in one
+place — sun hours are physical, Ellenberg L is ecological, and pretending the
+conversion is exact would be the kind of invented precision this project avoids
+everywhere else.
+
+Location is stored rounded to 0.1° (~11 km): solar angles do not care, and a
+garden's exact coordinates are personal.
+
+*Later:* the sister project 3dmap (`/opt/3dmap2`) carries height-profile logic
+that could replace hand-placed obstacle heights with real terrain.
+
 ### Catalogue — all 3,087 core-complete species
 
 No curated subset. Filtering is by site conditions and design intent only, so
@@ -108,7 +125,7 @@ sun-hour derivation in Wave 3, nursery partners in Wave 6.
 |------|------|------------|--------|
 | Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute | complete |
 | Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions" from the ingested open data, every value citing its source | complete |
-| Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden floor plan, sets each bed's conditions, and the plan persists | planned |
+| Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path | planned |
 | Wave 4 | waves/ninanatur-wave-4.md | A bed shows fitting species plus a bloom calendar for the year, with gaps marked | planned |
 | Wave 5 | waves/ninanatur-wave-5.md | A planting shows an insect score and concrete swaps that measurably raise it | planned |
 | Wave 6 | waves/ninanatur-wave-6.md | A finished plan turns into a shopping list split across as few nurseries as possible | planned |
