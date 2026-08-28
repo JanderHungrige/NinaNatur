@@ -75,9 +75,9 @@ rather than retrofitted:
 ## Deployment change
 
 The Dockerfile gains a Node stage that builds `frontend/dist`, which FastAPI then
-serves. **This is the first change to a deployment path that currently works, and
-there is no Docker on the dev machine to verify it** — CI is the first real test,
-so the risk is stated rather than assumed away.
+serves. This was flagged as a risk while there was no Docker on the dev machine;
+it has since been verified locally — three-stage build in 62 s, and the runtime
+layer carries neither Node nor pip.
 
 The API keeps its `/api/v1` prefix and `/healthz` stays untouched, so the deploy
 cron's health probe is unaffected by the frontend either way.
@@ -101,6 +101,19 @@ cron's health probe is unaffected by the frontend either way.
   and `DELETE` endpoints noted in `09-garden-api`.
 - The plant suggestions from Wave 2 are not wired into a selected bed yet; the
   client method exists and is typed, but nothing calls it.
+
+## Verified in the container
+
+Built and run locally on 2026-08-28:
+
+- Fresh **empty** volume: schema created at startup, `POST /api/v1/gardens`
+  returned 201. This is precisely the case that returned 500 before the lifespan
+  fix, now proven in the real runtime rather than in a test double.
+- Data survives a container roll — a garden written before `up -d --force-recreate`
+  is still there afterwards, which is what `auto-deploy.sh` does every minute.
+- Run **without** a volume mount, a fresh container reports 0 gardens. The silent
+  data loss the named volume prevents is demonstrated, not just asserted.
+- Runs as uid 10001, and the `HEALTHCHECK` reaches `healthy`.
 
 ## Verified in the running app
 
