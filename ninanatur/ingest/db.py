@@ -5,10 +5,22 @@ nothing else opens a database or issues DDL.
 """
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
 DEFAULT_DB_PATH = Path("data/ninanatur.sqlite")
+DB_PATH_ENV = "NINANATUR_DB"
+
+
+def database_path() -> Path:
+    """Where the database lives.
+
+    Configurable because the container mounts its data elsewhere than the repo
+    checkout, and because tests need to point at a throwaway file without
+    monkeypatching a module constant.
+    """
+    return Path(os.environ.get(DB_PATH_ENV) or DEFAULT_DB_PATH)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS taxon (
@@ -77,6 +89,49 @@ CREATE TABLE IF NOT EXISTS insect_de (
     scientific_name TEXT,
     occurrences     INTEGER NOT NULL DEFAULT 0
 );
+
+-- A garden plan. `owner_id` is nullable and present from this first migration:
+-- accounts are not being built (access is by share token), but adding the column
+-- later would mean migrating live plans, and it costs one empty column now.
+CREATE TABLE IF NOT EXISTS garden (
+    garden_id   INTEGER PRIMARY KEY,
+    share_token TEXT    NOT NULL UNIQUE,
+    owner_id    TEXT,
+    name        TEXT    NOT NULL,
+    latitude    REAL    NOT NULL,
+    longitude   REAL    NOT NULL,
+    created_at  TEXT    NOT NULL,
+    updated_at  TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bed (
+    bed_id            INTEGER PRIMARY KEY,
+    garden_id         INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    name              TEXT    NOT NULL,
+    polygon           TEXT    NOT NULL,
+    soil_type         TEXT,
+    moisture          TEXT,
+    ellenberg_l       REAL,
+    ellenberg_m       REAL,
+    ellenberg_n       REAL,
+    ellenberg_r       REAL,
+    sun_hours         REAL,
+    light_computed_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_bed_garden ON bed(garden_id);
+
+CREATE TABLE IF NOT EXISTS obstacle (
+    obstacle_id INTEGER PRIMARY KEY,
+    garden_id   INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    kind        TEXT    NOT NULL,
+    x           REAL    NOT NULL,
+    y           REAL    NOT NULL,
+    radius      REAL    NOT NULL,
+    height      REAL    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_obstacle_garden ON obstacle(garden_id);
 
 CREATE TABLE IF NOT EXISTS source_run (
     source      TEXT NOT NULL,

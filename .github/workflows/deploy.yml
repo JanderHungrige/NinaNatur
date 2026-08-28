@@ -51,6 +51,28 @@ jobs:
           mypy ninanatur
           pytest -q
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend install, typecheck, test
+        working-directory: frontend
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npx vitest run
+
+      # A backend change that was not propagated to the generated types must not
+      # merge: a stale client compiles fine and fails at runtime instead.
+      - name: API types are in sync with the backend
+        run: |
+          python scripts/generate_openapi.py
+          cd frontend && npx openapi-typescript openapi.json -o src/api/types.ts
+          git diff --exit-code -- frontend/openapi.json frontend/src/api/types.ts \
+            || { echo "::error::Generated API types are stale — run npm run generate:api"; exit 1; }
+
   build-and-push:
     needs: test
     runs-on: ubuntu-latest

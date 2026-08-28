@@ -1,13 +1,25 @@
-"""The Wave 1 shell: health probe and branded page.
+"""The Wave 1 shell: health probe, static assets, and the development fallback page.
+
+Since Wave 3, `/` serves the built React bundle when one exists and the Wave 1
+page only when it does not. Testing the landing page *through the route* would
+therefore pass or fail depending on whether someone had run `npm run build` in
+this checkout — so the fallback page is asserted against its file, and the route
+tests are limited to what holds either way.
 
 /healthz must answer without touching the database — a deploy failing and a
 database failing must not look the same to the cron.
 """
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
-from ninanatur.web.app import app
+from ninanatur.web.app import STATIC_DIR, app
 
 client = TestClient(app)
+
+
+def _fallback_page() -> str:
+    return (Path(STATIC_DIR) / "index.html").read_text()
 
 
 def test_healthz_reports_ok_with_service_identity() -> None:
@@ -19,27 +31,28 @@ def test_healthz_reports_ok_with_service_identity() -> None:
     assert body["version"]
 
 
-def test_index_serves_the_branded_page() -> None:
+def test_the_root_serves_something_branded_either_way() -> None:
+    """Holds for both the built bundle and the fallback."""
     response = client.get("/")
     assert response.status_code == 200
     assert "NinaNatur" in response.text
 
 
-def test_page_declares_german_and_a_viewport() -> None:
+def test_whatever_is_served_declares_german_and_a_viewport() -> None:
     """Without lang, screen readers pronounce German text as English."""
     text = client.get("/").text
     assert 'lang="de"' in text
     assert 'name="viewport"' in text
 
 
-def test_logo_carries_an_accessible_name() -> None:
-    text = client.get("/").text
+def test_the_fallback_logo_carries_an_accessible_name() -> None:
+    text = _fallback_page()
     assert 'role="img"' in text
     assert 'aria-label="NinaNatur Logo"' in text
 
 
-def test_stylesheet_is_external_not_inlined() -> None:
-    text = client.get("/").text
+def test_the_fallback_stylesheet_is_external_not_inlined() -> None:
+    text = _fallback_page()
     assert '<link rel="stylesheet" href="/static/styles.css">' in text
     assert "<style" not in text, "styles belong in the stylesheet, not the document"
 
