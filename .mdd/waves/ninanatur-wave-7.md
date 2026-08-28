@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-6
 demo_state: "A user draws their garden — outline, beds, trees, walls — labels each object by clicking it, enters what already grows there, and plays the bloom year as colour on the plan"
 created: 2026-08-28
-hash: 4a55633b
+hash: c2d62beb
 ---
 
 # Wave 7 — The garden as a drawing
@@ -36,6 +36,11 @@ usually dropped.
 | 2 | object-labelling | 27-object-labelling | planned | 26 |
 | 3 | existing-plantings | 28-existing-plantings | planned | 27 |
 | 4 | bloom-playback | 29-bloom-playback | planned | 27 |
+
+**Queued after this wave:** `30-landing-and-garden-id` — the Wave 1 landing page
+returns as the entry point (new garden, or load by ID), and the garden ID becomes
+visible with a copy button until Wave 9 brings accounts. Requested during this
+wave's planning, to be built once the four features above are merged.
 
 ### 1 — drawing-canvas (#2.1)
 
