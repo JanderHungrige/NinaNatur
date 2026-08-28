@@ -29,10 +29,16 @@ RUN pip install --prefix=/install . "uvicorn[standard]" fastapi
 # --- runtime ------------------------------------------------------------------
 FROM python:3.13-slim AS runtime
 
+# Baked at build time: the container carries neither git nor .mdd, so the
+# version cannot be derived at runtime — an unset value would show "dev" on a
+# real deployment, which is worse than wrong because it looks deliberate.
+ARG NINANATUR_VERSION=dev
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     APP_PORT=4000 \
-    NINANATUR_DB=/data/ninanatur.sqlite
+    NINANATUR_DB=/data/ninanatur.sqlite \
+    NINANATUR_VERSION=${NINANATUR_VERSION}
 WORKDIR /app
 
 COPY --from=build /install /usr/local

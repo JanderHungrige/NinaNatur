@@ -19,12 +19,12 @@ from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, init_schema
+from ninanatur.version import app_version
 
 STATIC_DIR = Path(__file__).parent / "static"
 # The built frontend, present only in the container image. Vite serves it in
 # development, so its absence here is normal rather than an error.
 DIST_DIR = Path(__file__).parent / "dist"
-VERSION = "0.1.0"
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -58,7 +58,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="NinaNatur", version=VERSION, docs_url="/api/docs", redoc_url=None, lifespan=lifespan
+    title="NinaNatur",
+    version=app_version(),
+    docs_url="/api/docs",
+    redoc_url=None,
+    lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(plants_router)
@@ -85,7 +89,9 @@ def healthz() -> JSONResponse:
     Deliberately dependency-free: it must answer while the app is otherwise
     broken, or a failing deploy looks identical to a failing database.
     """
-    return JSONResponse({"status": "ok", "service": "ninanatur", "version": VERSION})
+    return JSONResponse(
+        {"status": "ok", "service": "ninanatur", "version": app_version()}
+    )
 
 
 if DIST_DIR.is_dir():

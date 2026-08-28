@@ -95,6 +95,19 @@ export class NinaNaturClient {
     return (await response.json()) as T;
   }
 
+  /**
+   * The deployed version, from the health endpoint.
+   *
+   * Reads it rather than compiling it in: the bundle and the image are built
+   * together, but only the server knows which build is actually running — and a
+   * version baked into the frontend would keep claiming the old one after a
+   * partial rollout.
+   */
+  async version(): Promise<string> {
+    const body = await this.request<{ version?: string }>('/healthz');
+    return typeof body.version === 'string' ? body.version : 'dev';
+  }
+
   async createGarden(input: {
     name: string;
     latitude: number;
