@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 8
-hash: 890ac597
+version: 9
+hash: ee07e5dd
 created: 2026-08-27
 ---
 
@@ -100,6 +100,20 @@ Wave 4 outline would have been invented precision; and 132 species have flowerin
 intervals that wrap the year end, which naive range arithmetic drops silently —
 precisely the species covering the hardest part of the year.
 
+### Native means native, and the site has been claiming it without evidence
+
+`occurs_de` means *recorded in Germany*, which is true of *Vitis riparia*, a
+North American grape. The landing page promises "heimischen Pflanzen" and nothing
+in the database backs it. Wave 5 ingests `establishmentMeans` from GBIF/WCVP and
+makes native the default for suggestions — not a new product decision, the
+existing promise finally kept.
+
+Insect taxonomy was lost in Wave 2 when the checklist switched to the name facet,
+so a bee and a fly are currently indistinguishable. Restored the same way the
+plants were: one occurrence facet per clade.
+
+Both were verified obtainable before being planned, not assumed.
+
 ### Catalogue — all 3,087 core-complete species
 
 No curated subset. Filtering is by site conditions and design intent only, so
@@ -141,5 +155,5 @@ sun-hour derivation in Wave 3, nursery partners in Wave 6.
 | Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions" from the ingested open data, every value citing its source | complete |
 | Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path | complete |
 | Wave 4 | waves/ninanatur-wave-4.md | A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked | complete |
-| Wave 5 | waves/ninanatur-wave-5.md | A planting shows an insect score and concrete swaps that measurably raise it | planned |
+| Wave 5 | waves/ninanatur-wave-5.md | A planting shows an insect score built on counted German relations, and swaps that measurably raise it | planned |
 | Wave 6 | waves/ninanatur-wave-6.md | A finished plan turns into a shopping list split across as few nurseries as possible | planned |
