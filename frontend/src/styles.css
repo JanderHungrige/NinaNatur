@@ -244,7 +244,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   flex-direction: column;
   gap: 0.2rem;
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 
 .filter-controls select {
@@ -281,7 +281,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   padding: 0.15rem 0.3rem 0.15rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface-2, #eef3ec);
+  background: var(--bg);
+  color: var(--ink);
   font-size: 0.85rem;
 }
 
@@ -292,11 +293,11 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: 1rem;
   line-height: 1;
   padding: 0 0.2rem;
-  color: var(--muted);
+  color: var(--ink-muted);
 }
 
 .chip__remove:hover {
-  color: var(--text);
+  color: var(--ink);
 }
 
 .filter-bar__coverage {
@@ -330,25 +331,25 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .month-button:hover:not(:disabled) {
   border-color: var(--line);
-  background: var(--surface-2, #eef3ec);
+  background: var(--bg);
 }
 
 .month-button[aria-pressed='true'] {
-  border-color: var(--accent, #4a7c59);
-  background: var(--accent, #4a7c59);
-  color: #fff;
+  border-color: var(--leaf);
+  background: var(--leaf);
+  color: var(--bg);
 }
 
 .timeline tr.is-chosen td {
-  background: var(--surface-2, #eef3ec);
+  background: var(--bg);
 }
 
 .suggestion__birds {
-  color: var(--accent, #4a7c59);
+  color: var(--leaf);
   font-weight: 600;
 }
 
 .suggestion__space {
-  color: var(--muted);
+  color: var(--ink-muted);
   font-style: italic;
 }
