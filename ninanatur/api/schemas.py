@@ -63,6 +63,29 @@ class BedSuggestions(BaseModel):
     items: list[PlantSummary]
 
 
+class MonthOut(BaseModel):
+    month: int
+    coverage: float
+    species: list[str]
+
+
+class GapOut(BaseModel):
+    months: list[int]
+    length: int
+
+
+class TimelineOut(BaseModel):
+    """The bloom year. `plantings_without_interaction_data` is reported so a
+    timeline built mostly on unknowns is visible rather than merely optimistic."""
+
+    mode: str
+    months: list[MonthOut]
+    gaps: list[GapOut]
+    plantings_total: int
+    plantings_without_interaction_data: int
+    is_empty: bool
+
+
 class PartnersOut(BaseModel):
     german: int
     global_total: int

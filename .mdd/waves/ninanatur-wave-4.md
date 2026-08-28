@@ -31,7 +31,7 @@ could be drawn from. That is the first feature, not an afterthought.
 |---|---------|-----|--------|------------|
 | 1 | planting-model | .mdd/docs/12-planting-model.md | complete | — |
 | 2 | bed-suggestions | .mdd/docs/13-bed-suggestions.md | complete | 12 |
-| 3 | bloom-timeline | 14-bloom-timeline | planned | 12 |
+| 3 | bloom-timeline | .mdd/docs/14-bloom-timeline.md | complete | 12 |
 | 4 | timeline-ui | 15-timeline-ui | planned | 13, 14 |
 
 ### 1 — planting-model

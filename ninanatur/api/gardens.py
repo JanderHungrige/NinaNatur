@@ -9,41 +9,34 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from ninanatur.api.deps import get_connection
-from ninanatur.api.plants import to_summary
 from ninanatur.api.schemas import (
     BedCreate,
     BedOut,
-    BedSuggestions,
     GardenCreate,
     GardenCreated,
     GardenOut,
     ObstacleCreate,
     ObstacleOut,
-    PlantingCreate,
     PlantingOut,
 )
-from ninanatur.api.search import SearchFilters, load_candidates, rank_plants
-from ninanatur.fit.score import SiteVector
 from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
 from ninanatur.garden.store import (
     add_bed,
     add_obstacle,
-    add_planting,
     create_garden,
     delete_garden,
     garden_by_token,
     load_garden,
     recompute_light,
-    remove_planting,
 )
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
 
 
-def _require(conn: sqlite3.Connection, token: str) -> Garden:
+def require_garden(conn: sqlite3.Connection, token: str) -> Garden:
     """Resolve a token or 404.
 
     Never 403: telling a caller that a token exists but is not theirs is the one
@@ -55,7 +48,7 @@ def _require(conn: sqlite3.Connection, token: str) -> Garden:
     return garden
 
 
-def _to_out(garden: Garden) -> GardenOut:
+def to_out(garden: Garden) -> GardenOut:
     return GardenOut(
         share_token=garden.share_token,
         name=garden.name,
@@ -107,7 +100,7 @@ def read(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    return _to_out(_require(conn, token))
+    return to_out(require_garden(conn, token))
 
 
 @router.post("/{token}/beds", response_model=GardenOut, status_code=status.HTTP_201_CREATED)
@@ -118,12 +111,12 @@ def create_bed(
 ) -> GardenOut:
     """Add a bed. PolygonError, SoilTypeError and MoistureError all subclass
     ValueError, so they surface as 422 with their reason rather than as a 500."""
-    garden = _require(conn, token)
+    garden = require_garden(conn, token)
     add_bed(conn, garden.garden_id, BedInput(
         name=payload.name, polygon=payload.polygon,
         soil_type=payload.soil_type, moisture=payload.moisture,
     ))
-    return _to_out(load_garden(conn, garden.garden_id))
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.post("/{token}/obstacles", response_model=GardenOut, status_code=status.HTTP_201_CREATED)
@@ -137,13 +130,13 @@ def create_obstacle(
     Requiring a second request would leave the plan showing light values that no
     longer match its own obstacles — and nothing would make that visible.
     """
-    garden = _require(conn, token)
+    garden = require_garden(conn, token)
     add_obstacle(conn, garden.garden_id, ObstacleInput(
         kind=payload.kind, x=payload.x, y=payload.y,
         radius=payload.radius, height=payload.height,
     ))
     recompute_light(conn, garden.garden_id)
-    return _to_out(load_garden(conn, garden.garden_id))
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.post("/{token}/recompute", response_model=GardenOut)
@@ -151,9 +144,9 @@ def recompute(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    garden = _require(conn, token)
+    garden = require_garden(conn, token)
     recompute_light(conn, garden.garden_id)
-    return _to_out(load_garden(conn, garden.garden_id))
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.delete("/{token}", status_code=status.HTTP_204_NO_CONTENT)
@@ -161,11 +154,11 @@ def remove(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> Response:
-    delete_garden(conn, _require(conn, token).garden_id)
+    delete_garden(conn, require_garden(conn, token).garden_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def _require_bed(garden: Garden, bed_id: int) -> Bed:
+def require_bed(garden: Garden, bed_id: int) -> Bed:
     """A bed must belong to the garden the token opened.
 
     Without this, a valid token for one garden would let its holder reach any bed
@@ -176,85 +169,3 @@ def _require_bed(garden: Garden, bed_id: int) -> Bed:
         if bed.bed_id == bed_id:
             return bed
     raise HTTPException(status_code=404, detail=f"no such bed in this garden: {bed_id}")
-
-
-@router.post(
-    "/{token}/beds/{bed_id}/plantings",
-    response_model=GardenOut,
-    status_code=status.HTTP_201_CREATED,
-)
-def create_planting(
-    token: str,
-    bed_id: int,
-    payload: PlantingCreate,
-    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
-) -> GardenOut:
-    """Put a species in a bed. An unknown taxon raises ValueError -> 422."""
-    garden = _require(conn, token)
-    _require_bed(garden, bed_id)
-    add_planting(conn, bed_id, taxon_id=payload.taxon_id, quantity=payload.quantity)
-    return _to_out(load_garden(conn, garden.garden_id))
-
-
-@router.delete("/{token}/plantings/{planting_id}", response_model=GardenOut)
-def delete_planting(
-    token: str,
-    planting_id: int,
-    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
-) -> GardenOut:
-    """Remove a planting. Reached through its garden, never by a bare id."""
-    garden = _require(conn, token)
-    owned = conn.execute(
-        """
-        SELECT 1 FROM planting p JOIN bed b ON b.bed_id = p.bed_id
-        WHERE p.planting_id = ? AND b.garden_id = ?
-        """,
-        (planting_id, garden.garden_id),
-    ).fetchone()
-    if owned is None:
-        raise HTTPException(status_code=404, detail=f"no such planting: {planting_id}")
-    remove_planting(conn, planting_id)
-    return _to_out(load_garden(conn, garden.garden_id))
-
-
-@router.get("/{token}/beds/{bed_id}/suggestions", response_model=BedSuggestions)
-def bed_suggestions(
-    token: str,
-    bed_id: int,
-    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    colour: str | None = None,
-    include_trees: bool = False,
-    exclude_planted: bool = True,
-) -> BedSuggestions:
-    """Species that suit this bed, ranked by fit against its own site vector.
-
-    The bed's derived axes are the query, so the user never types an Ellenberg
-    number. Trees and shrubs are excluded by default: a bed is a few square
-    metres, and a hemlock that fits the light perfectly is still a useless
-    suggestion.
-    """
-    garden = _require(conn, token)
-    bed = _require_bed(garden, bed_id)
-
-    axes = bed.site_axes
-    if not axes:
-        raise ValueError(
-            f"bed {bed_id} has no site conditions yet — set soil and moisture, "
-            "or recompute light, before asking for suggestions"
-        )
-
-    planted = frozenset(p.taxon_id for p in bed.plantings) if exclude_planted else frozenset()
-    scored = rank_plants(
-        load_candidates(conn),
-        SiteVector(values=axes),
-        SearchFilters(exclude_woody=not include_trees, exclude_taxa=planted),
-        colour=colour,
-    )
-    return BedSuggestions(
-        bed_id=bed.bed_id,
-        bed_name=bed.name,
-        site_axes=axes,
-        total=len(scored),
-        items=[to_summary(s) for s in scored[:limit]],
-    )
