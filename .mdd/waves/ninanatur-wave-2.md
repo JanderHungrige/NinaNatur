@@ -3,11 +3,11 @@ id: ninanatur-wave-2
 title: "Wave 2: The data layer answers questions"
 initiative: ninanatur
 initiative_version: 3
-status: planned
+status: complete
 depends_on: ninanatur-wave-1
 demo_state: "GET /api/v1/plants with a bed's site conditions returns ranked species with a graded fit score, every trait value carrying its source"
 created: 2026-08-27
-hash: 6062423a
+hash: f03f08c1
 ---
 
 # Wave 2 — The data layer answers questions
