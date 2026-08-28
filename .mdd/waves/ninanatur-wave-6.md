@@ -1,53 +1,108 @@
 ---
 id: ninanatur-wave-6
-title: "Wave 6: One plan, fewest possible parcels"
+title: "Wave 6: A catalogue you can actually browse"
 initiative: ninanatur
-initiative_version: 2
+initiative_version: 10
 status: planned
 depends_on: ninanatur-wave-5
-demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
-created: 2026-08-27
-hash: 32627991
+demo_state: "A user finds a plant by its German name, filters by height and colour, clicks a month to see only what flowers then, and opens any species for a description and a photo"
+created: 2026-08-28
+hash: a3e9696f
 ---
 
-# Wave 6 — One plan, fewest possible parcels
+# Wave 6 — A catalogue you can actually browse
 
-## The problem, stated properly
+## Demo-State
 
-This is not a sorting problem. Minimise
+A user finds a plant by its German name, filters by height and colour, clicks a
+month to see only what flowers then, and opens any species for a description and
+a photo.
 
-    sum(shipping cost of each nursery used) + sum(item prices)
+## Why this before more drawing
 
-subject to every needed plant being covered by a nursery that stocks it. That is
-a set-cover with fixed costs — a CP-SAT model in OR-Tools, solved in
-milliseconds at this size.
+The catalogue holds 3,087 usable species and the UI exposes them as a ranked list
+of Latin binomials. Nobody browses that. Every drawing feature after this is
+worth more once the plants behind it are findable and legible.
 
-The interesting extension: when one plant is stocked only by a nursery used for
-nothing else, offer an ecologically equivalent species that an already-used
-nursery carries. Near-identical score, one parcel fewer.
+## Features
 
-## Scope
+| # | Feature | Doc | Status | Depends on |
+|---|---------|-----|--------|------------|
+| 1 | german-names | 21-german-names | planned | — |
+| 2 | species-info | 22-species-info | planned | — |
+| 3 | catalogue-filters | 23-catalogue-filters | planned | 21 |
+| 4 | month-suggestions | 24-month-suggestions | planned | 23 |
+| 5 | woody-and-birds | 25-woody-and-birds | planned | — |
 
-**In:**
-- Nursery adapters over partner feeds (Shopify/WooCommerce product endpoints
-  where offered) — by agreement, not by scraping
-- Availability and price sync
-- The optimisation, with the substitution option
-- Order list export
+### 1 — german-names (#4)
 
-## Open — must be settled in this wave
+GBIF carries vernacular names, checked before planning: 10–20 German names per
+species, *including* spellings with and without umlauts — `Frühlings-Schlüsselblume`
+and `Fruehlings-Schluesselblume` both appear. That is exactly what a search box
+needs, and it arrives free.
 
-Which nurseries to approach and on what terms. Deliberately left until now:
-deciding earlier binds the design to assumptions that will have changed.
+One preferred name for display, all of them searchable. Search matches German and
+scientific names alike; a user should never have to know that *Sal-Weide* is
+*Salix caprea*.
 
-## Constraint
+### 2 — species-info (#5)
 
-Nursery data is obtained with permission. Nurseries generally want referral
-traffic, so an email gets a feed; ten partners with clean data beat a fragile
-scraper across a hundred shops. This is the same reasoning that kept the trait
-layer on open sources.
+**API, not a crawler** — verified: `de.wikipedia.org/api/rest_v1/page/summary/…`
+returns a summary and a thumbnail, and redirects the scientific name to the
+German article (`Achillea millefolium` → *Gemeine Schafgarbe*). Content is
+CC-BY-SA 4.0, so **attribution and a link back are required, not optional**.
+
+**Fetched on demand and cached, not stored in the catalogue.** Three reasons, and
+they settle the question asked:
+
+- A live fetch on every view adds latency and an external dependency to a page
+  that currently has neither.
+- Baking summaries into the shipped catalogue makes it stale on a yearly cycle
+  and inflates an image that just got trimmed to 10 MB.
+- The cache belongs on the volume, not in the catalogue — same lifecycle split as
+  gardens, for the same reason.
+
+Falls back to English when there is no German article, and says which it showed.
+
+### 3 — catalogue-filters (#6)
+
+Height, colour, flowering window, growth form, nativeness — as filters over the
+same ranking, with the rules already established: colour ranks rather than
+excludes, unknown is never silently dropped, and every active filter is visible
+and removable.
+
+### 4 — month-suggestions (#1)
+
+Clicking a month in the bloom year restricts suggestions to species flowering
+then. This is the shortest path from *seeing a gap* to *fixing it*, and it is the
+reason the timeline exists.
+
+Wrapping intervals must be honoured here too — a November-to-March species
+belongs in the March list.
+
+### 5 — woody-and-birds (#7b)
+
+Trees, shrubs and woody plants stop being a filtered-out nuisance and become a
+category with its own place: they are the highest-value forage plants in the
+catalogue. *Salix caprea* leads the whole database with 1,055 German partners,
+and Wave 4 hides it from every bed.
+
+Birds join insects as counted partners — GloBI already holds the relations, and
+`insect_de` becomes an animal checklist with a group per clade.
+
+## Risks
+
+- Wikipedia titles are not stable identifiers. A cached miss must be retried on a
+  schedule rather than remembered forever as "no article".
+- Adding vernacular names and an animal checklist grows the shipped catalogue.
+  Measure it against the 10 MB baseline rather than assuming.
+
+## Open Research
+
+None blocking. Both external sources were verified before this plan was written.
 
 ## Definition of done
 
-A finished plan produces a shopping list grouped by nursery, with the parcel
-count and total cost shown, and substitution suggestions where they save a parcel.
+Searching "Schlüsselblume" finds *Primula veris*; filtering to yellow flowers
+under 50 cm narrows the list; clicking June shows only June bloomers; and any
+species opens a description with its photo and a Wikipedia credit.
