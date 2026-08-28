@@ -20,16 +20,20 @@ from ninanatur.api.schemas import (
     GardenOut,
     ObstacleCreate,
     ObstacleOut,
+    PlantingCreate,
+    PlantingOut,
 )
 from ninanatur.garden.models import BedInput, Garden, ObstacleInput
 from ninanatur.garden.store import (
     add_bed,
     add_obstacle,
+    add_planting,
     create_garden,
     delete_garden,
     garden_by_token,
     load_garden,
     recompute_light,
+    remove_planting,
 )
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
@@ -62,6 +66,14 @@ def _to_out(garden: Garden) -> GardenOut:
                 ellenberg_l=b.ellenberg_l, ellenberg_m=b.ellenberg_m,
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,
                 sun_hours=b.sun_hours, light_computed_at=b.light_computed_at,
+                plantings=[
+                    PlantingOut(
+                        planting_id=p.planting_id, taxon_id=p.taxon_id,
+                        canonical_name=p.canonical_name, quantity=p.quantity,
+                        added_at=p.added_at,
+                    )
+                    for p in b.plantings
+                ],
             )
             for b in garden.beds
         ],
@@ -147,3 +159,53 @@ def remove(
 ) -> Response:
     delete_garden(conn, _require(conn, token).garden_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def _require_bed(garden: Garden, bed_id: int) -> None:
+    """A bed must belong to the garden the token opened.
+
+    Without this, a valid token for one garden would let its holder plant into
+    any bed in the database by guessing an id — the capability would leak past
+    the thing it names.
+    """
+    if not any(bed.bed_id == bed_id for bed in garden.beds):
+        raise HTTPException(status_code=404, detail=f"no such bed in this garden: {bed_id}")
+
+
+@router.post(
+    "/{token}/beds/{bed_id}/plantings",
+    response_model=GardenOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_planting(
+    token: str,
+    bed_id: int,
+    payload: PlantingCreate,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Put a species in a bed. An unknown taxon raises ValueError -> 422."""
+    garden = _require(conn, token)
+    _require_bed(garden, bed_id)
+    add_planting(conn, bed_id, taxon_id=payload.taxon_id, quantity=payload.quantity)
+    return _to_out(load_garden(conn, garden.garden_id))
+
+
+@router.delete("/{token}/plantings/{planting_id}", response_model=GardenOut)
+def delete_planting(
+    token: str,
+    planting_id: int,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Remove a planting. Reached through its garden, never by a bare id."""
+    garden = _require(conn, token)
+    owned = conn.execute(
+        """
+        SELECT 1 FROM planting p JOIN bed b ON b.bed_id = p.bed_id
+        WHERE p.planting_id = ? AND b.garden_id = ?
+        """,
+        (planting_id, garden.garden_id),
+    ).fetchone()
+    if owned is None:
+        raise HTTPException(status_code=404, detail=f"no such planting: {planting_id}")
+    remove_planting(conn, planting_id)
+    return _to_out(load_garden(conn, garden.garden_id))

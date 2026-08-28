@@ -103,6 +103,19 @@ class ObstacleCreate(BaseModel):
     height: float = Field(gt=0, le=200)
 
 
+class PlantingCreate(BaseModel):
+    taxon_id: int = Field(gt=0)
+    quantity: int = Field(default=1, ge=1, le=10000)
+
+
+class PlantingOut(BaseModel):
+    planting_id: int
+    taxon_id: int
+    canonical_name: str
+    quantity: int
+    added_at: str
+
+
 class BedOut(BaseModel):
     bed_id: int
     name: str
@@ -115,6 +128,7 @@ class BedOut(BaseModel):
     ellenberg_r: float | None
     sun_hours: float | None
     light_computed_at: str | None
+    plantings: list[PlantingOut]
 
 
 class ObstacleOut(BaseModel):

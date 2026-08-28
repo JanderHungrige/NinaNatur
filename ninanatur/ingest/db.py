@@ -121,6 +121,20 @@ CREATE TABLE IF NOT EXISTS bed (
 
 CREATE INDEX IF NOT EXISTS idx_bed_garden ON bed(garden_id);
 
+-- What is actually growing in a bed. One row per species per bed, not per
+-- individual plant: a timeline asking "does this bed have Salvia" must not have
+-- to deduplicate first.
+CREATE TABLE IF NOT EXISTS planting (
+    planting_id INTEGER PRIMARY KEY,
+    bed_id      INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
+    taxon_id    INTEGER NOT NULL REFERENCES taxon(taxon_id),
+    quantity    INTEGER NOT NULL DEFAULT 1,
+    added_at    TEXT    NOT NULL,
+    UNIQUE (bed_id, taxon_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_planting_bed ON planting(bed_id);
+
 CREATE TABLE IF NOT EXISTS obstacle (
     obstacle_id INTEGER PRIMARY KEY,
     garden_id   INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,

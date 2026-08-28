@@ -28,6 +28,17 @@ class ObstacleInput:
 
 
 @dataclass(frozen=True)
+class Planting:
+    """One species in one bed, with how many of it."""
+
+    planting_id: int
+    taxon_id: int
+    canonical_name: str
+    quantity: int
+    added_at: str
+
+
+@dataclass(frozen=True)
 class Bed:
     """A stored bed, with its derived site vector and the evidence behind it."""
 
@@ -42,6 +53,7 @@ class Bed:
     ellenberg_r: float | None
     sun_hours: float | None
     light_computed_at: str | None
+    plantings: list[Planting] = field(default_factory=list)
 
     @property
     def site_axes(self) -> dict[str, float]:

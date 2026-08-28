@@ -135,3 +135,87 @@ def test_deleting_a_garden_makes_its_token_stop_working(client: TestClient) -> N
 
 def test_healthz_is_unaffected_by_any_of_this(client: TestClient) -> None:
     assert client.get("/healthz").status_code == 200
+
+
+# --- plantings ------------------------------------------------------------
+
+def _with_catalogue(client: TestClient) -> None:
+    """The test connection has no plant catalogue by default."""
+    conn = app.dependency_overrides[get_connection]()
+    conn.execute(
+        "INSERT OR IGNORE INTO taxon (taxon_id, canonical_name, occurs_de)"
+        " VALUES (77, 'Salvia pratensis', 1)"
+    )
+    conn.commit()
+
+
+def test_a_species_can_be_planted_into_a_bed(client: TestClient) -> None:
+    _with_catalogue(client)
+    token = _new_garden(client)
+    bed_id = client.post(
+        f"/api/v1/gardens/{token}/beds", json={"name": "Beet", "polygon": SQUARE}
+    ).json()["beds"][0]["bed_id"]
+    response = client.post(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/plantings",
+        json={"taxon_id": 77, "quantity": 3},
+    )
+    assert response.status_code == 201
+    planting = response.json()["beds"][0]["plantings"][0]
+    assert planting["canonical_name"] == "Salvia pratensis"
+    assert planting["quantity"] == 3
+
+
+def test_planting_an_unknown_species_is_422(client: TestClient) -> None:
+    token = _new_garden(client)
+    bed_id = client.post(
+        f"/api/v1/gardens/{token}/beds", json={"name": "Beet", "polygon": SQUARE}
+    ).json()["beds"][0]["bed_id"]
+    response = client.post(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 999999}
+    )
+    assert response.status_code == 422
+
+
+def test_a_token_cannot_plant_into_another_gardens_bed(client: TestClient) -> None:
+    """Otherwise the capability leaks past the thing it names."""
+    _with_catalogue(client)
+    mine = _new_garden(client)
+    theirs = _new_garden(client)
+    their_bed = client.post(
+        f"/api/v1/gardens/{theirs}/beds", json={"name": "Fremd", "polygon": SQUARE}
+    ).json()["beds"][0]["bed_id"]
+
+    response = client.post(
+        f"/api/v1/gardens/{mine}/beds/{their_bed}/plantings", json={"taxon_id": 77}
+    )
+    assert response.status_code == 404, "a bed id must not be usable across gardens"
+
+
+def test_a_planting_can_be_removed(client: TestClient) -> None:
+    _with_catalogue(client)
+    token = _new_garden(client)
+    bed_id = client.post(
+        f"/api/v1/gardens/{token}/beds", json={"name": "Beet", "polygon": SQUARE}
+    ).json()["beds"][0]["bed_id"]
+    planting_id = client.post(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 77}
+    ).json()["beds"][0]["plantings"][0]["planting_id"]
+
+    body = client.delete(f"/api/v1/gardens/{token}/plantings/{planting_id}").json()
+    assert body["beds"][0]["plantings"] == []
+
+
+def test_removing_another_gardens_planting_is_404(client: TestClient) -> None:
+    _with_catalogue(client)
+    mine = _new_garden(client)
+    theirs = _new_garden(client)
+    their_bed = client.post(
+        f"/api/v1/gardens/{theirs}/beds", json={"name": "Fremd", "polygon": SQUARE}
+    ).json()["beds"][0]["bed_id"]
+    their_planting = client.post(
+        f"/api/v1/gardens/{theirs}/beds/{their_bed}/plantings", json={"taxon_id": 77}
+    ).json()["beds"][0]["plantings"][0]["planting_id"]
+
+    assert client.delete(
+        f"/api/v1/gardens/{mine}/plantings/{their_planting}"
+    ).status_code == 404
