@@ -17,9 +17,12 @@ from ninanatur.ingest.sources.eive import EiveSource
 from ninanatur.ingest.sources.gbif import GbifSource
 from ninanatur.ingest.sources.gift import GiftSource
 from ninanatur.ingest.sources.globi import GlobiSource
+from ninanatur.ingest.sources.insects_de import InsectsDeSource
 
 # GBIF defines the candidate set, so it must run before anything joins against it.
-RUN_ORDER = ("gbif", "eive", "gift", "globi")
+# insects-de must precede any use of the interaction counts; globi supplies the
+# raw relations, insects-de supplies what makes them mean anything here.
+RUN_ORDER = ("gbif", "eive", "gift", "globi", "insects-de")
 
 
 def run_source(conn: sqlite3.Connection, name: str, limit: int | None) -> int:
@@ -33,6 +36,8 @@ def run_source(conn: sqlite3.Connection, name: str, limit: int | None) -> int:
         return GiftSource().run(conn)
     if name == "globi":
         return GlobiSource().run(conn, limit=limit)
+    if name == "insects-de":
+        return InsectsDeSource().run(conn, limit=limit)
     raise ValueError(f"unknown source: {name}")
 
 
@@ -45,7 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="ingest one source or all of them")
     run.add_argument("source", choices=[*RUN_ORDER, "all"])
-    run.add_argument("--limit", type=int, default=None, help="cap taxa (GloBI only)")
+    run.add_argument("--limit", type=int, default=None, help="cap taxa (globi, insects-de)")
 
     sub.add_parser("coverage", help="print the coverage report")
     return parser

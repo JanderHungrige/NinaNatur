@@ -65,6 +65,19 @@ CREATE TABLE IF NOT EXISTS interaction (
 
 CREATE INDEX IF NOT EXISTS idx_interaction_taxon ON interaction(taxon_id);
 
+-- Insects actually recorded in Germany, from the same GBIF occurrence facet used
+-- for the plants. GloBI's relations are worldwide; without this list a plant's
+-- partner count ranks it by global research effort rather than garden value.
+-- Keyed by canonical name, because that is what the GloBI intersection joins on.
+-- The names come straight from GBIF's SCIENTIFIC_NAME occurrence facet (19 calls
+-- for ~19k species, versus one detail request each), so no backbone key is
+-- involved and inventing one would only add a column nothing reads.
+CREATE TABLE IF NOT EXISTS insect_de (
+    canonical_name  TEXT PRIMARY KEY,
+    scientific_name TEXT,
+    occurrences     INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS source_run (
     source      TEXT NOT NULL,
     started_at  TEXT NOT NULL,
@@ -77,11 +90,19 @@ CREATE TABLE IF NOT EXISTS source_run (
 """
 
 
-def connect(path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
-    """Open a connection with row access by column name and FK enforcement on."""
+def connect(
+    path: str | Path = DEFAULT_DB_PATH, *, same_thread: bool = True
+) -> sqlite3.Connection:
+    """Open a connection with row access by column name and FK enforcement on.
+
+    `same_thread=False` is for the read-only API, whose sync endpoints run in
+    FastAPI's threadpool: a connection would otherwise be unusable in the thread
+    that receives the next request. The ingest path keeps the guard, because it
+    writes and a connection shared across writing threads corrupts.
+    """
     if path != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), check_same_thread=same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

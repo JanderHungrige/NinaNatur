@@ -2,12 +2,12 @@
 id: ninanatur-wave-3
 title: "Wave 3: The garden as a floor plan"
 initiative: ninanatur
-initiative_version: 1
+initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-2
 demo_state: "A user draws beds on a garden floor plan, sets each bed's conditions, and the plan persists"
 created: 2026-08-27
-hash: 6c1736c7
+hash: 912ae321
 ---
 
 # Wave 3 — The garden as a floor plan
@@ -26,8 +26,16 @@ hash: 6c1736c7
 - **Sun hours from geometry.** Orientation plus obstacle heights can be computed
   into a light value, or the user can simply pick "sunny/partial/shade". The
   computed route is better and much more work — decide before building the editor.
-- **Accounts or links.** Persistence implies identity. A shareable unguessable
-  link avoids auth entirely for v1.
+- **Open — must be settled in this wave: sun hours.** Either computed from bed
+  orientation plus obstacle heights, or simply picked by the user as
+  sunny / partial / shade. The computed route is more accurate and much more
+  work; decide before building the canvas, because it changes what the editor
+  has to capture.
+
+Persistence is settled: shareable unguessable link, no accounts. **The plan table
+carries a nullable `owner_id` from the very first migration** — adding it later
+means migrating live plans, adding it now costs one column that stays empty until
+accounts exist.
 
 ## Definition of done
 

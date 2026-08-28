@@ -2,12 +2,12 @@
 id: ninanatur-wave-1
 title: "Wave 1: Branded shell, online and self-updating"
 initiative: ninanatur
-initiative_version: 1
-status: planned
+initiative_version: 2
+status: complete
 depends_on: ""
 demo_state: "ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute"
 created: 2026-08-27
-hash: 6d2de430
+hash: edc6d384
 ---
 
 # Wave 1 — Branded shell, online and self-updating

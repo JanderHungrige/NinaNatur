@@ -21,12 +21,20 @@ DOI_URL = "https://zenodo.org/records/7534792/files/EIVE_Paper_1.0_SM_08.xlsx?do
 LOCAL_FILE = Path("data/raw/EIVE_SM_08.xlsx")
 SHEET = "mainTable"
 
+# Indicator values, plus the niche width EIVE reports beside each one. The widths
+# are what let fit scoring distinguish a generalist from a fussy species instead
+# of applying one tolerance band to everything (see 03-niche-fit).
 EIVE_TRAIT_MAP: dict[str, str] = {
     "EIVEres-L": "ellenberg_l",
     "EIVEres-M": "ellenberg_m",
     "EIVEres-N": "ellenberg_n",
     "EIVEres-R": "ellenberg_r",
     "EIVEres-T": "ellenberg_t",
+    "EIVEres-L.nw3": "ellenberg_l_nw",
+    "EIVEres-M.nw3": "ellenberg_m_nw",
+    "EIVEres-N.nw3": "ellenberg_n_nw",
+    "EIVEres-R.nw3": "ellenberg_r_nw",
+    "EIVEres-T.nw3": "ellenberg_t_nw",
 }
 
 ACCEPTED_RANKS = {"species", "subspecies", "variety"}
