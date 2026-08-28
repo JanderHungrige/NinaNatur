@@ -16,9 +16,20 @@ services:
       - "${APP_PORT}:4000"
     environment:
       NINANATUR_ENV: ${NINANATUR_ENV:-prod}
+      NINANATUR_DB: /data/ninanatur.sqlite
+    volumes:
+      # A NAMED volume, not the Dockerfile's anonymous one. `VOLUME /data` alone
+      # gives each container its own anonymous volume, so auto-deploy.sh rolling
+      # a new image would silently start from an empty database — and with a
+      # self-updating deploy nobody notices until the gardens are gone.
+      - ninanatur-data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4000/healthz', timeout=4).status==200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+volumes:
+  # Scoped by COMPOSE_PROJECT_NAME, so the prod and dev stacks never share data.
+  ninanatur-data:

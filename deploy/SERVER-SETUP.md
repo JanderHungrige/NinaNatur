@@ -106,6 +106,23 @@ tail -f /var/log/ninanatur-deploy.log
 `172.17.0.1` is the docker bridge gateway, so NPM reaches the port the container
 publishes on the host without sharing a network.
 
+## Data
+
+The database lives on a named Docker volume, not in the image and not in the
+repo checkout:
+
+```bash
+docker volume ls | grep ninanatur
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml \
+  exec app python -c "import os; print(os.environ['NINANATUR_DB'])"
+```
+
+The app creates its schema at startup, so a fresh volume is a working deployment
+rather than an error. Backing up is a file copy out of the volume.
+
+**Do not remove the volume when rolling containers.** `docker compose down -v`
+deletes it; plain `down` or `up -d` does not.
+
 ## Verify the whole chain
 
 ```bash
@@ -136,5 +153,6 @@ docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml port app 40
 | `skipping this tick` repeatedly | a previous run is stuck holding `/tmp/ninanatur-auto-deploy.lock` |
 | 502 from NPM | container down, or forwarding to the wrong port |
 | Port already allocated | something else on the host publishes 4000 |
+| Gardens vanish after a deploy | the named volume is not mounted — check `volumes:` in deploy/compose.app.yml |
 | `Permission denied` on an env file, or cron log shows `couldn't find env file` | tree still owned by root after `sudo git clone` — see step 1 |
 | `permission denied ... /var/run/docker.sock` | operator not in the `docker` group — see step 0 |
