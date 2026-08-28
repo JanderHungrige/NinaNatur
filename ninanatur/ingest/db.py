@@ -90,11 +90,19 @@ CREATE TABLE IF NOT EXISTS source_run (
 """
 
 
-def connect(path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
-    """Open a connection with row access by column name and FK enforcement on."""
+def connect(
+    path: str | Path = DEFAULT_DB_PATH, *, same_thread: bool = True
+) -> sqlite3.Connection:
+    """Open a connection with row access by column name and FK enforcement on.
+
+    `same_thread=False` is for the read-only API, whose sync endpoints run in
+    FastAPI's threadpool: a connection would otherwise be unusable in the thread
+    that receives the next request. The ingest path keeps the guard, because it
+    writes and a connection shared across writing threads corrupts.
+    """
     if path != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), check_same_thread=same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

@@ -8,15 +8,30 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+from ninanatur.api.plants import router as plants_router
 
 STATIC_DIR = Path(__file__).parent / "static"
 VERSION = "0.1.0"
 
-app = FastAPI(title="NinaNatur", version=VERSION, docs_url=None, redoc_url=None)
+app = FastAPI(title="NinaNatur", version=VERSION, docs_url="/api/docs", redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.include_router(plants_router)
+
+
+@app.exception_handler(ValueError)
+async def value_error_is_422(_: Request, exc: ValueError) -> JSONResponse:
+    """A validation failure must never surface as a 500.
+
+    Handlers raise ValueError for domain-level validation; without this backstop a
+    new raise site downstream escapes as an opaque 500 with the reason visible
+    only in the log. Placed below FastAPI's own validation, which already returns
+    422 for type and range errors.
+    """
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
 @app.get("/healthz")
