@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 6
-hash: fe45f0e1
+version: 8
+hash: 890ac597
 created: 2026-08-27
 ---
 
@@ -86,6 +86,20 @@ garden's exact coordinates are personal.
 *Later:* the sister project 3dmap (`/opt/3dmap2`) carries height-profile logic
 that could replace hand-placed obstacle heights with real terrain.
 
+### Bloom gaps — insect-weighted by default, visual on request
+
+A checkbox, defaulting to the forage view: a gap is a month when little flowers
+*that insects use*, weighted by the counted German partner relations. A month
+full of nectarless double-flowered cultivars is then correctly a gap, which only
+this weighting can express. Unchecking it falls back to bloom area alone, for
+users planning purely for looks.
+
+Measured while planning, and both correcting earlier assumptions: the phenology
+data is **month** resolution, so the half-month buckets sketched in the original
+Wave 4 outline would have been invented precision; and 132 species have flowering
+intervals that wrap the year end, which naive range arithmetic drops silently —
+precisely the species covering the hardest part of the year.
+
 ### Catalogue — all 3,087 core-complete species
 
 No curated subset. Filtering is by site conditions and design intent only, so
@@ -126,6 +140,6 @@ sun-hour derivation in Wave 3, nursery partners in Wave 6.
 | Wave 1 | waves/ninanatur-wave-1.md | ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute | complete |
 | Wave 2 | waves/ninanatur-wave-2.md | The API answers "which plants suit these site conditions" from the ingested open data, every value citing its source | complete |
 | Wave 3 | waves/ninanatur-wave-3.md | A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path | complete |
-| Wave 4 | waves/ninanatur-wave-4.md | A bed shows fitting species plus a bloom calendar for the year, with gaps marked | planned |
+| Wave 4 | waves/ninanatur-wave-4.md | A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked | complete |
 | Wave 5 | waves/ninanatur-wave-5.md | A planting shows an insect score and concrete swaps that measurably raise it | planned |
 | Wave 6 | waves/ninanatur-wave-6.md | A finished plan turns into a shopping list split across as few nurseries as possible | planned |

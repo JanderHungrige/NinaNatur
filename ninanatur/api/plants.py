@@ -36,7 +36,7 @@ router = APIRouter(prefix="/api/v1", tags=["plants"])
 MAX_LIMIT = 200
 
 
-def _to_summary(scored: ScoredPlant) -> PlantSummary:
+def to_summary(scored: ScoredPlant) -> PlantSummary:
     plant = scored.plant
     start = plant.number("flowering_start_month")
     end = plant.number("flowering_end_month")
@@ -110,7 +110,7 @@ def search_plants(
         total=len(scored),
         limit=limit,
         offset=offset,
-        items=[_to_summary(s) for s in page],
+        items=[to_summary(s) for s in page],
     )
 
 

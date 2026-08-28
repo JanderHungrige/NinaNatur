@@ -20,8 +20,9 @@ from ninanatur.api.schemas import (
     GardenOut,
     ObstacleCreate,
     ObstacleOut,
+    PlantingOut,
 )
-from ninanatur.garden.models import BedInput, Garden, ObstacleInput
+from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
 from ninanatur.garden.store import (
     add_bed,
     add_obstacle,
@@ -35,7 +36,7 @@ from ninanatur.garden.store import (
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
 
 
-def _require(conn: sqlite3.Connection, token: str) -> Garden:
+def require_garden(conn: sqlite3.Connection, token: str) -> Garden:
     """Resolve a token or 404.
 
     Never 403: telling a caller that a token exists but is not theirs is the one
@@ -47,7 +48,7 @@ def _require(conn: sqlite3.Connection, token: str) -> Garden:
     return garden
 
 
-def _to_out(garden: Garden) -> GardenOut:
+def to_out(garden: Garden) -> GardenOut:
     return GardenOut(
         share_token=garden.share_token,
         name=garden.name,
@@ -62,6 +63,14 @@ def _to_out(garden: Garden) -> GardenOut:
                 ellenberg_l=b.ellenberg_l, ellenberg_m=b.ellenberg_m,
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,
                 sun_hours=b.sun_hours, light_computed_at=b.light_computed_at,
+                plantings=[
+                    PlantingOut(
+                        planting_id=p.planting_id, taxon_id=p.taxon_id,
+                        canonical_name=p.canonical_name, quantity=p.quantity,
+                        added_at=p.added_at,
+                    )
+                    for p in b.plantings
+                ],
             )
             for b in garden.beds
         ],
@@ -91,7 +100,7 @@ def read(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    return _to_out(_require(conn, token))
+    return to_out(require_garden(conn, token))
 
 
 @router.post("/{token}/beds", response_model=GardenOut, status_code=status.HTTP_201_CREATED)
@@ -100,14 +109,23 @@ def create_bed(
     payload: BedCreate,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    """Add a bed. PolygonError, SoilTypeError and MoistureError all subclass
-    ValueError, so they surface as 422 with their reason rather than as a 500."""
-    garden = _require(conn, token)
+    """Add a bed and compute its light immediately.
+
+    PolygonError, SoilTypeError and MoistureError all subclass ValueError, so they
+    surface as 422 with their reason rather than as a 500.
+
+    The recompute is not optional. Only adding an *obstacle* used to trigger it, so
+    a garden with no obstacles left every bed on "not yet computed" forever — and
+    suggestions for such a bed were then scored on soil alone, which is both worse
+    and silently so.
+    """
+    garden = require_garden(conn, token)
     add_bed(conn, garden.garden_id, BedInput(
         name=payload.name, polygon=payload.polygon,
         soil_type=payload.soil_type, moisture=payload.moisture,
     ))
-    return _to_out(load_garden(conn, garden.garden_id))
+    recompute_light(conn, garden.garden_id)
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.post("/{token}/obstacles", response_model=GardenOut, status_code=status.HTTP_201_CREATED)
@@ -121,13 +139,13 @@ def create_obstacle(
     Requiring a second request would leave the plan showing light values that no
     longer match its own obstacles — and nothing would make that visible.
     """
-    garden = _require(conn, token)
+    garden = require_garden(conn, token)
     add_obstacle(conn, garden.garden_id, ObstacleInput(
         kind=payload.kind, x=payload.x, y=payload.y,
         radius=payload.radius, height=payload.height,
     ))
     recompute_light(conn, garden.garden_id)
-    return _to_out(load_garden(conn, garden.garden_id))
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.post("/{token}/recompute", response_model=GardenOut)
@@ -135,9 +153,9 @@ def recompute(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    garden = _require(conn, token)
+    garden = require_garden(conn, token)
     recompute_light(conn, garden.garden_id)
-    return _to_out(load_garden(conn, garden.garden_id))
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.delete("/{token}", status_code=status.HTTP_204_NO_CONTENT)
@@ -145,5 +163,18 @@ def remove(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> Response:
-    delete_garden(conn, _require(conn, token).garden_id)
+    delete_garden(conn, require_garden(conn, token).garden_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def require_bed(garden: Garden, bed_id: int) -> Bed:
+    """A bed must belong to the garden the token opened.
+
+    Without this, a valid token for one garden would let its holder reach any bed
+    in the database by guessing an id — the capability would leak past the thing
+    it names.
+    """
+    for bed in garden.beds:
+        if bed.bed_id == bed_id:
+            return bed
+    raise HTTPException(status_code=404, detail=f"no such bed in this garden: {bed_id}")

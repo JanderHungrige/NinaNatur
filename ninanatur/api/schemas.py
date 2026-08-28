@@ -52,6 +52,40 @@ class PlantSearchResponse(BaseModel):
     items: list[PlantSummary]
 
 
+class BedSuggestions(BaseModel):
+    """Suggestions for one bed, with the site vector they were ranked against —
+    so the UI can say what it matched on rather than showing a bare list."""
+
+    bed_id: int
+    bed_name: str
+    site_axes: dict[str, float]
+    total: int
+    items: list[PlantSummary]
+
+
+class MonthOut(BaseModel):
+    month: int
+    coverage: float
+    species: list[str]
+
+
+class GapOut(BaseModel):
+    months: list[int]
+    length: int
+
+
+class TimelineOut(BaseModel):
+    """The bloom year. `plantings_without_interaction_data` is reported so a
+    timeline built mostly on unknowns is visible rather than merely optimistic."""
+
+    mode: str
+    months: list[MonthOut]
+    gaps: list[GapOut]
+    plantings_total: int
+    plantings_without_interaction_data: int
+    is_empty: bool
+
+
 class PartnersOut(BaseModel):
     german: int
     global_total: int
@@ -103,6 +137,19 @@ class ObstacleCreate(BaseModel):
     height: float = Field(gt=0, le=200)
 
 
+class PlantingCreate(BaseModel):
+    taxon_id: int = Field(gt=0)
+    quantity: int = Field(default=1, ge=1, le=10000)
+
+
+class PlantingOut(BaseModel):
+    planting_id: int
+    taxon_id: int
+    canonical_name: str
+    quantity: int
+    added_at: str
+
+
 class BedOut(BaseModel):
     bed_id: int
     name: str
@@ -115,6 +162,7 @@ class BedOut(BaseModel):
     ellenberg_r: float | None
     sun_hours: float | None
     light_computed_at: str | None
+    plantings: list[PlantingOut]
 
 
 class ObstacleOut(BaseModel):

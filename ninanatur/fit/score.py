@@ -31,6 +31,15 @@ MEDIAN_WIDTH: dict[str, float] = {
 # Band edges in half-niche-widths.
 BAND_EDGES: tuple[float, float, float] = (0.5, 1.0, 1.5)
 
+# What an axis the species has no value for contributes to the combined score.
+#
+# Not skipped and not zero: an unrecorded axis is neither evidence of a good match
+# nor of a bad one, so it contributes the neutral middle. Skipping it — the
+# original behaviour — let a species known only for moisture score a perfect 1.0
+# and outrank one matched on all four axes, which is how Abies nephrolepis, a fir
+# with almost no trait data, reached the top of a bed's suggestions.
+UNKNOWN_AXIS_SCORE = 0.5
+
 
 class FitBand(Enum):
     """Human-facing verdict per axis — Wave 4 renders these, not the number."""
@@ -122,10 +131,18 @@ def _axis_fit(axis: str, target: float, value: float, raw_width: float | None) -
 def score_species(site: SiteVector, species: SpeciesNiche) -> FitResult:
     """Combine the per-axis fits into one score, with the reasoning preserved.
 
-    Axes combine as a **geometric** mean: a species cannot offset hopeless light
-    with excellent moisture, and an arithmetic mean would let it. Axes the bed
-    does not specify, or the species has no value for, are skipped rather than
-    scored zero — absent data is not a bad match.
+    Axes combine as a **geometric** mean over every axis the bed specifies: a
+    species cannot offset hopeless light with excellent moisture, and an
+    arithmetic mean would let it.
+
+    An axis the species has no value for contributes `UNKNOWN_AXIS_SCORE` rather
+    than being skipped. Skipping meant a species known only for moisture scored a
+    perfect 1.0 and outranked one matched on all four axes — it was not a better
+    fit, only a less documented one. It still is not scored zero: absent data is
+    not a bad match either.
+
+    `axes_scored` reports what was actually known, so a caller can say how much of
+    the answer rests on data.
 
     Returns `score=None` when no axis could be scored at all. "Unknown fit" and
     "bad fit" are different answers and must not render the same.
@@ -141,10 +158,12 @@ def score_species(site: SiteVector, species: SpeciesNiche) -> FitResult:
     if not axes_scored:
         return FitResult(species.taxon_id, None, (), {})
 
+    requested = len(site.values)
     log_sum = sum(math.log(max(explanation[a].score, 1e-12)) for a in axes_scored)
+    log_sum += (requested - len(axes_scored)) * math.log(UNKNOWN_AXIS_SCORE)
     return FitResult(
         taxon_id=species.taxon_id,
-        score=math.exp(log_sum / len(axes_scored)),
+        score=math.exp(log_sum / requested),
         axes_scored=axes_scored,
         explanation=explanation,
     )

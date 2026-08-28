@@ -16,6 +16,7 @@ from ninanatur.garden.models import (
     Garden,
     Obstacle,
     ObstacleInput,
+    Planting,
     Polygon,
 )
 from ninanatur.garden.soil import site_axes_from_soil
@@ -32,6 +33,14 @@ MIN_POLYGON_POINTS = 3
 
 class PolygonError(ValueError):
     """A polygon that does not describe an area."""
+
+
+class UnknownTaxon(ValueError):
+    """A planting pointing at a species that is not in the catalogue.
+
+    Rejected rather than stored: a dangling reference would leave the bloom
+    timeline silently short a species instead of failing where it can be seen.
+    """
 
 
 def _now() -> str:
@@ -122,6 +131,63 @@ def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInp
     return int(cursor.lastrowid or 0)
 
 
+def add_planting(
+    conn: sqlite3.Connection, bed_id: int, taxon_id: int, quantity: int = 1
+) -> int:
+    """Put a species in a bed, or raise the count if it is already there."""
+    if quantity < 1:
+        # Zero would be a deletion expressed as an update, and the two would then
+        # disagree about whether the species is in the bed at all.
+        raise ValueError(f"quantity must be at least 1, got {quantity}")
+
+    known = conn.execute(
+        "SELECT 1 FROM taxon WHERE taxon_id = ?", (taxon_id,)
+    ).fetchone()
+    if known is None:
+        raise UnknownTaxon(f"no such taxon in the catalogue: {taxon_id}")
+
+    conn.execute(
+        """
+        INSERT INTO planting (bed_id, taxon_id, quantity, added_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (bed_id, taxon_id) DO UPDATE SET
+            quantity = planting.quantity + excluded.quantity
+        """,
+        (bed_id, taxon_id, quantity, _now()),
+    )
+    conn.commit()
+    row = conn.execute(
+        "SELECT planting_id FROM planting WHERE bed_id = ? AND taxon_id = ?",
+        (bed_id, taxon_id),
+    ).fetchone()
+    return int(row["planting_id"])
+
+
+def remove_planting(conn: sqlite3.Connection, planting_id: int) -> None:
+    conn.execute("DELETE FROM planting WHERE planting_id = ?", (planting_id,))
+    conn.commit()
+
+
+def _plantings_for(conn: sqlite3.Connection, bed_id: int) -> list[Planting]:
+    return [
+        Planting(
+            planting_id=int(r["planting_id"]),
+            taxon_id=int(r["taxon_id"]),
+            canonical_name=r["canonical_name"],
+            quantity=int(r["quantity"]),
+            added_at=r["added_at"],
+        )
+        for r in conn.execute(
+            """
+            SELECT p.planting_id, p.taxon_id, p.quantity, p.added_at, x.canonical_name
+            FROM planting p JOIN taxon x ON x.taxon_id = p.taxon_id
+            WHERE p.bed_id = ? ORDER BY x.canonical_name
+            """,
+            (bed_id,),
+        )
+    ]
+
+
 def _touch(conn: sqlite3.Connection, garden_id: int) -> None:
     conn.execute("UPDATE garden SET updated_at = ? WHERE garden_id = ?", (_now(), garden_id))
     conn.commit()
@@ -156,7 +222,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     return updated
 
 
-def _row_to_bed(row: sqlite3.Row) -> Bed:
+def _row_to_bed(row: sqlite3.Row, plantings: list[Planting] | None = None) -> Bed:
     return Bed(
         bed_id=int(row["bed_id"]),
         name=row["name"],
@@ -169,6 +235,7 @@ def _row_to_bed(row: sqlite3.Row) -> Bed:
         ellenberg_r=row["ellenberg_r"],
         sun_hours=row["sun_hours"],
         light_computed_at=row["light_computed_at"],
+        plantings=plantings or [],
     )
 
 
@@ -176,10 +243,10 @@ def _load(conn: sqlite3.Connection, row: sqlite3.Row | None) -> Garden | None:
     if row is None:
         return None
     garden_id = int(row["garden_id"])
-    beds = [
-        _row_to_bed(r)
-        for r in conn.execute("SELECT * FROM bed WHERE garden_id = ? ORDER BY bed_id", (garden_id,))
-    ]
+    bed_rows = conn.execute(
+        "SELECT * FROM bed WHERE garden_id = ? ORDER BY bed_id", (garden_id,)
+    ).fetchall()
+    beds = [_row_to_bed(r, _plantings_for(conn, int(r["bed_id"]))) for r in bed_rows]
     obstacles = [
         Obstacle(
             obstacle_id=int(r["obstacle_id"]), kind=r["kind"],

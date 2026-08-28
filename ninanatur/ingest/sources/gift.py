@@ -21,6 +21,10 @@ PAGE_SIZE = 10000
 
 # GIFT trait id -> (canonical trait key, numeric?, unit)
 GIFT_TRAITS: dict[str, tuple[str, bool, str | None]] = {
+    # Woodiness is GIFT's best-covered trait by a wide margin, and it catches the
+    # conifers that carry neither a growth form nor a height — Abies nephrolepis
+    # slipped into bed suggestions on exactly that gap.
+    "1.1.1": ("woodiness", False, None),
     "1.6.2": ("height_max_m", True, "m"),
     "3.7.1": ("flowering_start_month", True, "month"),
     "3.7.2": ("flowering_end_month", True, "month"),

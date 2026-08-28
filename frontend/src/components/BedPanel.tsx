@@ -44,6 +44,19 @@ function lightText(bed: GardenOut['beds'][number]): string {
   return `${bed.sun_hours.toFixed(1)} h/Tag · L ${bed.ellenberg_l}`;
 }
 
+/**
+ * The button's accessible name is computed from its children, and adjacent spans
+ * concatenate without a space — a screen reader would say "Neues Beetnoch nicht
+ * berechnet". Spelling the name out avoids relying on that.
+ */
+function bedButtonLabel(bed: GardenOut['beds'][number]): string {
+  const planted =
+    bed.plantings.length === 0
+      ? 'nichts gepflanzt'
+      : `${bed.plantings.length} Art(en) gepflanzt`;
+  return `Beet ${bed.name}, ${lightText(bed)}, ${planted}`;
+}
+
 export function BedPanel({
   garden,
   selectedBedId,
@@ -85,6 +98,7 @@ export function BedPanel({
                 type="button"
                 className={bed.bed_id === selectedBedId ? 'bed-button is-selected' : 'bed-button'}
                 aria-pressed={bed.bed_id === selectedBedId}
+                aria-label={bedButtonLabel(bed)}
                 onClick={() => onSelectBed(bed.bed_id)}
               >
                 <span className="bed-button__name">{bed.name}</span>

@@ -65,14 +65,31 @@ def test_one_hopeless_axis_sinks_the_whole_score() -> None:
 
 # --- missing data must not be misread as a bad match -----------------------
 
-def test_a_missing_axis_is_skipped_not_scored_zero() -> None:
+def test_a_missing_axis_is_neutral_neither_skipped_nor_zero() -> None:
+    """Absent data is not a bad match, and it is not a perfect one either."""
     site = SiteVector(values={"ellenberg_l": 7.0, "ellenberg_m": 4.0})
-    complete = _species(ellenberg_l=7.0, ellenberg_m=4.0)
     partial = _species(ellenberg_l=7.0)  # no moisture value at all
     result = score_species(site, partial)
-    assert result is not None and result.score == pytest.approx(1.0)
-    assert result.axes_scored == ("ellenberg_l",)
-    assert score_species(site, complete).axes_scored == ("ellenberg_l", "ellenberg_m")
+    assert result.score is not None
+    assert 0.0 < result.score < 1.0, "an unknown axis must cost something"
+    assert result.axes_scored == ("ellenberg_l",), "but the known axis is still named"
+
+
+def test_a_fully_known_good_match_outranks_a_half_known_perfect_one() -> None:
+    """Regression: a species known only for moisture scored 1.0 and topped the
+    suggestions for a bed. It was not a better fit, only a less documented one —
+    which is how Abies nephrolepis, a fir, reached the top of a flower bed."""
+    site = SiteVector(values={"ellenberg_l": 7.0, "ellenberg_m": 4.0, "ellenberg_n": 5.0})
+    documented = _species(ellenberg_l=7.2, ellenberg_m=4.2, ellenberg_n=5.2)
+    sparse = _species(ellenberg_m=4.0)  # one perfect axis, nothing else known
+    assert score_species(site, documented).score > score_species(site, sparse).score
+
+
+def test_more_known_axes_beat_fewer_when_all_are_perfect() -> None:
+    site = SiteVector(values={"ellenberg_l": 7.0, "ellenberg_m": 4.0, "ellenberg_n": 5.0})
+    all_three = _species(ellenberg_l=7.0, ellenberg_m=4.0, ellenberg_n=5.0)
+    just_two = _species(ellenberg_l=7.0, ellenberg_m=4.0)
+    assert score_species(site, all_three).score > score_species(site, just_two).score
 
 
 def test_a_species_with_no_usable_axis_scores_none_not_zero() -> None:
