@@ -10,8 +10,8 @@ from collections.abc import Iterator
 import pytest
 
 from ninanatur.bloom.palette import garden_palette
-from ninanatur.garden.store import add_bed, add_planting, create_garden
 from ninanatur.garden.models import BedInput
+from ninanatur.garden.store import add_bed, add_planting, create_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
 
