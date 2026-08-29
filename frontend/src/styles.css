@@ -104,11 +104,15 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   width: 100%; height: auto; max-height: 75vh;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-raised);
 }
-.grid-line { fill: none; stroke: var(--line); stroke-width: 1; }
-.compass { fill: var(--ink-muted); font-size: 12px; }
-.bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 2; cursor: pointer; }
-.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 3; }
-.obstacle { fill: color-mix(in srgb, var(--ink) 25%, transparent); stroke: var(--ink-muted); stroke-width: 1.5; }
+/* Wave 7 moved the plan's viewBox into garden metres, so every length in here
+   is metres too. These were pixel values under the old 10-px-per-metre viewBox
+   and became a 1 m grid line and a 2 m bed outline — the outline painted a
+   metre outside the bed on every side and swallowed most of the shape. */
+.grid-line { fill: none; stroke: var(--line); stroke-width: 0.03; }
+.compass { fill: var(--ink-muted); font-size: 1.6px; }
+.bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 0.08; cursor: pointer; }
+.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 0.16; }
+.obstacle { fill: color-mix(in srgb, var(--ink) 25%, transparent); stroke: var(--ink-muted); stroke-width: 0.08; }
 
 .status { margin-top: 1rem; color: var(--ink-muted); font-size: 0.9rem; min-height: 1.4em; }
 
@@ -352,4 +356,121 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .suggestion__space {
   color: var(--ink-muted);
   font-style: italic;
+}
+
+/* --- Wave 7: the drawing surface -------------------------------------- */
+
+.canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.canvas-controls__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.canvas-controls__row button {
+  padding: 0.3rem 0.6rem;
+}
+
+.canvas-controls__scale,
+.canvas-controls__draft {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  padding: 0 0.3rem;
+}
+
+.canvas-controls__problem {
+  color: var(--ink);
+  border-left: 3px solid var(--leaf);
+  padding-left: 0.6rem;
+}
+
+/* While drawing, a click means "place a vertex" — say so with the cursor. */
+.canvas--drawing {
+  cursor: crosshair;
+}
+
+.canvas {
+  cursor: grab;
+  touch-action: none; /* the pointer drag pans; the browser must not also scroll */
+}
+
+.draft__line {
+  fill: none;
+  stroke: var(--leaf);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.4 0.3;
+}
+
+.draft circle {
+  fill: var(--leaf);
+}
+
+/* --- Wave 7: the object editor ---------------------------------------- */
+
+.object-editor label {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.object-editor input,
+.object-editor select {
+  width: 100%;
+}
+
+.object-editor__actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+/* An obstacle you can click should look like one. */
+.obstacle[role='button'] {
+  cursor: pointer;
+}
+
+.obstacle[role='button']:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.existing-planting label {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.existing-planting input {
+  width: 100%;
+}
+
+.existing-planting__actions {
+  margin-top: 0.9rem;
+}
+
+/* --- Wave 7: bloom playback ------------------------------------------- */
+
+.bloom-player {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.bloom-hatch__ground {
+  fill: var(--bg-raised);
+}
+
+.bloom-hatch__line {
+  fill: var(--ink-muted);
+  opacity: 0.55;
 }

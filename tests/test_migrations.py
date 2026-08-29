@@ -111,3 +111,71 @@ def test_the_catalogue_syncs_when_the_shipped_schema_is_a_column_behind(
     assert row["occurrences"] == 900
     assert row["insect_group"] == "bee"
     assert row["clade"] == "insect"
+
+
+def test_an_existing_planting_table_learns_to_hold_unnamed_plants(tmp_path: Path) -> None:
+    """Regression in waiting: `CREATE TABLE IF NOT EXISTS` cannot relax NOT NULL.
+
+    Wave 7 made `planting.taxon_id` nullable so a plant the catalogue cannot
+    name is still a plant in someone's garden. On a fresh database the new
+    schema simply applies; on the production volume the old table survives with
+    its constraint intact, and every unidentified planting would fail on insert
+    — after the deploy, in front of the user, with green tests behind it.
+    """
+    db = tmp_path / "grown.sqlite"
+    old = connect(db, same_thread=False)
+    old.executescript(
+        """
+        CREATE TABLE taxon (taxon_id INTEGER PRIMARY KEY, canonical_name TEXT NOT NULL,
+            occurs_de INTEGER NOT NULL DEFAULT 0);
+        CREATE TABLE bed (bed_id INTEGER PRIMARY KEY, garden_id INTEGER NOT NULL,
+            name TEXT NOT NULL, polygon TEXT NOT NULL);
+        CREATE TABLE planting (
+            planting_id INTEGER PRIMARY KEY,
+            bed_id INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
+            taxon_id INTEGER NOT NULL REFERENCES taxon(taxon_id),
+            quantity INTEGER NOT NULL DEFAULT 1,
+            added_at TEXT NOT NULL,
+            UNIQUE (bed_id, taxon_id));
+        INSERT INTO taxon VALUES (7, 'Salvia pratensis', 1);
+        INSERT INTO bed VALUES (1, 1, 'Altbeet', '[]');
+        INSERT INTO planting VALUES (1, 1, 7, 3, '2026-01-01');
+        """
+    )
+    old.commit()
+    old.close()
+
+    conn = connect(db, same_thread=False)
+    init_schema(conn)
+
+    # The plant that was already there survives the rebuild, quantity and all.
+    kept = conn.execute("SELECT * FROM planting WHERE planting_id = 1").fetchone()
+    assert kept is not None
+    assert kept["taxon_id"] == 7
+    assert kept["quantity"] == 3
+
+    # And an unidentified one can now be recorded.
+    conn.execute(
+        "INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)"
+        " VALUES (1, NULL, 'Bauernhortensie', 2, '2026-08-29')"
+    )
+    conn.commit()
+    assert conn.execute("SELECT COUNT(*) AS n FROM planting").fetchone()["n"] == 2
+
+
+def test_two_unidentified_plantings_can_share_a_bed(tmp_path: Path) -> None:
+    """The UNIQUE stays; SQLite treats NULLs as distinct, which is what should
+    happen — two unknown roses are two plants."""
+    conn = connect(tmp_path / "fresh.sqlite", same_thread=False)
+    init_schema(conn)
+    conn.execute("INSERT INTO garden (garden_id, share_token, name, latitude, longitude,"
+                 " created_at, updated_at) VALUES (1, 't', 'G', 52.5, 13.4, '', '')")
+    conn.execute("INSERT INTO bed (bed_id, garden_id, name, polygon) VALUES (1, 1, 'B', '[]')")
+    for name in ("Rose A", "Rose B"):
+        conn.execute(
+            "INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)"
+            " VALUES (1, NULL, ?, 1, '')",
+            (name,),
+        )
+    conn.commit()
+    assert conn.execute("SELECT COUNT(*) AS n FROM planting").fetchone()["n"] == 2

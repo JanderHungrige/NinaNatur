@@ -133,36 +133,65 @@ def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
 
 def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInput) -> int:
     cursor = conn.execute(
-        "INSERT INTO obstacle (garden_id, kind, x, y, radius, height) VALUES (?, ?, ?, ?, ?, ?)",
-        (garden_id, obstacle.kind, obstacle.x, obstacle.y, obstacle.radius, obstacle.height),
+        "INSERT INTO obstacle (garden_id, kind, x, y, radius, height, label)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (garden_id, obstacle.kind, obstacle.x, obstacle.y, obstacle.radius,
+         obstacle.height, obstacle.label),
     )
     _touch(conn, garden_id)
     return int(cursor.lastrowid or 0)
 
 
 def add_planting(
-    conn: sqlite3.Connection, bed_id: int, taxon_id: int, quantity: int = 1
+    conn: sqlite3.Connection,
+    bed_id: int,
+    taxon_id: int | None = None,
+    quantity: int = 1,
+    raw_name: str | None = None,
 ) -> int:
-    """Put a species in a bed, or raise the count if it is already there."""
+    """Put a plant in a bed, named or not.
+
+    `taxon_id` identifies it against the catalogue; `raw_name` is what the user
+    typed. A planting with only a raw name is one the catalogue could not name —
+    an ordinary answer, since it holds 8,939 German species and no cultivars at
+    all. Refusing it would tell someone their garden is wrong because our data
+    is incomplete.
+    """
     if quantity < 1:
         # Zero would be a deletion expressed as an update, and the two would then
         # disagree about whether the species is in the bed at all.
         raise ValueError(f"quantity must be at least 1, got {quantity}")
+    if taxon_id is None and not (raw_name or "").strip():
+        raise ValueError("a planting needs either a taxon or a name")
 
-    known = conn.execute(
-        "SELECT 1 FROM taxon WHERE taxon_id = ?", (taxon_id,)
-    ).fetchone()
-    if known is None:
-        raise UnknownTaxon(f"no such taxon in the catalogue: {taxon_id}")
+    if taxon_id is not None:
+        known = conn.execute(
+            "SELECT 1 FROM taxon WHERE taxon_id = ?", (taxon_id,)
+        ).fetchone()
+        if known is None:
+            raise UnknownTaxon(f"no such taxon in the catalogue: {taxon_id}")
+
+    if taxon_id is None:
+        # No conflict target: NULLs are distinct, so two unidentified roses are
+        # two rows, which is what should happen.
+        cursor = conn.execute(
+            "INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)"
+            " VALUES (?, NULL, ?, ?, ?)",
+            (bed_id, raw_name, quantity, _now()),
+        )
+        conn.commit()
+        return int(cursor.lastrowid or 0)
 
     conn.execute(
         """
-        INSERT INTO planting (bed_id, taxon_id, quantity, added_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT (bed_id, taxon_id) DO UPDATE SET
-            quantity = planting.quantity + excluded.quantity
+            quantity = planting.quantity + excluded.quantity,
+            -- Never overwrite the words the user typed with nothing.
+            raw_name = COALESCE(excluded.raw_name, planting.raw_name)
         """,
-        (bed_id, taxon_id, quantity, _now()),
+        (bed_id, taxon_id, raw_name, quantity, _now()),
     )
     conn.commit()
     _relight_if_woody(conn, bed_id, taxon_id)
@@ -193,6 +222,39 @@ def _relight_if_woody(conn: sqlite3.Connection, bed_id: int, taxon_id: int) -> N
         recompute_light(conn, int(row["garden_id"]))
 
 
+def update_bed(conn: sqlite3.Connection, bed_id: int, **fields: object) -> None:
+    """Change some of a bed's fields. Only what was passed is written.
+
+    An update that also rewrites the untouched fields turns a partial edit into
+    a full overwrite, and two people editing different things would clobber
+    each other.
+    """
+    allowed = {"name", "soil_type", "moisture", "height_above_ground", "label"}
+    changes = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not changes:
+        return
+    assignments = ", ".join(f"{k} = ?" for k in changes)
+    conn.execute(
+        f"UPDATE bed SET {assignments} WHERE bed_id = ?",  # noqa: S608
+        (*changes.values(), bed_id),
+    )
+    conn.commit()
+
+
+def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object) -> None:
+    """Change some of an obstacle's fields. Only what was passed is written."""
+    allowed = {"kind", "x", "y", "radius", "height", "label"}
+    changes = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not changes:
+        return
+    assignments = ", ".join(f"{k} = ?" for k in changes)
+    conn.execute(
+        f"UPDATE obstacle SET {assignments} WHERE obstacle_id = ?",  # noqa: S608
+        (*changes.values(), obstacle_id),
+    )
+    conn.commit()
+
+
 def remove_planting(conn: sqlite3.Connection, planting_id: int) -> None:
     # Read the bed before the row is gone: removing a tree gives the light back,
     # and afterwards there is nothing left to say which garden to recompute.
@@ -214,16 +276,20 @@ def _plantings_for(conn: sqlite3.Connection, bed_id: int) -> list[Planting]:
     return [
         Planting(
             planting_id=int(r["planting_id"]),
-            taxon_id=int(r["taxon_id"]),
+            taxon_id=None if r["taxon_id"] is None else int(r["taxon_id"]),
             canonical_name=r["canonical_name"],
             quantity=int(r["quantity"]),
             added_at=r["added_at"],
+            raw_name=r["raw_name"],
         )
         for r in conn.execute(
             """
-            SELECT p.planting_id, p.taxon_id, p.quantity, p.added_at, x.canonical_name
-            FROM planting p JOIN taxon x ON x.taxon_id = p.taxon_id
-            WHERE p.bed_id = ? ORDER BY x.canonical_name
+            -- LEFT, not INNER: an inner join drops exactly the rows this
+            -- feature exists to keep — the plants the catalogue cannot name.
+            SELECT p.planting_id, p.taxon_id, p.quantity, p.added_at, p.raw_name,
+                   x.canonical_name
+            FROM planting p LEFT JOIN taxon x ON x.taxon_id = p.taxon_id
+            WHERE p.bed_id = ? ORDER BY COALESCE(x.canonical_name, p.raw_name)
             """,
             (bed_id,),
         )
@@ -262,11 +328,16 @@ def _planted_obstacles(
     fact about shade. Between beds the geometry is real and is used. Wave 7's
     drawing tool gives plantings a position, and this exclusion goes with it.
     """
-    heights = _woody_heights(conn, [p.taxon_id for bed in garden.beds for p in bed.plantings])
+    heights = _woody_heights(
+        conn,
+        [p.taxon_id for bed in garden.beds for p in bed.plantings if p.taxon_id is not None],
+    )
     obstacles: list[tuple[int, ShadingObstacle]] = []
     for bed in garden.beds:
         centre = _polygon_centroid(bed.polygon)
         for planting in bed.plantings:
+            if planting.taxon_id is None:
+                continue
             canopy = heights.get(planting.taxon_id)
             if not shades(canopy):
                 continue
@@ -327,7 +398,10 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
         # A bed is not shaded by what grows in it — see _planted_obstacles.
         from_others = [o for owner, o in planted if owner != bed.bed_id]
         light = bed_light_value(
-            location, _polygon_centroid(bed.polygon), obstacles + from_others
+            location,
+            _polygon_centroid(bed.polygon),
+            obstacles + from_others,
+            height_above_ground=bed.height_above_ground,
         )
         conn.execute(
             "UPDATE bed SET ellenberg_l = ?, sun_hours = ?, light_computed_at = ?"
@@ -352,6 +426,8 @@ def _row_to_bed(row: sqlite3.Row, plantings: list[Planting] | None = None) -> Be
         ellenberg_r=row["ellenberg_r"],
         sun_hours=row["sun_hours"],
         light_computed_at=row["light_computed_at"],
+        height_above_ground=float(row["height_above_ground"] or 0.0),
+        label=row["label"],
         plantings=plantings or [],
     )
 
@@ -368,6 +444,7 @@ def _load(conn: sqlite3.Connection, row: sqlite3.Row | None) -> Garden | None:
         Obstacle(
             obstacle_id=int(r["obstacle_id"]), kind=r["kind"],
             x=r["x"], y=r["y"], radius=r["radius"], height=r["height"],
+            label=r["label"],
         )
         for r in conn.execute(
             "SELECT * FROM obstacle WHERE garden_id = ? ORDER BY obstacle_id", (garden_id,)

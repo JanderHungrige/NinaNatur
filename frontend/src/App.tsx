@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   BedSuggestions,
   ChangeOut,
+  BloomPalette,
   GardenOut,
   SuggestionFilters,
   ImprovementsOut,
@@ -11,8 +12,11 @@ import type {
 } from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
+import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { ExistingPlanting } from './components/ExistingPlanting';
+import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
 import { SpeciesInfo } from './components/SpeciesInfo';
@@ -45,6 +49,8 @@ export function App() {
   const [infoFor, setInfoFor] = useState<{ taxonId: number; name: string } | null>(null);
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
   const [filters, setFilters] = useState<SuggestionFilters>({});
+  const [editing, setEditing] = useState<EditableObject | null>(null);
+  const [palette, setPalette] = useState<BloomPalette | null>(null);
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
@@ -58,6 +64,9 @@ export function App() {
     // Loaded here rather than on bed selection: the suggestions are the point of
     // the score, and hiding them until something is clicked buries it.
     setImprovements(await client.improvements(token));
+    // Also here, not only in refresh: a garden opened from its link never goes
+    // through refresh, so the plan had no colours until something was edited.
+    setPalette(await client.bloom(token));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -119,6 +128,7 @@ export function App() {
     setTimeline(await client.timeline(token, weighted));
     setScore(await client.score(token));
     setImprovements(await client.improvements(token));
+    setPalette(await client.bloom(token));
   }, []);
 
   const applyChange = useCallback(
@@ -193,6 +203,110 @@ export function App() {
     [garden, forage, refresh, run],
   );
 
+  /**
+   * A polygon drawn on the plan becomes a bed with a placeholder name and the
+   * default soil, which the bed form then edits. Asking for a name mid-drawing
+   * would interrupt the one gesture the whole feature exists for.
+   */
+  const drawBed = useCallback(
+    (polygon: number[][]) => {
+      const nth = (garden?.beds.length ?? 0) + 1;
+      void addBed({
+        name: `Beet ${nth}`,
+        polygon,
+        soil_type: 'loam',
+        moisture: 'fresh',
+      });
+    },
+    [garden, addBed],
+  );
+
+  /**
+   * Saving an edit re-reads the garden from the server: raising a bed or
+   * growing a hedge changes every bed's light, and only the server can say by
+   * how much.
+   */
+  const saveObject = useCallback(
+    (changes: Record<string, string | number>) => {
+      if (garden === null || editing === null) return;
+      const target = editing;
+      void run('Speichern', async () => {
+        const updated =
+          target.kind === 'bed'
+            ? await client.editBed(garden.share_token, target.id, changes)
+            : await client.editObstacle(garden.share_token, target.id, changes);
+        setGarden(updated);
+        await refresh(garden.share_token, forage);
+        setEditing(null);
+      });
+    },
+    [garden, editing, forage, refresh, run],
+  );
+
+  const addExisting = useCallback(
+    (planting: { raw_name: string; quantity: number }) => {
+      if (garden === null || selectedBedId === null) return;
+      void run('Eintragen', async () => {
+        const updated = await client.plantByName(garden.share_token, selectedBedId, planting);
+        setGarden(updated);
+        await refresh(garden.share_token, forage);
+        const added = updated.beds
+          .flatMap((b) => b.plantings)
+          .find((p) => p.raw_name === planting.raw_name);
+        setStatus(
+          added?.canonical_name != null
+            ? `${planting.raw_name} als ${added.canonical_name} eingetragen.`
+            : `${planting.raw_name} eingetragen — noch keiner Art zugeordnet.`,
+        );
+      });
+    },
+    [garden, selectedBedId, forage, refresh, run],
+  );
+
+  /**
+   * The colours to paint for the month currently selected.
+   *
+   * Keyed off the same `floweringMonth` the filter and the timeline use — one
+   * selected month, not a separate playback one that could drift from it.
+   */
+  const monthColours =
+    filters.floweringMonth === undefined || palette === null
+      ? undefined
+      : Object.fromEntries(
+          palette.beds.map((b) => {
+            const m = b.months.find((x) => x.month === filters.floweringMonth);
+            return [b.bed_id, { colours: m?.colours ?? [], unknown: m?.unknown ?? 0 }];
+          }),
+        );
+
+  const editSelectedBed = useCallback(() => {
+    const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
+    if (bed === undefined) return;
+    setEditing({
+      kind: 'bed',
+      id: bed.bed_id,
+      name: bed.name,
+      label: bed.label,
+      heightAboveGround: bed.height_above_ground,
+    });
+  }, [garden, selectedBedId]);
+
+  const editObstacleById = useCallback(
+    (obstacleId: number) => {
+      const found = garden?.obstacles.find((o) => o.obstacle_id === obstacleId);
+      if (found === undefined) return;
+      setEditing({
+        kind: 'obstacle',
+        id: found.obstacle_id,
+        objectKind: found.kind,
+        label: found.label,
+        height: found.height,
+        radius: found.radius,
+      });
+    },
+    [garden],
+  );
+
   const addObstacle = useCallback(
     async (obstacle: { kind: string; x: number; y: number; radius: number; height: number }) => {
       if (garden === null) return;
@@ -234,6 +348,26 @@ export function App() {
                 onAddObstacle={addObstacle}
                 busy={busy}
               />
+              {selectedBedId !== null ? (
+                <ExistingPlanting
+                  onAdd={addExisting}
+                  unidentified={garden.unidentified_plantings}
+                  busy={busy}
+                />
+              ) : null}
+              {selectedBedId !== null && editing === null ? (
+                <button type="button" className="link-button" onClick={editSelectedBed}>
+                  Gewähltes Beet bearbeiten
+                </button>
+              ) : null}
+              {editing !== null ? (
+                <ObjectEditor
+                  object={editing}
+                  onSave={saveObject}
+                  onClose={() => setEditing(null)}
+                  busy={busy}
+                />
+              ) : null}
               <FilterControls filters={filters} onChange={changeFilters} disabled={busy} />
               <FilterBar
                 filters={filters}
@@ -260,8 +394,16 @@ export function App() {
                 garden={garden}
                 selectedBedId={selectedBedId}
                 onSelectBed={selectBed}
+                onDrawBed={drawBed}
+                onSelectObstacle={editObstacleById}
+                palette={monthColours}
               />
               {timeline !== null ? (
+                <>
+                <BloomPlayer
+                  month={filters.floweringMonth ?? null}
+                  onSelectMonth={(m) => changeFilters({ ...filters, floweringMonth: m })}
+                />
                 <BloomTimeline
                   timeline={timeline}
                   forage={forage}
@@ -276,6 +418,7 @@ export function App() {
                   )
                 }
               />
+                </>
               ) : null}
               {score !== null ? (
                 <InsectScore

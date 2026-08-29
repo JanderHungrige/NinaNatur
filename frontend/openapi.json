@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NinaNatur",
-    "version": "V0.5.9"
+    "version": "V0.6.11"
   },
   "paths": {
     "/api/v1/plants": {
@@ -597,13 +597,137 @@
         }
       }
     },
+    "/api/v1/gardens/{token}/beds/{bed_id}": {
+      "patch": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Edit Bed",
+        "description": "Change what a bed is. Raising it changes its light, so the light is redone.\n\nLeaving the stored number alone would leave the screen describing a bed that\nno longer exists \u2014 the same reason adding an obstacle recomputes.",
+        "operationId": "edit_bed_api_v1_gardens__token__beds__bed_id__patch",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "bed_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bed Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
+      "patch": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Edit Obstacle",
+        "description": "Change what an obstacle is, and redo every bed's light.",
+        "operationId": "edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          },
+          {
+            "name": "obstacle_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Obstacle Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObstacleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
       "post": {
         "tags": [
           "planning"
         ],
         "summary": "Create Planting",
-        "description": "Put a species in a bed. An unknown taxon raises ValueError -> 422.",
+        "description": "Put a plant in a bed, named by id or by the words the user typed.\n\nA name that resolves to exactly one species is stored with that species and\ncounts like any other planting. One that does not is stored anyway, marked\nunidentified: discarding it would tell someone their garden is wrong because\nour catalogue is incomplete.",
         "operationId": "create_planting_api_v1_gardens__token__beds__bed_id__plantings_post",
         "parameters": [
           {
@@ -1038,6 +1162,49 @@
         }
       }
     },
+    "/api/v1/gardens/{token}/bloom": {
+      "get": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Bloom",
+        "description": "Which colours each bed carries in each month.\n\nServer-side because the frontend has a bed's plantings but neither their\nflowering windows nor their colours, and sending those per planting would\nship the catalogue to the browser to render a swatch.",
+        "operationId": "bloom_api_v1_gardens__token__bloom_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloomPalette"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -1144,6 +1311,37 @@
           "polygon"
         ],
         "title": "BedCreate"
+      },
+      "BedMonthColours": {
+        "properties": {
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "colours": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Colours"
+          },
+          "unknown": {
+            "type": "integer",
+            "title": "Unknown"
+          },
+          "flowering": {
+            "type": "integer",
+            "title": "Flowering"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "colours",
+          "unknown",
+          "flowering"
+        ],
+        "title": "BedMonthColours"
       },
       "BedOut": {
         "properties": {
@@ -1253,6 +1451,21 @@
             ],
             "title": "Light Computed At"
           },
+          "height_above_ground": {
+            "type": "number",
+            "title": "Height Above Ground"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
           "plantings": {
             "items": {
               "$ref": "#/components/schemas/PlantingOut"
@@ -1274,9 +1487,32 @@
           "ellenberg_r",
           "sun_hours",
           "light_computed_at",
+          "height_above_ground",
+          "label",
           "plantings"
         ],
         "title": "BedOut"
+      },
+      "BedPalette": {
+        "properties": {
+          "bed_id": {
+            "type": "integer",
+            "title": "Bed Id"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/BedMonthColours"
+            },
+            "type": "array",
+            "title": "Months"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bed_id",
+          "months"
+        ],
+        "title": "BedPalette"
       },
       "BedSuggestions": {
         "properties": {
@@ -1338,6 +1574,88 @@
         ],
         "title": "BedSuggestions",
         "description": "Suggestions for one bed, with the site vector they were ranked against \u2014\nso the UI can say what it matched on rather than showing a bare list."
+      },
+      "BedUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
+          "height_above_ground": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 20.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Above Ground"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "title": "BedUpdate"
+      },
+      "BloomPalette": {
+        "properties": {
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/BedPalette"
+            },
+            "type": "array",
+            "title": "Beds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "beds"
+        ],
+        "title": "BloomPalette"
       },
       "ChangeOut": {
         "properties": {
@@ -1535,6 +1853,11 @@
       },
       "GardenOut": {
         "properties": {
+          "unidentified_plantings": {
+            "type": "integer",
+            "title": "Unidentified Plantings",
+            "default": 0
+          },
           "share_token": {
             "type": "string",
             "title": "Share Token"
@@ -1668,13 +1991,24 @@
         ],
         "title": "MonthOut"
       },
+      "ObjectKind": {
+        "type": "string",
+        "enum": [
+          "tree",
+          "hedge",
+          "shrub",
+          "building",
+          "wall",
+          "fence",
+          "other"
+        ],
+        "title": "ObjectKind",
+        "description": "The things a gardener points at and names.\n\nStored as text, so a renamed member orphans every saved row \u2014 the values are\npart of the data, not an implementation detail."
+      },
       "ObstacleCreate": {
         "properties": {
           "kind": {
-            "type": "string",
-            "maxLength": 50,
-            "minLength": 1,
-            "title": "Kind"
+            "$ref": "#/components/schemas/ObjectKind"
           },
           "x": {
             "type": "number",
@@ -1695,6 +2029,18 @@
             "maximum": 200.0,
             "exclusiveMinimum": 0.0,
             "title": "Height"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
           }
         },
         "type": "object",
@@ -1717,6 +2063,17 @@
             "type": "string",
             "title": "Kind"
           },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
           "x": {
             "type": "number",
             "title": "X"
@@ -1738,12 +2095,90 @@
         "required": [
           "obstacle_id",
           "kind",
+          "label",
           "x",
           "y",
           "radius",
           "height"
         ],
         "title": "ObstacleOut"
+      },
+      "ObstacleUpdate": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y"
+          },
+          "radius": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 200.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "title": "ObstacleUpdate",
+        "description": "Every field optional: an edit says what changed, not what everything is."
       },
       "PartnersOut": {
         "properties": {
@@ -2012,9 +2447,28 @@
       "PlantingCreate": {
         "properties": {
           "taxon_id": {
-            "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Taxon Id"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
           },
           "quantity": {
             "type": "integer",
@@ -2025,10 +2479,8 @@
           }
         },
         "type": "object",
-        "required": [
-          "taxon_id"
-        ],
-        "title": "PlantingCreate"
+        "title": "PlantingCreate",
+        "description": "Either a species from the catalogue, or the words the user typed.\n\nBoth are ordinary. The catalogue holds 8,939 German species and no cultivars,\nso a name it cannot match is an answer rather than a mistake."
       },
       "PlantingOut": {
         "properties": {
@@ -2037,12 +2489,37 @@
             "title": "Planting Id"
           },
           "taxon_id": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Taxon Id"
           },
           "canonical_name": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Canonical Name"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
           },
           "quantity": {
             "type": "integer",
@@ -2058,6 +2535,7 @@
           "planting_id",
           "taxon_id",
           "canonical_name",
+          "raw_name",
           "quantity",
           "added_at"
         ],

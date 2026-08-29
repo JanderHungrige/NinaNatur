@@ -17,6 +17,8 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
     ellenberg_r: 6.5,
     sun_hours: 6.4,
     light_computed_at: '2026-08-28T10:00:00+00:00',
+    height_above_ground: 0,
+    label: null,
     plantings: [],
     ...overrides,
   };
@@ -24,6 +26,7 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
 
 function garden(overrides: Partial<GardenOut> = {}): GardenOut {
   return {
+    unidentified_plantings: 0,
     share_token: 'tok',
     name: 'Testgarten',
     latitude: 52.5,
@@ -68,7 +71,7 @@ describe('GardenCanvas', () => {
 
   it('names the plan itself so its contents are knowable without seeing it', () => {
     const g = garden({
-      obstacles: [{ obstacle_id: 1, kind: 'wall', x: 0, y: -4, radius: 5, height: 6 }],
+      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, x: 0, y: -4, radius: 5, height: 6 }],
     });
     render(<GardenCanvas garden={g} selectedBedId={null} onSelectBed={vi.fn()} />);
     expect(screen.getByRole('group', { name: /1 Beet, 1 Hindernis/ })).toBeDefined();

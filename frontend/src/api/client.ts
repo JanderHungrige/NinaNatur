@@ -20,6 +20,7 @@ export type ScoreOut = components['schemas']['ScoreOut'];
 export type ImprovementsOut = components['schemas']['ImprovementsOut'];
 export type ChangeOut = components['schemas']['ChangeOut'];
 export type SpeciesInfoOut = components['schemas']['SpeciesInfoOut'];
+export type BloomPalette = components['schemas']['BloomPalette'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -204,6 +205,29 @@ export class NinaNaturClient {
     );
   }
 
+  /** Change what a bed is. The server redoes its light and returns the garden. */
+  async editBed(
+    token: string,
+    bedId: number,
+    changes: Record<string, string | number>,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}`,
+      { method: 'PATCH', body: JSON.stringify(changes) },
+    );
+  }
+
+  async editObstacle(
+    token: string,
+    obstacleId: number,
+    changes: Record<string, string | number>,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/obstacles/${obstacleId}`,
+      { method: 'PATCH', body: JSON.stringify(changes) },
+    );
+  }
+
   async plant(
     token: string,
     bedId: number,
@@ -213,6 +237,23 @@ export class NinaNaturClient {
     return this.request<GardenOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/plantings`,
       { method: 'POST', body: JSON.stringify({ taxon_id: taxonId, quantity }) },
+    );
+  }
+
+  /**
+   * Record a plant by the name the user typed.
+   *
+   * The server resolves it against the catalogue and stores it either way — an
+   * unresolved name is kept as the user's own record, not rejected.
+   */
+  async plantByName(
+    token: string,
+    bedId: number,
+    planting: { raw_name: string; quantity: number },
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/plantings`,
+      { method: 'POST', body: JSON.stringify(planting) },
     );
   }
 
@@ -249,6 +290,13 @@ export class NinaNaturClient {
   async timeline(token: string, forage = true): Promise<TimelineOut> {
     return this.request<TimelineOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/timeline?forage=${String(forage)}`,
+    );
+  }
+
+  /** Which colours each bed carries, month by month. */
+  async bloom(token: string): Promise<BloomPalette> {
+    return this.request<BloomPalette>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/bloom`,
     );
   }
 

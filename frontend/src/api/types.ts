@@ -172,6 +172,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/beds/{bed_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Bed
+         * @description Change what a bed is. Raising it changes its light, so the light is redone.
+         *
+         *     Leaving the stored number alone would leave the screen describing a bed that
+         *     no longer exists — the same reason adding an obstacle recomputes.
+         */
+        patch: operations["edit_bed_api_v1_gardens__token__beds__bed_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Obstacle
+         * @description Change what an obstacle is, and redo every bed's light.
+         */
+        patch: operations["edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch"];
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
         parameters: {
             query?: never;
@@ -183,7 +226,12 @@ export interface paths {
         put?: never;
         /**
          * Create Planting
-         * @description Put a species in a bed. An unknown taxon raises ValueError -> 422.
+         * @description Put a plant in a bed, named by id or by the words the user typed.
+         *
+         *     A name that resolves to exactly one species is stored with that species and
+         *     counts like any other planting. One that does not is stored anyway, marked
+         *     unidentified: discarding it would tell someone their garden is wrong because
+         *     our catalogue is incomplete.
          */
         post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
         delete?: never;
@@ -306,6 +354,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/bloom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bloom
+         * @description Which colours each bed carries in each month.
+         *
+         *     Server-side because the frontend has a bed's plantings but neither their
+         *     flowering windows nor their colours, and sending those per planting would
+         *     ship the catalogue to the browser to render a swatch.
+         */
+        get: operations["bloom_api_v1_gardens__token__bloom_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -362,6 +434,17 @@ export interface components {
             /** Moisture */
             moisture?: string | null;
         };
+        /** BedMonthColours */
+        BedMonthColours: {
+            /** Month */
+            month: number;
+            /** Colours */
+            colours: string[];
+            /** Unknown */
+            unknown: number;
+            /** Flowering */
+            flowering: number;
+        };
         /** BedOut */
         BedOut: {
             /** Bed Id */
@@ -386,8 +469,19 @@ export interface components {
             sun_hours: number | null;
             /** Light Computed At */
             light_computed_at: string | null;
+            /** Height Above Ground */
+            height_above_ground: number;
+            /** Label */
+            label: string | null;
             /** Plantings */
             plantings: components["schemas"]["PlantingOut"][];
+        };
+        /** BedPalette */
+        BedPalette: {
+            /** Bed Id */
+            bed_id: number;
+            /** Months */
+            months: components["schemas"]["BedMonthColours"][];
         };
         /**
          * BedSuggestions
@@ -424,6 +518,24 @@ export interface components {
             filters: {
                 [key: string]: components["schemas"]["FilterCountsOut"];
             };
+        };
+        /** BedUpdate */
+        BedUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Soil Type */
+            soil_type?: string | null;
+            /** Moisture */
+            moisture?: string | null;
+            /** Height Above Ground */
+            height_above_ground?: number | null;
+            /** Label */
+            label?: string | null;
+        };
+        /** BloomPalette */
+        BloomPalette: {
+            /** Beds */
+            beds: components["schemas"]["BedPalette"][];
         };
         /** ChangeOut */
         ChangeOut: {
@@ -505,6 +617,11 @@ export interface components {
         };
         /** GardenOut */
         GardenOut: {
+            /**
+             * Unidentified Plantings
+             * @default 0
+             */
+            unidentified_plantings: number;
             /** Share Token */
             share_token: string;
             /** Name */
@@ -555,10 +672,37 @@ export interface components {
             /** Species */
             species: string[];
         };
+        /**
+         * ObjectKind
+         * @description The things a gardener points at and names.
+         *
+         *     Stored as text, so a renamed member orphans every saved row — the values are
+         *     part of the data, not an implementation detail.
+         * @enum {string}
+         */
+        ObjectKind: "tree" | "hedge" | "shrub" | "building" | "wall" | "fence" | "other";
         /** ObstacleCreate */
         ObstacleCreate: {
+            kind: components["schemas"]["ObjectKind"];
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** Radius */
+            radius: number;
+            /** Height */
+            height: number;
+            /** Label */
+            label?: string | null;
+        };
+        /** ObstacleOut */
+        ObstacleOut: {
+            /** Obstacle Id */
+            obstacle_id: number;
             /** Kind */
             kind: string;
+            /** Label */
+            label: string | null;
             /** X */
             x: number;
             /** Y */
@@ -568,20 +712,22 @@ export interface components {
             /** Height */
             height: number;
         };
-        /** ObstacleOut */
-        ObstacleOut: {
-            /** Obstacle Id */
-            obstacle_id: number;
-            /** Kind */
-            kind: string;
+        /**
+         * ObstacleUpdate
+         * @description Every field optional: an edit says what changed, not what everything is.
+         */
+        ObstacleUpdate: {
+            kind?: components["schemas"]["ObjectKind"] | null;
             /** X */
-            x: number;
+            x?: number | null;
             /** Y */
-            y: number;
+            y?: number | null;
             /** Radius */
-            radius: number;
+            radius?: number | null;
             /** Height */
-            height: number;
+            height?: number | null;
+            /** Label */
+            label?: string | null;
         };
         /** PartnersOut */
         PartnersOut: {
@@ -663,10 +809,18 @@ export interface components {
             fits_bed: boolean | null;
             fit: components["schemas"]["FitOut"];
         };
-        /** PlantingCreate */
+        /**
+         * PlantingCreate
+         * @description Either a species from the catalogue, or the words the user typed.
+         *
+         *     Both are ordinary. The catalogue holds 8,939 German species and no cultivars,
+         *     so a name it cannot match is an answer rather than a mistake.
+         */
         PlantingCreate: {
             /** Taxon Id */
-            taxon_id: number;
+            taxon_id?: number | null;
+            /** Raw Name */
+            raw_name?: string | null;
             /**
              * Quantity
              * @default 1
@@ -678,9 +832,11 @@ export interface components {
             /** Planting Id */
             planting_id: number;
             /** Taxon Id */
-            taxon_id: number;
+            taxon_id: number | null;
             /** Canonical Name */
-            canonical_name: string;
+            canonical_name: string | null;
+            /** Raw Name */
+            raw_name: string | null;
             /** Quantity */
             quantity: number;
             /** Added At */
@@ -1100,6 +1256,78 @@ export interface operations {
             };
         };
     };
+    edit_bed_api_v1_gardens__token__beds__bed_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BedUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                obstacle_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObstacleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
         parameters: {
             query?: never;
@@ -1293,6 +1521,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImprovementsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bloom_api_v1_gardens__token__bloom_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BloomPalette"];
                 };
             };
             /** @description Validation Error */

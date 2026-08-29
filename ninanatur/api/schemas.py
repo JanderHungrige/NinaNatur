@@ -8,7 +8,9 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from ninanatur.garden.objects import ObjectKind
 
 
 class AxisFitOut(BaseModel):
@@ -238,22 +240,60 @@ class BedCreate(BaseModel):
 
 
 class ObstacleCreate(BaseModel):
-    kind: str = Field(min_length=1, max_length=50)
+    # A closed set, validated before it reaches any query. A free string means
+    # the shading table silently misses a value and nobody finds out.
+    kind: ObjectKind
     x: float
     y: float
     radius: float = Field(gt=0, le=500)
     height: float = Field(gt=0, le=200)
+    label: str | None = Field(default=None, max_length=200)
+
+
+class ObstacleUpdate(BaseModel):
+    """Every field optional: an edit says what changed, not what everything is."""
+
+    kind: ObjectKind | None = None
+    x: float | None = None
+    y: float | None = None
+    radius: float | None = Field(default=None, gt=0, le=500)
+    height: float | None = Field(default=None, gt=0, le=200)
+    label: str | None = Field(default=None, max_length=200)
+
+
+class BedUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    soil_type: str | None = None
+    moisture: str | None = None
+    # A bed cannot be below the ground it stands on, and 20 m is a roof garden.
+    height_above_ground: float | None = Field(default=None, ge=0, le=20)
+    label: str | None = Field(default=None, max_length=200)
 
 
 class PlantingCreate(BaseModel):
-    taxon_id: int = Field(gt=0)
+    """Either a species from the catalogue, or the words the user typed.
+
+    Both are ordinary. The catalogue holds 8,939 German species and no cultivars,
+    so a name it cannot match is an answer rather than a mistake.
+    """
+
+    taxon_id: int | None = Field(default=None, gt=0)
+    raw_name: str | None = Field(default=None, max_length=200)
     quantity: int = Field(default=1, ge=1, le=10000)
+
+    @model_validator(mode="after")
+    def one_or_the_other(self) -> PlantingCreate:
+        if self.taxon_id is None and not (self.raw_name or "").strip():
+            raise ValueError("either taxon_id or raw_name is required")
+        return self
 
 
 class PlantingOut(BaseModel):
     planting_id: int
-    taxon_id: int
-    canonical_name: str
+    # None when the catalogue could not name it — `raw_name` is then the plant.
+    taxon_id: int | None
+    canonical_name: str | None
+    raw_name: str | None
     quantity: int
     added_at: str
 
@@ -270,19 +310,46 @@ class BedOut(BaseModel):
     ellenberg_r: float | None
     sun_hours: float | None
     light_computed_at: str | None
+    # Required, not defaulted: the response always carries both, and a default
+    # here makes them optional in the generated client for no reason.
+    height_above_ground: float
+    label: str | None
     plantings: list[PlantingOut]
 
 
 class ObstacleOut(BaseModel):
     obstacle_id: int
     kind: str
+    label: str | None
     x: float
     y: float
     radius: float
     height: float
 
 
+class BedMonthColours(BaseModel):
+    month: int
+    colours: list[str]
+    # A count, never a colour. Flower colour is recorded for 6.6% of the
+    # catalogue, and a bed filled in for "we do not know" is an answer the data
+    # does not support.
+    unknown: int
+    flowering: int
+
+
+class BedPalette(BaseModel):
+    bed_id: int
+    months: list[BedMonthColours]
+
+
+class BloomPalette(BaseModel):
+    beds: list[BedPalette]
+
+
 class GardenOut(BaseModel):
+    # Reported, never inferred from an empty list: a score computed over 4 of 7
+    # plantings has to be able to say so.
+    unidentified_plantings: int = 0
     share_token: str
     name: str
     latitude: float

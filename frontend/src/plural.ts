@@ -30,3 +30,14 @@ export const birds = (count: number): string =>
 export const species = (count: number): string => plural(count, 'Art', 'Arten');
 
 export const obstacles = (count: number): string => plural(count, 'Hindernis', 'Hindernisse');
+
+/**
+ * A bed's name as a label, without saying "Beet" twice.
+ *
+ * Names are the user's, and plenty of them already start with the word — the
+ * drawing tool's own default is "Beet 1", which read as "Beet Beet 1". The
+ * prefix exists so a bare name like "Südseite" is not read out as an unlabelled
+ * shape; it is not needed when the name carries it.
+ */
+export const bedName = (name: string): string =>
+  /^beet\b/i.test(name.trim()) ? name : `Beet ${name}`;

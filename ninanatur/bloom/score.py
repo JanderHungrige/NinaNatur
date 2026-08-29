@@ -96,6 +96,11 @@ def garden_score(conn: sqlite3.Connection, garden: Garden) -> ScoreResult:
 
     for bed in garden.beds:
         for planting in bed.plantings:
+            # No taxon, no data. It stays on the plan and out of the maths — and
+            # it is counted separately, so the score can say what it could not
+            # count instead of quietly averaging over fewer plants.
+            if planting.taxon_id is None:
+                continue
             total += 1
             start = resolve_trait(conn, planting.taxon_id, "flowering_start_month")
             end = resolve_trait(conn, planting.taxon_id, "flowering_end_month")
@@ -117,7 +122,7 @@ def garden_score(conn: sqlite3.Connection, garden: Garden) -> ScoreResult:
             contributions.append(
                 SpeciesContribution(
                     taxon_id=planting.taxon_id,
-                    canonical_name=planting.canonical_name,
+                    canonical_name=planting.display_name,
                     german_partners=counts.german if counts else None,
                     origin=origin,
                     forage=round(forage, 3),
