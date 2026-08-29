@@ -63,3 +63,28 @@ def test_every_colour_has_a_dark_mode_value(css: str) -> None:
         if name not in NOT_A_COLOUR and name not in SET_INLINE and f"{name}:" not in dark
     )
     assert missing == [], f"no dark-mode value: {missing}"
+
+
+# Selectors that style the garden plan. Its viewBox is in **garden metres**
+# since Wave 7, so every length here is metres too.
+PLAN_SELECTORS = (".grid-line", ".bed", ".bed--selected", ".obstacle", ".draft__line")
+
+
+def test_plan_strokes_are_measured_in_metres(css: str) -> None:
+    """These were pixel values under the old ten-pixels-per-metre viewBox.
+
+    Wave 7 moved the plan into metres and left them behind, so `stroke-width: 2`
+    became a two-metre outline: it painted a metre outside a 4 m bed on every
+    side and swallowed most of the shape, and the 1 m grid rendered as a field
+    of blocks. Visible in every screenshot and registered in none of them.
+    """
+    too_wide: list[str] = []
+    for selector in PLAN_SELECTORS:
+        for block in re.findall(
+            rf"{re.escape(selector)}\s*(?:,[^{{]*)?\{{([^}}]*)\}}", css
+        ):
+            for width in re.findall(r"stroke-width:\s*([0-9.]+)", block):
+                # A stroke wider than 30 cm is a wall, not an outline.
+                if float(width) > 0.3:
+                    too_wide.append(f"{selector}: {width}")
+    assert too_wide == [], f"stroke widths look like pixels, not metres: {too_wide}"

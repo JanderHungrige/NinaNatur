@@ -327,6 +327,25 @@ class ObstacleOut(BaseModel):
     height: float
 
 
+class BedMonthColours(BaseModel):
+    month: int
+    colours: list[str]
+    # A count, never a colour. Flower colour is recorded for 6.6% of the
+    # catalogue, and a bed filled in for "we do not know" is an answer the data
+    # does not support.
+    unknown: int
+    flowering: int
+
+
+class BedPalette(BaseModel):
+    bed_id: int
+    months: list[BedMonthColours]
+
+
+class BloomPalette(BaseModel):
+    beds: list[BedPalette]
+
+
 class GardenOut(BaseModel):
     # Reported, never inferred from an empty list: a score computed over 4 of 7
     # plantings has to be able to say so.

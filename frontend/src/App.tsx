@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   BedSuggestions,
   ChangeOut,
+  BloomPalette,
   GardenOut,
   SuggestionFilters,
   ImprovementsOut,
@@ -11,6 +12,7 @@ import type {
 } from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
+import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
 import { ExistingPlanting } from './components/ExistingPlanting';
@@ -48,6 +50,7 @@ export function App() {
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
   const [filters, setFilters] = useState<SuggestionFilters>({});
   const [editing, setEditing] = useState<EditableObject | null>(null);
+  const [palette, setPalette] = useState<BloomPalette | null>(null);
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
@@ -61,6 +64,9 @@ export function App() {
     // Loaded here rather than on bed selection: the suggestions are the point of
     // the score, and hiding them until something is clicked buries it.
     setImprovements(await client.improvements(token));
+    // Also here, not only in refresh: a garden opened from its link never goes
+    // through refresh, so the plan had no colours until something was edited.
+    setPalette(await client.bloom(token));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -122,6 +128,7 @@ export function App() {
     setTimeline(await client.timeline(token, weighted));
     setScore(await client.score(token));
     setImprovements(await client.improvements(token));
+    setPalette(await client.bloom(token));
   }, []);
 
   const applyChange = useCallback(
@@ -256,6 +263,22 @@ export function App() {
     [garden, selectedBedId, forage, refresh, run],
   );
 
+  /**
+   * The colours to paint for the month currently selected.
+   *
+   * Keyed off the same `floweringMonth` the filter and the timeline use — one
+   * selected month, not a separate playback one that could drift from it.
+   */
+  const monthColours =
+    filters.floweringMonth === undefined || palette === null
+      ? undefined
+      : Object.fromEntries(
+          palette.beds.map((b) => {
+            const m = b.months.find((x) => x.month === filters.floweringMonth);
+            return [b.bed_id, { colours: m?.colours ?? [], unknown: m?.unknown ?? 0 }];
+          }),
+        );
+
   const editSelectedBed = useCallback(() => {
     const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
     if (bed === undefined) return;
@@ -373,8 +396,14 @@ export function App() {
                 onSelectBed={selectBed}
                 onDrawBed={drawBed}
                 onSelectObstacle={editObstacleById}
+                palette={monthColours}
               />
               {timeline !== null ? (
+                <>
+                <BloomPlayer
+                  month={filters.floweringMonth ?? null}
+                  onSelectMonth={(m) => changeFilters({ ...filters, floweringMonth: m })}
+                />
                 <BloomTimeline
                   timeline={timeline}
                   forage={forage}
@@ -389,6 +418,7 @@ export function App() {
                   )
                 }
               />
+                </>
               ) : null}
               {score !== null ? (
                 <InsectScore

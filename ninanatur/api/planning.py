@@ -16,6 +16,7 @@ from ninanatur.api.gardens import require_bed, require_garden, to_out
 from ninanatur.api.plants import to_summary
 from ninanatur.api.schemas import (
     BedSuggestions,
+    BloomPalette,
     ChangeOut,
     FilterCountsOut,
     GapOut,
@@ -37,6 +38,7 @@ from ninanatur.api.search import (
     rank_plants,
 )
 from ninanatur.bloom.improve import Change, garden_improvements
+from ninanatur.bloom.palette import garden_palette
 from ninanatur.bloom.score import garden_score
 from ninanatur.bloom.timeline import TimelineMode, garden_timeline
 from ninanatur.data.interactions import bird_counts, german_partner_totals
@@ -298,3 +300,18 @@ def improvements(
         additions=[_change_out(c) for c in result.additions],
         swaps=[_change_out(c) for c in result.swaps],
     )
+
+
+@router.get("/{token}/bloom", response_model=BloomPalette)
+def bloom(
+    token: str,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> BloomPalette:
+    """Which colours each bed carries in each month.
+
+    Server-side because the frontend has a bed's plantings but neither their
+    flowering windows nor their colours, and sending those per planting would
+    ship the catalogue to the browser to render a swatch.
+    """
+    garden = require_garden(conn, token)
+    return BloomPalette(**garden_palette(conn, garden.garden_id))

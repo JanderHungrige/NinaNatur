@@ -104,11 +104,15 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   width: 100%; height: auto; max-height: 75vh;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-raised);
 }
-.grid-line { fill: none; stroke: var(--line); stroke-width: 1; }
-.compass { fill: var(--ink-muted); font-size: 12px; }
-.bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 2; cursor: pointer; }
-.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 3; }
-.obstacle { fill: color-mix(in srgb, var(--ink) 25%, transparent); stroke: var(--ink-muted); stroke-width: 1.5; }
+/* Wave 7 moved the plan's viewBox into garden metres, so every length in here
+   is metres too. These were pixel values under the old 10-px-per-metre viewBox
+   and became a 1 m grid line and a 2 m bed outline — the outline painted a
+   metre outside the bed on every side and swallowed most of the shape. */
+.grid-line { fill: none; stroke: var(--line); stroke-width: 0.03; }
+.compass { fill: var(--ink-muted); font-size: 1.6px; }
+.bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 0.08; cursor: pointer; }
+.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 0.16; }
+.obstacle { fill: color-mix(in srgb, var(--ink) 25%, transparent); stroke: var(--ink-muted); stroke-width: 0.08; }
 
 .status { margin-top: 1rem; color: var(--ink-muted); font-size: 0.9rem; min-height: 1.4em; }
 
@@ -451,4 +455,22 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .existing-planting__actions {
   margin-top: 0.9rem;
+}
+
+/* --- Wave 7: bloom playback ------------------------------------------- */
+
+.bloom-player {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.bloom-hatch__ground {
+  fill: var(--bg-raised);
+}
+
+.bloom-hatch__line {
+  fill: var(--ink-muted);
+  opacity: 0.55;
 }

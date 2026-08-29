@@ -20,6 +20,7 @@ export type ScoreOut = components['schemas']['ScoreOut'];
 export type ImprovementsOut = components['schemas']['ImprovementsOut'];
 export type ChangeOut = components['schemas']['ChangeOut'];
 export type SpeciesInfoOut = components['schemas']['SpeciesInfoOut'];
+export type BloomPalette = components['schemas']['BloomPalette'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -289,6 +290,13 @@ export class NinaNaturClient {
   async timeline(token: string, forage = true): Promise<TimelineOut> {
     return this.request<TimelineOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/timeline?forage=${String(forage)}`,
+    );
+  }
+
+  /** Which colours each bed carries, month by month. */
+  async bloom(token: string): Promise<BloomPalette> {
+    return this.request<BloomPalette>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/bloom`,
     );
   }
 

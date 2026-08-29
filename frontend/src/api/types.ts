@@ -354,6 +354,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/bloom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bloom
+         * @description Which colours each bed carries in each month.
+         *
+         *     Server-side because the frontend has a bed's plantings but neither their
+         *     flowering windows nor their colours, and sending those per planting would
+         *     ship the catalogue to the browser to render a swatch.
+         */
+        get: operations["bloom_api_v1_gardens__token__bloom_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -410,6 +434,17 @@ export interface components {
             /** Moisture */
             moisture?: string | null;
         };
+        /** BedMonthColours */
+        BedMonthColours: {
+            /** Month */
+            month: number;
+            /** Colours */
+            colours: string[];
+            /** Unknown */
+            unknown: number;
+            /** Flowering */
+            flowering: number;
+        };
         /** BedOut */
         BedOut: {
             /** Bed Id */
@@ -440,6 +475,13 @@ export interface components {
             label: string | null;
             /** Plantings */
             plantings: components["schemas"]["PlantingOut"][];
+        };
+        /** BedPalette */
+        BedPalette: {
+            /** Bed Id */
+            bed_id: number;
+            /** Months */
+            months: components["schemas"]["BedMonthColours"][];
         };
         /**
          * BedSuggestions
@@ -489,6 +531,11 @@ export interface components {
             height_above_ground?: number | null;
             /** Label */
             label?: string | null;
+        };
+        /** BloomPalette */
+        BloomPalette: {
+            /** Beds */
+            beds: components["schemas"]["BedPalette"][];
         };
         /** ChangeOut */
         ChangeOut: {
@@ -1474,6 +1521,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImprovementsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bloom_api_v1_gardens__token__bloom_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BloomPalette"];
                 };
             };
             /** @description Validation Error */

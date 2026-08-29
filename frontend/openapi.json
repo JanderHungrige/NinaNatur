@@ -1162,6 +1162,49 @@
         }
       }
     },
+    "/api/v1/gardens/{token}/bloom": {
+      "get": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Bloom",
+        "description": "Which colours each bed carries in each month.\n\nServer-side because the frontend has a bed's plantings but neither their\nflowering windows nor their colours, and sending those per planting would\nship the catalogue to the browser to render a swatch.",
+        "operationId": "bloom_api_v1_gardens__token__bloom_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloomPalette"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -1268,6 +1311,37 @@
           "polygon"
         ],
         "title": "BedCreate"
+      },
+      "BedMonthColours": {
+        "properties": {
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "colours": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Colours"
+          },
+          "unknown": {
+            "type": "integer",
+            "title": "Unknown"
+          },
+          "flowering": {
+            "type": "integer",
+            "title": "Flowering"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "colours",
+          "unknown",
+          "flowering"
+        ],
+        "title": "BedMonthColours"
       },
       "BedOut": {
         "properties": {
@@ -1419,6 +1493,27 @@
         ],
         "title": "BedOut"
       },
+      "BedPalette": {
+        "properties": {
+          "bed_id": {
+            "type": "integer",
+            "title": "Bed Id"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/BedMonthColours"
+            },
+            "type": "array",
+            "title": "Months"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bed_id",
+          "months"
+        ],
+        "title": "BedPalette"
+      },
       "BedSuggestions": {
         "properties": {
           "bed_id": {
@@ -1545,6 +1640,22 @@
         },
         "type": "object",
         "title": "BedUpdate"
+      },
+      "BloomPalette": {
+        "properties": {
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/BedPalette"
+            },
+            "type": "array",
+            "title": "Beds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "beds"
+        ],
+        "title": "BloomPalette"
       },
       "ChangeOut": {
         "properties": {
