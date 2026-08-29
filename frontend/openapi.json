@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NinaNatur",
-    "version": "V0.6.11"
+    "version": "V0.7.13"
   },
   "paths": {
     "/api/v1/plants": {
@@ -325,6 +325,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "tags": [
+          "plants"
+        ],
+        "summary": "Stats",
+        "description": "The catalogue in numbers, for the page that introduces it.",
+        "operationId": "stats_api_v1_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsOut"
                 }
               }
             }
@@ -2594,6 +2616,34 @@
         "title": "ScoreOut",
         "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves."
       },
+      "SourceOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "licence": {
+            "type": "string",
+            "title": "Licence"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "contributes": {
+            "type": "string",
+            "title": "Contributes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "licence",
+          "url",
+          "contributes"
+        ],
+        "title": "SourceOut"
+      },
       "SpeciesContributionOut": {
         "properties": {
           "taxon_id": {
@@ -2687,6 +2737,48 @@
         ],
         "title": "SpeciesInfoOut",
         "description": "A description and photo. `licence` and `page_url` are conditions of use,\nnot decoration \u2014 the UI may not show the extract without them."
+      },
+      "StatsOut": {
+        "properties": {
+          "species": {
+            "type": "integer",
+            "title": "Species"
+          },
+          "species_with_full_site_profile": {
+            "type": "integer",
+            "title": "Species With Full Site Profile"
+          },
+          "animal_partnerships": {
+            "type": "integer",
+            "title": "Animal Partnerships"
+          },
+          "german_animals": {
+            "type": "integer",
+            "title": "German Animals"
+          },
+          "german_names": {
+            "type": "integer",
+            "title": "German Names"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "species",
+          "species_with_full_site_profile",
+          "animal_partnerships",
+          "german_animals",
+          "german_names",
+          "sources"
+        ],
+        "title": "StatsOut",
+        "description": "What the catalogue actually holds, counted rather than typed.\n\nWave 1's landing page wrote \"3.087 Arten\" into its HTML by hand, and it was\nwrong the first time the catalogue was rebuilt. A page that states a number\nis making a claim."
       },
       "TimelineOut": {
         "properties": {

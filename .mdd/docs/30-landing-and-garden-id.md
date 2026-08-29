@@ -4,22 +4,26 @@ title: A Front Door, and a Way Back In
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-7
-wave_status: queued
+wave_status: complete
 depends_on: [26-drawing-canvas]
 relates: [13-garden-api]
 source_files:
   - frontend/src/App.tsx
   - frontend/src/components/Landing.tsx
   - frontend/src/components/GardenId.tsx
-routes: []
+  - ninanatur/data/sources.py
+  - ninanatur/api/plants.py
+routes:
+  - GET /api/v1/stats
 models: []
 test_files:
   - frontend/src/components/Landing.test.tsx
   - frontend/src/components/GardenId.test.tsx
+  - tests/test_stats.py
 data_flow: reads-existing
 last_synced: 2026-08-28
-status: planned
-phase: "1"
+status: complete
+phase: all
 mdd_version: 11
 tags: [landing, entry, share-token, garden-id, onboarding]
 path: UI/Entry
@@ -35,8 +39,7 @@ sister_projects: []
 
 # 30 — A Front Door, and a Way Back In
 
-**Queued: to be built after Wave 7's four features are merged.** Requested during
-Wave 7 planning; recorded here so it is not carried in someone's head.
+Built after Wave 7's four features were merged, as planned.
 
 ## Purpose
 
@@ -49,8 +52,16 @@ working on.
 
 The Wave 1 elements, unchanged in spirit: *"Ein Garten, der etwas ernährt."*, the
 lede, the three figures, and the licence footer. The figures are read from the
-API rather than hardcoded, since they were already stale — Wave 1 wrote 3.087
-species into the HTML by hand.
+API rather than hardcoded — Wave 1 wrote 3.087 species into its HTML by hand and
+it was wrong the first time the catalogue was rebuilt.
+
+**One Wave 1 figure could not come back.** It claimed 600.131 recorded
+plant-insect relationships, and the runtime cannot support that: the raw GloBI
+rows are ingest-time data and are deliberately not in the shipped catalogue —
+that split is what keeps it at 14.8 MB instead of 93. What the served data
+actually holds is **303.825** recorded relationships to animals in Germany,
+summarised, and that is what the page says. A number a deployment cannot verify
+about itself is not a figure, it is a slogan.
 
 Below them, two ways in:
 
@@ -105,8 +116,22 @@ That has consequences the UI must respect:
 
 ## Known Issues
 
-(none yet)
+- **The sources are a declared list**, not derived from the data. GloBI supplies
+  the interaction summaries, which carry no source column once summarised, so
+  counting `trait.source` would report three sources for a catalogue built from
+  four. A test asserts every ingest adapter appears in the list.
+- **No garden list.** Someone with three gardens keeps three ids. Accounts in
+  Wave 9 are the answer.
 
 ## Bugs
 
-(none yet)
+**Opening a garden by its id did not put the id in the URL**, so a reload went
+straight back to the landing page — for the one route this feature exists to
+serve. Found by opening a garden by its id and pressing reload, which is exactly
+what a returning user does.
+
+**And one caught before it shipped:** my first wiring gave the landing page an
+`onCreate` button that created a garden with default coordinates. A garden's
+latitude is not a detail — the entire solar model rests on it — and that would
+have computed everyone's light for Berlin. The landing page now takes the real
+form as a slot and owns only the layout around it.

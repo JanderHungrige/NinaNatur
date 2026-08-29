@@ -67,6 +67,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stats
+         * @description The catalogue in numbers, for the page that introduces it.
+         */
+        get: operations["stats_api_v1_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens": {
         parameters: {
             query?: never;
@@ -867,6 +887,17 @@ export interface components {
             /** Is Empty */
             is_empty: boolean;
         };
+        /** SourceOut */
+        SourceOut: {
+            /** Name */
+            name: string;
+            /** Licence */
+            licence: string;
+            /** Url */
+            url: string;
+            /** Contributes */
+            contributes: string;
+        };
         /** SpeciesContributionOut */
         SpeciesContributionOut: {
             /** Taxon Id */
@@ -900,6 +931,28 @@ export interface components {
             language: string;
             /** Licence */
             licence: string;
+        };
+        /**
+         * StatsOut
+         * @description What the catalogue actually holds, counted rather than typed.
+         *
+         *     Wave 1's landing page wrote "3.087 Arten" into its HTML by hand, and it was
+         *     wrong the first time the catalogue was rebuilt. A page that states a number
+         *     is making a claim.
+         */
+        StatsOut: {
+            /** Species */
+            species: number;
+            /** Species With Full Site Profile */
+            species_with_full_site_profile: number;
+            /** Animal Partnerships */
+            animal_partnerships: number;
+            /** German Animals */
+            german_animals: number;
+            /** German Names */
+            german_names: number;
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
         };
         /**
          * TimelineOut
@@ -1058,6 +1111,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_api_v1_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOut"];
                 };
             };
         };

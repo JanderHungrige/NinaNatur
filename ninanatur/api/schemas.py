@@ -346,6 +346,33 @@ class BloomPalette(BaseModel):
     beds: list[BedPalette]
 
 
+class SourceOut(BaseModel):
+    name: str
+    licence: str
+    url: str
+    contributes: str
+
+
+class StatsOut(BaseModel):
+    """What the catalogue actually holds, counted rather than typed.
+
+    Wave 1's landing page wrote "3.087 Arten" into its HTML by hand, and it was
+    wrong the first time the catalogue was rebuilt. A page that states a number
+    is making a claim.
+    """
+
+    species: int
+    species_with_full_site_profile: int
+    # Recorded relationships between the plants here and animals recorded in
+    # Germany. Counted from the summaries the runtime actually serves — the
+    # 600k raw GloBI rows are ingest-time data and are not in the shipped
+    # catalogue at all, so claiming them would be claiming data we do not ship.
+    animal_partnerships: int
+    german_animals: int
+    german_names: int
+    sources: list[SourceOut]
+
+
 class GardenOut(BaseModel):
     # Reported, never inferred from an empty list: a score computed over 4 of 7
     # plantings has to be able to say so.

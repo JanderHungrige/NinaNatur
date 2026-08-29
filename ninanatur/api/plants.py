@@ -20,7 +20,9 @@ from ninanatur.api.schemas import (
     PlantDetail,
     PlantSearchResponse,
     PlantSummary,
+    SourceOut,
     SpeciesInfoOut,
+    StatsOut,
     TraitOut,
 )
 from ninanatur.api.search import (
@@ -31,6 +33,7 @@ from ninanatur.api.search import (
     rank_plants,
 )
 from ninanatur.data.interactions import bird_counts, german_partner_counts
+from ninanatur.data.sources import SOURCES
 from ninanatur.data.species_info import species_info
 from ninanatur.data.traits import resolve_traits_for
 from ninanatur.fit.score import SiteVector
@@ -207,4 +210,29 @@ def plant_info(
         page_url=info.page_url,
         language=info.language,
         licence=info.licence,
+    )
+
+
+@router.get("/stats", response_model=StatsOut)
+def stats(conn: Annotated[sqlite3.Connection, Depends(get_connection)]) -> StatsOut:
+    """The catalogue in numbers, for the page that introduces it."""
+    def count(sql: str) -> int:
+        row = conn.execute(sql).fetchone()
+        value = row[0] if row is not None else 0
+        return int(value or 0)
+
+    return StatsOut(
+        species=count("SELECT COUNT(*) FROM taxon"),
+        species_with_full_site_profile=count(
+            "SELECT COUNT(*) FROM (SELECT taxon_id FROM trait"
+            " WHERE trait_key IN ('ellenberg_l','ellenberg_m','ellenberg_n','ellenberg_r')"
+            " GROUP BY taxon_id HAVING COUNT(DISTINCT trait_key) = 4)"
+        ),
+        animal_partnerships=count("SELECT SUM(german) FROM partner_totals"),
+        german_animals=count("SELECT COUNT(*) FROM insect_de"),
+        german_names=count("SELECT COUNT(*) FROM vernacular_name"),
+        sources=[
+            SourceOut(name=s.name, licence=s.licence, url=s.url, contributes=s.contributes)
+            for s in SOURCES
+        ],
     )

@@ -15,6 +15,8 @@ import { BedPanel } from './components/BedPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { GardenId } from './components/GardenId';
+import { Landing } from './components/Landing';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
@@ -51,13 +53,22 @@ export function App() {
   const [filters, setFilters] = useState<SuggestionFilters>({});
   const [editing, setEditing] = useState<EditableObject | null>(null);
   const [palette, setPalette] = useState<BloomPalette | null>(null);
+  const [openProblem, setOpenProblem] = useState<string | undefined>(undefined);
+
+  /** Stable identity: an inline arrow would refire the landing page's effect
+   *  on every render, which is the loop the species panel already cost us. */
+  const loadStats = useCallback(async () => client.stats(), []);
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
     if (found === null) {
-      setStatus('Dieser Link gehört zu keinem Garten (mehr).');
+      // Back to the front door with the field still filled: an unknown id must
+      // not look like an empty garden.
+      setOpenProblem('Zu dieser ID gibt es keinen Garten.');
+      setStatus('');
       return;
     }
+    setOpenProblem(undefined);
     setGarden(found);
     setTimeline(await client.timeline(token, weighted));
     setScore(await client.score(token));
@@ -322,13 +333,36 @@ export function App() {
     [garden, run],
   );
 
+  /**
+   * The logo goes home. Leaving a garden must not lose it — which is exactly why
+   * its id is on screen the whole time it is open.
+   */
+  const goHome = () => {
+    window.location.hash = '';
+    setGarden(null);
+    setSelectedBedId(null);
+    setSuggestions(null);
+    setTimeline(null);
+    setScore(null);
+    setImprovements(null);
+    setPalette(null);
+    setEditing(null);
+    setStatus('');
+  };
+
   return (
     <>
       <a className="skip-link" href="#main">Zum Inhalt springen</a>
       <header className="site-header">
-        <span className="brand">
+        <button type="button" className="brand" onClick={goHome} aria-label="Zur Startseite">
+          <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
+            <path className="mark__leaf" d="M32 58C32 40 40 26 56 20 56 40 46 54 32 58Z" />
+            <path className="mark__leaf mark__leaf--alt" d="M32 58C32 40 24 26 8 20 8 40 18 54 32 58Z" />
+            <path className="mark__stem" d="M32 58V30" />
+            <path className="mark__letters" d="M14 24V8l12 16V8M38 24V8l12 16V8" />
+          </svg>
           <span className="brand__name">NinaNatur</span>
-        </span>
+        </button>
         {version !== null ? (
           <span className="badge" title="Version · Wave · Merges auf main">{version}</span>
         ) : null}
@@ -336,10 +370,24 @@ export function App() {
 
       <main id="main" className="layout">
         {garden === null ? (
-          <NewGardenForm onCreate={createGarden} busy={busy} />
+          <Landing
+            createForm={<NewGardenForm onCreate={createGarden} busy={busy} />}
+            onOpen={(token) => {
+              // Into the fragment, so a reload keeps the garden — and the
+              // fragment specifically, because the token is a credential and a
+              // query parameter would put it in the access log and in any
+              // referrer this page sends.
+              window.location.hash = token;
+              void load(token);
+            }}
+            busy={busy}
+            loadStats={loadStats}
+            problem={openProblem}
+          />
         ) : (
           <>
             <div className="column">
+              <GardenId token={garden.share_token} />
               <BedPanel
                 garden={garden}
                 selectedBedId={selectedBedId}
