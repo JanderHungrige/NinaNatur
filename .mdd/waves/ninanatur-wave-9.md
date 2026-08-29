@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-8
 demo_state: "A user places themselves on the plan and sees what is actually visible from there, and can keep their gardens under an account without giving an email address"
 created: 2026-08-28
-hash: 6572762f
+hash: 251a4530
 ---
 
 # Wave 9 — Standing in the garden, and keeping it
@@ -22,9 +22,9 @@ address.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | sightlines | 33-sightlines | planned | — |
-| 2 | accounts | 34-accounts | planned | — |
-| 3 | claim-gardens | 35-claim-gardens | planned | 34 |
+| 1 | sightlines | 34-sightlines | planned | — |
+| 2 | accounts | 35-accounts | planned | — |
+| 3 | claim-gardens | 36-claim-gardens | planned | 34 |
 
 ### 1 — sightlines (#8a)
 
