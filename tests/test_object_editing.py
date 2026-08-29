@@ -1,5 +1,4 @@
 """Editing what an object is, after it has been drawn."""
-import sqlite3
 from collections.abc import Iterator
 
 import pytest

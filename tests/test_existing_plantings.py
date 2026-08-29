@@ -4,15 +4,14 @@ The catalogue holds 8,939 German species and no cultivars, so a name it does not
 know is an ordinary answer rather than a mistake. Discarding it would tell
 someone their garden is wrong because our data is incomplete.
 """
-import sqlite3
 from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
 
 from ninanatur.api.deps import get_connection
-from ninanatur.ingest.db import connect, init_schema
 from ninanatur.data.names import normalise
+from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
 from ninanatur.web.app import app
 
