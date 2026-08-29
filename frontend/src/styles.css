@@ -437,3 +437,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+.existing-planting label {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.existing-planting input {
+  width: 100%;
+}
+
+.existing-planting__actions {
+  margin-top: 0.9rem;
+}

@@ -53,7 +53,11 @@ def require_garden(conn: sqlite3.Connection, token: str) -> Garden:
 
 
 def to_out(garden: Garden) -> GardenOut:
+    unidentified = sum(
+        1 for b in garden.beds for p in b.plantings if p.taxon_id is None
+    )
     return GardenOut(
+        unidentified_plantings=unidentified,
         share_token=garden.share_token,
         name=garden.name,
         latitude=garden.latitude,
@@ -71,8 +75,8 @@ def to_out(garden: Garden) -> GardenOut:
                 plantings=[
                     PlantingOut(
                         planting_id=p.planting_id, taxon_id=p.taxon_id,
-                        canonical_name=p.canonical_name, quantity=p.quantity,
-                        added_at=p.added_at,
+                        canonical_name=p.canonical_name, raw_name=p.raw_name,
+                        quantity=p.quantity, added_at=p.added_at,
                     )
                     for p in b.plantings
                 ],

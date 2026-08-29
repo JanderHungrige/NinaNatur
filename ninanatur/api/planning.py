@@ -40,6 +40,7 @@ from ninanatur.bloom.improve import Change, garden_improvements
 from ninanatur.bloom.score import garden_score
 from ninanatur.bloom.timeline import TimelineMode, garden_timeline
 from ninanatur.data.interactions import bird_counts, german_partner_totals
+from ninanatur.data.names import resolve_one
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.store import add_planting, load_garden, remove_planting
@@ -86,10 +87,25 @@ def create_planting(
     payload: PlantingCreate,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    """Put a species in a bed. An unknown taxon raises ValueError -> 422."""
+    """Put a plant in a bed, named by id or by the words the user typed.
+
+    A name that resolves to exactly one species is stored with that species and
+    counts like any other planting. One that does not is stored anyway, marked
+    unidentified: discarding it would tell someone their garden is wrong because
+    our catalogue is incomplete.
+    """
     garden = require_garden(conn, token)
     require_bed(garden, bed_id)
-    add_planting(conn, bed_id, taxon_id=payload.taxon_id, quantity=payload.quantity)
+    taxon_id = payload.taxon_id
+    if taxon_id is None and payload.raw_name is not None:
+        taxon_id = resolve_one(conn, payload.raw_name)
+    add_planting(
+        conn,
+        bed_id,
+        taxon_id=taxon_id,
+        quantity=payload.quantity,
+        raw_name=payload.raw_name,
+    )
     return to_out(load_garden(conn, garden.garden_id))
 
 
@@ -148,7 +164,11 @@ def bed_suggestions(
             "or recompute light, before asking for suggestions"
         )
 
-    planted = frozenset(p.taxon_id for p in bed.plantings) if exclude_planted else frozenset()
+    planted = (
+        frozenset(p.taxon_id for p in bed.plantings if p.taxon_id is not None)
+        if exclude_planted
+        else frozenset()
+    )
     area = polygon_area(bed.polygon)
     ranked = rank_plants(
         load_candidates(conn),

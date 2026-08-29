@@ -143,28 +143,55 @@ def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInp
 
 
 def add_planting(
-    conn: sqlite3.Connection, bed_id: int, taxon_id: int, quantity: int = 1
+    conn: sqlite3.Connection,
+    bed_id: int,
+    taxon_id: int | None = None,
+    quantity: int = 1,
+    raw_name: str | None = None,
 ) -> int:
-    """Put a species in a bed, or raise the count if it is already there."""
+    """Put a plant in a bed, named or not.
+
+    `taxon_id` identifies it against the catalogue; `raw_name` is what the user
+    typed. A planting with only a raw name is one the catalogue could not name —
+    an ordinary answer, since it holds 8,939 German species and no cultivars at
+    all. Refusing it would tell someone their garden is wrong because our data
+    is incomplete.
+    """
     if quantity < 1:
         # Zero would be a deletion expressed as an update, and the two would then
         # disagree about whether the species is in the bed at all.
         raise ValueError(f"quantity must be at least 1, got {quantity}")
+    if taxon_id is None and not (raw_name or "").strip():
+        raise ValueError("a planting needs either a taxon or a name")
 
-    known = conn.execute(
-        "SELECT 1 FROM taxon WHERE taxon_id = ?", (taxon_id,)
-    ).fetchone()
-    if known is None:
-        raise UnknownTaxon(f"no such taxon in the catalogue: {taxon_id}")
+    if taxon_id is not None:
+        known = conn.execute(
+            "SELECT 1 FROM taxon WHERE taxon_id = ?", (taxon_id,)
+        ).fetchone()
+        if known is None:
+            raise UnknownTaxon(f"no such taxon in the catalogue: {taxon_id}")
+
+    if taxon_id is None:
+        # No conflict target: NULLs are distinct, so two unidentified roses are
+        # two rows, which is what should happen.
+        cursor = conn.execute(
+            "INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)"
+            " VALUES (?, NULL, ?, ?, ?)",
+            (bed_id, raw_name, quantity, _now()),
+        )
+        conn.commit()
+        return int(cursor.lastrowid or 0)
 
     conn.execute(
         """
-        INSERT INTO planting (bed_id, taxon_id, quantity, added_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT (bed_id, taxon_id) DO UPDATE SET
-            quantity = planting.quantity + excluded.quantity
+            quantity = planting.quantity + excluded.quantity,
+            -- Never overwrite the words the user typed with nothing.
+            raw_name = COALESCE(excluded.raw_name, planting.raw_name)
         """,
-        (bed_id, taxon_id, quantity, _now()),
+        (bed_id, taxon_id, raw_name, quantity, _now()),
     )
     conn.commit()
     _relight_if_woody(conn, bed_id, taxon_id)
@@ -249,16 +276,20 @@ def _plantings_for(conn: sqlite3.Connection, bed_id: int) -> list[Planting]:
     return [
         Planting(
             planting_id=int(r["planting_id"]),
-            taxon_id=int(r["taxon_id"]),
+            taxon_id=None if r["taxon_id"] is None else int(r["taxon_id"]),
             canonical_name=r["canonical_name"],
             quantity=int(r["quantity"]),
             added_at=r["added_at"],
+            raw_name=r["raw_name"],
         )
         for r in conn.execute(
             """
-            SELECT p.planting_id, p.taxon_id, p.quantity, p.added_at, x.canonical_name
-            FROM planting p JOIN taxon x ON x.taxon_id = p.taxon_id
-            WHERE p.bed_id = ? ORDER BY x.canonical_name
+            -- LEFT, not INNER: an inner join drops exactly the rows this
+            -- feature exists to keep — the plants the catalogue cannot name.
+            SELECT p.planting_id, p.taxon_id, p.quantity, p.added_at, p.raw_name,
+                   x.canonical_name
+            FROM planting p LEFT JOIN taxon x ON x.taxon_id = p.taxon_id
+            WHERE p.bed_id = ? ORDER BY COALESCE(x.canonical_name, p.raw_name)
             """,
             (bed_id,),
         )
@@ -297,11 +328,16 @@ def _planted_obstacles(
     fact about shade. Between beds the geometry is real and is used. Wave 7's
     drawing tool gives plantings a position, and this exclusion goes with it.
     """
-    heights = _woody_heights(conn, [p.taxon_id for bed in garden.beds for p in bed.plantings])
+    heights = _woody_heights(
+        conn,
+        [p.taxon_id for bed in garden.beds for p in bed.plantings if p.taxon_id is not None],
+    )
     obstacles: list[tuple[int, ShadingObstacle]] = []
     for bed in garden.beds:
         centre = _polygon_centroid(bed.polygon)
         for planting in bed.plantings:
+            if planting.taxon_id is None:
+                continue
             canopy = heights.get(planting.taxon_id)
             if not shades(canopy):
                 continue

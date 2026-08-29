@@ -240,6 +240,23 @@ export class NinaNaturClient {
   }
 
   /**
+   * Record a plant by the name the user typed.
+   *
+   * The server resolves it against the catalogue and stores it either way — an
+   * unresolved name is kept as the user's own record, not rejected.
+   */
+  async plantByName(
+    token: string,
+    bedId: number,
+    planting: { raw_name: string; quantity: number },
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}/plantings`,
+      { method: 'POST', body: JSON.stringify(planting) },
+    );
+  }
+
+  /**
    * A description and photo for one species, or null when there is no article.
    *
    * Null rather than throwing: a missing Wikipedia page is a normal outcome for

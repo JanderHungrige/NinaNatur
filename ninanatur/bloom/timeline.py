@@ -114,6 +114,9 @@ def garden_timeline(
 
     for bed in garden.beds:
         for planting in bed.plantings:
+            # No taxon, no data: it is on the plan and out of the maths.
+            if planting.taxon_id is None:
+                continue
             total += 1
             start = resolve_trait(conn, planting.taxon_id, "flowering_start_month")
             end = resolve_trait(conn, planting.taxon_id, "flowering_end_month")
@@ -132,7 +135,7 @@ def garden_timeline(
 
             for month in active:
                 raw[month] += weight * planting.quantity
-                names[month].add(planting.canonical_name)
+                names[month].add(planting.display_name)
 
     peak = max(raw.values()) if raw else 0.0
     months = {

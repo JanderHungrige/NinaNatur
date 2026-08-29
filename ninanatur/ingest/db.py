@@ -141,7 +141,11 @@ CREATE INDEX IF NOT EXISTS idx_bed_garden ON bed(garden_id);
 CREATE TABLE IF NOT EXISTS planting (
     planting_id INTEGER PRIMARY KEY,
     bed_id      INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
-    taxon_id    INTEGER NOT NULL REFERENCES taxon(taxon_id),
+    -- Nullable since Wave 7: a plant the catalogue cannot name is still a plant
+    -- in someone's garden. NULLs are distinct in SQLite, so the UNIQUE below
+    -- still allows two unidentified roses in one bed, which is correct.
+    taxon_id    INTEGER REFERENCES taxon(taxon_id),
+    raw_name    TEXT,
     quantity    INTEGER NOT NULL DEFAULT 1,
     added_at    TEXT    NOT NULL,
     UNIQUE (bed_id, taxon_id)
@@ -291,6 +295,10 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # storing and is not a category.
     ("obstacle", "label", "TEXT"),
     ("bed", "label", "TEXT"),
+    # Wave 7. What the user typed, kept beside whatever it matched — that is how
+    # someone recognises their own entry, and how a later catalogue improvement
+    # can re-resolve it.
+    ("planting", "raw_name", "TEXT"),
 )
 
 
@@ -313,6 +321,55 @@ def _apply_column_migrations(conn: sqlite3.Connection) -> list[str]:
     return applied
 
 
+def _relax_planting_taxon(conn: sqlite3.Connection) -> str | None:
+    """Let `planting.taxon_id` be NULL on a database that predates Wave 7.
+
+    `CREATE TABLE IF NOT EXISTS` does nothing to an existing table, and no
+    `ALTER TABLE` in SQLite removes a NOT NULL. The only way is the documented
+    rebuild: make the new table, copy the rows, swap the names.
+
+    Without it a fresh deployment works and the production volume rejects every
+    unidentified planting — after the deploy, in front of the user, with a green
+    suite behind it. That shape has cost this project five live findings already.
+    """
+    exists = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='planting'"
+    ).fetchone()
+    if exists is None:
+        return None  # about to be created with the right definition
+    columns = {row[1]: row for row in conn.execute("PRAGMA table_info(planting)")}
+    taxon = columns.get("taxon_id")
+    if taxon is None or taxon[3] == 0:
+        return None  # already nullable
+
+    carried = [
+        c for c in ("planting_id", "bed_id", "taxon_id", "quantity", "added_at")
+        if c in columns
+    ]
+    names = ", ".join(carried)
+    # Foreign keys off for the swap, or the rename trips over its own references.
+    conn.execute("PRAGMA foreign_keys=OFF")
+    conn.executescript(
+        f"""
+        CREATE TABLE planting_new (
+            planting_id INTEGER PRIMARY KEY,
+            bed_id      INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
+            taxon_id    INTEGER REFERENCES taxon(taxon_id),
+            raw_name    TEXT,
+            quantity    INTEGER NOT NULL DEFAULT 1,
+            added_at    TEXT    NOT NULL,
+            UNIQUE (bed_id, taxon_id)
+        );
+        INSERT INTO planting_new ({names}) SELECT {names} FROM planting;
+        DROP TABLE planting;
+        ALTER TABLE planting_new RENAME TO planting;
+        """  # noqa: S608
+    )
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.commit()
+    return "planting.taxon_id nullable"
+
+
 def init_schema(conn: sqlite3.Connection) -> list[str]:
     """Create every table and index, and add columns missing from older databases.
 
@@ -323,6 +380,9 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     Returns the migrations applied, so a deployment can say what it changed.
     """
     applied = _apply_column_migrations(conn)
+    rebuilt = _relax_planting_taxon(conn)
+    if rebuilt is not None:
+        applied.append(rebuilt)
     conn.executescript(SCHEMA)
     conn.commit()
     return applied

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ninanatur.garden.objects import ObjectKind
 
@@ -271,14 +271,29 @@ class BedUpdate(BaseModel):
 
 
 class PlantingCreate(BaseModel):
-    taxon_id: int = Field(gt=0)
+    """Either a species from the catalogue, or the words the user typed.
+
+    Both are ordinary. The catalogue holds 8,939 German species and no cultivars,
+    so a name it cannot match is an answer rather than a mistake.
+    """
+
+    taxon_id: int | None = Field(default=None, gt=0)
+    raw_name: str | None = Field(default=None, max_length=200)
     quantity: int = Field(default=1, ge=1, le=10000)
+
+    @model_validator(mode="after")
+    def one_or_the_other(self) -> PlantingCreate:
+        if self.taxon_id is None and not (self.raw_name or "").strip():
+            raise ValueError("either taxon_id or raw_name is required")
+        return self
 
 
 class PlantingOut(BaseModel):
     planting_id: int
-    taxon_id: int
-    canonical_name: str
+    # None when the catalogue could not name it — `raw_name` is then the plant.
+    taxon_id: int | None
+    canonical_name: str | None
+    raw_name: str | None
     quantity: int
     added_at: str
 
@@ -313,6 +328,9 @@ class ObstacleOut(BaseModel):
 
 
 class GardenOut(BaseModel):
+    # Reported, never inferred from an empty list: a score computed over 4 of 7
+    # plantings has to be able to say so.
+    unidentified_plantings: int = 0
     share_token: str
     name: str
     latitude: float

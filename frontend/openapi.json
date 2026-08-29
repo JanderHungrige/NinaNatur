@@ -727,7 +727,7 @@
           "planning"
         ],
         "summary": "Create Planting",
-        "description": "Put a species in a bed. An unknown taxon raises ValueError -> 422.",
+        "description": "Put a plant in a bed, named by id or by the words the user typed.\n\nA name that resolves to exactly one species is stored with that species and\ncounts like any other planting. One that does not is stored anyway, marked\nunidentified: discarding it would tell someone their garden is wrong because\nour catalogue is incomplete.",
         "operationId": "create_planting_api_v1_gardens__token__beds__bed_id__plantings_post",
         "parameters": [
           {
@@ -1742,6 +1742,11 @@
       },
       "GardenOut": {
         "properties": {
+          "unidentified_plantings": {
+            "type": "integer",
+            "title": "Unidentified Plantings",
+            "default": 0
+          },
           "share_token": {
             "type": "string",
             "title": "Share Token"
@@ -2331,9 +2336,28 @@
       "PlantingCreate": {
         "properties": {
           "taxon_id": {
-            "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Taxon Id"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
           },
           "quantity": {
             "type": "integer",
@@ -2344,10 +2368,8 @@
           }
         },
         "type": "object",
-        "required": [
-          "taxon_id"
-        ],
-        "title": "PlantingCreate"
+        "title": "PlantingCreate",
+        "description": "Either a species from the catalogue, or the words the user typed.\n\nBoth are ordinary. The catalogue holds 8,939 German species and no cultivars,\nso a name it cannot match is an answer rather than a mistake."
       },
       "PlantingOut": {
         "properties": {
@@ -2356,12 +2378,37 @@
             "title": "Planting Id"
           },
           "taxon_id": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Taxon Id"
           },
           "canonical_name": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Canonical Name"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
           },
           "quantity": {
             "type": "integer",
@@ -2377,6 +2424,7 @@
           "planting_id",
           "taxon_id",
           "canonical_name",
+          "raw_name",
           "quantity",
           "added_at"
         ],

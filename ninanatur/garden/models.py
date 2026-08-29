@@ -33,10 +33,22 @@ class Planting:
     """One species in one bed, with how many of it."""
 
     planting_id: int
-    taxon_id: int
-    canonical_name: str
+    # None when the catalogue could not name it. The raw name is then the only
+    # thing identifying the plant, and it is the user's own words.
+    taxon_id: int | None
+    canonical_name: str | None
     quantity: int
     added_at: str
+    raw_name: str | None = None
+
+    @property
+    def identified(self) -> bool:
+        return self.taxon_id is not None
+
+    @property
+    def display_name(self) -> str:
+        """What to call it. The user's words win when we have no name of ours."""
+        return self.canonical_name or self.raw_name or "unbenannt"
 
 
 @dataclass(frozen=True)

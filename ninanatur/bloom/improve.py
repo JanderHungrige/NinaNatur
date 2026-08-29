@@ -129,7 +129,7 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
             SearchFilters(
                 exclude_woody=True,
                 exclude_introduced=True,
-                exclude_taxa=frozenset(planted),
+                exclude_taxa=frozenset(t for t in planted if t is not None),
             ),
         )
 

@@ -94,3 +94,37 @@ def search_names(conn: sqlite3.Connection, query: str, limit: int = 50) -> list[
         (pattern, pattern, limit),
     ).fetchall()
     return [int(r["taxon_id"]) for r in rows]
+
+
+def resolve_one(conn: sqlite3.Connection, name: str) -> int | None:
+    """The single taxon a typed name means, or None when that is not certain.
+
+    Exact before contains, and **ambiguity resolves to None**: a search that
+    matches four species has not identified a plant, and picking the first is
+    how someone ends up with *Achillea millefolium* when they meant a cultivar
+    that behaves nothing like it. Unresolved is a normal, storable answer here.
+    """
+    wanted = normalise(name)
+    if not wanted:
+        return None
+
+    exact = conn.execute(
+        "SELECT taxon_id FROM vernacular_name WHERE normalised = ?", (wanted,)
+    ).fetchall()
+    ids = {int(r["taxon_id"]) for r in exact}
+    if len(ids) == 1:
+        return ids.pop()
+    if len(ids) > 1:
+        return None
+
+    scientific = conn.execute(
+        "SELECT taxon_id FROM taxon WHERE LOWER(canonical_name) = LOWER(?)", (name.strip(),)
+    ).fetchall()
+    ids = {int(r["taxon_id"]) for r in scientific}
+    if len(ids) == 1:
+        return ids.pop()
+    if len(ids) > 1:
+        return None
+
+    candidates = search_names(conn, name, limit=2)
+    return candidates[0] if len(candidates) == 1 else None

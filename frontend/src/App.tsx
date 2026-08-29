@@ -13,6 +13,7 @@ import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { ExistingPlanting } from './components/ExistingPlanting';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
@@ -235,6 +236,26 @@ export function App() {
     [garden, editing, forage, refresh, run],
   );
 
+  const addExisting = useCallback(
+    (planting: { raw_name: string; quantity: number }) => {
+      if (garden === null || selectedBedId === null) return;
+      void run('Eintragen', async () => {
+        const updated = await client.plantByName(garden.share_token, selectedBedId, planting);
+        setGarden(updated);
+        await refresh(garden.share_token, forage);
+        const added = updated.beds
+          .flatMap((b) => b.plantings)
+          .find((p) => p.raw_name === planting.raw_name);
+        setStatus(
+          added?.canonical_name != null
+            ? `${planting.raw_name} als ${added.canonical_name} eingetragen.`
+            : `${planting.raw_name} eingetragen — noch keiner Art zugeordnet.`,
+        );
+      });
+    },
+    [garden, selectedBedId, forage, refresh, run],
+  );
+
   const editSelectedBed = useCallback(() => {
     const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
     if (bed === undefined) return;
@@ -304,6 +325,13 @@ export function App() {
                 onAddObstacle={addObstacle}
                 busy={busy}
               />
+              {selectedBedId !== null ? (
+                <ExistingPlanting
+                  onAdd={addExisting}
+                  unidentified={garden.unidentified_plantings}
+                  busy={busy}
+                />
+              ) : null}
               {selectedBedId !== null && editing === null ? (
                 <button type="button" className="link-button" onClick={editSelectedBed}>
                   Gewähltes Beet bearbeiten

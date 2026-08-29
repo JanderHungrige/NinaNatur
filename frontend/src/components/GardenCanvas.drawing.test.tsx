@@ -26,6 +26,7 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
 
 function garden(overrides: Partial<GardenOut> = {}): GardenOut {
   return {
+    unidentified_plantings: 0,
     share_token: 'tok',
     name: 'Testgarten',
     latitude: 52.5,

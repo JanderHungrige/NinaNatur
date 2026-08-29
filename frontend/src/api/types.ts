@@ -226,7 +226,12 @@ export interface paths {
         put?: never;
         /**
          * Create Planting
-         * @description Put a species in a bed. An unknown taxon raises ValueError -> 422.
+         * @description Put a plant in a bed, named by id or by the words the user typed.
+         *
+         *     A name that resolves to exactly one species is stored with that species and
+         *     counts like any other planting. One that does not is stored anyway, marked
+         *     unidentified: discarding it would tell someone their garden is wrong because
+         *     our catalogue is incomplete.
          */
         post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
         delete?: never;
@@ -565,6 +570,11 @@ export interface components {
         };
         /** GardenOut */
         GardenOut: {
+            /**
+             * Unidentified Plantings
+             * @default 0
+             */
+            unidentified_plantings: number;
             /** Share Token */
             share_token: string;
             /** Name */
@@ -752,10 +762,18 @@ export interface components {
             fits_bed: boolean | null;
             fit: components["schemas"]["FitOut"];
         };
-        /** PlantingCreate */
+        /**
+         * PlantingCreate
+         * @description Either a species from the catalogue, or the words the user typed.
+         *
+         *     Both are ordinary. The catalogue holds 8,939 German species and no cultivars,
+         *     so a name it cannot match is an answer rather than a mistake.
+         */
         PlantingCreate: {
             /** Taxon Id */
-            taxon_id: number;
+            taxon_id?: number | null;
+            /** Raw Name */
+            raw_name?: string | null;
             /**
              * Quantity
              * @default 1
@@ -767,9 +785,11 @@ export interface components {
             /** Planting Id */
             planting_id: number;
             /** Taxon Id */
-            taxon_id: number;
+            taxon_id: number | null;
             /** Canonical Name */
-            canonical_name: string;
+            canonical_name: string | null;
+            /** Raw Name */
+            raw_name: string | null;
             /** Quantity */
             quantity: number;
             /** Added At */
