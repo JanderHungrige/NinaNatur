@@ -15,11 +15,13 @@ from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     BedCreate,
     BedOut,
+    BedUpdate,
     GardenCreate,
     GardenCreated,
     GardenOut,
     ObstacleCreate,
     ObstacleOut,
+    ObstacleUpdate,
     PlantingOut,
 )
 from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
@@ -31,6 +33,8 @@ from ninanatur.garden.store import (
     garden_by_token,
     load_garden,
     recompute_light,
+    update_bed,
+    update_obstacle,
 )
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
@@ -63,6 +67,7 @@ def to_out(garden: Garden) -> GardenOut:
                 ellenberg_l=b.ellenberg_l, ellenberg_m=b.ellenberg_m,
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,
                 sun_hours=b.sun_hours, light_computed_at=b.light_computed_at,
+                height_above_ground=b.height_above_ground, label=b.label,
                 plantings=[
                     PlantingOut(
                         planting_id=p.planting_id, taxon_id=p.taxon_id,
@@ -75,8 +80,8 @@ def to_out(garden: Garden) -> GardenOut:
             for b in garden.beds
         ],
         obstacles=[
-            ObstacleOut(obstacle_id=o.obstacle_id, kind=o.kind, x=o.x, y=o.y,
-                        radius=o.radius, height=o.height)
+            ObstacleOut(obstacle_id=o.obstacle_id, kind=o.kind, label=o.label,
+                        x=o.x, y=o.y, radius=o.radius, height=o.height)
             for o in garden.obstacles
         ],
     )
@@ -176,3 +181,41 @@ def require_bed(garden: Garden, bed_id: int) -> Bed:
         if bed.bed_id == bed_id:
             return bed
     raise HTTPException(status_code=404, detail=f"no such bed in this garden: {bed_id}")
+
+
+@router.patch("/{token}/beds/{bed_id}", response_model=GardenOut)
+def edit_bed(
+    token: str,
+    bed_id: int,
+    payload: BedUpdate,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Change what a bed is. Raising it changes its light, so the light is redone.
+
+    Leaving the stored number alone would leave the screen describing a bed that
+    no longer exists — the same reason adding an obstacle recomputes.
+    """
+    garden = require_garden(conn, token)
+    require_bed(garden, bed_id)
+    update_bed(conn, bed_id, **payload.model_dump(exclude_unset=True))
+    recompute_light(conn, garden.garden_id)
+    return to_out(load_garden(conn, garden.garden_id))
+
+
+@router.patch("/{token}/obstacles/{obstacle_id}", response_model=GardenOut)
+def edit_obstacle(
+    token: str,
+    obstacle_id: int,
+    payload: ObstacleUpdate,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Change what an obstacle is, and redo every bed's light."""
+    garden = require_garden(conn, token)
+    if not any(o.obstacle_id == obstacle_id for o in garden.obstacles):
+        raise HTTPException(status_code=404, detail=f"no such obstacle: {obstacle_id}")
+    changes = payload.model_dump(exclude_unset=True)
+    if "kind" in changes and changes["kind"] is not None:
+        changes["kind"] = str(changes["kind"])
+    update_obstacle(conn, obstacle_id, **changes)
+    recompute_light(conn, garden.garden_id)
+    return to_out(load_garden(conn, garden.garden_id))

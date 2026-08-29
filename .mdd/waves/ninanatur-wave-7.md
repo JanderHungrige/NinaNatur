@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-6
 demo_state: "A user draws their garden — outline, beds, trees, walls — labels each object by clicking it, enters what already grows there, and plays the bloom year as colour on the plan"
 created: 2026-08-28
-hash: f3fbee91
+hash: 1aa83c86
 ---
 
 # Wave 7 — The garden as a drawing
@@ -33,7 +33,7 @@ usually dropped.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 1 | drawing-canvas | 26-drawing-canvas | complete | — |
-| 2 | object-labelling | 27-object-labelling | planned | 26 |
+| 2 | object-labelling | 27-object-labelling | complete | 26 |
 | 3 | existing-plantings | 28-existing-plantings | planned | 27 |
 | 4 | bloom-playback | 29-bloom-playback | planned | 27 |
 

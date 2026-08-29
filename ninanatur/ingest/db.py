@@ -126,7 +126,11 @@ CREATE TABLE IF NOT EXISTS bed (
     ellenberg_n       REAL,
     ellenberg_r       REAL,
     sun_hours         REAL,
-    light_computed_at TEXT
+    light_computed_at TEXT,
+    -- A raised bed stands above the low things around it. Wave 9's sightlines
+    -- need the same number, which is why it is stored rather than derived.
+    height_above_ground REAL NOT NULL DEFAULT 0,
+    label             TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_bed_garden ON bed(garden_id);
@@ -152,7 +156,8 @@ CREATE TABLE IF NOT EXISTS obstacle (
     x           REAL    NOT NULL,
     y           REAL    NOT NULL,
     radius      REAL    NOT NULL,
-    height      REAL    NOT NULL
+    height      REAL    NOT NULL,
+    label       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_obstacle_garden ON obstacle(garden_id);
@@ -279,6 +284,13 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # Existing rows are insects, so the default carries their meaning forward
     # without a data migration. Birds arrive with clade='bird'.
     ("insect_de", "clade", "TEXT NOT NULL DEFAULT 'insect'"),
+    # Wave 7. Every existing bed sits on the ground, so the default keeps every
+    # stored light value meaning exactly what it meant.
+    ("bed", "height_above_ground", "REAL NOT NULL DEFAULT 0"),
+    # Free text, and it drives nothing. "Die Buche vom Nachbarn" is worth
+    # storing and is not a category.
+    ("obstacle", "label", "TEXT"),
+    ("bed", "label", "TEXT"),
 )
 
 

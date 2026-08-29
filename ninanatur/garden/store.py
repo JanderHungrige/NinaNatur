@@ -133,8 +133,10 @@ def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
 
 def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInput) -> int:
     cursor = conn.execute(
-        "INSERT INTO obstacle (garden_id, kind, x, y, radius, height) VALUES (?, ?, ?, ?, ?, ?)",
-        (garden_id, obstacle.kind, obstacle.x, obstacle.y, obstacle.radius, obstacle.height),
+        "INSERT INTO obstacle (garden_id, kind, x, y, radius, height, label)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (garden_id, obstacle.kind, obstacle.x, obstacle.y, obstacle.radius,
+         obstacle.height, obstacle.label),
     )
     _touch(conn, garden_id)
     return int(cursor.lastrowid or 0)
@@ -191,6 +193,39 @@ def _relight_if_woody(conn: sqlite3.Connection, bed_id: int, taxon_id: int) -> N
     row = conn.execute("SELECT garden_id FROM bed WHERE bed_id = ?", (bed_id,)).fetchone()
     if row is not None:
         recompute_light(conn, int(row["garden_id"]))
+
+
+def update_bed(conn: sqlite3.Connection, bed_id: int, **fields: object) -> None:
+    """Change some of a bed's fields. Only what was passed is written.
+
+    An update that also rewrites the untouched fields turns a partial edit into
+    a full overwrite, and two people editing different things would clobber
+    each other.
+    """
+    allowed = {"name", "soil_type", "moisture", "height_above_ground", "label"}
+    changes = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not changes:
+        return
+    assignments = ", ".join(f"{k} = ?" for k in changes)
+    conn.execute(
+        f"UPDATE bed SET {assignments} WHERE bed_id = ?",  # noqa: S608
+        (*changes.values(), bed_id),
+    )
+    conn.commit()
+
+
+def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object) -> None:
+    """Change some of an obstacle's fields. Only what was passed is written."""
+    allowed = {"kind", "x", "y", "radius", "height", "label"}
+    changes = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if not changes:
+        return
+    assignments = ", ".join(f"{k} = ?" for k in changes)
+    conn.execute(
+        f"UPDATE obstacle SET {assignments} WHERE obstacle_id = ?",  # noqa: S608
+        (*changes.values(), obstacle_id),
+    )
+    conn.commit()
 
 
 def remove_planting(conn: sqlite3.Connection, planting_id: int) -> None:
@@ -327,7 +362,10 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
         # A bed is not shaded by what grows in it — see _planted_obstacles.
         from_others = [o for owner, o in planted if owner != bed.bed_id]
         light = bed_light_value(
-            location, _polygon_centroid(bed.polygon), obstacles + from_others
+            location,
+            _polygon_centroid(bed.polygon),
+            obstacles + from_others,
+            height_above_ground=bed.height_above_ground,
         )
         conn.execute(
             "UPDATE bed SET ellenberg_l = ?, sun_hours = ?, light_computed_at = ?"
@@ -352,6 +390,8 @@ def _row_to_bed(row: sqlite3.Row, plantings: list[Planting] | None = None) -> Be
         ellenberg_r=row["ellenberg_r"],
         sun_hours=row["sun_hours"],
         light_computed_at=row["light_computed_at"],
+        height_above_ground=float(row["height_above_ground"] or 0.0),
+        label=row["label"],
         plantings=plantings or [],
     )
 
@@ -368,6 +408,7 @@ def _load(conn: sqlite3.Connection, row: sqlite3.Row | None) -> Garden | None:
         Obstacle(
             obstacle_id=int(r["obstacle_id"]), kind=r["kind"],
             x=r["x"], y=r["y"], radius=r["radius"], height=r["height"],
+            label=r["label"],
         )
         for r in conn.execute(
             "SELECT * FROM obstacle WHERE garden_id = ? ORDER BY obstacle_id", (garden_id,)

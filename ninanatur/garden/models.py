@@ -25,6 +25,7 @@ class ObstacleInput:
     y: float
     radius: float
     height: float
+    label: str | None = None
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,10 @@ class Bed:
     ellenberg_r: float | None
     sun_hours: float | None
     light_computed_at: str | None
+    # A raised bed stands above the low things around it, and its light is
+    # computed from up there.
+    height_above_ground: float = 0.0
+    label: str | None = None
     plantings: list[Planting] = field(default_factory=list)
 
     @property
@@ -75,6 +80,7 @@ class Obstacle:
     y: float
     radius: float
     height: float
+    label: str | None = None
 
 
 @dataclass(frozen=True)

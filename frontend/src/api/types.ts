@@ -172,6 +172,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/beds/{bed_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Bed
+         * @description Change what a bed is. Raising it changes its light, so the light is redone.
+         *
+         *     Leaving the stored number alone would leave the screen describing a bed that
+         *     no longer exists — the same reason adding an obstacle recomputes.
+         */
+        patch: operations["edit_bed_api_v1_gardens__token__beds__bed_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Obstacle
+         * @description Change what an obstacle is, and redo every bed's light.
+         */
+        patch: operations["edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch"];
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
         parameters: {
             query?: never;
@@ -386,6 +429,10 @@ export interface components {
             sun_hours: number | null;
             /** Light Computed At */
             light_computed_at: string | null;
+            /** Height Above Ground */
+            height_above_ground: number;
+            /** Label */
+            label: string | null;
             /** Plantings */
             plantings: components["schemas"]["PlantingOut"][];
         };
@@ -424,6 +471,19 @@ export interface components {
             filters: {
                 [key: string]: components["schemas"]["FilterCountsOut"];
             };
+        };
+        /** BedUpdate */
+        BedUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Soil Type */
+            soil_type?: string | null;
+            /** Moisture */
+            moisture?: string | null;
+            /** Height Above Ground */
+            height_above_ground?: number | null;
+            /** Label */
+            label?: string | null;
         };
         /** ChangeOut */
         ChangeOut: {
@@ -555,10 +615,37 @@ export interface components {
             /** Species */
             species: string[];
         };
+        /**
+         * ObjectKind
+         * @description The things a gardener points at and names.
+         *
+         *     Stored as text, so a renamed member orphans every saved row — the values are
+         *     part of the data, not an implementation detail.
+         * @enum {string}
+         */
+        ObjectKind: "tree" | "hedge" | "shrub" | "building" | "wall" | "fence" | "other";
         /** ObstacleCreate */
         ObstacleCreate: {
+            kind: components["schemas"]["ObjectKind"];
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** Radius */
+            radius: number;
+            /** Height */
+            height: number;
+            /** Label */
+            label?: string | null;
+        };
+        /** ObstacleOut */
+        ObstacleOut: {
+            /** Obstacle Id */
+            obstacle_id: number;
             /** Kind */
             kind: string;
+            /** Label */
+            label: string | null;
             /** X */
             x: number;
             /** Y */
@@ -568,20 +655,22 @@ export interface components {
             /** Height */
             height: number;
         };
-        /** ObstacleOut */
-        ObstacleOut: {
-            /** Obstacle Id */
-            obstacle_id: number;
-            /** Kind */
-            kind: string;
+        /**
+         * ObstacleUpdate
+         * @description Every field optional: an edit says what changed, not what everything is.
+         */
+        ObstacleUpdate: {
+            kind?: components["schemas"]["ObjectKind"] | null;
             /** X */
-            x: number;
+            x?: number | null;
             /** Y */
-            y: number;
+            y?: number | null;
             /** Radius */
-            radius: number;
+            radius?: number | null;
             /** Height */
-            height: number;
+            height?: number | null;
+            /** Label */
+            label?: string | null;
         };
         /** PartnersOut */
         PartnersOut: {
@@ -1079,6 +1168,78 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_bed_api_v1_gardens__token__beds__bed_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BedUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                obstacle_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObstacleUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

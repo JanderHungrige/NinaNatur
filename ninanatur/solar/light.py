@@ -72,6 +72,7 @@ def bed_light_value(
     bed: Point,
     obstacles: list[Obstacle],
     year: int = 2026,
+    height_above_ground: float = 0.0,
 ) -> BedLight:
     """Mean daily hours of direct sun on a bed, and the light value it implies.
 
@@ -91,7 +92,8 @@ def bed_light_value(
             samples += 1
             sun = sun_position(location, moment)
             if sun.altitude > MIN_ALTITUDE and not any(
-                is_shaded(bed, obstacle, sun) for obstacle in obstacles
+                is_shaded(bed, obstacle, sun, height_above_ground)
+                for obstacle in obstacles
             ):
                 lit_minutes += MINUTE_STEP
             moment += step

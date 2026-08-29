@@ -204,6 +204,29 @@ export class NinaNaturClient {
     );
   }
 
+  /** Change what a bed is. The server redoes its light and returns the garden. */
+  async editBed(
+    token: string,
+    bedId: number,
+    changes: Record<string, string | number>,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/beds/${bedId}`,
+      { method: 'PATCH', body: JSON.stringify(changes) },
+    );
+  }
+
+  async editObstacle(
+    token: string,
+    obstacleId: number,
+    changes: Record<string, string | number>,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/obstacles/${obstacleId}`,
+      { method: 'PATCH', body: JSON.stringify(changes) },
+    );
+  }
+
   async plant(
     token: string,
     bedId: number,

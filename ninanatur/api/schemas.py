@@ -10,6 +10,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from ninanatur.garden.objects import ObjectKind
+
 
 class AxisFitOut(BaseModel):
     """Why one axis scored what it did — Wave 4 renders the band, not the number."""
@@ -238,11 +240,34 @@ class BedCreate(BaseModel):
 
 
 class ObstacleCreate(BaseModel):
-    kind: str = Field(min_length=1, max_length=50)
+    # A closed set, validated before it reaches any query. A free string means
+    # the shading table silently misses a value and nobody finds out.
+    kind: ObjectKind
     x: float
     y: float
     radius: float = Field(gt=0, le=500)
     height: float = Field(gt=0, le=200)
+    label: str | None = Field(default=None, max_length=200)
+
+
+class ObstacleUpdate(BaseModel):
+    """Every field optional: an edit says what changed, not what everything is."""
+
+    kind: ObjectKind | None = None
+    x: float | None = None
+    y: float | None = None
+    radius: float | None = Field(default=None, gt=0, le=500)
+    height: float | None = Field(default=None, gt=0, le=200)
+    label: str | None = Field(default=None, max_length=200)
+
+
+class BedUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    soil_type: str | None = None
+    moisture: str | None = None
+    # A bed cannot be below the ground it stands on, and 20 m is a roof garden.
+    height_above_ground: float | None = Field(default=None, ge=0, le=20)
+    label: str | None = Field(default=None, max_length=200)
 
 
 class PlantingCreate(BaseModel):
@@ -270,12 +295,17 @@ class BedOut(BaseModel):
     ellenberg_r: float | None
     sun_hours: float | None
     light_computed_at: str | None
+    # Required, not defaulted: the response always carries both, and a default
+    # here makes them optional in the generated client for no reason.
+    height_above_ground: float
+    label: str | None
     plantings: list[PlantingOut]
 
 
 class ObstacleOut(BaseModel):
     obstacle_id: int
     kind: str
+    label: str | None
     x: float
     y: float
     radius: float

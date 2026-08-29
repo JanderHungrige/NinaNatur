@@ -48,18 +48,33 @@ def shadow_length(height: float, altitude: float) -> float:
     return height / math.tan(math.radians(altitude))
 
 
-def is_shaded(point: Point, obstacle: Obstacle, sun: SunPosition) -> bool:
+def is_shaded(
+    point: Point,
+    obstacle: Obstacle,
+    sun: SunPosition,
+    height_above_ground: float = 0.0,
+) -> bool:
     """Whether the obstacle blocks this sun from this point.
 
     The shadow runs opposite the sun's azimuth. A point is inside it when it lies
     ahead of the obstacle along that direction, within the shadow's reach, and no
     further sideways than the obstacle is wide.
+
+    `height_above_ground` raises the point. A bed 80 cm up stands above a 1.2 m
+    fence, and only the obstacle's height *above the bed* casts anything onto it
+    — measuring every shadow against the ground shades a raised bed exactly as
+    hard as a border, which makes the sunniest beds in a small garden look
+    shaded.
     """
     if sun.altitude <= MIN_ALTITUDE:
         # No usable sun to block — treat as shaded so the hour is not counted.
         return True
 
-    length = shadow_length(obstacle.height, sun.altitude)
+    effective_height = obstacle.height - height_above_ground
+    if effective_height <= 0:
+        return False
+
+    length = shadow_length(effective_height, sun.altitude)
     if length <= 0:
         return True
 

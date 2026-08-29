@@ -9,6 +9,7 @@ interface Props {
   selectedBedId: number | null;
   draft: Point[];
   onSelectBed: (bedId: number) => void;
+  onSelectObstacle?: ((obstacleId: number) => void) | undefined;
 }
 
 function bedLabel(bed: GardenOut['beds'][number]): string {
@@ -17,6 +18,22 @@ function bedLabel(bed: GardenOut['beds'][number]): string {
       ? 'Licht noch nicht berechnet'
       : `${bed.sun_hours.toFixed(1)} Sonnenstunden pro Tag`;
   return `${bedName(bed.name)}, ${light}`;
+}
+
+const KIND_LABEL: Record<string, string> = {
+  tree: 'Baum',
+  hedge: 'Hecke',
+  shrub: 'Strauch',
+  building: 'Gebäude',
+  wall: 'Mauer',
+  fence: 'Zaun',
+  other: 'Objekt',
+};
+
+function obstacleLabel(o: GardenOut['obstacles'][number]): string {
+  const kind = KIND_LABEL[o.kind] ?? o.kind;
+  // The free label first when there is one: it is what the user calls the thing.
+  return o.label ? `${o.label} (${kind}, ${o.height} m hoch)` : `${kind}, ${o.height} m hoch`;
 }
 
 /** Garden metres to the SVG's own coordinates, which run y-down. */
@@ -37,6 +54,7 @@ export function CanvasScene({
   selectedBedId,
   draft,
   onSelectBed,
+  onSelectObstacle,
 }: Props) {
   return (
     <>
@@ -75,8 +93,23 @@ export function CanvasScene({
             cx={obstacle.x}
             cy={-obstacle.y}
             r={obstacle.radius}
+            tabIndex={onSelectObstacle === undefined ? undefined : 0}
+            role={onSelectObstacle === undefined ? undefined : 'button'}
+            aria-label={obstacleLabel(obstacle)}
+            onClick={
+              onSelectObstacle === undefined
+                ? undefined
+                : () => onSelectObstacle(obstacle.obstacle_id)
+            }
+            onKeyDown={(event) => {
+              if (onSelectObstacle === undefined) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelectObstacle(obstacle.obstacle_id);
+              }
+            }}
           >
-            <title>{`${obstacle.kind}, ${obstacle.height} m hoch`}</title>
+            <title>{obstacleLabel(obstacle)}</title>
           </circle>
         ))}
 

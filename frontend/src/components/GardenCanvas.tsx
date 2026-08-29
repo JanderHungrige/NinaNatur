@@ -34,6 +34,7 @@ interface Props {
    */
   size?: { widthPx: number; heightPx: number } | undefined;
   onDrawBed?: ((polygon: number[][]) => void) | undefined;
+  onSelectObstacle?: ((obstacleId: number) => void) | undefined;
 }
 
 const DEFAULT_SIZE = { widthPx: 800, heightPx: 600 };
@@ -53,6 +54,7 @@ export function GardenCanvas({
   onSelectBed,
   size,
   onDrawBed,
+  onSelectObstacle,
 }: Props) {
   const [view, setView] = useState<Viewport>({
     centreX: 0,
@@ -229,6 +231,7 @@ export function GardenCanvas({
           selectedBedId={selectedBedId}
           draft={points}
           onSelectBed={onSelectBed}
+          onSelectObstacle={onSelectObstacle}
         />
       </svg>
     </div>
