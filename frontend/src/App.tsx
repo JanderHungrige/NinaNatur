@@ -16,7 +16,9 @@ import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
 import { GardenId } from './components/GardenId';
+import { objects } from './plural';
 import { Landing } from './components/Landing';
+import { MapPicker, type MapSelection } from './components/MapPicker';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
@@ -58,6 +60,13 @@ export function App() {
   /** Stable identity: an inline arrow would refire the landing page's effect
    *  on every render, which is the loop the species panel already cost us. */
   const loadStats = useCallback(async () => client.stats(), []);
+  const findPlaces = useCallback(async (q: string) => client.findPlaces(q), []);
+  const findImagery = useCallback(
+    async (lat: number, lon: number) => client.findImagery(lat, lon),
+    [],
+  );
+
+
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
@@ -193,6 +202,33 @@ export function App() {
         const created = await client.createGarden(input);
         window.location.hash = created.share_token;
         await load(created.share_token);
+      });
+    },
+    [load, run],
+  );
+
+  /**
+   * A garden made from a map selection arrives with its surroundings already
+   * placed, so the status line says what the map could and could not tell us —
+   * an assumed height presented as a measured one would be the same lie as a
+   * filter that hides what it dropped.
+   */
+  const createFromMap = useCallback(
+    (selection: MapSelection) => {
+      void run('Anlegen', async () => {
+        const result = await client.gardenFromMap(selection);
+        window.location.hash = result.garden.share_token;
+        await load(result.garden.share_token);
+        const { measured, estimated, assumed } = result.heights;
+        const placed = measured + estimated + assumed;
+        setStatus(
+          placed === 0
+            ? 'Garten angelegt. In der Umgebung stand nichts, was Schatten wirft.'
+            // Nominative, so the sentence needs no dative the plural helper
+            // cannot give it: "mit 2 Objekte" is "1 Beete" one case further on.
+            : `Garten angelegt. ${objects(placed)} aus der Karte übernommen — ` +
+              `${measured} gemessen, ${estimated} aus Geschossen, ${assumed} angenommen.`,
+        );
       });
     },
     [load, run],
@@ -372,6 +408,14 @@ export function App() {
         {garden === null ? (
           <Landing
             createForm={<NewGardenForm onCreate={createGarden} busy={busy} />}
+            mapPicker={
+              <MapPicker
+                onCreate={createFromMap}
+                busy={busy}
+                search={findPlaces}
+                findImagery={findImagery}
+              />
+            }
             onOpen={(token) => {
               // Into the fragment, so a reload keeps the garden — and the
               // fragment specifically, because the token is a credential and a

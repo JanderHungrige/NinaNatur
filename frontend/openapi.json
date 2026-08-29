@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NinaNatur",
-    "version": "V0.7.13"
+    "version": "V0.7.14"
   },
   "paths": {
     "/api/v1/plants": {
@@ -1227,6 +1227,93 @@
         }
       }
     },
+    "/api/v1/geo/search": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Find Place",
+        "description": "Addresses matching a query. Empty in, empty out \u2014 a keystroke-per-request\nsearch would be a poor way to treat a free community service.",
+        "operationId": "find_place_api_v1_geo_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "default": "",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceSearchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gardens/from-map": {
+      "post": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Garden From Map",
+        "description": "Create a garden from an outline drawn on the map, with what shades it.\n\nThe margin is 50 m and objects are filtered by whether their shadow could\narrive at all \u2014 generous where it matters, quiet where it does not.",
+        "operationId": "garden_from_map_api_v1_gardens_from_map_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapGardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -1958,6 +2045,30 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HeightReport": {
+        "properties": {
+          "measured": {
+            "type": "integer",
+            "title": "Measured"
+          },
+          "estimated": {
+            "type": "integer",
+            "title": "Estimated"
+          },
+          "assumed": {
+            "type": "integer",
+            "title": "Assumed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "measured",
+          "estimated",
+          "assumed"
+        ],
+        "title": "HeightReport",
+        "description": "Where the heights around this garden came from.\n\nReported because an assumed height presented as a measured one is the same\nlie as a filter that hides what it dropped."
+      },
       "ImprovementsOut": {
         "properties": {
           "current_score": {
@@ -1986,6 +2097,74 @@
           "swaps"
         ],
         "title": "ImprovementsOut"
+      },
+      "LatLonIn": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "maximum": 55.2,
+            "minimum": 47.0,
+            "title": "Lat"
+          },
+          "lon": {
+            "type": "number",
+            "maximum": 15.2,
+            "minimum": 5.5,
+            "title": "Lon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lon"
+        ],
+        "title": "LatLonIn"
+      },
+      "MapGardenOut": {
+        "properties": {
+          "garden": {
+            "$ref": "#/components/schemas/GardenOut"
+          },
+          "heights": {
+            "$ref": "#/components/schemas/HeightReport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "garden",
+          "heights"
+        ],
+        "title": "MapGardenOut",
+        "description": "A garden created from the map, and what the map could and could not say."
+      },
+      "MapSelection": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "outline": {
+            "items": {
+              "$ref": "#/components/schemas/LatLonIn"
+            },
+            "type": "array",
+            "minItems": 3,
+            "title": "Outline"
+          },
+          "neighbourhood": {
+            "type": "string",
+            "title": "Neighbourhood",
+            "default": "detached"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "outline"
+        ],
+        "title": "MapSelection"
       },
       "MonthOut": {
         "properties": {
@@ -2242,6 +2421,45 @@
           "by_kind"
         ],
         "title": "PartnersOut"
+      },
+      "PlaceOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lat": {
+            "type": "number",
+            "title": "Lat"
+          },
+          "lon": {
+            "type": "number",
+            "title": "Lon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "lat",
+          "lon"
+        ],
+        "title": "PlaceOut"
+      },
+      "PlaceSearchOut": {
+        "properties": {
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceOut"
+            },
+            "type": "array",
+            "title": "Places"
+          }
+        },
+        "type": "object",
+        "required": [
+          "places"
+        ],
+        "title": "PlaceSearchOut"
       },
       "PlantDetail": {
         "properties": {

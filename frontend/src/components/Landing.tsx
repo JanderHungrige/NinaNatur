@@ -11,6 +11,8 @@ interface Props {
    * in Berlin by default would quietly compute everyone's light for Berlin.
    */
   createForm: ReactNode;
+  /** Finding the garden on a map — the way most people will actually start. */
+  mapPicker?: ReactNode;
   onOpen: (token: string) => void;
   busy: boolean;
   loadStats: () => Promise<StatsOut | null>;
@@ -32,7 +34,7 @@ function de(n: number): string {
  * hand, and it was wrong the first time the catalogue was rebuilt: a page that
  * states a number is making a claim.
  */
-export function Landing({ createForm, onOpen, busy, loadStats, problem }: Props) {
+export function Landing({ createForm, mapPicker, onOpen, busy, loadStats, problem }: Props) {
   const [stats, setStats] = useState<StatsOut | null>(null);
   const [id, setId] = useState('');
 
@@ -84,8 +86,14 @@ export function Landing({ createForm, onOpen, busy, loadStats, problem }: Props)
       )}
 
       <div className="landing__ways">
+        {mapPicker !== undefined && (
+          <section className="panel landing__way landing__way--wide">
+            <h2>Auf der Karte anfangen</h2>
+            {mapPicker}
+          </section>
+        )}
         <section className="panel landing__way">
-          <h2>Neu anfangen</h2>
+          <h2>Ohne Karte anfangen</h2>
           {createForm}
         </section>
 

@@ -22,6 +22,7 @@ export type ChangeOut = components['schemas']['ChangeOut'];
 export type SpeciesInfoOut = components['schemas']['SpeciesInfoOut'];
 export type BloomPalette = components['schemas']['BloomPalette'];
 export type StatsOut = components['schemas']['StatsOut'];
+export type MapGardenOut = components['schemas']['MapGardenOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -292,6 +293,55 @@ export class NinaNaturClient {
     return this.request<TimelineOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/timeline?forage=${String(forage)}`,
     );
+  }
+
+  /**
+   * Addresses matching a query.
+   *
+   * Through our server rather than the browser: Nominatim asks for a
+   * User-Agent that identifies the caller and for restraint in how often it is
+   * called. One place can do that and share a cache; every visitor's browser
+   * cannot.
+   */
+  async findPlaces(query: string): Promise<Array<{ name: string; lat: number; lon: number }>> {
+    const params = new URLSearchParams({ q: query });
+    const body = await this.request<{ places: Array<{ name: string; lat: number; lon: number }> }>(
+      `/api/v1/geo/search?${params.toString()}`,
+    );
+    return body.places;
+  }
+
+  /**
+   * Which state's orthophotos may be shown at a place, if any.
+   *
+   * Per Bundesland because the licences are: there is no federal source, and a
+   * state without an entry gets no imagery rather than a neighbour's.
+   */
+  async findImagery(
+    lat: number,
+    lon: number,
+  ): Promise<{ url: string; layer: string; attribution: string } | null> {
+    const params = new URLSearchParams({ lat: String(lat), lon: String(lon) });
+    const body = await this.request<{
+      available: boolean;
+      url: string | null;
+      layer: string | null;
+      attribution: string | null;
+    }>(`/api/v1/geo/imagery?${params.toString()}`);
+    if (!body.available || body.url === null || body.layer === null) return null;
+    return { url: body.url, layer: body.layer, attribution: body.attribution ?? '' };
+  }
+
+  /** Create a garden from an outline drawn on the map, with what shades it. */
+  async gardenFromMap(selection: {
+    name: string;
+    outline: Array<{ lat: number; lon: number }>;
+    neighbourhood: string;
+  }): Promise<MapGardenOut> {
+    return this.request<MapGardenOut>('/api/v1/gardens/from-map', {
+      method: 'POST',
+      body: JSON.stringify(selection),
+    });
   }
 
   /** What the catalogue holds, for the page that introduces it. */

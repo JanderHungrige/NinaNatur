@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { bedName, beds, obstacles } from './plural';
+import { bedName, beds, objects, obstacles } from './plural';
 
 describe('German plurals', () => {
   it('uses the singular for exactly one', () => {
@@ -33,5 +33,16 @@ describe('bedName', () => {
 
   it('does not match a name that merely starts with those letters', () => {
     expect(bedName('Beetenrand')).toBe('Beet Beetenrand');
+  });
+});
+
+describe('objects', () => {
+  it('uses the singular for one', () => {
+    // "1 Objekt(en)" was the fifth appearance of this dodge in this codebase.
+    expect(objects(1)).toBe('1 Objekt');
+  });
+
+  it('uses the plural for more', () => {
+    expect(objects(4)).toBe('4 Objekte');
   });
 });
