@@ -398,6 +398,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/geo/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find Place
+         * @description Addresses matching a query. Empty in, empty out — a keystroke-per-request
+         *     search would be a poor way to treat a free community service.
+         */
+        get: operations["find_place_api_v1_geo_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/from-map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Garden From Map
+         * @description Create a garden from an outline drawn on the map, with what shades it.
+         *
+         *     The margin is 50 m and objects are filtered by whether their shadow could
+         *     arrive at all — generous where it matters, quiet where it does not.
+         */
+        post: operations["garden_from_map_api_v1_gardens_from_map_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -674,6 +718,21 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * HeightReport
+         * @description Where the heights around this garden came from.
+         *
+         *     Reported because an assumed height presented as a measured one is the same
+         *     lie as a filter that hides what it dropped.
+         */
+        HeightReport: {
+            /** Measured */
+            measured: number;
+            /** Estimated */
+            estimated: number;
+            /** Assumed */
+            assumed: number;
+        };
         /** ImprovementsOut */
         ImprovementsOut: {
             /** Current Score */
@@ -682,6 +741,33 @@ export interface components {
             additions: components["schemas"]["ChangeOut"][];
             /** Swaps */
             swaps: components["schemas"]["ChangeOut"][];
+        };
+        /** LatLonIn */
+        LatLonIn: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+        };
+        /**
+         * MapGardenOut
+         * @description A garden created from the map, and what the map could and could not say.
+         */
+        MapGardenOut: {
+            garden: components["schemas"]["GardenOut"];
+            heights: components["schemas"]["HeightReport"];
+        };
+        /** MapSelection */
+        MapSelection: {
+            /** Name */
+            name: string;
+            /** Outline */
+            outline: components["schemas"]["LatLonIn"][];
+            /**
+             * Neighbourhood
+             * @default detached
+             */
+            neighbourhood: string;
         };
         /** MonthOut */
         MonthOut: {
@@ -768,6 +854,20 @@ export interface components {
              * @default 0
              */
             birds: number;
+        };
+        /** PlaceOut */
+        PlaceOut: {
+            /** Name */
+            name: string;
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+        };
+        /** PlaceSearchOut */
+        PlaceSearchOut: {
+            /** Places */
+            places: components["schemas"]["PlaceOut"][];
         };
         /** PlantDetail */
         PlantDetail: {
@@ -1625,6 +1725,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BloomPalette"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_place_api_v1_geo_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceSearchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    garden_from_map_api_v1_gardens_from_map_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapSelection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapGardenOut"];
                 };
             };
             /** @description Validation Error */

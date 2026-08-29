@@ -3,12 +3,12 @@ id: ninanatur-wave-8
 title: "Wave 8: From the map into the garden"
 initiative: ninanatur
 initiative_version: 10
-status: planned
+status: complete
 depends_on: ninanatur-wave-7
 demo_state: "A user finds their address on a map, outlines the garden, and gets a drawing that already carries the buildings that shade it — with heights it can defend"
 created: 2026-08-28
 replanned: 2026-08-29
-hash: fb5c8b4c
+hash: 69ed7adf
 ---
 
 # Wave 8 — From the map into the garden
@@ -53,10 +53,10 @@ evening shade of ordinary houses, which is most of what a garden feels.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | imagery-licence (research) | — | open | — |
-| 1 | map-selection | 31-map-selection | planned | — |
-| 2 | object-heights | 32-object-heights | planned | 31 |
-| 3 | imagery-objects | 33-imagery-objects | blocked | 0, 31 |
+| 0 | imagery-licence (research) | — | **answered: clears in 8 Bundesländer** | — |
+| 1 | map-selection | 31-map-selection | complete | — |
+| 2 | object-heights | 32-object-heights | complete | 31 |
+| 3 | imagery-objects | 33-imagery-objects | complete (backdrop; recognition deferred) | 0, 31 |
 
 Doc numbers moved up by one: 30 is `30-landing-and-garden-id`. Wave 9's features
 move to 34–36 for the same reason.
@@ -169,8 +169,9 @@ snapping building outlines, splitting terraces — and trees stay user-drawn.
 
 ## Open Research
 
-- [ ] **Feature 0**: which aerial imagery may we use, under what licence, at what
-      coverage? Blocks feature 3 and nothing else.
+- [x] **Feature 0 — answered.** Orthophotos clear under dl-de/by-2-0 or CC-BY-4.0
+      in at least eight Bundesländer, each with its own service and required
+      credit; there is no federal source (BKG: 403). See 33-imagery-objects.
 - [ ] Does a storey height of 3 m hold for German housing, or does the
       neighbourhood answer need its own numbers per building type?
 

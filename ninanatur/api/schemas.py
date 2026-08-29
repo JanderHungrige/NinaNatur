@@ -373,6 +373,59 @@ class StatsOut(BaseModel):
     sources: list[SourceOut]
 
 
+class PlaceOut(BaseModel):
+    name: str
+    lat: float
+    lon: float
+
+
+class PlaceSearchOut(BaseModel):
+    places: list[PlaceOut]
+
+
+class LatLonIn(BaseModel):
+    # Germany, roughly. The catalogue is German: a garden in Ohio would get
+    # suggestions for plants that do not grow there.
+    lat: float = Field(ge=47.0, le=55.2)
+    lon: float = Field(ge=5.5, le=15.2)
+
+
+class MapSelection(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    outline: list[LatLonIn] = Field(min_length=3)
+    # One question per garden, standing in for the 75-88% of German suburban
+    # buildings that carry no height in OSM at all.
+    neighbourhood: str = "detached"
+
+
+class HeightReport(BaseModel):
+    """Where the heights around this garden came from.
+
+    Reported because an assumed height presented as a measured one is the same
+    lie as a filter that hides what it dropped.
+    """
+
+    measured: int
+    estimated: int
+    assumed: int
+
+
+class ImageryOut(BaseModel):
+    """The aerial imagery available at a place, if any.
+
+    `attribution` is a condition of the licence, not a caption — DL-DE/BY-2.0
+    and CC-BY-4.0 both require the named credit, so imagery shown without it is
+    imagery used outside its terms.
+    """
+
+    available: bool
+    state: str | None = None
+    url: str | None = None
+    layer: str | None = None
+    licence: str | None = None
+    attribution: str | None = None
+
+
 class GardenOut(BaseModel):
     # Reported, never inferred from an empty list: a score computed over 4 of 7
     # plantings has to be able to say so.
@@ -385,3 +438,10 @@ class GardenOut(BaseModel):
     updated_at: str
     beds: list[BedOut]
     obstacles: list[ObstacleOut]
+
+
+class MapGardenOut(BaseModel):
+    """A garden created from the map, and what the map could and could not say."""
+
+    garden: GardenOut
+    heights: HeightReport
