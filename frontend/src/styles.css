@@ -815,3 +815,15 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5;
 }
+
+/* The line as it is being drawn. Not the final shape — that is what the
+   clean-up returns, and showing the raw stroke as the result would promise a
+   fidelity the simplification does not keep. */
+.freehand-stroke {
+  fill: none;
+  stroke: var(--leaf);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 2;
+}
