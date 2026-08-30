@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-10
 demo_state: "A user drags out a rectangle, a circle and a freehand path, moves a vertex to shape one of them, then clicks each and says what it is — and the plan redraws it as a bed, a gravel path and a pool"
 created: 2026-08-30
-hash: 7ad9d3f8
+hash: 9e83b775
 ---
 
 # Wave 11 — Draw first, say what it is afterwards
@@ -125,15 +125,60 @@ outline — and hands the result to the same element model.
   findable" has no assertion. It needs looking at the running app, and saying
   so honestly rather than declaring it done.
 
-## Open Research
+## Geometry, as decided
 
-- [ ] When a rectangle's vertex is dragged, does it become a polygon
-      permanently, or does the tool refuse and offer "convert to polygon"?
-      draw.io converts; the cost is that width/depth/rotation stop meaning
-      anything, and the resize handles change behaviour under the user's hand.
-- [ ] Does a path need a stored width, or is it a closed outline like
-      everything else? A 1 m gravel path drawn as a line is two numbers; drawn
-      as an outline it is twenty.
+Both open questions are answered, and between them they make the model
+*smaller* than Wave 10's.
+
+### Points are the only area geometry — no conversion, ever
+
+A rectangle is stored as its four points, like every other outline. The question
+"what does a rectangle become when you drag its vertex" then has no answer to
+give, because nothing changes representation.
+
+What a rectangle keeps is a **constraint hint**, honoured by the editing tool
+and by nothing else: `rect` means "these corners are meant to stay square", so
+dragging one corner moves its two neighbours with it. A house should not become
+a trapezoid by accident. Insert a vertex, or drag one deliberately out of true,
+and the hint is dropped — the geometry is untouched, only the promise ends.
+
+`width`, `depth` and `rotation` therefore leave storage entirely. Rotation is
+applied to the points; the accumulated float error over a hundred rotations is
+far below the centimetre the outline is rounded to.
+
+### The circle is the one real exception
+
+Sixteen segments are visible when you zoom in, and ponds and tree crowns are
+common. A circle stays a centre and a radius. Inserting a vertex into one is
+the single genuine conversion left in the model, and it means something
+unambiguous when it happens.
+
+### A path is a line with a width — and so are walls, fences and hedges
+
+Today a wall is a 6 × 0.3 m rectangle, which means **a wall that turns a corner
+needs two objects**. As a polyline with a width it is drawn in one gesture, and
+vertex editing works on it for free. The same shape covers path, wall, fence
+and hedge.
+
+This is affordable because of a contract Wave 10 already established: nothing
+downstream knows how an element is stored. `footprint_of` returns a polygon,
+and `solar/shading.py` (8 call sites) and `garden/sightlines.py` (5) consume
+only that. A line costs one new branch there and nothing beyond it.
+
+**The cost to name:** expanding a polyline to a polygon is not trivial at the
+corners — mitre or round joins — and a tight turn makes the expansion overlap
+itself. That is the same class of problem `resolveOverlap` solved for freehand
+in Wave 10, and it needs the same care.
+
+### The vocabulary
+
+Three shapes, down from Wave 10's three with clearer meaning:
+
+| Shape | Stored as | Constraint hint |
+|---|---|---|
+| `polygon` | points | optional `rect` — corners stay square |
+| `circle` | centre, radius | — |
+| `line` | points, width | — |
 
 ## Definition of done
 
