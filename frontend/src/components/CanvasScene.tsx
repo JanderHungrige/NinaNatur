@@ -1,7 +1,8 @@
-import { labelOf } from '../kinds';
+import { KINDS, labelOf } from '../kinds';
 import type { GardenOut } from '../api/client';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
+import { GardenSymbols } from './GardenSymbols';
 
 interface Props {
   garden: GardenOut;
@@ -14,6 +15,28 @@ interface Props {
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
   /** Colours in flower per bed for the month being shown, if any. */
   palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
+}
+
+const BY_KIND = new Map(KINDS.map((k) => [k.kind, k]));
+
+/** What a kind is drawn as. Unknown kinds get the plain wash rather than no
+ *  fill: an object the server knows and we do not must still be visible. */
+function symbolOf(kind: string): string {
+  return BY_KIND.get(kind)?.symbol ?? 'plain';
+}
+
+/**
+ * Surfaces first.
+ *
+ * A lawn belongs under the shed standing on it, and which is which is a
+ * property of the kind — not of the order somebody happened to click. Sorted
+ * rather than split into two lists so the array keeps one key space.
+ */
+function surfacesFirst(
+  obstacles: GardenOut['obstacles'],
+): GardenOut['obstacles'] {
+  const rank = (kind: string): number => (BY_KIND.get(kind)?.standing === false ? 0 : 1);
+  return [...obstacles].sort((a, b) => rank(a.kind) - rank(b.kind));
 }
 
 function bedLabel(bed: GardenOut['beds'][number]): string {
@@ -95,6 +118,7 @@ export function CanvasScene({
   return (
     <>
         <defs>
+        <GardenSymbols />
         {/* "We never recorded it" is its own mark, not a colour. A fill here
             would be the most confident thing this UI draws, about the trait it
             knows least. */}
@@ -157,10 +181,14 @@ export function CanvasScene({
           N ↑
         </text>
 
-        {garden.obstacles.map((obstacle) => (
+        {/* One group, one filter run. The wobble is what makes the plan look
+            drawn rather than plotted. */}
+        <g className="canvas__objects">
+        {surfacesFirst(garden.obstacles).map((obstacle) => (
           <polygon
             key={obstacle.obstacle_id}
             className={`obstacle obstacle--${obstacle.kind}`}
+            fill={`url(#symbol-${symbolOf(obstacle.kind)})`}
             /* The footprint the server computed. Re-deriving it here would be a
                third answer to "what ground does this cover", and the two that
                already existed agreed only by accident. */
@@ -184,6 +212,7 @@ export function CanvasScene({
             <title>{obstacleLabel(obstacle)}</title>
           </polygon>
         ))}
+        </g>
 
         {garden.beds.map((bed) => (
           <polygon

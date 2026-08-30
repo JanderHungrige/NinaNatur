@@ -8,6 +8,24 @@
   --line: #e2e4da;
   --focus: #1f5fbf;
   --radius: 12px;
+
+  /* The garden plan's own washes. Named after what they draw rather than
+     after their hue, so a change of palette is a change of colour and not a
+     hunt for which grey was the paving. */
+  --wash-building: #d9d2c4;
+  --wash-building-line: #b3a892;
+  --wash-stone: #dfdcd3;
+  --wash-stone-line: #b9b5a8;
+  --wash-gravel: #e6e2d7;
+  --wash-gravel-grain: #b8b2a1;
+  --wash-grass: #cfe0bc;
+  --wash-grass-blade: #7fa564;
+  --wash-water: #cfe0e8;
+  --wash-water-line: #7fa8bc;
+  --wash-crown: #bcd6a8;
+  --wash-crown-leaf: #9cc086;
+  --wash-soil: #e3d7c6;
+  --outline: #6f7a67;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +38,24 @@
     --leaf-alt: #a9d47f;
     --line: #2c342a;
     --focus: #8ab4f8;
+
+    /* Dark mode is not the light plan inverted: a wash that works on paper
+       glows on a dark ground. These are the same colours desaturated and
+       dropped in value, so the plan stays a plan. */
+    --wash-building: #3a382f;
+    --wash-building-line: #56513f;
+    --wash-stone: #33352f;
+    --wash-stone-line: #4d5046;
+    --wash-gravel: #34342c;
+    --wash-gravel-grain: #55523f;
+    --wash-grass: #2b3a25;
+    --wash-grass-blade: #6d9155;
+    --wash-water: #22333a;
+    --wash-water-line: #558296;
+    --wash-crown: #2c3f26;
+    --wash-crown-leaf: #4f7440;
+    --wash-soil: #3a3226;
+    --outline: #8d9a85;
   }
 }
 
@@ -112,7 +148,10 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .compass { fill: var(--ink-muted); font-size: 1.6px; }
 .bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 0.08; cursor: pointer; }
 .bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 0.16; }
-.obstacle { fill: color-mix(in srgb, var(--ink) 25%, transparent); stroke: var(--ink-muted); stroke-width: 0.08; }
+/* No fill here. The fill is a `fill="url(#symbol-…)"` attribute per object, and
+   a fill declared in CSS would win over it — every kind would be drawn as the
+   same grey no matter which texture it asked for. */
+.obstacle { stroke: var(--outline); stroke-width: 0.08; }
 
 .status { margin-top: 1rem; color: var(--ink-muted); font-size: 0.9rem; min-height: 1.4em; }
 
@@ -826,4 +865,56 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   stroke-width: 2;
+}
+
+
+/* --- The garden plan's symbols (Wave 10, feature 41) ---------------------- */
+
+/* Every texture is a fill with no stroke of its own; the object's outline is
+   drawn by .obstacle. Strokes here are the marks inside the wash. */
+.symbol__building { fill: var(--wash-building); }
+.symbol__plain { fill: var(--wash-stone); }
+.symbol__planting { fill: var(--wash-soil); }
+
+.symbol__masonry { fill: var(--wash-building); }
+.symbol__masonry-line { stroke: var(--wash-building-line); stroke-width: 0.04; fill: none; }
+
+.symbol__fence { fill: none; }
+.symbol__fence-post { stroke: var(--wash-building-line); stroke-width: 0.08; }
+
+.symbol__slabs { fill: var(--wash-stone-line); }
+.symbol__slabs-stone { fill: var(--wash-stone); }
+
+.symbol__stipple { fill: var(--wash-gravel); }
+.symbol__stipple-grain { fill: var(--wash-gravel-grain); }
+
+.symbol__grass { fill: var(--wash-grass); }
+.symbol__grass-blade { stroke: var(--wash-grass-blade); stroke-width: 0.05; fill: none;
+                       stroke-linecap: round; }
+
+.symbol__water { fill: var(--wash-water); }
+.symbol__water-ripple { stroke: var(--wash-water-line); stroke-width: 0.045; fill: none;
+                        stroke-linecap: round; }
+
+.symbol__crown { fill: var(--wash-crown); }
+.symbol__crown-leaf { fill: var(--wash-crown-leaf); }
+.symbol__foliage { fill: var(--wash-crown); }
+.symbol__foliage-leaf { fill: var(--wash-crown-leaf); }
+
+/* The wobble goes on the group, not on each shape: a filter per object is a
+   filter re-run per object. */
+.canvas__objects { filter: url(#watercolour); }
+
+/* Texture is decoration. When the system asks for more contrast, or paints its
+   own colours, the washes go and the outline carries the meaning alone — a
+   plan that only reads as a picture is not one that reads. */
+@media (prefers-contrast: more) {
+  .canvas__objects { filter: none; }
+  /* 15 cm, not 2.5: this canvas measures in metres. */
+  .obstacle { fill: none !important; stroke-width: 0.15; }
+}
+
+@media (forced-colors: active) {
+  .canvas__objects { filter: none; }
+  .obstacle { fill: none !important; forced-color-adjust: none; stroke: CanvasText; }
 }

@@ -42,3 +42,13 @@ def test_frontend_agrees_on_starting_heights() -> None:
         assert entry is not None, f"{kind.value} missing from kinds.ts"
         shown = None if entry.group(1) == "null" else float(entry.group(1))
         assert shown == traits.height, f"{kind.value}: {shown} vs {traits.height}"
+
+
+def test_frontend_agrees_on_what_each_kind_is_drawn_as() -> None:
+    """The symbol decides the texture. A kind whose symbol drifts is drawn as
+    something else entirely — paving as water, and nobody sees a stack trace."""
+    source = KINDS_TS.read_text(encoding="utf-8")
+    for kind, traits in TRAITS.items():
+        entry = re.search(rf"\{{ kind: '{kind.value}',.*?symbol: '([a-z]+)'", source)
+        assert entry is not None, f"{kind.value} has no symbol in kinds.ts"
+        assert entry.group(1) == traits.symbol

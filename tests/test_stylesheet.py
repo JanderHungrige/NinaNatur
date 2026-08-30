@@ -88,3 +88,14 @@ def test_plan_strokes_are_measured_in_metres(css: str) -> None:
                 if float(width) > 0.3:
                     too_wide.append(f"{selector}: {width}")
     assert too_wide == [], f"stroke widths look like pixels, not metres: {too_wide}"
+
+
+def test_obstacle_rule_declares_no_fill() -> None:
+    """The fill is a per-object attribute naming that kind's texture, and a
+    `fill` in CSS beats a presentation attribute. One declaration here would
+    draw every kind as the same grey while the markup still asked for slabs,
+    water and foliage — and the tests asserting on the attribute would pass."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    rule = re.search(r"^\.obstacle \{([^}]*)\}", css, re.M)
+    assert rule is not None, ".obstacle rule not found"
+    assert "fill" not in rule.group(1)

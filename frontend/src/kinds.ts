@@ -22,23 +22,25 @@ export interface Kind {
   height: number | null;
   /** Standing things cast shadows and draw on top; surfaces do neither. */
   standing: boolean;
+  /** What the plan draws it as. Mirrors `KindTraits.symbol`. */
+  symbol: string;
 }
 
 export const KINDS: Kind[] = [
-  { kind: 'house', label: 'Wohnhaus', size: '10 × 8 m', height: 6, standing: true },
-  { kind: 'shed', label: 'Schuppen', size: '3 × 2,5 m', height: 2.4, standing: true },
-  { kind: 'wall', label: 'Mauer', size: '6 × 0,3 m', height: 2, standing: true },
-  { kind: 'fence', label: 'Zaun', size: '6 × 0,1 m', height: 1.2, standing: true },
-  { kind: 'hedge', label: 'Hecke', size: '6 × 0,6 m', height: 2, standing: true },
-  { kind: 'tree', label: 'Eiche', size: '6 m Krone', height: 8, standing: true },
-  { kind: 'shrub', label: 'Nussstrauch', size: '2 m Krone', height: 1.5, standing: true },
-  { kind: 'bed', label: 'Blumenbeet', size: '3 × 1,5 m', height: null, standing: false },
-  { kind: 'lawn', label: 'Rasen', size: '8 × 6 m', height: null, standing: false },
-  { kind: 'paving', label: 'Pflaster', size: '4 × 3 m', height: null, standing: false },
-  { kind: 'gravel', label: 'Kies', size: '3 × 2 m', height: null, standing: false },
-  { kind: 'pond', label: 'Teich', size: '3 m', height: null, standing: false },
-  { kind: 'path', label: 'Weg', size: '6 × 1 m', height: null, standing: false },
-  { kind: 'other', label: 'Sonstiges', size: '2 × 2 m', height: null, standing: true },
+  { kind: 'house', label: 'Wohnhaus', size: '10 × 8 m', height: 6, standing: true, symbol: 'building' },
+  { kind: 'shed', label: 'Schuppen', size: '3 × 2,5 m', height: 2.4, standing: true, symbol: 'building' },
+  { kind: 'wall', label: 'Mauer', size: '6 × 0,3 m', height: 2, standing: true, symbol: 'masonry' },
+  { kind: 'fence', label: 'Zaun', size: '6 × 0,1 m', height: 1.2, standing: true, symbol: 'fence' },
+  { kind: 'hedge', label: 'Hecke', size: '6 × 0,6 m', height: 2, standing: true, symbol: 'foliage' },
+  { kind: 'tree', label: 'Eiche', size: '6 m Krone', height: 8, standing: true, symbol: 'crown' },
+  { kind: 'shrub', label: 'Nussstrauch', size: '2 m Krone', height: 1.5, standing: true, symbol: 'crown' },
+  { kind: 'bed', label: 'Blumenbeet', size: '3 × 1,5 m', height: null, standing: false, symbol: 'planting' },
+  { kind: 'lawn', label: 'Rasen', size: '8 × 6 m', height: null, standing: false, symbol: 'grass' },
+  { kind: 'paving', label: 'Pflaster', size: '4 × 3 m', height: null, standing: false, symbol: 'slabs' },
+  { kind: 'gravel', label: 'Kies', size: '3 × 2 m', height: null, standing: false, symbol: 'stipple' },
+  { kind: 'pond', label: 'Teich', size: '3 m', height: null, standing: false, symbol: 'water' },
+  { kind: 'path', label: 'Weg', size: '6 × 1 m', height: null, standing: false, symbol: 'slabs' },
+  { kind: 'other', label: 'Sonstiges', size: '2 × 2 m', height: null, standing: true, symbol: 'plain' },
 ];
 
 export const STANDING = KINDS.filter((k) => k.standing && k.kind !== 'other');
