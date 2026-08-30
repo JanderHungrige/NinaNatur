@@ -23,13 +23,20 @@ function bedLabel(bed: GardenOut['beds'][number]): string {
   return `${bedName(bed.name)}, ${light}`;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  tree: 'Baum',
-  hedge: 'Hecke',
-  shrub: 'Strauch',
-  building: 'Gebäude',
+export const KIND_LABEL: Record<string, string> = {
+  house: 'Wohnhaus',
+  shed: 'Schuppen',
   wall: 'Mauer',
   fence: 'Zaun',
+  hedge: 'Hecke',
+  tree: 'Baum',
+  shrub: 'Strauch',
+  bed: 'Beet',
+  lawn: 'Rasen',
+  paving: 'Pflaster',
+  gravel: 'Kies',
+  pond: 'Teich',
+  path: 'Weg',
   other: 'Objekt',
 };
 
@@ -166,12 +173,13 @@ export function CanvasScene({
         </text>
 
         {garden.obstacles.map((obstacle) => (
-          <circle
+          <polygon
             key={obstacle.obstacle_id}
-            className="obstacle"
-            cx={obstacle.x}
-            cy={-obstacle.y}
-            r={obstacle.radius}
+            className={`obstacle obstacle--${obstacle.kind}`}
+            /* The footprint the server computed. Re-deriving it here would be a
+               third answer to "what ground does this cover", and the two that
+               already existed agreed only by accident. */
+            points={obstacle.footprint.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
             tabIndex={onSelectObstacle === undefined ? undefined : 0}
             role={onSelectObstacle === undefined ? undefined : 'button'}
             aria-label={obstacleLabel(obstacle)}
@@ -189,7 +197,7 @@ export function CanvasScene({
             }}
           >
             <title>{obstacleLabel(obstacle)}</title>
-          </circle>
+          </polygon>
         ))}
 
         {garden.beds.map((bed) => (

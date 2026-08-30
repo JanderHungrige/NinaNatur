@@ -10,6 +10,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, model_validator
 
+from ninanatur.garden.footprint import Shape
 from ninanatur.garden.objects import ObjectKind
 
 
@@ -245,8 +246,15 @@ class ObstacleCreate(BaseModel):
     kind: ObjectKind
     x: float
     y: float
-    radius: float = Field(gt=0, le=500)
-    height: float = Field(gt=0, le=200)
+    #: `circle` | `rect` | `polygon`. Omitted means the kind's own default.
+    shape: Shape | None = None
+    #: Metres. For a circle this is the diameter.
+    width: float | None = Field(default=None, gt=0, le=500)
+    depth: float | None = Field(default=None, gt=0, le=500)
+    rotation: float = Field(default=0.0, ge=-360, le=360)
+    #: Freehand outlines only. Bounded in count and extent before storage.
+    points: list[list[float]] | None = Field(default=None, max_length=500)
+    height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
 
 
@@ -256,7 +264,11 @@ class ObstacleUpdate(BaseModel):
     kind: ObjectKind | None = None
     x: float | None = None
     y: float | None = None
-    radius: float | None = Field(default=None, gt=0, le=500)
+    shape: Shape | None = None
+    width: float | None = Field(default=None, gt=0, le=500)
+    depth: float | None = Field(default=None, gt=0, le=500)
+    rotation: float | None = Field(default=None, ge=-360, le=360)
+    points: list[list[float]] | None = Field(default=None, max_length=500)
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
     # Correcting a height makes it the user's word on it; otherwise every
@@ -329,8 +341,15 @@ class ObstacleOut(BaseModel):
     height_source: str
     x: float
     y: float
-    radius: float
+    shape: str
+    width: float
+    depth: float | None
+    rotation: float
+    points: list[list[float]] | None
     height: float
+    #: The polygon this covers, so the drawing does not re-derive it. One
+    #: answer to "what ground does this cover", not three.
+    footprint: list[list[float]]
 
 
 class BedMonthColours(BaseModel):

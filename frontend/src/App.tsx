@@ -416,14 +416,23 @@ export function App() {
         objectKind: found.kind,
         label: found.label,
         height: found.height,
-        radius: found.radius,
+        width: found.width,
+        depth: found.depth,
       });
     },
     [garden],
   );
 
   const addObstacle = useCallback(
-    async (obstacle: { kind: string; x: number; y: number; radius: number; height: number }) => {
+    async (obstacle: {
+      kind: string;
+      x: number;
+      y: number;
+      shape?: string;
+      width?: number;
+      depth?: number;
+      height?: number;
+    }) => {
       if (garden === null) return;
       await run('Hindernis hinzufügen', async () => {
         const updated = await client.addObstacle(garden.share_token, obstacle);

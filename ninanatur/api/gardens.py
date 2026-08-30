@@ -27,6 +27,12 @@ from ninanatur.api.schemas import (
 )
 from ninanatur.auth.sessions import Account
 from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
+from ninanatur.garden.objects import (
+    ObjectKind,
+    default_height,
+    default_shape,
+    default_size,
+)
 from ninanatur.garden.store import (
     add_bed,
     add_obstacle,
@@ -86,9 +92,13 @@ def to_out(garden: Garden) -> GardenOut:
             for b in garden.beds
         ],
         obstacles=[
-            ObstacleOut(obstacle_id=o.obstacle_id, kind=o.kind, label=o.label,
-                        height_source=o.height_source,
-                        x=o.x, y=o.y, radius=o.radius, height=o.height)
+            ObstacleOut(
+                obstacle_id=o.obstacle_id, kind=o.kind, label=o.label,
+                height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
+                width=o.width, depth=o.depth, rotation=o.rotation,
+                points=o.points, height=o.height,
+                footprint=[[px, py] for px, py in o.footprint],
+            )
             for o in garden.obstacles
         ],
     )
@@ -150,9 +160,20 @@ def create_obstacle(
     longer match its own obstacles — and nothing would make that visible.
     """
     garden = require_garden(conn, token)
+    kind = ObjectKind(payload.kind)
+    # Omitted shape and size mean "whatever this kind usually is" — choosing
+    # "Hecke" should answer questions rather than ask them.
+    shape = payload.shape or default_shape(kind)
+    width, depth = default_size(kind)
     add_obstacle(conn, garden.garden_id, ObstacleInput(
-        kind=payload.kind, x=payload.x, y=payload.y,
-        radius=payload.radius, height=payload.height,
+        kind=str(kind), x=payload.x, y=payload.y,
+        shape=str(shape),
+        width=payload.width if payload.width is not None else width,
+        depth=payload.depth if payload.depth is not None else depth,
+        rotation=payload.rotation,
+        points=payload.points,
+        height=payload.height if payload.height is not None else (default_height(kind) or 0.0),
+        label=payload.label,
     ))
     recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))

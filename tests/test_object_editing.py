@@ -139,7 +139,7 @@ def test_an_edited_height_becomes_the_users_word_on_it(client: TestClient) -> No
     token, _ = _garden(client)
     created = client.post(
         f"/api/v1/gardens/{token}/obstacles",
-        json={"kind": "building", "x": 0.0, "y": -6.0, "radius": 4.0, "height": 7.0},
+        json={"kind": "house", "x": 0.0, "y": -6.0, "radius": 4.0, "height": 7.0},
     ).json()["obstacles"][0]
     assert created["height_source"] == "user"
 

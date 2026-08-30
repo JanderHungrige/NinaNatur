@@ -980,7 +980,7 @@ export interface components {
          *     part of the data, not an implementation detail.
          * @enum {string}
          */
-        ObjectKind: "tree" | "hedge" | "shrub" | "building" | "wall" | "fence" | "other";
+        ObjectKind: "house" | "shed" | "wall" | "fence" | "hedge" | "tree" | "shrub" | "bed" | "lawn" | "paving" | "gravel" | "pond" | "path" | "other";
         /** ObstacleCreate */
         ObstacleCreate: {
             kind: components["schemas"]["ObjectKind"];
@@ -988,10 +988,20 @@ export interface components {
             x: number;
             /** Y */
             y: number;
-            /** Radius */
-            radius: number;
+            shape?: components["schemas"]["Shape"] | null;
+            /** Width */
+            width?: number | null;
+            /** Depth */
+            depth?: number | null;
+            /**
+             * Rotation
+             * @default 0
+             */
+            rotation: number;
+            /** Points */
+            points?: number[][] | null;
             /** Height */
-            height: number;
+            height?: number | null;
             /** Label */
             label?: string | null;
         };
@@ -1009,10 +1019,20 @@ export interface components {
             x: number;
             /** Y */
             y: number;
-            /** Radius */
-            radius: number;
+            /** Shape */
+            shape: string;
+            /** Width */
+            width: number;
+            /** Depth */
+            depth: number | null;
+            /** Rotation */
+            rotation: number;
+            /** Points */
+            points: number[][] | null;
             /** Height */
             height: number;
+            /** Footprint */
+            footprint: number[][];
         };
         /**
          * ObstacleUpdate
@@ -1024,8 +1044,15 @@ export interface components {
             x?: number | null;
             /** Y */
             y?: number | null;
-            /** Radius */
-            radius?: number | null;
+            shape?: components["schemas"]["Shape"] | null;
+            /** Width */
+            width?: number | null;
+            /** Depth */
+            depth?: number | null;
+            /** Rotation */
+            rotation?: number | null;
+            /** Points */
+            points?: number[][] | null;
             /** Height */
             height?: number | null;
             /** Label */
@@ -1234,6 +1261,11 @@ export interface components {
             /** Is Empty */
             is_empty: boolean;
         };
+        /**
+         * Shape
+         * @enum {string}
+         */
+        Shape: "circle" | "rect" | "polygon";
         /** SightlinesOut */
         SightlinesOut: {
             /** Plantings */

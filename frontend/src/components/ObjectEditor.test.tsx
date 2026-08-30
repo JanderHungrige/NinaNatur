@@ -17,7 +17,8 @@ const TREE = {
   objectKind: 'tree',
   label: 'Die Buche vom Nachbarn',
   height: 8,
-  radius: 3,
+  width: 6,
+  depth: null,
 };
 
 describe('ObjectEditor', () => {

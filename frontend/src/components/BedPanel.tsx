@@ -17,7 +17,7 @@ interface Props {
     kind: string;
     x: number;
     y: number;
-    radius: number;
+    width: number;
     height: number;
   }) => Promise<void>;
   busy: boolean;
@@ -181,7 +181,7 @@ export function BedPanel({
             kind: obstacleKind,
             x: Number.parseFloat(obstacleX),
             y: Number.parseFloat(obstacleY),
-            radius: Number.parseFloat(obstacleRadius),
+            width: Number.parseFloat(obstacleRadius) * 2,
             height: Number.parseFloat(obstacleHeight),
           });
         }}

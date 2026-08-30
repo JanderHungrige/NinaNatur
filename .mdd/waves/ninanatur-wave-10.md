@@ -3,11 +3,11 @@ id: ninanatur-wave-10
 title: "Wave 10: The garden drawn as a garden"
 initiative: ninanatur
 initiative_version: 11
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-9
 demo_state: "A user stamps a house, a lawn and an oak onto the plan, sketches a bed freehand without aiming precisely, names everything — and the plan looks like a garden plan, with shadows shaped like the things that cast them"
 created: 2026-08-30
-hash: 999b5e11
+hash: c60e2eec
 ---
 
 # Wave 10 — The garden drawn as a garden
@@ -59,8 +59,8 @@ Polygon shadows are what make fetching real geometry worth the payload.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | object-footprints | 37-object-footprints | planned | — |
-| 2 | polygon-shadows | 38-polygon-shadows | planned | 37 |
+| 1 | object-footprints | 37-object-footprints | complete | — |
+| 2 | polygon-shadows | 38-polygon-shadows | complete | 37 |
 | 3 | element-stamps | 39-element-stamps | planned | 37 |
 | 4 | freehand-shapes | 40-freehand-shapes | planned | 37 |
 | 5 | garden-style | 41-garden-style | planned | 37 |

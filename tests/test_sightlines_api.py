@@ -107,7 +107,8 @@ def test_an_answer_resting_on_a_guessed_height_says_so(client: TestClient) -> No
     token, _ = _garden(client)
     obstacle = client.post(
         f"/api/v1/gardens/{token}/obstacles",
-        json={"kind": "building", "x": 0.0, "y": 4.0, "radius": 3.0, "height": 7.0},
+        json={"kind": "house", "x": 0.0, "y": 4.0, "shape": "rect",
+              "width": 6.0, "depth": 2.0, "height": 7.0},
     ).json()["obstacles"][0]
     client.patch(
         f"/api/v1/gardens/{token}/obstacles/{obstacle['obstacle_id']}",

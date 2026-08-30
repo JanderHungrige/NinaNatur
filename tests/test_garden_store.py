@@ -89,7 +89,10 @@ def test_deleting_a_garden_removes_its_beds_and_obstacles(
 ) -> None:
     gid = _garden(conn)
     add_bed(conn, gid, BedInput(name="Beet", polygon=SQUARE))
-    add_obstacle(conn, gid, ObstacleInput(kind="wall", x=0, y=-3, radius=5, height=6))
+    add_obstacle(
+        conn, gid,
+        ObstacleInput(kind="wall", x=0, y=-3, shape="circle", width=10.0, height=6),
+    )
     delete_garden(conn, gid)
     assert conn.execute("SELECT COUNT(*) n FROM bed").fetchone()["n"] == 0
     assert conn.execute("SELECT COUNT(*) n FROM obstacle").fetchone()["n"] == 0
@@ -118,7 +121,10 @@ def test_an_obstacle_to_the_south_lowers_the_light_value(
     recompute_light(conn, gid)
     before = load_garden(conn, gid).beds[0].sun_hours
 
-    add_obstacle(conn, gid, ObstacleInput(kind="wall", x=2, y=-3, radius=8, height=9))
+    add_obstacle(
+        conn, gid,
+        ObstacleInput(kind="wall", x=2, y=-3, shape="circle", width=16.0, height=9),
+    )
     recompute_light(conn, gid)
     after = load_garden(conn, gid).beds[0].sun_hours
     assert after < before

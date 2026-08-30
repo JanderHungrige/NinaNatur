@@ -101,7 +101,7 @@ def test_adding_an_obstacle_recomputes_light_without_a_second_call(
 
     client.post(
         f"/api/v1/gardens/{token}/obstacles",
-        json={"kind": "building", "x": 2, "y": -4, "radius": 10, "height": 12},
+        json={"kind": "house", "x": 2, "y": -4, "radius": 10, "height": 12},
     )
     after = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
     assert after["sun_hours"] < before

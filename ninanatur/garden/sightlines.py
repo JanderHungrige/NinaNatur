@@ -12,6 +12,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from ninanatur.garden.footprint import covers
+
 # Standing eye height. A number, not a measurement — it is offered as a default
 # and the viewpoint carries its own.
 EYE_HEIGHT_M = 1.6
@@ -26,13 +28,16 @@ class Viewpoint:
 
 @dataclass(frozen=True)
 class Blocker:
-    """Anything between the eye and the target. The same cylinder the shading
-    model uses, so a hedge blocks sight exactly as it blocks sun."""
+    """Anything between the eye and the target.
+
+    The same footprint the shading model uses, so a hedge blocks sight exactly
+    as it blocks sun. Before Wave 10 both sides carried their own cylinder test
+    and agreed only because both assumed a cylinder — the kind of agreement that
+    holds until the day it silently stops.
+    """
 
     id: int
-    x: float
-    y: float
-    radius_m: float
+    footprint: list[tuple[float, float]]
     height_m: float
     # Wave 8 heights are mostly assumed. An answer resting on one is marked, for
     # the same reason a filter reports what it dropped.
@@ -62,30 +67,51 @@ class Visibility:
 def _blocks(eye: Viewpoint, target: Target, blocker: Blocker) -> float | None:
     """The height the sightline must clear because of this blocker, or None.
 
+    A sightline is a shadow cast from an eye: the same swept-footprint geometry,
+    with the eye where the sun would be. So the question is whether the target
+    stands inside the blocker's shadow *as seen from the eye* — and that is one
+    implementation, not two.
+
     None when the blocker is beside the line, behind the target, or around the
-    viewer — you are under the tree, not behind it.
+    viewer: you are under the tree, not behind it.
     """
     dx, dy = target.x - eye.x, target.y - eye.y
     span = math.hypot(dx, dy)
     if span <= 1e-9:
         return None
+    if covers(blocker.footprint, (eye.x, eye.y)):
+        return None  # standing inside it
 
     ux, uy = dx / span, dy / span
-    bx, by = blocker.x - eye.x, blocker.y - eye.y
-    along = bx * ux + by * uy
-    # Behind the eye, or at or past the target: not in the way.
-    if along <= 0 or along >= span:
-        return None
-    # Standing inside it.
-    if math.hypot(bx, by) <= blocker.radius_m:
-        return None
-    across = abs(bx * -uy + by * ux)
-    if across > blocker.radius_m:
-        return None
+    # Nearest point of the footprint along the line of sight, and how far off it
+    # the line passes.
+    nearest: float | None = None
+    for px, py in blocker.footprint:
+        along = (px - eye.x) * ux + (py - eye.y) * uy
+        across = abs((px - eye.x) * -uy + (py - eye.y) * ux)
+        if along <= 0 or along >= span:
+            continue
+        if across > _HALF_WIDTH_TOLERANCE_M and not covers(
+            blocker.footprint, (eye.x + ux * along, eye.y + uy * along)
+        ):
+            continue
+        nearest = along if nearest is None else min(nearest, along)
 
-    # Where the ray to the blocker's top would be at the target's distance.
+    if nearest is None:
+        # The corners may all fall outside while the line still crosses the
+        # shape — check the midpoint of the segment that lies within it.
+        midpoint = (eye.x + ux * span / 2, eye.y + uy * span / 2)
+        if not covers(blocker.footprint, midpoint):
+            return None
+        nearest = span / 2
+
     rise = blocker.height_m - eye.eye_height_m
-    return eye.eye_height_m + rise * (span / along)
+    return eye.eye_height_m + rise * (span / nearest)
+
+
+#: A line of sight is a line, and a footprint corner exactly on it is a corner
+#: the viewer sees past. This keeps that from depending on floating point noise.
+_HALF_WIDTH_TOLERANCE_M = 1e-6
 
 
 def visibility(eye: Viewpoint, target: Target, blockers: list[Blocker]) -> Visibility:

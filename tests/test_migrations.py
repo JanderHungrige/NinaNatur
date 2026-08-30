@@ -179,3 +179,65 @@ def test_two_unidentified_plantings_can_share_a_bed(tmp_path: Path) -> None:
         )
     conn.commit()
     assert conn.execute("SELECT COUNT(*) AS n FROM planting").fetchone()["n"] == 2
+
+
+def test_wave_10_clears_gardens_rather_than_migrating_circle_shaped_houses(
+    tmp_path: Path,
+) -> None:
+    """Decided with the user: this is a test deployment, so existing gardens go.
+
+    Every stored light value came from a model in which a house was a cylinder.
+    Keeping them would mean either a compatibility path for circle-shaped houses
+    or numbers that quietly mean something else than they did — and two shadow
+    models living side by side is the double-path shape that has caught this
+    project twice already.
+
+    The reset must be *once*: a migration that clears gardens on every startup
+    would delete a garden the moment somebody made one.
+    """
+    db = tmp_path / "grown.sqlite"
+    old = connect(db, same_thread=False)
+    # The pre-Wave-10 shape, written out rather than produced by the current
+    # init_schema — which would already mark the reset as done and make this
+    # test pass without testing anything.
+    old.executescript(
+        """
+        CREATE TABLE garden (garden_id INTEGER PRIMARY KEY, share_token TEXT NOT NULL,
+            owner_id TEXT, name TEXT NOT NULL, latitude REAL NOT NULL,
+            longitude REAL NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+        CREATE TABLE bed (bed_id INTEGER PRIMARY KEY, garden_id INTEGER NOT NULL,
+            name TEXT NOT NULL, polygon TEXT NOT NULL);
+        CREATE TABLE obstacle (obstacle_id INTEGER PRIMARY KEY, garden_id INTEGER NOT NULL,
+            kind TEXT NOT NULL, x REAL NOT NULL, y REAL NOT NULL,
+            radius REAL NOT NULL, height REAL NOT NULL);
+        INSERT INTO garden VALUES (1, 'alt', NULL, 'Alter Garten', 52.5, 13.4, '', '');
+        INSERT INTO bed VALUES (1, 1, 'B', '[]');
+        INSERT INTO obstacle VALUES (1, 1, 'house', 0, 0, 5, 7);
+        """
+    )
+    old.commit()
+    old.close()
+
+    conn = connect(db, same_thread=False)
+    init_schema(conn)
+    assert conn.execute("SELECT COUNT(*) AS n FROM garden").fetchone()["n"] == 0
+    assert conn.execute("SELECT COUNT(*) AS n FROM bed").fetchone()["n"] == 0
+
+    # And a garden made afterwards survives the next startup.
+    conn.execute(
+        "INSERT INTO garden (garden_id, share_token, name, latitude, longitude,"
+        " created_at, updated_at) VALUES (2, 'neu', 'Neuer Garten', 52.5, 13.4, '', '')"
+    )
+    conn.commit()
+    init_schema(conn)
+    assert conn.execute("SELECT COUNT(*) AS n FROM garden").fetchone()["n"] == 1
+
+
+def test_an_obstacle_carries_its_shape(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "fresh.sqlite", same_thread=False)
+    init_schema(conn)
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(obstacle)")}
+    assert {"shape", "width", "depth", "rotation", "points"} <= columns
+    # `radius` is gone: it was the cylinder assumption in column form, and a
+    # column nothing writes is a column somebody will eventually read.
+    assert "radius" not in columns

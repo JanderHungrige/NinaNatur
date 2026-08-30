@@ -6,7 +6,10 @@ answers a question instead of asking one.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
+
+from ninanatur.garden.footprint import Shape
 
 
 class ObjectKind(StrEnum):
@@ -16,44 +19,107 @@ class ObjectKind(StrEnum):
     part of the data, not an implementation detail.
     """
 
-    TREE = "tree"
-    HEDGE = "hedge"
-    SHRUB = "shrub"
-    BUILDING = "building"
+    # Things that stand up and cast a shadow
+    HOUSE = "house"
+    SHED = "shed"
     WALL = "wall"
     FENCE = "fence"
+    HEDGE = "hedge"
+    TREE = "tree"
+    SHRUB = "shrub"
+    # Surfaces: drawn underneath, and they shade nothing
+    BED = "bed"
+    LAWN = "lawn"
+    PAVING = "paving"
+    GRAVEL = "gravel"
+    POND = "pond"
+    PATH = "path"
     OTHER = "other"
 
 
-# Starting values, never constraints. A user who types 4 m for their hedge has a
-# 4 m hedge; the kind picks the number they start from.
+# What each kind *is*. A vocabulary that only decorates is a form field asking
+# the user to do our bookkeeping; choosing "Hecke" should answer questions
+# rather than ask them.
 #
-# OTHER is deliberately absent: "Sonstiges" is the absence of a category, and
-# inventing a height for it would put a number on screen that the user never
-# gave and cannot see the reason for.
-DEFAULT_HEIGHT_M: dict[ObjectKind, float] = {
-    ObjectKind.TREE: 8.0,
-    ObjectKind.HEDGE: 2.0,
-    ObjectKind.SHRUB: 1.5,
-    ObjectKind.BUILDING: 6.0,
-    ObjectKind.WALL: 2.0,
-    ObjectKind.FENCE: 1.2,
+# Every kind appears in every table below. A silent fallback in a vocabulary is
+# how "other" quietly becomes the default for something nobody meant.
+
+
+@dataclass(frozen=True)
+class KindTraits:
+    """Everything the rest of the system needs to know about a kind."""
+
+    shape: Shape
+    #: Metres. `depth` is None for a circle, where width is the diameter.
+    width: float
+    depth: float | None
+    #: Starting height. None for surfaces and for "other", which claims nothing.
+    height: float | None
+    #: Whether it stands up. Paving does not shade a bed, and a model that said
+    #: it did would darken every terrace in the country.
+    casts_shadow: bool
+    #: Drawn underneath everything else — a lawn under a shed, not over it.
+    #: Drawing order is a property of the kind, not of the order somebody
+    #: happened to click.
+    is_surface: bool
+    #: What feature 41 draws.
+    symbol: str
+
+
+TRAITS: dict[ObjectKind, KindTraits] = {
+    ObjectKind.HOUSE:  KindTraits(Shape.RECT, 10.0, 8.0, 6.0, True, False, "building"),
+    ObjectKind.SHED:   KindTraits(Shape.RECT, 3.0, 2.5, 2.4, True, False, "building"),
+    ObjectKind.WALL:   KindTraits(Shape.RECT, 6.0, 0.3, 2.0, True, False, "masonry"),
+    ObjectKind.FENCE:  KindTraits(Shape.RECT, 6.0, 0.1, 1.2, True, False, "fence"),
+    ObjectKind.HEDGE:  KindTraits(Shape.RECT, 6.0, 0.6, 2.0, True, False, "foliage"),
+    ObjectKind.TREE:   KindTraits(Shape.CIRCLE, 6.0, None, 8.0, True, False, "crown"),
+    ObjectKind.SHRUB:  KindTraits(Shape.CIRCLE, 2.0, None, 1.5, True, False, "crown"),
+    ObjectKind.BED:    KindTraits(Shape.RECT, 3.0, 1.5, None, False, True, "planting"),
+    ObjectKind.LAWN:   KindTraits(Shape.RECT, 8.0, 6.0, None, False, True, "grass"),
+    ObjectKind.PAVING: KindTraits(Shape.RECT, 4.0, 3.0, None, False, True, "slabs"),
+    ObjectKind.GRAVEL: KindTraits(Shape.RECT, 3.0, 2.0, None, False, True, "stipple"),
+    ObjectKind.POND:   KindTraits(Shape.CIRCLE, 3.0, None, None, False, True, "water"),
+    ObjectKind.PATH:   KindTraits(Shape.RECT, 6.0, 1.0, None, False, True, "slabs"),
+    ObjectKind.OTHER:  KindTraits(Shape.RECT, 2.0, 2.0, None, True, False, "plain"),
 }
 
-# Likewise a starting radius: a tree's crown is wider than a fence post.
-DEFAULT_RADIUS_M: dict[ObjectKind, float] = {
-    ObjectKind.TREE: 3.0,
-    ObjectKind.HEDGE: 0.6,
-    ObjectKind.SHRUB: 1.0,
-    ObjectKind.BUILDING: 4.0,
-    ObjectKind.WALL: 0.3,
-    ObjectKind.FENCE: 0.2,
-}
+
+def traits(kind: ObjectKind) -> KindTraits:
+    return TRAITS[kind]
+
+
+def default_shape(kind: ObjectKind) -> Shape:
+    return TRAITS[kind].shape
+
+
+def default_size(kind: ObjectKind) -> tuple[float, float | None]:
+    t = TRAITS[kind]
+    return (t.width, t.depth)
+
+
+def casts_shadow(kind: ObjectKind) -> bool:
+    return TRAITS[kind].casts_shadow
+
+
+def is_surface(kind: ObjectKind) -> bool:
+    return TRAITS[kind].is_surface
+
+
+def symbol_of(kind: ObjectKind) -> str:
+    return TRAITS[kind].symbol
 
 
 def default_height(kind: ObjectKind) -> float | None:
-    return DEFAULT_HEIGHT_M.get(kind)
+    """Starting value, never a constraint. A user who types 4 m for their hedge
+    has a 4 m hedge; the kind picks the number they start from.
+
+    None for a surface and for "other": inventing a height there would put a
+    number on screen that the user never gave and cannot see the reason for.
+    """
+    return TRAITS[kind].height
 
 
 def default_radius(kind: ObjectKind) -> float | None:
-    return DEFAULT_RADIUS_M.get(kind)
+    """Half the default width, for the kinds a circle fits."""
+    t = TRAITS[kind]
+    return t.width / 2 if t.shape is Shape.CIRCLE else None

@@ -15,7 +15,8 @@ export type EditableObject =
       objectKind: string;
       label: string | null;
       height: number;
-      radius: number;
+      width: number;
+      depth: number | null;
     };
 
 interface Props {
