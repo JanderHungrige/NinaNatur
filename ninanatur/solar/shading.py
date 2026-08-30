@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from ninanatur.garden.footprint import covers
 from ninanatur.solar.position import SunPosition
 
 # Below this the sun is weak and in practice blocked by whatever surrounds the
@@ -29,12 +30,23 @@ class Point:
 
 @dataclass(frozen=True)
 class Obstacle:
-    """Anything that casts a shadow, modelled as a vertical cylinder."""
+    """Anything that casts a shadow: a footprint on the ground and a height.
 
-    x: float
-    y: float
-    radius: float
+    A footprint rather than a radius since Wave 10. A house rarely casts a round
+    shadow, and the circle was not a simplification of the geometry so much as a
+    claim about it.
+    """
+
+    footprint: list[tuple[float, float]]
     height: float
+
+    @property
+    def centre(self) -> tuple[float, float]:
+        n = len(self.footprint) or 1
+        return (
+            sum(p[0] for p in self.footprint) / n,
+            sum(p[1] for p in self.footprint) / n,
+        )
 
 
 def shadow_length(height: float, altitude: float) -> float:
@@ -48,6 +60,49 @@ def shadow_length(height: float, altitude: float) -> float:
     return height / math.tan(math.radians(altitude))
 
 
+def shadow_polygon(obstacle: Obstacle, sun: SunPosition) -> list[tuple[float, float]]:
+    """The ground this object shades, at this sun position.
+
+    The footprint swept along the anti-solar direction by
+    `height / tan(altitude)`, and the convex hull of the original and the swept
+    copy. For the shapes a garden contains — rectangles, circles, sketched
+    outlines — the hull is the shadow; for a genuinely concave outline it is
+    slightly generous, which is stated rather than pretended away.
+    """
+    length = shadow_length(obstacle.height, sun.altitude)
+    if length <= 0:
+        return list(obstacle.footprint)
+
+    # Azimuth is clockwise from north, so the sun lies at (sin A, cos A) and the
+    # shadow runs the other way.
+    azimuth = math.radians(sun.azimuth)
+    dx, dy = -math.sin(azimuth) * length, -math.cos(azimuth) * length
+    swept = [(px + dx, py + dy) for px, py in obstacle.footprint]
+    return _convex_hull(list(obstacle.footprint) + swept)
+
+
+def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Andrew's monotone chain. Small inputs — a rectangle's shadow is eight
+    points before the hull and four to six after."""
+    unique = sorted(set(points))
+    if len(unique) < 3:
+        return unique
+
+    def half(source: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        chain: list[tuple[float, float]] = []
+        for p in source:
+            while len(chain) >= 2 and _cross(chain[-2], chain[-1], p) <= 0:
+                chain.pop()
+            chain.append(p)
+        return chain[:-1]
+
+    return half(unique) + half(unique[::-1])
+
+
+def _cross(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+
 def is_shaded(
     point: Point,
     obstacle: Obstacle,
@@ -55,10 +110,6 @@ def is_shaded(
     height_above_ground: float = 0.0,
 ) -> bool:
     """Whether the obstacle blocks this sun from this point.
-
-    The shadow runs opposite the sun's azimuth. A point is inside it when it lies
-    ahead of the obstacle along that direction, within the shadow's reach, and no
-    further sideways than the obstacle is wide.
 
     `height_above_ground` raises the point. A bed 80 cm up stands above a 1.2 m
     fence, and only the obstacle's height *above the bed* casts anything onto it
@@ -70,32 +121,9 @@ def is_shaded(
         # No usable sun to block — treat as shaded so the hour is not counted.
         return True
 
-    effective_height = obstacle.height - height_above_ground
-    if effective_height <= 0:
+    effective = obstacle.height - height_above_ground
+    if effective <= 0:
         return False
 
-    length = shadow_length(effective_height, sun.altitude)
-    if length <= 0:
-        return True
-
-    # Shadow direction: opposite the sun. Azimuth is clockwise from north, so the
-    # unit vector towards the sun is (sin A, cos A) in (east, north).
-    azimuth = math.radians(sun.azimuth)
-    shadow_dx, shadow_dy = -math.sin(azimuth), -math.cos(azimuth)
-
-    dx, dy = point.x - obstacle.x, point.y - obstacle.y
-
-    # Directly beneath it. The cast-shadow test below starts at the obstacle's
-    # centre and runs away from the sun, so a point under the canopy scored
-    # `along == 0` and came out in full sun — a bed under a recorded tree read
-    # Ellenberg 8. Ground inside the footprint is shaded whatever the sun does.
-    if math.hypot(dx, dy) <= obstacle.radius:
-        return True
-
-    along = dx * shadow_dx + dy * shadow_dy
-    if along <= 0 or along > length:
-        return False
-
-    # Perpendicular offset from the shadow's centre line.
-    across = abs(dx * -shadow_dy + dy * shadow_dx)
-    return across <= obstacle.radius
+    lifted = Obstacle(footprint=obstacle.footprint, height=effective)
+    return covers(shadow_polygon(lifted, sun), (point.x, point.y))

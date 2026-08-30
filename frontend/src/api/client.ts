@@ -173,7 +173,16 @@ export class NinaNaturClient {
 
   async addObstacle(
     token: string,
-    obstacle: { kind: string; x: number; y: number; radius: number; height: number },
+    obstacle: {
+      kind: string;
+      x: number;
+      y: number;
+      shape?: string;
+      width?: number;
+      depth?: number;
+      rotation?: number;
+      height?: number;
+    },
   ): Promise<GardenOut> {
     return this.request<GardenOut>(`/api/v1/gardens/${encodeURIComponent(token)}/obstacles`, {
       method: 'POST',

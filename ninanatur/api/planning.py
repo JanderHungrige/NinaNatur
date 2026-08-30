@@ -49,6 +49,7 @@ from ninanatur.data.names import resolve_one
 from ninanatur.data.traits import resolve_trait
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
+from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.sightlines import Blocker, Target, Viewpoint, visibility
 from ninanatur.garden.store import add_planting, load_garden, remove_planting
 
@@ -339,13 +340,13 @@ def sightlines(
     blockers = [
         Blocker(
             id=o.obstacle_id,
-            x=o.x,
-            y=o.y,
-            radius_m=o.radius,
+            footprint=o.footprint,
             height_m=o.height,
             estimated=o.height_source != "user",
         )
         for o in garden.obstacles
+        # A lawn does not stand between you and anything.
+        if casts_shadow(ObjectKind(o.kind))
     ]
 
     rows: list[PlantingVisibility] = []

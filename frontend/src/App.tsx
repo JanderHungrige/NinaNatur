@@ -17,12 +17,14 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { StampPalette } from './components/StampPalette';
 import { GardenId } from './components/GardenId';
 import { objects } from './plural';
 import { Landing } from './components/Landing';
 import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
+import type { Box } from './canvas/handles';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
@@ -406,32 +408,85 @@ export function App() {
     });
   }, [garden, selectedBedId]);
 
+  /** The element the palette has armed. Null is the ordinary state: a plan the
+   *  user can click without placing anything. */
+  const [stampKind, setStampKind] = useState<string | null>(null);
+  const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
+
   const editObstacleById = useCallback(
     (obstacleId: number) => {
       const found = garden?.obstacles.find((o) => o.obstacle_id === obstacleId);
       if (found === undefined) return;
+      setSelectedObstacleId(obstacleId);
       setEditing({
         kind: 'obstacle',
         id: found.obstacle_id,
         objectKind: found.kind,
         label: found.label,
         height: found.height,
-        radius: found.radius,
+        width: found.width,
+        depth: found.depth,
       });
     },
     [garden],
   );
 
   const addObstacle = useCallback(
-    async (obstacle: { kind: string; x: number; y: number; radius: number; height: number }) => {
+    async (obstacle: {
+      kind: string;
+      x: number;
+      y: number;
+      shape?: string;
+      width?: number;
+      depth?: number;
+      height?: number;
+    }) => {
       if (garden === null) return;
+      const before = new Set(garden.obstacles.map((o) => o.obstacle_id));
       await run('Hindernis hinzufügen', async () => {
         const updated = await client.addObstacle(garden.share_token, obstacle);
         setGarden(updated);
+        // Select what was just placed, so the handles are already on it. The
+        // palette promises "then drag the handles"; without this the user has
+        // to find and click the thing they are looking straight at.
+        const fresh = updated.obstacles.find((o) => !before.has(o.obstacle_id));
+        if (fresh !== undefined) setSelectedObstacleId(fresh.obstacle_id);
         const lit = updated.beds
           .map((b) => (b.sun_hours === null ? '?' : b.sun_hours.toFixed(1)))
           .join(', ');
         setStatus(`Hindernis gesetzt. Sonnenstunden jetzt: ${lit}.`);
+      });
+    },
+    [garden, run],
+  );
+
+  /**
+   * Place an armed element at its default size, then disarm.
+   *
+   * Disarming after one placement rather than staying armed: the palette is a
+   * stamp, not a mode to escape from, and a click that keeps producing houses
+   * is a click nobody expects.
+   */
+  const placeStamp = useCallback(
+    async (kind: string, x: number, y: number) => {
+      setStampKind(null);
+      await addObstacle({ kind, x, y });
+    },
+    [addObstacle],
+  );
+
+  const resizeObstacle = useCallback(
+    async (obstacleId: number, box: Box) => {
+      if (garden === null) return;
+      await run('Größe ändern', async () => {
+        const updated = await client.editObstacle(garden.share_token, obstacleId, {
+          x: Math.round(box.x * 100) / 100,
+          y: Math.round(box.y * 100) / 100,
+          width: Math.round(box.width * 100) / 100,
+          depth: Math.round(box.depth * 100) / 100,
+          rotation: Math.round(box.rotation * 10) / 10,
+        });
+        setGarden(updated);
       });
     },
     [garden, run],
@@ -573,6 +628,7 @@ export function App() {
               ) : null}
             </div>
             <div className="column">
+              <StampPalette selected={stampKind} onPick={setStampKind} busy={busy} />
               <GardenCanvas
                 garden={garden}
                 selectedBedId={selectedBedId}
@@ -582,6 +638,10 @@ export function App() {
                 palette={monthColours}
                 viewpoint={viewpoint}
                 onPlaceViewpoint={lookFrom}
+                stampKind={stampKind}
+                onPlaceStamp={placeStamp}
+                selectedObstacleId={selectedObstacleId}
+                onResizeObstacle={resizeObstacle}
               />
               {timeline !== null ? (
                 <>

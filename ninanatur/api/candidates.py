@@ -33,7 +33,7 @@ class PlantRow:
 
     def number(self, key: str) -> float | None:
         value = self.extras.get(key)
-        return float(value) if isinstance(value, (int, float)) else None
+        return float(value) if isinstance(value, int | float) else None
 
     def text(self, key: str) -> str | None:
         value = self.extras.get(key)

@@ -1,6 +1,7 @@
 """Sun hours per bed, and the documented convention that turns them into L."""
 import pytest
 
+from ninanatur.garden.footprint import Shape, footprint_of
 from ninanatur.solar.light import (
     SUN_HOUR_BANDS,
     BedLight,
@@ -10,8 +11,22 @@ from ninanatur.solar.light import (
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle, Point
 
+
+def _cyl(x: float, y: float, radius: float, height: float) -> Obstacle:
+    """A cylinder, built the way everything else builds one since Wave 10.
+
+    These tests were written when an obstacle *was* a radius. The shape they
+    describe is still a cylinder; only the way it is stated changed.
+    """
+    return Obstacle(
+        footprint=footprint_of(shape=Shape.CIRCLE, x=x, y=y, width=radius * 2,
+                               depth=None, rotation=0.0, points=None),
+        height=height,
+    )
+
 BERLIN = Location(52.5, 13.4)
 OPEN_BED = Point(x=0.0, y=0.0)
+
 
 
 # --- the convention -------------------------------------------------------
@@ -44,7 +59,7 @@ def test_a_bed_boxed_in_by_tall_obstacles_is_deeply_shaded() -> None:
     # Radius smaller than the distance, so the bed is surrounded rather than
     # inside the obstacles: this must test the cast shadows, not the footprints.
     ring = [
-        Obstacle(x=8.0 * dx, y=8.0 * dy, radius=6.0, height=15.0)
+        _cyl(8.0 * dx, 8.0 * dy, 6.0, 15.0)
         for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1))
     ]
     light = bed_light_value(BERLIN, OPEN_BED, obstacles=ring)
@@ -61,10 +76,10 @@ def test_a_wall_to_the_south_costs_more_sun_than_one_to_the_north() -> None:
     fixture stopped meaning anything the moment that was fixed.
     """
     south = bed_light_value(
-        BERLIN, OPEN_BED, [Obstacle(x=0.0, y=-3.0, radius=2.5, height=6.0)]
+        BERLIN, OPEN_BED, [_cyl(0.0, -3.0, 2.5, 6.0)]
     )
     north = bed_light_value(
-        BERLIN, OPEN_BED, [Obstacle(x=0.0, y=3.0, radius=2.5, height=6.0)]
+        BERLIN, OPEN_BED, [_cyl(0.0, 3.0, 2.5, 6.0)]
     )
     assert south.sun_hours < north.sun_hours
 
@@ -80,8 +95,8 @@ def test_the_light_value_carries_the_sun_hours_behind_it() -> None:
 
 def test_more_obstacles_never_increase_the_sun() -> None:
     """A monotonicity property no plausible geometry bug survives."""
-    wall = Obstacle(x=0.0, y=-4.0, radius=5.0, height=5.0)
-    tree = Obstacle(x=4.0, y=-4.0, radius=3.0, height=8.0)
+    wall = _cyl(0.0, -4.0, 5.0, 5.0)
+    tree = _cyl(4.0, -4.0, 3.0, 8.0)
     alone = bed_light_value(BERLIN, OPEN_BED, [wall]).sun_hours
     both = bed_light_value(BERLIN, OPEN_BED, [wall, tree]).sun_hours
     assert both <= alone + 1e-9
@@ -99,9 +114,9 @@ def test_the_ground_under_an_obstacle_is_shaded() -> None:
     """Regression: the cast-shadow test starts at the obstacle's centre and runs
     away from the sun, so a point directly beneath it scored `along == 0` and
     came out in full sun. A bed under a recorded tree read Ellenberg 8."""
-    from ninanatur.solar.shading import Obstacle, Point, SunPosition, is_shaded
+    from ninanatur.solar.shading import Point, SunPosition, is_shaded
 
-    tree = Obstacle(x=0.0, y=0.0, radius=4.0, height=12.0)
+    tree = _cyl(0.0, 0.0, 4.0, 12.0)
     noon = SunPosition(altitude=60.0, azimuth=180.0)
 
     assert is_shaded(Point(x=0.0, y=0.0), tree, noon) is True

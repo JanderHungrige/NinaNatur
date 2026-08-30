@@ -107,10 +107,17 @@ def garden_from_map(
             conn,
             garden_id,
             ObstacleInput(
-                kind="building",
+                kind="house",
                 x=obj.x,
                 y=obj.y,
-                radius=obj.radius_m,
+                # A square of the same footprint area. OSM's outline is not
+                # fetched yet (`out tags center`), so this is the honest shape
+                # for what we actually know — and it is a rectangle rather than
+                # a circle, which is already closer to a building.
+                shape="rect",
+                width=obj.radius_m * 1.77,
+                depth=obj.radius_m * 1.77,
+                rotation=0.0,
                 height=obj.height_m,
                 label=obj.label,
                 height_source=obj.height_source.value,

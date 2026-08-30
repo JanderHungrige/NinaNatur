@@ -23,8 +23,17 @@ class ObstacleInput:
     kind: str
     x: float
     y: float
-    radius: float
-    height: float
+    #: `circle` | `rect` | `polygon`. What shape it is — a resize handle edits
+    #: two numbers and an angle, not four corners that could disagree.
+    shape: str = "circle"
+    #: Metres. For a circle this is the diameter and `depth` is unused.
+    width: float = 1.0
+    depth: float | None = None
+    #: Degrees clockwise from north, like the compass and the solar azimuth.
+    rotation: float = 0.0
+    #: Metres relative to (x, y), for freehand shapes only.
+    points: list[list[float]] | None = None
+    height: float = 0.0
     label: str | None = None
     height_source: str = "user"
 
@@ -91,10 +100,25 @@ class Obstacle:
     kind: str
     x: float
     y: float
-    radius: float
+    shape: str
+    width: float
+    depth: float | None
+    rotation: float
+    points: list[list[float]] | None
     height: float
     label: str | None = None
     height_source: str = "user"
+
+    @property
+    def footprint(self) -> list[tuple[float, float]]:
+        """The ground this covers. One function for shading, sightlines and
+        drawing alike — three answers is how they drift."""
+        from ninanatur.garden.footprint import Shape, footprint_of
+
+        return footprint_of(
+            shape=Shape(self.shape), x=self.x, y=self.y, width=self.width,
+            depth=self.depth, rotation=self.rotation, points=self.points,
+        )
 
 
 @dataclass(frozen=True)

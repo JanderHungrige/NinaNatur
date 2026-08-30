@@ -153,13 +153,27 @@ CREATE TABLE IF NOT EXISTS planting (
 
 CREATE INDEX IF NOT EXISTS idx_planting_bed ON planting(bed_id);
 
+-- An object on the plan. Wave 10 gave it a shape: `radius` is gone, because it
+-- was the cylinder assumption in column form and a column nothing writes is a
+-- column somebody will eventually read.
 CREATE TABLE IF NOT EXISTS obstacle (
     obstacle_id INTEGER PRIMARY KEY,
     garden_id   INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
     kind        TEXT    NOT NULL,
     x           REAL    NOT NULL,
     y           REAL    NOT NULL,
-    radius      REAL    NOT NULL,
+    -- 'circle' | 'rect' | 'polygon'. What shape it is, not a bag of points:
+    -- a rectangle is two numbers and an angle, which is what a resize handle
+    -- edits. Four stored corners would be re-derived on every drag and two of
+    -- them would eventually disagree with the other two.
+    shape       TEXT    NOT NULL DEFAULT 'circle',
+    width       REAL    NOT NULL,
+    depth       REAL,
+    -- Degrees clockwise from north, matching the compass on the plan and the
+    -- azimuth the solar model already uses.
+    rotation    REAL    NOT NULL DEFAULT 0,
+    -- JSON [[x, y], ...] in metres relative to (x, y), for freehand shapes only.
+    points      TEXT,
     height      REAL    NOT NULL,
     label       TEXT,
     -- 'user' | 'osm_height' | 'osm_levels' | 'neighbourhood'. What the sightline
@@ -310,6 +324,9 @@ def connect(
 # volume, where startup would then fail on the first statement referencing it.
 # Additive migrations are all this project has needed; anything destructive
 # should be a deliberate, reviewed script rather than an entry here.
+#: Marks the one-time Wave 10 reset as done.
+RESET_KEY = "wave_10_geometry_reset"
+
 COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("insect_de", "insect_group", "TEXT"),
     # Existing rows are insects, so the default carries their meaning forward
@@ -401,6 +418,74 @@ def _relax_planting_taxon(conn: sqlite3.Connection) -> str | None:
     return "planting.taxon_id nullable"
 
 
+def _wave_10_reset(conn: sqlite3.Connection) -> str | None:
+    """Clear gardens once, when the plan's geometry changed under them.
+
+    Decided with the user: this is a test deployment, so gardens made against
+    the cylinder model go rather than being migrated. Every stored light value
+    came from a model in which a house was a circle, and keeping them would mean
+    either a compatibility path for circle-shaped houses or numbers that quietly
+    mean something else than they did.
+
+    Marked in `catalogue_meta` so it runs **once**. A migration that cleared
+    gardens on every startup would delete a garden the moment somebody made one
+    — which is the kind of thing that only shows up in production.
+    """
+    # Just this table, not the whole schema: `executescript(SCHEMA)` creates
+    # indexes over columns an existing database may not have yet, which is why
+    # the column migrations run before it. Reaching for the marker must not
+    # reorder that.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS catalogue_meta"
+        " (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+    )
+    done = conn.execute(
+        "SELECT 1 FROM catalogue_meta WHERE key = ?", (RESET_KEY,)
+    ).fetchone()
+    if done is not None:
+        return None
+    has_obstacle = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='obstacle'"
+    ).fetchone()
+    if has_obstacle is None:
+        # A brand-new database: nothing to clear, but the marker still goes in
+        # so the reset never fires later against real gardens.
+        conn.execute(
+            "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
+            (RESET_KEY, "fresh"),
+        )
+        conn.commit()
+        return None
+
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(obstacle)")}
+    if "shape" in columns:
+        conn.execute(
+            "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
+            (RESET_KEY, "already"),
+        )
+        conn.commit()
+        return None
+
+    conn.execute("PRAGMA foreign_keys=OFF")
+    present = {
+        row[0]
+        for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    }
+    # Only what is there. A half-built database is a state this has to survive,
+    # not a reason to refuse to start.
+    for table in ("planting", "obstacle", "bed", "garden"):
+        if table in present:
+            conn.execute(f"DELETE FROM {table}")  # noqa: S608
+    conn.execute('DROP TABLE obstacle;')
+    conn.execute(
+        "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
+        (RESET_KEY, "cleared"),
+    )
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.commit()
+    return "gardens cleared for the Wave 10 geometry"
+
+
 def init_schema(conn: sqlite3.Connection) -> list[str]:
     """Create every table and index, and add columns missing from older databases.
 
@@ -412,6 +497,11 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     """
     applied = _apply_column_migrations(conn)
     rebuilt = _relax_planting_taxon(conn)
+    # After the column work and before the schema script: the reset drops the
+    # obstacle table, and `executescript` below is what builds the new one.
+    reset = _wave_10_reset(conn)
+    if reset is not None:
+        applied.append(reset)
     if rebuilt is not None:
         applied.append(rebuilt)
     conn.executescript(SCHEMA)

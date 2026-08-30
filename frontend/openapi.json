@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NinaNatur",
-    "version": "V0.8.15"
+    "version": "V0.9.16"
   },
   "paths": {
     "/api/v1/plants": {
@@ -2608,12 +2608,19 @@
       "ObjectKind": {
         "type": "string",
         "enum": [
-          "tree",
-          "hedge",
-          "shrub",
-          "building",
+          "house",
+          "shed",
           "wall",
           "fence",
+          "hedge",
+          "tree",
+          "shrub",
+          "bed",
+          "lawn",
+          "paving",
+          "gravel",
+          "pond",
+          "path",
           "other"
         ],
         "title": "ObjectKind",
@@ -2632,16 +2639,78 @@
             "type": "number",
             "title": "Y"
           },
-          "radius": {
+          "shape": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Shape"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "rotation": {
             "type": "number",
-            "maximum": 500.0,
-            "exclusiveMinimum": 0.0,
-            "title": "Radius"
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation",
+            "default": 0.0
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array",
+                "maxItems": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
           },
           "height": {
-            "type": "number",
-            "maximum": 200.0,
-            "exclusiveMinimum": 0.0,
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 200.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Height"
           },
           "label": {
@@ -2661,9 +2730,7 @@
         "required": [
           "kind",
           "x",
-          "y",
-          "radius",
-          "height"
+          "y"
         ],
         "title": "ObstacleCreate"
       },
@@ -2700,13 +2767,59 @@
             "type": "number",
             "title": "Y"
           },
-          "radius": {
+          "shape": {
+            "type": "string",
+            "title": "Shape"
+          },
+          "width": {
             "type": "number",
-            "title": "Radius"
+            "title": "Width"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "rotation": {
+            "type": "number",
+            "title": "Rotation"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
           },
           "height": {
             "type": "number",
             "title": "Height"
+          },
+          "footprint": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Footprint"
           }
         },
         "type": "object",
@@ -2717,8 +2830,13 @@
           "height_source",
           "x",
           "y",
-          "radius",
-          "height"
+          "shape",
+          "width",
+          "depth",
+          "rotation",
+          "points",
+          "height",
+          "footprint"
         ],
         "title": "ObstacleOut"
       },
@@ -2756,7 +2874,17 @@
             ],
             "title": "Y"
           },
-          "radius": {
+          "shape": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Shape"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "width": {
             "anyOf": [
               {
                 "type": "number",
@@ -2767,7 +2895,51 @@
                 "type": "null"
               }
             ],
-            "title": "Radius"
+            "title": "Width"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "rotation": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 360.0,
+                "minimum": -360.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array",
+                "maxItems": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
           },
           "height": {
             "anyOf": [
@@ -3413,6 +3585,15 @@
         ],
         "title": "ScoreOut",
         "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves."
+      },
+      "Shape": {
+        "type": "string",
+        "enum": [
+          "circle",
+          "rect",
+          "polygon"
+        ],
+        "title": "Shape"
       },
       "SightlinesOut": {
         "properties": {
