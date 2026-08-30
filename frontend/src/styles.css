@@ -679,3 +679,72 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   gap: 0.4rem;
   margin-top: 0.75rem;
 }
+
+/* --- Wave 9: accounts and sightlines ----------------------------------- */
+
+.account label {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.account input {
+  width: 100%;
+}
+
+/* The one thing this account type has to be honest about, so it is not a
+   footnote in the same grey as everything else. */
+.account__warning {
+  border-left: 3px solid var(--leaf);
+  padding-left: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.account__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+}
+
+.sightlines__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.sightlines__list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sightlines__list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.sightlines__name {
+  font-weight: 600;
+}
+
+.sightlines__visible {
+  color: var(--leaf);
+}
+
+.sightlines__hidden {
+  color: var(--ink-muted);
+}
+
+.viewpoint circle {
+  fill: var(--focus);
+  stroke: var(--bg-raised);
+  stroke-width: 0.08;
+}

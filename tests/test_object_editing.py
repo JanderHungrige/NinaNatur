@@ -131,3 +131,21 @@ def test_a_negative_height_is_refused(client: TestClient) -> None:
         f"/api/v1/gardens/{token}/beds/{bed_id}", json={"height_above_ground": -1.0}
     )
     assert response.status_code == 422
+
+
+def test_an_edited_height_becomes_the_users_word_on_it(client: TestClient) -> None:
+    """Wave 8 places buildings with assumed heights. Correcting one has to make
+    it authoritative, or the sightline keeps marking it as a guess."""
+    token, _ = _garden(client)
+    created = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "building", "x": 0.0, "y": -6.0, "radius": 4.0, "height": 7.0},
+    ).json()["obstacles"][0]
+    assert created["height_source"] == "user"
+
+    edited = client.patch(
+        f"/api/v1/gardens/{token}/obstacles/{created['obstacle_id']}",
+        json={"height": 11.0, "height_source": "user"},
+    ).json()["obstacles"][0]
+    assert edited["height"] == 11.0
+    assert edited["height_source"] == "user"

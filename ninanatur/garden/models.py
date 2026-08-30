@@ -26,6 +26,7 @@ class ObstacleInput:
     radius: float
     height: float
     label: str | None = None
+    height_source: str = "user"
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,7 @@ class Obstacle:
     radius: float
     height: float
     label: str | None = None
+    height_source: str = "user"
 
 
 @dataclass(frozen=True)

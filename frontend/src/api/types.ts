@@ -235,6 +235,31 @@ export interface paths {
         patch: operations["edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch"];
         trace?: never;
     };
+    "/api/v1/gardens/{token}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim
+         * @description Put a garden under an account.
+         *
+         *     Holding the link is enough to edit a garden — that was Wave 3's bargain and
+         *     it stays — but not enough to take it from whoever claimed it. Share links go
+         *     on working afterwards: removing them to push registration would be a
+         *     downgrade dressed as a feature.
+         */
+        post: operations["claim_api_v1_gardens__token__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
         parameters: {
             query?: never;
@@ -398,6 +423,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/sightlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sightlines
+         * @description What is visible from a point in the garden.
+         *
+         *     The same cylinders the shading model uses, seen from an eye instead of from
+         *     the sun — so a hedge blocks sight exactly as it blocks light, and a raised
+         *     bed stands above both.
+         */
+        post: operations["sightlines_api_v1_gardens__token__sightlines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/geo/search": {
         parameters: {
             query?: never;
@@ -411,6 +460,29 @@ export interface paths {
          *     search would be a poor way to treat a free community service.
          */
         get: operations["find_place_api_v1_geo_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geo/imagery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Imagery At
+         * @description Which state's orthophotos may be shown here, if any.
+         *
+         *     Per Bundesland because the licences are: there is no federal source, and a
+         *     state without an entry gets no imagery rather than a neighbour's.
+         */
+        get: operations["imagery_at_api_v1_geo_imagery_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -436,6 +508,87 @@ export interface paths {
          *     arrive at all — generous where it matters, quiet where it does not.
          */
         post: operations["garden_from_map_api_v1_gardens_from_map_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register
+         * @description Create an account. Email is optional and the cost of that is returned.
+         */
+        post: operations["register_api_v1_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log In
+         * @description Log in. A wrong password and an unknown user answer identically.
+         */
+        post: operations["log_in_api_v1_sessions_post"];
+        /** Log Out */
+        delete: operations["log_out_api_v1_sessions_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_v1_accounts_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/me/gardens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Gardens
+         * @description The gardens this account has claimed.
+         *
+         *     A place to keep the links, not a replacement for them: the share token is
+         *     still what opens a garden, and it comes back here so the list can.
+         */
+        get: operations["my_gardens_api_v1_accounts_me_gardens_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -469,6 +622,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AccountOut
+         * @description Never carries the password or the hash — there is no field for either.
+         */
+        AccountOut: {
+            /** Username */
+            username: string;
+            /** Email */
+            email: string | null;
+            /** Recovery Note */
+            recovery_note: string;
+        };
         /**
          * AxisFitOut
          * @description Why one axis scored what it did — Wave 4 renders the band, not the number.
@@ -624,6 +789,13 @@ export interface components {
             /** Replaces Name */
             replaces_name: string | null;
         };
+        /** Credentials */
+        Credentials: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
         /**
          * FilterCountsOut
          * @description How one active filter divided the candidate set.
@@ -733,6 +905,28 @@ export interface components {
             /** Assumed */
             assumed: number;
         };
+        /**
+         * ImageryOut
+         * @description The aerial imagery available at a place, if any.
+         *
+         *     `attribution` is a condition of the licence, not a caption — DL-DE/BY-2.0
+         *     and CC-BY-4.0 both require the named credit, so imagery shown without it is
+         *     imagery used outside its terms.
+         */
+        ImageryOut: {
+            /** Available */
+            available: boolean;
+            /** State */
+            state?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Layer */
+            layer?: string | null;
+            /** Licence */
+            licence?: string | null;
+            /** Attribution */
+            attribution?: string | null;
+        };
         /** ImprovementsOut */
         ImprovementsOut: {
             /** Current Score */
@@ -809,6 +1003,8 @@ export interface components {
             kind: string;
             /** Label */
             label: string | null;
+            /** Height Source */
+            height_source: string;
             /** X */
             x: number;
             /** Y */
@@ -834,6 +1030,22 @@ export interface components {
             height?: number | null;
             /** Label */
             label?: string | null;
+            /** Height Source */
+            height_source?: string | null;
+        };
+        /** OwnedGarden */
+        OwnedGarden: {
+            /** Name */
+            name: string;
+            /** Share Token */
+            share_token: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** OwnedGardens */
+        OwnedGardens: {
+            /** Gardens */
+            gardens: components["schemas"]["OwnedGarden"][];
         };
         /** PartnersOut */
         PartnersOut: {
@@ -962,6 +1174,41 @@ export interface components {
             /** Added At */
             added_at: string;
         };
+        /** PlantingVisibility */
+        PlantingVisibility: {
+            /** Planting Id */
+            planting_id: number;
+            /** Name */
+            name: string;
+            /** Bed Id */
+            bed_id: number;
+            /** Height M */
+            height_m: number | null;
+            /** Visible */
+            visible: boolean | null;
+            /** Visible From M */
+            visible_from_m: number | null;
+            /** Hidden By */
+            hidden_by: number | null;
+            /** Estimated */
+            estimated: boolean;
+        };
+        /**
+         * Registration
+         * @description What it takes to make an account.
+         *
+         *     No composition rules — length and the one obvious mistake, following NIST.
+         *     A rule that demands a digit and a symbol produces `Passwort1!` and a sticky
+         *     note, which is worse than a long phrase.
+         */
+        Registration: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+            /** Email */
+            email?: string | null;
+        };
         /**
          * ScoreOut
          * @description The score with everything needed to argue about it — a score a user cannot
@@ -986,6 +1233,13 @@ export interface components {
             plantings_without_interaction_data: number;
             /** Is Empty */
             is_empty: boolean;
+        };
+        /** SightlinesOut */
+        SightlinesOut: {
+            /** Plantings */
+            plantings: components["schemas"]["PlantingVisibility"][];
+            /** Estimated Count */
+            estimated_count: number;
         };
         /** SourceOut */
         SourceOut: {
@@ -1100,6 +1354,21 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * ViewpointIn
+         * @description Where somebody is standing, in garden metres.
+         */
+        ViewpointIn: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /**
+             * Eye Height M
+             * @default 1.6
+             */
+            eye_height_m: number;
         };
     };
     responses: never;
@@ -1501,6 +1770,37 @@ export interface operations {
             };
         };
     };
+    claim_api_v1_gardens__token__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
         parameters: {
             query?: never;
@@ -1738,6 +2038,41 @@ export interface operations {
             };
         };
     };
+    sightlines_api_v1_gardens__token__sightlines_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewpointIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SightlinesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     find_place_api_v1_geo_search_get: {
         parameters: {
             query?: {
@@ -1756,6 +2091,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlaceSearchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    imagery_at_api_v1_geo_imagery_get: {
+        parameters: {
+            query: {
+                lat: number;
+                lon: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryOut"];
                 };
             };
             /** @description Validation Error */
@@ -1798,6 +2165,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_v1_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Registration"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_in_api_v1_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Credentials"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_out_api_v1_sessions_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_api_v1_accounts_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+        };
+    };
+    my_gardens_api_v1_accounts_me_gardens_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnedGardens"];
                 };
             };
         };

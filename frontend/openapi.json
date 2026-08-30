@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "NinaNatur",
-    "version": "V0.7.14"
+    "version": "V0.8.15"
   },
   "paths": {
     "/api/v1/plants": {
@@ -743,6 +743,49 @@
         }
       }
     },
+    "/api/v1/gardens/{token}/claim": {
+      "post": {
+        "tags": [
+          "gardens"
+        ],
+        "summary": "Claim",
+        "description": "Put a garden under an account.\n\nHolding the link is enough to edit a garden \u2014 that was Wave 3's bargain and\nit stays \u2014 but not enough to take it from whoever claimed it. Share links go\non working afterwards: removing them to push registration would be a\ndowngrade dressed as a feature.",
+        "operationId": "claim_api_v1_gardens__token__claim_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
       "post": {
         "tags": [
@@ -1227,6 +1270,59 @@
         }
       }
     },
+    "/api/v1/gardens/{token}/sightlines": {
+      "post": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Sightlines",
+        "description": "What is visible from a point in the garden.\n\nThe same cylinders the shading model uses, seen from an eye instead of from\nthe sun \u2014 so a hedge blocks sight exactly as it blocks light, and a raised\nbed stands above both.",
+        "operationId": "sightlines_api_v1_gardens__token__sightlines_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewpointIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SightlinesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/geo/search": {
       "get": {
         "tags": [
@@ -1255,6 +1351,62 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlaceSearchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/geo/imagery": {
+      "get": {
+        "tags": [
+          "geo"
+        ],
+        "summary": "Imagery At",
+        "description": "Which state's orthophotos may be shown here, if any.\n\nPer Bundesland because the licences are: there is no federal source, and a\nstate without an entry gets no imagery rather than a neighbour's.",
+        "operationId": "imagery_at_api_v1_geo_imagery_get",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 55.2,
+              "minimum": 47.0,
+              "title": "Lat"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 15.2,
+              "minimum": 5.5,
+              "title": "Lon"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageryOut"
                 }
               }
             }
@@ -1314,6 +1466,145 @@
         }
       }
     },
+    "/api/v1/accounts": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Register",
+        "description": "Create an account. Email is optional and the cost of that is returned.",
+        "operationId": "register_api_v1_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Log In",
+        "description": "Log in. A wrong password and an unknown user answer identically.",
+        "operationId": "log_in_api_v1_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Log Out",
+        "operationId": "log_out_api_v1_sessions_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/me": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Me",
+        "operationId": "me_api_v1_accounts_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/me/gardens": {
+      "get": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "My Gardens",
+        "description": "The gardens this account has claimed.\n\nA place to keep the links, not a replacement for them: the share token is\nstill what opens a garden, and it comes back here so the list can.",
+        "operationId": "my_gardens_api_v1_accounts_me_gardens_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnedGardens"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -1334,6 +1625,37 @@
   },
   "components": {
     "schemas": {
+      "AccountOut": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "recovery_note": {
+            "type": "string",
+            "title": "Recovery Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "email",
+          "recovery_note"
+        ],
+        "title": "AccountOut",
+        "description": "Never carries the password or the hash \u2014 there is no field for either."
+      },
       "AxisFitOut": {
         "properties": {
           "band": {
@@ -1845,6 +2167,28 @@
         ],
         "title": "ChangeOut"
       },
+      "Credentials": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Credentials"
+      },
       "FilterCountsOut": {
         "properties": {
           "matched": {
@@ -2069,6 +2413,75 @@
         "title": "HeightReport",
         "description": "Where the heights around this garden came from.\n\nReported because an assumed height presented as a measured one is the same\nlie as a filter that hides what it dropped."
       },
+      "ImageryOut": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layer"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "title": "ImageryOut",
+        "description": "The aerial imagery available at a place, if any.\n\n`attribution` is a condition of the licence, not a caption \u2014 DL-DE/BY-2.0\nand CC-BY-4.0 both require the named credit, so imagery shown without it is\nimagery used outside its terms."
+      },
       "ImprovementsOut": {
         "properties": {
           "current_score": {
@@ -2275,6 +2688,10 @@
             ],
             "title": "Label"
           },
+          "height_source": {
+            "type": "string",
+            "title": "Height Source"
+          },
           "x": {
             "type": "number",
             "title": "X"
@@ -2297,6 +2714,7 @@
           "obstacle_id",
           "kind",
           "label",
+          "height_source",
           "x",
           "y",
           "radius",
@@ -2375,11 +2793,61 @@
               }
             ],
             "title": "Label"
+          },
+          "height_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Source"
           }
         },
         "type": "object",
         "title": "ObstacleUpdate",
         "description": "Every field optional: an edit says what changed, not what everything is."
+      },
+      "OwnedGarden": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "share_token": {
+            "type": "string",
+            "title": "Share Token"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "share_token",
+          "updated_at"
+        ],
+        "title": "OwnedGarden"
+      },
+      "OwnedGardens": {
+        "properties": {
+          "gardens": {
+            "items": {
+              "$ref": "#/components/schemas/OwnedGarden"
+            },
+            "type": "array",
+            "title": "Gardens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gardens"
+        ],
+        "title": "OwnedGardens"
       },
       "PartnersOut": {
         "properties": {
@@ -2781,6 +3249,118 @@
         ],
         "title": "PlantingOut"
       },
+      "PlantingVisibility": {
+        "properties": {
+          "planting_id": {
+            "type": "integer",
+            "title": "Planting Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "bed_id": {
+            "type": "integer",
+            "title": "Bed Id"
+          },
+          "height_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height M"
+          },
+          "visible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible"
+          },
+          "visible_from_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible From M"
+          },
+          "hidden_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden By"
+          },
+          "estimated": {
+            "type": "boolean",
+            "title": "Estimated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "planting_id",
+          "name",
+          "bed_id",
+          "height_m",
+          "visible",
+          "visible_from_m",
+          "hidden_by",
+          "estimated"
+        ],
+        "title": "PlantingVisibility"
+      },
+      "Registration": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 3,
+            "pattern": "^[\\w.-]+$",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 10,
+            "title": "Password"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Registration",
+        "description": "What it takes to make an account.\n\nNo composition rules \u2014 length and the one obvious mistake, following NIST.\nA rule that demands a digit and a symbol produces `Passwort1!` and a sticky\nnote, which is worse than a long phrase."
+      },
       "ScoreOut": {
         "properties": {
           "score": {
@@ -2833,6 +3413,27 @@
         ],
         "title": "ScoreOut",
         "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves."
+      },
+      "SightlinesOut": {
+        "properties": {
+          "plantings": {
+            "items": {
+              "$ref": "#/components/schemas/PlantingVisibility"
+            },
+            "type": "array",
+            "title": "Plantings"
+          },
+          "estimated_count": {
+            "type": "integer",
+            "title": "Estimated Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plantings",
+          "estimated_count"
+        ],
+        "title": "SightlinesOut"
       },
       "SourceOut": {
         "properties": {
@@ -3134,6 +3735,36 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ViewpointIn": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 500.0,
+            "minimum": -500.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 500.0,
+            "minimum": -500.0,
+            "title": "Y"
+          },
+          "eye_height_m": {
+            "type": "number",
+            "maximum": 3.0,
+            "minimum": 0.3,
+            "title": "Eye Height M",
+            "default": 1.6
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "ViewpointIn",
+        "description": "Where somebody is standing, in garden metres."
       }
     }
   }

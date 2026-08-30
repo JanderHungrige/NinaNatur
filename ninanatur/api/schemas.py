@@ -259,6 +259,9 @@ class ObstacleUpdate(BaseModel):
     radius: float | None = Field(default=None, gt=0, le=500)
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
+    # Correcting a height makes it the user's word on it; otherwise every
+    # sightline would go on marking it as an assumption.
+    height_source: str | None = None
 
 
 class BedUpdate(BaseModel):
@@ -321,6 +324,9 @@ class ObstacleOut(BaseModel):
     obstacle_id: int
     kind: str
     label: str | None
+    # Where the height came from. Shown, because a sightline resting on a
+    # guessed building height must not look surveyed.
+    height_source: str
     x: float
     y: float
     radius: float
@@ -424,6 +430,82 @@ class ImageryOut(BaseModel):
     layer: str | None = None
     licence: str | None = None
     attribution: str | None = None
+
+
+class ViewpointIn(BaseModel):
+    """Where somebody is standing, in garden metres."""
+
+    x: float = Field(ge=-500, le=500)
+    y: float = Field(ge=-500, le=500)
+    # A person, not a drone. Anything outside this is a different question.
+    eye_height_m: float = Field(default=1.6, ge=0.3, le=3.0)
+
+
+class PlantingVisibility(BaseModel):
+    planting_id: int
+    name: str
+    bed_id: int
+    #: None when the catalogue has no height for the species — recorded for 44%
+    #: of it, and assuming one would put a confident answer on top of nothing.
+    height_m: float | None
+    visible: bool | None
+    visible_from_m: float | None
+    hidden_by: int | None
+    #: True when the answer rests on a height nobody measured.
+    estimated: bool
+
+
+class SightlinesOut(BaseModel):
+    plantings: list[PlantingVisibility]
+    #: How many answers rest on an assumed height, so the UI can say so once
+    #: rather than per row.
+    estimated_count: int
+
+
+class OwnedGarden(BaseModel):
+    name: str
+    #: Carried so the list can open it. It is still the credential — the account
+    #: is a place to keep the links, not a replacement for them.
+    share_token: str
+    updated_at: str
+
+
+class OwnedGardens(BaseModel):
+    gardens: list[OwnedGarden]
+
+
+class Registration(BaseModel):
+    """What it takes to make an account.
+
+    No composition rules — length and the one obvious mistake, following NIST.
+    A rule that demands a digit and a symbol produces `Passwort1!` and a sticky
+    note, which is worse than a long phrase.
+    """
+
+    username: str = Field(min_length=3, max_length=40, pattern=r"^[\w.-]+$")
+    password: str = Field(min_length=10, max_length=200)
+    email: str | None = Field(default=None, max_length=200)
+
+    @model_validator(mode="after")
+    def not_the_username(self) -> Registration:
+        if self.password.strip().lower() == self.username.strip().lower():
+            raise ValueError("das Passwort darf nicht der Benutzername sein")
+        return self
+
+
+class Credentials(BaseModel):
+    username: str = Field(min_length=1, max_length=40)
+    password: str = Field(min_length=1, max_length=200)
+
+
+class AccountOut(BaseModel):
+    """Never carries the password or the hash — there is no field for either."""
+
+    username: str
+    email: str | None
+    #: What this account's recovery actually looks like, said here rather than
+    #: discovered later.
+    recovery_note: str
 
 
 class GardenOut(BaseModel):

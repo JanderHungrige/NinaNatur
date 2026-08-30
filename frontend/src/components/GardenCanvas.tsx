@@ -36,10 +36,17 @@ interface Props {
   onDrawBed?: ((polygon: number[][]) => void) | undefined;
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
   palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
+  /** Where the user is standing, if anywhere. */
+  viewpoint?: { x: number; y: number } | null;
+  /** Placing one: a second thing a click on the plan can mean, so it is a mode. */
+  onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
 }
 
 const DEFAULT_SIZE = { widthPx: 800, heightPx: 600 };
 const ZOOM_STEP = 1.6;
+
+/** Two decimals: a viewpoint is a place someone stands, not a survey mark. */
+const round = (v: number): number => Math.round(v * 100) / 100;
 
 /**
  * The garden plan, and the surface it is drawn on.
@@ -57,7 +64,10 @@ export function GardenCanvas({
   onDrawBed,
   onSelectObstacle,
   palette,
+  viewpoint = null,
+  onPlaceViewpoint,
 }: Props) {
+  const [placing, setPlacing] = useState(false);
   const [view, setView] = useState<Viewport>({
     centreX: 0,
     centreY: 0,
@@ -155,6 +165,16 @@ export function GardenCanvas({
   };
 
   const addVertex = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (placing && onPlaceViewpoint !== undefined) {
+      const box = surface.current?.getBoundingClientRect();
+      const point = toGarden(
+        { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) },
+        view,
+      );
+      onPlaceViewpoint(round(point.x), round(point.y));
+      setPlacing(false);
+      return;
+    }
     if (!drawing) return;
     const rect = surface.current?.getBoundingClientRect();
     const at = {
@@ -210,6 +230,10 @@ export function GardenCanvas({
           onCancel={cancel}
           onUndo={() => setDraft(history.undo)}
           onRedo={() => setDraft(history.redo)}
+          placing={onPlaceViewpoint === undefined ? undefined : placing}
+          onPlaceViewpoint={
+            onPlaceViewpoint === undefined ? undefined : () => setPlacing((p) => !p)
+          }
         />
       )}
 
@@ -232,6 +256,7 @@ export function GardenCanvas({
           spacing={spacing}
           selectedBedId={selectedBedId}
           draft={points}
+          viewpoint={viewpoint}
           onSelectBed={onSelectBed}
           onSelectObstacle={onSelectObstacle}
           palette={palette}
