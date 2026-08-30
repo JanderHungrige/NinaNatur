@@ -80,6 +80,15 @@ body {
   outline-offset: 2px;
 }
 
+/* …except on the plan. Beds and objects are SVG shapes with tabindex, and an
+   `outline` on an SVG element is drawn around its bounding box, not around the
+   shape — and its 3px are 3 *metres* in this canvas's units. Together that put
+   a three-metre blue rectangle next to every rotated house. The ring belongs on
+   the shape itself, which is what the rule below does. */
+:where(.bed, .obstacle):focus-visible {
+  outline: none;
+}
+
 .site-header {
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
@@ -476,9 +485,13 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   cursor: pointer;
 }
 
-.obstacle[role='button']:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+/* The ring is the shape's own stroke, so it follows a rotated rectangle and a
+   circle alike. non-scaling-stroke keeps it three screen pixels at every zoom —
+   a width in metres would be invisible on a whole-garden view. */
+:where(.bed, .obstacle[role='button']):focus-visible {
+  stroke: var(--focus);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
 }
 
 .existing-planting label {

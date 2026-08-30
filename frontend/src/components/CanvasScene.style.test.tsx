@@ -73,7 +73,7 @@ describe('CanvasScene — how the plan looks', () => {
     // Legibility outranks prettiness: a plan nobody can tab through is a
     // picture, not a tool.
     show([obstacle('pond', 1), obstacle('tree', 2)]);
-    for (const name of [/Teich/, /Baum|Eiche/]) {
+    for (const name of [/Teich/, /Baum/]) {
       const node = screen.getByRole('button', { name });
       expect(node.getAttribute('tabindex')).toBe('0');
     }

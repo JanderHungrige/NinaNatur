@@ -12,7 +12,7 @@ function show(selected: string | null = null) {
 describe('StampPalette', () => {
   it('offers what a garden is made of, in German', () => {
     show();
-    for (const label of ['Wohnhaus', 'Rasen', 'Pflaster', 'Kies', 'Teich', 'Eiche']) {
+    for (const label of ['Wohnhaus', 'Rasen', 'Pflaster', 'Kies', 'Teich', 'Baum']) {
       expect(screen.getByRole('button', { name: new RegExp(label) })).toBeDefined();
     }
   });

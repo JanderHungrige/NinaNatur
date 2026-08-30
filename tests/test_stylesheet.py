@@ -81,12 +81,25 @@ def test_plan_strokes_are_measured_in_metres(css: str) -> None:
     too_wide: list[str] = []
     for selector in PLAN_SELECTORS:
         for block in re.findall(
-            rf"{re.escape(selector)}\s*(?:,[^{{]*)?\{{([^}}]*)\}}", css
+            # `[^{,]*` so an attribute or pseudo-class suffix still counts:
+            # the rule that actually shipped the bug was
+            # `.obstacle[role='button']:focus-visible`, and the earlier pattern
+            # required the selector to end right there — so the guard was blind
+            # to exactly the rule it existed for.
+            rf"{re.escape(selector)}[^{{,]*(?:,[^{{]*)?\{{([^}}]*)\}}", css
         ):
-            for width in re.findall(r"stroke-width:\s*([0-9.]+)", block):
-                # A stroke wider than 30 cm is a wall, not an outline.
-                if float(width) > 0.3:
-                    too_wide.append(f"{selector}: {width}")
+            # `vector-effect: non-scaling-stroke` takes the width out of the
+            # canvas's units and into the screen's, which is the right way to
+            # draw something the user aims at rather than measures.
+            if "non-scaling-stroke" in block:
+                continue
+            for prop in ("stroke-width", "outline-width", "outline"):
+                for width in re.findall(rf"{prop}:\s*([0-9.]+)", block):
+                    # Wider than 30 cm is a wall, not an outline. `outline` is
+                    # checked too: it put a three-metre blue rectangle around
+                    # every focused bed, drawn on the bounding box at that.
+                    if float(width) > 0.3:
+                        too_wide.append(f"{selector}: {prop} {width}")
     assert too_wide == [], f"stroke widths look like pixels, not metres: {too_wide}"
 
 
