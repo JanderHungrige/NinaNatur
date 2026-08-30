@@ -71,7 +71,8 @@ describe('GardenCanvas', () => {
 
   it('names the plan itself so its contents are knowable without seeing it', () => {
     const g = garden({
-      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, x: 0, y: -4, radius: 5, height: 6 }],
+      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, height_source: 'user',
+          x: 0, y: -4, radius: 5, height: 6 }],
     });
     render(<GardenCanvas garden={g} selectedBedId={null} onSelectBed={vi.fn()} />);
     expect(screen.getByRole('group', { name: /1 Beet, 1 Hindernis/ })).toBeDefined();

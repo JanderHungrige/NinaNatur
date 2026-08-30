@@ -11,6 +11,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
+from ninanatur.api.accounts import require_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     BedCreate,
@@ -24,6 +25,7 @@ from ninanatur.api.schemas import (
     ObstacleUpdate,
     PlantingOut,
 )
+from ninanatur.auth.sessions import Account
 from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
 from ninanatur.garden.store import (
     add_bed,
@@ -85,6 +87,7 @@ def to_out(garden: Garden) -> GardenOut:
         ],
         obstacles=[
             ObstacleOut(obstacle_id=o.obstacle_id, kind=o.kind, label=o.label,
+                        height_source=o.height_source,
                         x=o.x, y=o.y, radius=o.radius, height=o.height)
             for o in garden.obstacles
         ],
@@ -220,6 +223,41 @@ def edit_obstacle(
     changes = payload.model_dump(exclude_unset=True)
     if "kind" in changes and changes["kind"] is not None:
         changes["kind"] = str(changes["kind"])
+    # Typing a height is the user's word on it. Without this, correcting a
+    # building the map guessed at would leave every sightline through it
+    # marked as an assumption.
+    if changes.get("height") is not None:
+        changes.setdefault("height_source", "user")
     update_obstacle(conn, obstacle_id, **changes)
     recompute_light(conn, garden.garden_id)
+    return to_out(load_garden(conn, garden.garden_id))
+
+
+@router.post("/{token}/claim", response_model=GardenOut)
+def claim(
+    token: str,
+    account: Annotated[Account, Depends(require_account)],
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Put a garden under an account.
+
+    Holding the link is enough to edit a garden — that was Wave 3's bargain and
+    it stays — but not enough to take it from whoever claimed it. Share links go
+    on working afterwards: removing them to push registration would be a
+    downgrade dressed as a feature.
+    """
+    garden = require_garden(conn, token)
+    owner = conn.execute(
+        "SELECT owner_id FROM garden WHERE garden_id = ?", (garden.garden_id,)
+    ).fetchone()["owner_id"]
+    mine = str(account.account_id)
+    if owner is not None and owner != mine:
+        raise HTTPException(
+            status_code=409, detail="Dieser Garten gehört bereits zu einem Konto."
+        )
+    if owner is None:
+        conn.execute(
+            "UPDATE garden SET owner_id = ? WHERE garden_id = ?", (mine, garden.garden_id)
+        )
+        conn.commit()
     return to_out(load_garden(conn, garden.garden_id))

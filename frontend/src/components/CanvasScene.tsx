@@ -8,6 +8,7 @@ interface Props {
   spacing: number;
   selectedBedId: number | null;
   draft: Point[];
+  viewpoint?: { x: number; y: number } | null;
   onSelectBed: (bedId: number) => void;
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
   /** Colours in flower per bed for the month being shown, if any. */
@@ -90,6 +91,7 @@ export function CanvasScene({
   spacing,
   selectedBedId,
   draft,
+  viewpoint = null,
   onSelectBed,
   onSelectObstacle,
   palette,
@@ -215,7 +217,14 @@ export function CanvasScene({
           </polygon>
         ))}
 
-        {draft.length > 0 && (
+        {viewpoint !== null && (
+        <g className="viewpoint" data-testid="viewpoint">
+          <circle cx={viewpoint.x} cy={-viewpoint.y} r={0.35} />
+          <title>Standpunkt</title>
+        </g>
+      )}
+
+      {draft.length > 0 && (
           <g data-testid="draft" className="draft">
             <polyline points={d(draft)} className="draft__line" />
             {draft.map((p) => (

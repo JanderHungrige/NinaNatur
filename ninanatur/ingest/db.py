@@ -161,7 +161,10 @@ CREATE TABLE IF NOT EXISTS obstacle (
     y           REAL    NOT NULL,
     radius      REAL    NOT NULL,
     height      REAL    NOT NULL,
-    label       TEXT
+    label       TEXT,
+    -- 'user' | 'osm_height' | 'osm_levels' | 'neighbourhood'. What the sightline
+    -- and the light model need in order to say how sure they are.
+    height_source TEXT NOT NULL DEFAULT 'user'
 );
 
 CREATE INDEX IF NOT EXISTS idx_obstacle_garden ON obstacle(garden_id);
@@ -202,6 +205,30 @@ CREATE TABLE IF NOT EXISTS partner_totals (
     global_total INTEGER NOT NULL,
     unmatched    INTEGER NOT NULL
 );
+
+-- Wave 9. Accounts, with the email deliberately nullable: it is optional, and
+-- the consequence (no password reset) is stated where the choice is made.
+CREATE TABLE IF NOT EXISTS account (
+    account_id    INTEGER PRIMARY KEY,
+    username      TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+    email         TEXT,
+    -- `scrypt$N$r$p$salt$hash`. The parameters travel with it so they can be
+    -- raised later without locking anybody out.
+    password_hash TEXT    NOT NULL,
+    created_at    TEXT    NOT NULL
+);
+
+-- Sessions are stored as a *hash* of the token, never the token. A stolen
+-- database is then a list of expired-looking strings rather than a drawer full
+-- of usable logins — the same reasoning as the password column beside it.
+CREATE TABLE IF NOT EXISTS session (
+    token_hash TEXT    PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
+    created_at TEXT    NOT NULL,
+    expires_at TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_account ON session(account_id);
 
 -- Which build of the shipped catalogue this database currently holds.
 --
@@ -299,6 +326,10 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # someone recognises their own entry, and how a later catalogue improvement
     # can re-resolve it.
     ("planting", "raw_name", "TEXT"),
+    # Wave 9. Wave 8 reported where a height came from and then threw it away;
+    # a sightline resting on a guessed building height must not be drawn as
+    # though it were surveyed. Existing obstacles were entered by hand.
+    ("obstacle", "height_source", "TEXT NOT NULL DEFAULT 'user'"),
 )
 
 

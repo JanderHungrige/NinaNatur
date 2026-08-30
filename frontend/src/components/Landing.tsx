@@ -13,6 +13,8 @@ interface Props {
   createForm: ReactNode;
   /** Finding the garden on a map — the way most people will actually start. */
   mapPicker?: ReactNode;
+  /** Registering and logging in — a place to keep the links, not to replace them. */
+  accountPanel?: ReactNode;
   onOpen: (token: string) => void;
   busy: boolean;
   loadStats: () => Promise<StatsOut | null>;
@@ -34,7 +36,15 @@ function de(n: number): string {
  * hand, and it was wrong the first time the catalogue was rebuilt: a page that
  * states a number is making a claim.
  */
-export function Landing({ createForm, mapPicker, onOpen, busy, loadStats, problem }: Props) {
+export function Landing({
+  createForm,
+  mapPicker,
+  accountPanel,
+  onOpen,
+  busy,
+  loadStats,
+  problem,
+}: Props) {
   const [stats, setStats] = useState<StatsOut | null>(null);
   const [id, setId] = useState('');
 
@@ -97,6 +107,9 @@ export function Landing({ createForm, mapPicker, onOpen, busy, loadStats, proble
           {createForm}
         </section>
 
+        {accountPanel !== undefined && (
+          <section className="panel landing__way">{accountPanel}</section>
+        )}
         <section className="panel landing__way">
           <h2>Garten öffnen</h2>
           <label htmlFor="landing-id">Garten-ID</label>

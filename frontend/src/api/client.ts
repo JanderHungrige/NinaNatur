@@ -23,6 +23,9 @@ export type SpeciesInfoOut = components['schemas']['SpeciesInfoOut'];
 export type BloomPalette = components['schemas']['BloomPalette'];
 export type StatsOut = components['schemas']['StatsOut'];
 export type MapGardenOut = components['schemas']['MapGardenOut'];
+export type SightlinesOut = components['schemas']['SightlinesOut'];
+export type AccountOut = components['schemas']['AccountOut'];
+export type OwnedGardens = components['schemas']['OwnedGardens'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -98,6 +101,11 @@ export class NinaNaturClient {
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await this.doFetch(`${this.baseUrl}${path}`, {
       headers: { 'content-type': 'application/json' },
+      // Stated rather than inherited. It happens to be fetch's default, and the
+      // session cookie is not something to leave resting on a default — an
+      // `init` that ever set `credentials: 'omit'` would silently log everyone
+      // out, and same-origin is exactly as far as this cookie should travel.
+      credentials: 'same-origin',
       ...init,
     });
     if (!response.ok) {
@@ -341,6 +349,61 @@ export class NinaNaturClient {
     return this.request<MapGardenOut>('/api/v1/gardens/from-map', {
       method: 'POST',
       body: JSON.stringify(selection),
+    });
+  }
+
+  /** What is visible from a point in the garden. */
+  async sightlines(
+    token: string,
+    viewpoint: { x: number; y: number; eye_height_m?: number },
+  ): Promise<SightlinesOut> {
+    return this.request<SightlinesOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/sightlines`,
+      { method: 'POST', body: JSON.stringify(viewpoint) },
+    );
+  }
+
+  async register(input: {
+    username: string;
+    password: string;
+    email?: string;
+  }): Promise<AccountOut> {
+    return this.request<AccountOut>('/api/v1/accounts', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async logIn(input: { username: string; password: string }): Promise<AccountOut> {
+    return this.request<AccountOut>('/api/v1/sessions', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async logOut(): Promise<void> {
+    await this.request<void>('/api/v1/sessions', { method: 'DELETE' });
+  }
+
+  /** Who is logged in, or null. Null rather than throwing: not being logged in
+   *  is the ordinary state, not an error. */
+  async me(): Promise<AccountOut | null> {
+    try {
+      return await this.request<AccountOut>('/api/v1/accounts/me');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) return null;
+      throw error;
+    }
+  }
+
+  async myGardens(): Promise<OwnedGardens> {
+    return this.request<OwnedGardens>('/api/v1/accounts/me/gardens');
+  }
+
+  /** Put a garden under the logged-in account. */
+  async claimGarden(token: string): Promise<GardenOut> {
+    return this.request<GardenOut>(`/api/v1/gardens/${encodeURIComponent(token)}/claim`, {
+      method: 'POST',
     });
   }
 

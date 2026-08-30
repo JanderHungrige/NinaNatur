@@ -5,6 +5,7 @@ import type {
   ChangeOut,
   BloomPalette,
   GardenOut,
+  SightlinesOut,
   SuggestionFilters,
   ImprovementsOut,
   ScoreOut,
@@ -12,6 +13,7 @@ import type {
 } from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
+import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
@@ -19,6 +21,7 @@ import { GardenId } from './components/GardenId';
 import { objects } from './plural';
 import { Landing } from './components/Landing';
 import { MapPicker, type MapSelection } from './components/MapPicker';
+import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
@@ -56,10 +59,15 @@ export function App() {
   const [editing, setEditing] = useState<EditableObject | null>(null);
   const [palette, setPalette] = useState<BloomPalette | null>(null);
   const [openProblem, setOpenProblem] = useState<string | undefined>(undefined);
+  const [account, setAccount] = useState<AccountInfo | null>(null);
+  const [sightlines, setSightlines] = useState<SightlinesOut | null>(null);
+  const [viewpoint, setViewpoint] = useState<{ x: number; y: number } | null>(null);
 
   /** Stable identity: an inline arrow would refire the landing page's effect
    *  on every render, which is the loop the species panel already cost us. */
   const loadStats = useCallback(async () => client.stats(), []);
+
+
   const findPlaces = useCallback(async (q: string) => client.findPlaces(q), []);
   const findImagery = useCallback(
     async (lat: number, lon: number) => client.findImagery(lat, lon),
@@ -110,6 +118,41 @@ export function App() {
       setBusy(false);
     }
   }, []);
+
+  // Who is logged in, asked once. Not being logged in is the ordinary state, so
+  // the client answers null rather than throwing.
+  useEffect(() => {
+    void client.me().then(setAccount).catch(() => setAccount(null));
+  }, []);
+
+  const register = useCallback(
+    async (input: { username: string; password: string; email?: string }) => {
+      await run('Konto anlegen', async () => {
+        await client.register(input);
+        setAccount(await client.logIn({ username: input.username, password: input.password }));
+        setStatus('Konto angelegt und angemeldet.');
+      });
+    },
+    [run],
+  );
+
+  const logIn = useCallback(
+    async (input: { username: string; password: string }) => {
+      await run('Anmelden', async () => {
+        setAccount(await client.logIn(input));
+        setStatus('Angemeldet.');
+      });
+    },
+    [run],
+  );
+
+  const logOut = useCallback(async () => {
+    await run('Abmelden', async () => {
+      await client.logOut();
+      setAccount(null);
+      setStatus('Abgemeldet. Deine Garten-ID öffnet den Garten weiterhin.');
+    });
+  }, [run]);
 
   /** Selecting a bed fetches its suggestions — the bed's own conditions are the query. */
   const selectBed = useCallback(
@@ -326,6 +369,31 @@ export function App() {
           }),
         );
 
+  /**
+   * Standing somewhere and asking what is visible.
+   *
+   * Computed on the server because it needs plant heights from the catalogue,
+   * which the browser does not have.
+   */
+  const lookFrom = useCallback(
+    (x: number, y: number) => {
+      if (garden === null) return;
+      setViewpoint({ x, y });
+      void run('Sichtprüfung', async () => {
+        setSightlines(await client.sightlines(garden.share_token, { x, y }));
+      });
+    },
+    [garden, run],
+  );
+
+  const claim = useCallback(() => {
+    if (garden === null) return;
+    void run('Übernehmen', async () => {
+      setGarden(await client.claimGarden(garden.share_token));
+      setStatus('Dieser Garten gehört jetzt zu deinem Konto.');
+    });
+  }, [garden, run]);
+
   const editSelectedBed = useCallback(() => {
     const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
     if (bed === undefined) return;
@@ -427,11 +495,34 @@ export function App() {
             busy={busy}
             loadStats={loadStats}
             problem={openProblem}
+            accountPanel={
+              <AccountPanel
+                account={account}
+                onRegister={register}
+                onLogin={logIn}
+                onLogout={logOut}
+                busy={busy}
+              />
+            }
           />
         ) : (
           <>
             <div className="column">
               <GardenId token={garden.share_token} />
+              {account !== null ? (
+                <button type="button" className="link-button" onClick={claim}>
+                  Diesen Garten meinem Konto zuordnen
+                </button>
+              ) : null}
+              {sightlines !== null ? (
+                <Sightlines
+                  result={sightlines}
+                  onClear={() => {
+                    setSightlines(null);
+                    setViewpoint(null);
+                  }}
+                />
+              ) : null}
               <BedPanel
                 garden={garden}
                 selectedBedId={selectedBedId}
@@ -489,6 +580,8 @@ export function App() {
                 onDrawBed={drawBed}
                 onSelectObstacle={editObstacleById}
                 palette={monthColours}
+                viewpoint={viewpoint}
+                onPlaceViewpoint={lookFrom}
               />
               {timeline !== null ? (
                 <>

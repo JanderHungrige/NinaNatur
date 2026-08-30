@@ -12,6 +12,8 @@ interface Props {
   onCancel: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  placing?: boolean | undefined;
+  onPlaceViewpoint?: (() => void) | undefined;
 }
 
 function points(n: number): string {
@@ -39,6 +41,8 @@ export function CanvasControls({
   onCancel,
   onUndo,
   onRedo,
+  placing,
+  onPlaceViewpoint,
 }: Props) {
   return (
     <div className="canvas-controls">
@@ -68,6 +72,16 @@ export function CanvasControls({
         ) : (
           <button type="button" onClick={onStartDrawing}>
             Beet zeichnen
+          </button>
+        )}
+
+        {onPlaceViewpoint !== undefined && (
+          <button
+            type="button"
+            aria-pressed={placing === true}
+            onClick={onPlaceViewpoint}
+          >
+            {placing === true ? 'Standpunkt: klicke in den Plan' : 'Standpunkt setzen'}
           </button>
         )}
 

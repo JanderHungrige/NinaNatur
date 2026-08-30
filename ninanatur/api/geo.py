@@ -113,6 +113,7 @@ def garden_from_map(
                 radius=obj.radius_m,
                 height=obj.height_m,
                 label=obj.label,
+                height_source=obj.height_source.value,
             ),
         )
     recompute_light(conn, garden_id)

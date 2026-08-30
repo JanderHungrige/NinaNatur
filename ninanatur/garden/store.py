@@ -133,10 +133,10 @@ def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
 
 def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInput) -> int:
     cursor = conn.execute(
-        "INSERT INTO obstacle (garden_id, kind, x, y, radius, height, label)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO obstacle (garden_id, kind, x, y, radius, height, label, height_source)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (garden_id, obstacle.kind, obstacle.x, obstacle.y, obstacle.radius,
-         obstacle.height, obstacle.label),
+         obstacle.height, obstacle.label, obstacle.height_source),
     )
     _touch(conn, garden_id)
     return int(cursor.lastrowid or 0)
@@ -243,7 +243,7 @@ def update_bed(conn: sqlite3.Connection, bed_id: int, **fields: object) -> None:
 
 def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object) -> None:
     """Change some of an obstacle's fields. Only what was passed is written."""
-    allowed = {"kind", "x", "y", "radius", "height", "label"}
+    allowed = {"kind", "x", "y", "radius", "height", "label", "height_source"}
     changes = {k: v for k, v in fields.items() if k in allowed and v is not None}
     if not changes:
         return
@@ -444,7 +444,7 @@ def _load(conn: sqlite3.Connection, row: sqlite3.Row | None) -> Garden | None:
         Obstacle(
             obstacle_id=int(r["obstacle_id"]), kind=r["kind"],
             x=r["x"], y=r["y"], radius=r["radius"], height=r["height"],
-            label=r["label"],
+            label=r["label"], height_source=r["height_source"],
         )
         for r in conn.execute(
             "SELECT * FROM obstacle WHERE garden_id = ? ORDER BY obstacle_id", (garden_id,)
