@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { KINDS as KIND_LIST } from '../kinds';
+
 /** What the editor is looking at. A bed and an obstacle differ in what they own. */
 export type EditableObject =
   | {
@@ -29,21 +31,11 @@ interface Props {
 /**
  * The vocabulary, with the numbers that make each kind a thing.
  *
- * Mirrors ninanatur/garden/objects.py. A dropdown that only decorates is a form
- * field asking the user to do our bookkeeping — choosing "Hecke" should answer
- * a question, not ask one.
+ * One list, in ../kinds. This one used to be its own, and drifted: it offered
+ * "Gebäude" for months after the server had replaced it with house and shed,
+ * so choosing it wrote a kind nothing downstream understood.
  */
-const KINDS: Array<{ value: string; label: string; height: number | null }> = [
-  { value: 'tree', label: 'Baum', height: 8 },
-  { value: 'hedge', label: 'Hecke', height: 2 },
-  { value: 'shrub', label: 'Strauch', height: 1.5 },
-  { value: 'building', label: 'Gebäude', height: 6 },
-  { value: 'wall', label: 'Mauer', height: 2 },
-  { value: 'fence', label: 'Zaun', height: 1.2 },
-  // No default: "Sonstiges" is the absence of a category, and inventing a
-  // height for it would put a number on screen the user never gave.
-  { value: 'other', label: 'Sonstiges', height: null },
-];
+const KINDS = KIND_LIST.map((k) => ({ value: k.kind, label: k.label, height: k.height }));
 
 export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
   const [label, setLabel] = useState(object.label ?? '');

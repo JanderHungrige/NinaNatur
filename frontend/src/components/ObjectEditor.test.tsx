@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { KINDS } from '../kinds';
 import { ObjectEditor } from './ObjectEditor';
 
 const BED = {
@@ -40,13 +41,13 @@ describe('ObjectEditor', () => {
     expect(screen.queryByLabelText(/Höhe über Grund/)).toBeNull();
   });
 
-  it('offers the kinds a gardener would name', () => {
+  it('offers every kind the vocabulary knows, and nothing else', () => {
+    // Asserted against the shared list rather than a hand-copied one. The
+    // hand-copied version of this test demanded 'building' long after the
+    // server had split it into house and shed, so it guarded the drift.
     render(<ObjectEditor object={TREE} onSave={vi.fn()} onClose={vi.fn()} busy={false} />);
     const select = screen.getByLabelText('Art') as HTMLSelectElement;
-    const values = [...select.options].map((o) => o.value);
-    expect(values).toEqual(
-      expect.arrayContaining(['tree', 'hedge', 'shrub', 'building', 'wall', 'fence', 'other']),
-    );
+    expect([...select.options].map((o) => o.value)).toEqual(KINDS.map((k) => k.kind));
   });
 
   it('fills in the height a kind usually has when the kind changes', () => {

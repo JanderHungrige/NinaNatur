@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GardenOut } from '../api/client';
+import { KINDS } from '../kinds';
 import { BedPanel } from './BedPanel';
 
 function garden(bedOverrides: Partial<GardenOut['beds'][number]> = {}): GardenOut {
@@ -84,5 +85,60 @@ describe('BedPanel', () => {
     });
     render(<BedPanel garden={g} selectedBedId={null} {...noop} />);
     expect(screen.getByRole('button', { name: /2 Arten gepflanzt/ })).toBeDefined();
+  });
+});
+
+describe('BedPanel — adding an obstacle by hand', () => {
+  function panel() {
+    const onAddObstacle = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BedPanel
+        garden={garden()}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        onAddBed={vi.fn()}
+        onAddObstacle={onAddObstacle}
+        busy={false}
+      />,
+    );
+    // Scoped: the bed form above has its own Breite and Tiefe.
+    const form = within(screen.getByRole('form', { name: 'Hindernis hinzufügen' }));
+    return { onAddObstacle, form };
+  }
+
+  it('offers the kinds rather than asking the user to spell one', () => {
+    // This was a free text field. Anything not in the server's closed set came
+    // back a 422 the user had no way to predict.
+    const { form } = panel();
+    const select = form.getByLabelText('Art') as HTMLSelectElement;
+    expect([...select.options].map((o) => o.value)).toEqual(KINDS.map((k) => k.kind));
+  });
+
+  it('fills in the size and height that come with a kind', () => {
+    const { form } = panel();
+    fireEvent.change(form.getByLabelText('Art'), { target: { value: 'house' } });
+    expect((form.getByLabelText('Breite') as HTMLInputElement).value).toBe('10');
+    expect((form.getByLabelText('Tiefe') as HTMLInputElement).value).toBe('8');
+    expect((form.getByLabelText('Höhe') as HTMLInputElement).value).toBe('6');
+  });
+
+  it('sends no height for a surface', () => {
+    // Paving has none, and inventing one would have it shade the bed next door.
+    const { onAddObstacle, form } = panel();
+    fireEvent.change(form.getByLabelText('Art'), { target: { value: 'paving' } });
+    fireEvent.click(form.getByRole('button', { name: 'Hindernis hinzufügen' }));
+    expect(onAddObstacle).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'paving', width: 4, depth: 3 }),
+    );
+    expect(onAddObstacle.mock.calls[0]?.[0]).not.toHaveProperty('height');
+  });
+
+  it('sends width and depth, not a doubled radius', () => {
+    const { onAddObstacle, form } = panel();
+    fireEvent.change(form.getByLabelText('Art'), { target: { value: 'hedge' } });
+    fireEvent.click(form.getByRole('button', { name: 'Hindernis hinzufügen' }));
+    expect(onAddObstacle).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'hedge', width: 6, depth: 0.6, height: 2 }),
+    );
   });
 });

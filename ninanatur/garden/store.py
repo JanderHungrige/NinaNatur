@@ -56,7 +56,7 @@ def _validate_polygon(polygon: Polygon) -> Polygon:
             f"a bed needs at least {MIN_POLYGON_POINTS} points, got {len(polygon)}"
         )
     for point in polygon:
-        if len(point) != 2 or not all(isinstance(c, (int, float)) for c in point):
+        if len(point) != 2 or not all(isinstance(c, int | float) for c in point):
             raise PolygonError(f"polygon points must be [x, y] numbers, got {point!r}")
     return polygon
 

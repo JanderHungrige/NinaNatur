@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut } from '../api/client';
+import { type Box, type Handle, resizeBy, rotateBy } from '../canvas/handles';
 import * as history from '../canvas/history';
 import { isDegenerate, selfIntersects } from '../canvas/geometry';
 import { snapPoint } from '../canvas/snap';
@@ -16,6 +17,7 @@ import {
 import { beds as bedCount, obstacles as obstacleCount } from '../plural';
 import { CanvasControls } from './CanvasControls';
 import { CanvasScene } from './CanvasScene';
+import { PreviewBox, ResizeHandles } from './ResizeHandles';
 
 interface Props {
   garden: GardenOut;
@@ -40,6 +42,13 @@ interface Props {
   viewpoint?: { x: number; y: number } | null;
   /** Placing one: a second thing a click on the plan can mean, so it is a mode. */
   onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
+  /** The element the palette has armed, if any. A click then places one. */
+  stampKind?: string | null;
+  onPlaceStamp?: ((kind: string, x: number, y: number) => void) | undefined;
+  /** The object wearing handles. Selection is the parent's, because the panel
+   *  and the plan must agree on what is being edited. */
+  selectedObstacleId?: number | null;
+  onResizeObstacle?: ((obstacleId: number, box: Box) => void) | undefined;
 }
 
 const DEFAULT_SIZE = { widthPx: 800, heightPx: 600 };
@@ -66,6 +75,10 @@ export function GardenCanvas({
   palette,
   viewpoint = null,
   onPlaceViewpoint,
+  stampKind = null,
+  onPlaceStamp,
+  selectedObstacleId = null,
+  onResizeObstacle,
 }: Props) {
   const [placing, setPlacing] = useState(false);
   const [view, setView] = useState<Viewport>({
@@ -78,6 +91,21 @@ export function GardenCanvas({
   const [draft, setDraft] = useState<history.History<Point[]>>(history.empty<Point[]>([]));
   const [problem, setProblem] = useState<string | null>(null);
   const surface = useRef<SVGSVGElement | null>(null);
+  /**
+   * The shape being dragged, shown as an outline until the pointer is let go.
+   *
+   * An outline rather than a live redraw of the object: the real footprint is
+   * the server's to compute, and a second implementation of that arithmetic
+   * here is a second thing to keep in step. draw.io shows a preview box for the
+   * same reason.
+   */
+  const [preview, setPreview] = useState<Box | null>(null);
+  const grab = useRef<{
+    handle: Handle | 'rotate';
+    startPx: { x: number; y: number };
+    box: Box;
+    moved: boolean;
+  } | null>(null);
 
   const spacing = gridSpacing(view);
   const points = draft.present;
@@ -100,6 +128,90 @@ export function GardenCanvas({
     observer.observe(element);
     return () => observer.disconnect();
   }, [size]);
+
+  const selected =
+    garden.obstacles.find((o) => o.obstacle_id === selectedObstacleId) ?? null;
+  /** A circle has no depth of its own; its diameter is both. */
+  const selectedBox: Box | null =
+    selected === null
+      ? null
+      : {
+          x: selected.x,
+          y: selected.y,
+          width: selected.width,
+          depth: selected.depth ?? selected.width,
+          rotation: selected.rotation,
+        };
+
+  const metresPerPixel = view.spanM / view.widthPx;
+
+  const grabHandle = (handle: Handle | 'rotate', event: React.PointerEvent) => {
+    if (selectedBox === null) return;
+    // The surface below would otherwise read this as a click on the plan, and
+    // grabbing a handle would drop a bed corner or place a second house.
+    event.stopPropagation();
+    grab.current = {
+      handle,
+      startPx: { x: event.clientX, y: event.clientY },
+      box: selectedBox,
+      moved: false,
+    };
+    setPreview(selectedBox);
+  };
+
+  /**
+   * The drag itself, on the window rather than on the handle: a pointer that
+   * leaves the little square mid-gesture must keep resizing, which is what
+   * makes a handle feel like a handle.
+   */
+  useEffect(() => {
+    if (preview === null) return undefined;
+    const onMove = (event: PointerEvent) => {
+      const active = grab.current;
+      if (active === null) return;
+      const dxPx = event.clientX - active.startPx.x;
+      const dyPx = event.clientY - active.startPx.y;
+      if (dxPx !== 0 || dyPx !== 0) active.moved = true;
+
+      if (active.handle === 'rotate') {
+        const rect = surface.current?.getBoundingClientRect();
+        const pointer = toGarden(
+          { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) },
+          view,
+        );
+        setPreview({
+          ...active.box,
+          rotation: rotateBy(active.box, pointer, { free: event.altKey }),
+        });
+        return;
+      }
+      // Screen y grows downward, garden y grows north.
+      setPreview(
+        resizeBy(
+          active.box,
+          active.handle,
+          { dx: dxPx * metresPerPixel, dy: -dyPx * metresPerPixel },
+          { keepSquare: selected?.shape === 'circle' },
+        ),
+      );
+    };
+    const onUp = () => {
+      const active = grab.current;
+      grab.current = null;
+      const shape = preview;
+      setPreview(null);
+      // Clicking a handle is not a resize. Saving one anyway costs a PATCH and
+      // a recomputation of every bed's light for a gesture that changed nothing.
+      if (active === null || !active.moved || selected === null) return;
+      onResizeObstacle?.(selected.obstacle_id, shape);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [preview, view, metresPerPixel, selected, onResizeObstacle]);
 
   const cancel = useCallback(() => {
     setDrawing(false);
@@ -164,26 +276,34 @@ export function GardenCanvas({
     drag.current = null;
   };
 
+  /** Where a click landed, in garden metres. */
+  const pointerMetres = (event: React.MouseEvent<SVGSVGElement>) => {
+    const rect = surface.current?.getBoundingClientRect();
+    return toGarden(
+      { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) },
+      view,
+    );
+  };
+
   const addVertex = (event: React.MouseEvent<SVGSVGElement>) => {
+    // Placing an armed element wins over drawing. Two modes share one click,
+    // and without an order a click both places a house and drops a bed corner
+    // underneath it.
+    if (stampKind !== null && onPlaceStamp !== undefined) {
+      const at = snapPoint(pointerMetres(event), spacing, { free: event.altKey });
+      onPlaceStamp(stampKind, round(at.x), round(at.y));
+      return;
+    }
     if (placing && onPlaceViewpoint !== undefined) {
-      const box = surface.current?.getBoundingClientRect();
-      const point = toGarden(
-        { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) },
-        view,
-      );
+      const point = pointerMetres(event);
       onPlaceViewpoint(round(point.x), round(point.y));
       setPlacing(false);
       return;
     }
     if (!drawing) return;
-    const rect = surface.current?.getBoundingClientRect();
-    const at = {
-      x: event.clientX - (rect?.left ?? 0),
-      y: event.clientY - (rect?.top ?? 0),
-    };
     // Snap in metres, after the transform: snapping pixels first would store a
     // different coordinate at every zoom level.
-    const metres = snapPoint(toGarden(at, view), spacing, { free: event.altKey });
+    const metres = snapPoint(pointerMetres(event), spacing, { free: event.altKey });
     setDraft((current) => history.push(current, [...current.present, metres]));
     setProblem(null);
   };
@@ -261,6 +381,16 @@ export function GardenCanvas({
           onSelectObstacle={onSelectObstacle}
           palette={palette}
         />
+        {selectedBox !== null && onResizeObstacle !== undefined ? (
+          <>
+            {preview !== null ? <PreviewBox box={preview} view={view} /> : null}
+            <ResizeHandles
+              box={preview ?? selectedBox}
+              view={view}
+              onGrab={grabHandle}
+            />
+          </>
+        ) : null}
       </svg>
     </div>
   );

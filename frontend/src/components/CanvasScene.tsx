@@ -1,3 +1,4 @@
+import { labelOf } from '../kinds';
 import type { GardenOut } from '../api/client';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
@@ -23,25 +24,9 @@ function bedLabel(bed: GardenOut['beds'][number]): string {
   return `${bedName(bed.name)}, ${light}`;
 }
 
-export const KIND_LABEL: Record<string, string> = {
-  house: 'Wohnhaus',
-  shed: 'Schuppen',
-  wall: 'Mauer',
-  fence: 'Zaun',
-  hedge: 'Hecke',
-  tree: 'Baum',
-  shrub: 'Strauch',
-  bed: 'Beet',
-  lawn: 'Rasen',
-  paving: 'Pflaster',
-  gravel: 'Kies',
-  pond: 'Teich',
-  path: 'Weg',
-  other: 'Objekt',
-};
 
 function obstacleLabel(o: GardenOut['obstacles'][number]): string {
-  const kind = KIND_LABEL[o.kind] ?? o.kind;
+  const kind = labelOf(o.kind);
   // The free label first when there is one: it is what the user calls the thing.
   return o.label ? `${o.label} (${kind}, ${o.height} m hoch)` : `${kind}, ${o.height} m hoch`;
 }
