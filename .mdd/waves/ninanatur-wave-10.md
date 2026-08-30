@@ -3,11 +3,11 @@ id: ninanatur-wave-10
 title: "Wave 10: The garden drawn as a garden"
 initiative: ninanatur
 initiative_version: 11
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-9
 demo_state: "A user stamps a house, a lawn and an oak onto the plan, sketches a bed freehand without aiming precisely, names everything — and the plan looks like a garden plan, with shadows shaped like the things that cast them"
 created: 2026-08-30
-hash: c60e2eec
+hash: 3e5bcd8a
 ---
 
 # Wave 10 — The garden drawn as a garden
@@ -61,9 +61,9 @@ Polygon shadows are what make fetching real geometry worth the payload.
 |---|---------|-----|--------|------------|
 | 1 | object-footprints | 37-object-footprints | complete | — |
 | 2 | polygon-shadows | 38-polygon-shadows | complete | 37 |
-| 3 | element-stamps | 39-element-stamps | planned | 37 |
-| 4 | freehand-shapes | 40-freehand-shapes | planned | 37 |
-| 5 | garden-style | 41-garden-style | planned | 37 |
+| 3 | element-stamps | 39-element-stamps | complete | 37 |
+| 4 | freehand-shapes | 40-freehand-shapes | complete | 37 |
+| 5 | garden-style | 41-garden-style | complete | 37 |
 
 ### 1 — object-footprints
 
@@ -162,3 +162,23 @@ soft washes, textured outlines, tree crowns as foliage rather than discs.
 A user stamps a house and an oak, sketches a bed freehand, renames the house to
 "Wohnhaus" and sees it drawn as one — and at 17:00 in March the house's shadow
 falls across the lawn as a long rectangle, not as a circle.
+
+
+## What the wave actually cost, and what it found
+
+Five features, five docs, and eight defects that only the running app or a
+guard test exposed:
+
+| Found by | Defect |
+|---|---|
+| the vocabulary guard | the object editor still offered `building`, a kind the server dropped in feature 37 |
+| driving the app | `Art` was a free text field over a closed server enum — any typo was an unpredictable 422 |
+| driving the app | `step="0.5"` over `min="0.2"` made 6 m invalid, and an invalid number input blocks submission in silence |
+| reading the a11y tree | the stamp buttons' name concatenated to `Wohnhaus10 × 8 m` |
+| the stylesheet guard | `.obstacle` declared a CSS fill, which beats the per-object texture attribute — every kind would have drawn as the same grey |
+| the metre guard (Wave 7) | the high-contrast rule set `stroke-width: 2.5`, a 2.5 **metre** outline |
+| looking at the plan | the crown tile at 1.1 m is a two-pixel dot; trees read as flat discs |
+| looking at the plan | the wobble at `baseFrequency="0.6"` is finer than a pixel and averages into a straight line |
+
+The two guard-test finds are the ones worth keeping in mind: both would have
+passed every unit test in the suite while being visibly wrong on screen.
