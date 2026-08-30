@@ -1,0 +1,162 @@
+"""How much sun a planting site gets, and what stands in the way.
+
+Split out of `store.py` in Wave 11. It is the one part of the store that is
+about the sky rather than about rows, and `store.py` was over the file-length
+limit before the element merge added to it.
+"""
+from __future__ import annotations
+
+import sqlite3
+
+from ninanatur.garden.canopy import Canopy, canopy_of, shades
+from ninanatur.garden.elements import now as _now
+from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
+from ninanatur.garden.footprint import Shape, footprint_of
+from ninanatur.garden.models import Garden
+from ninanatur.garden.objects import ObjectKind, casts_shadow
+from ninanatur.solar.light import bed_light_value
+from ninanatur.solar.position import Location
+from ninanatur.solar.shading import Obstacle as ShadingObstacle
+from ninanatur.solar.shading import Point
+
+
+def _planted_obstacles(
+    conn: sqlite3.Connection, garden: Garden
+) -> list[tuple[int, ShadingObstacle]]:
+    """Woody plantings, as the shadows they will cast, tagged with their own bed.
+
+    A bed is a marked area; a tree standing in it is not a different kind of bed,
+    it is a thing that blocks the sun. The shading model already describes
+    obstacles as vertical cylinders — the exact shape of a tree — and simply was
+    never told about the ones the user plants.
+
+    Positioned at the bed's centroid because a planting has no coordinates of
+    its own — which is also why the bed it stands in is excluded from its
+    shadow. Light is sampled at that same centroid, so a plant would always sit
+    exactly on the sample point and darken its own bed completely: one 2 m shrub
+    in a 16 m² bed took it from 12.6 sun hours to 0.0 and Ellenberg 8 to 3.
+
+    That is an artifact of not knowing where in the bed the plant stands, not a
+    fact about shade. Between beds the geometry is real and is used. Wave 7's
+    drawing tool gives plantings a position, and this exclusion goes with it.
+    """
+    heights = _woody_heights(
+        conn,
+        [p.taxon_id for bed in garden.beds for p in bed.plantings if p.taxon_id is not None],
+    )
+    obstacles: list[tuple[int, ShadingObstacle]] = []
+    for bed in garden.beds:
+        centre = Point(*_polygon_centroid(bed.polygon))
+        for planting in bed.plantings:
+            if planting.taxon_id is None:
+                continue
+            canopy = heights.get(planting.taxon_id)
+            if not shades(canopy):
+                continue
+            assert canopy is not None  # narrowed by shades()
+            obstacles.append(
+                (
+                    bed.bed_id,
+                    ShadingObstacle(
+                        footprint=footprint_of(
+                            shape=Shape.CIRCLE, x=centre.x, y=centre.y,
+                            width=canopy.radius_m * 2, depth=None,
+                            rotation=0.0, points=None,
+                        ),
+                        height=canopy.height_m,
+                    ),
+                )
+            )
+    return obstacles
+
+
+def _woody_heights(
+    conn: sqlite3.Connection, taxon_ids: list[int]
+) -> dict[int, Canopy | None]:
+    """Height and growth form for a set of species, in one query."""
+    if not taxon_ids:
+        return {}
+    unique = sorted(set(taxon_ids))
+    placeholders = ",".join("?" for _ in unique)
+    rows = conn.execute(
+        "SELECT taxon_id, trait_key, value_num, value_text FROM trait"
+        f" WHERE taxon_id IN ({placeholders})"  # noqa: S608
+        " AND trait_key IN ('height_max_m', 'growth_form')",
+        unique,
+    )
+    heights: dict[int, float] = {}
+    forms: dict[int, str] = {}
+    for row in rows:
+        tid = int(row["taxon_id"])
+        if row["trait_key"] == "height_max_m" and row["value_num"] is not None:
+            # Sources disagree and none overwrites another; the tallest recorded
+            # value is the one that decides whether a shadow reaches a neighbour.
+            heights[tid] = max(heights.get(tid, 0.0), float(row["value_num"]))
+        elif row["value_text"] is not None:
+            forms[tid] = str(row["value_text"])
+    return {tid: canopy_of(heights.get(tid), forms.get(tid)) for tid in unique}
+
+
+def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
+    # Imported here rather than at module level: `store` imports this module, so
+    # the other direction can only be a deferred one.
+    from ninanatur.garden.store import load_garden
+
+    """Recompute every bed's light from the garden's obstacles and its own trees.
+
+    Returns beds updated.
+    """
+    garden = load_garden(conn, garden_id)
+    obstacles = [
+        ShadingObstacle(footprint=o.footprint, height=o.height)
+        for o in garden.obstacles
+        # A height of None is an element nobody has said the height of. Treating
+        # it as zero would be a claim; skipping it is the same answer Wave 8
+        # gave for a building with no recorded height.
+        if o.height is not None and casts_shadow(ObjectKind(o.kind))
+    ]
+    planted = _planted_obstacles(conn, garden)
+    location = Location(latitude=garden.latitude, longitude=garden.longitude)
+
+    updated = 0
+    for bed in garden.beds:
+        # A bed is not shaded by what grows in it — see _planted_obstacles.
+        from_others = [o for owner, o in planted if owner != bed.bed_id]
+        light = bed_light_value(
+            location,
+            Point(*_polygon_centroid(bed.polygon)),
+            obstacles + from_others,
+            height_above_ground=bed.height_above_ground,
+        )
+        conn.execute(
+            "UPDATE element SET ellenberg_l = ?, sun_hours = ?,"
+            " light_computed_at = ? WHERE element_id = ?",
+            (light.ellenberg_l, light.sun_hours, _now(), bed.bed_id),
+        )
+        updated += 1
+    conn.commit()
+    return updated
+
+
+
+
+def _relight_if_woody(conn: sqlite3.Connection, bed_id: int, taxon_id: int) -> None:
+    """Recompute the garden's light when what was planted casts a shadow.
+
+    Here rather than in the route, for the same reason the light computation
+    itself lives in this module: the invariant has to hold whatever the entry
+    point. Every unit test of planted shade called `recompute_light` itself and
+    passed, while the running app left a bed at 12.6 h and Ellenberg 8 with a
+    24 m oak standing in it.
+
+    Skipped for anything under 1.5 m — recomputing a whole garden for a
+    perennial is work that cannot change an answer.
+    """
+    canopy = _woody_heights(conn, [taxon_id]).get(taxon_id)
+    if not shades(canopy):
+        return
+    row = conn.execute("SELECT garden_id FROM element WHERE element_id = ?", (bed_id,)).fetchone()
+    if row is not None:
+        recompute_light(conn, int(row["garden_id"]))
+
+

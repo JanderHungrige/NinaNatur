@@ -22,13 +22,13 @@ from ninanatur.api.schemas import (
     PlaceOut,
     PlaceSearchOut,
 )
+from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import BedInput, ObstacleInput
 from ninanatur.garden.store import (
     add_bed,
     add_obstacle,
     create_garden,
     load_garden,
-    recompute_light,
 )
 from ninanatur.geo.orthophotos import by_state
 from ninanatur.geo.osm import buildings_in, search_address, state_at

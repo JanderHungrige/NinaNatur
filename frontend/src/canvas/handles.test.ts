@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type Box,
   HANDLES,
+  boxOf,
   handleAt,
   resizeBy,
   rotateBy,
@@ -89,5 +90,63 @@ describe('resize handles', () => {
 
   it('gives north as zero', () => {
     expect(rotateBy(BOX, { x: 0, y: 5 })).toBeCloseTo(0);
+  });
+});
+
+describe('boxOf', () => {
+  it('reads a rectangle back out of its four corners', () => {
+    // Wave 11 stores points, not a width and an angle. The handles still need
+    // the box, so it is derived — and it has to survive the round trip or a
+    // resize would nudge the shape every time it is selected.
+    const box = boxOf({
+      shape: 'polygon',
+      x: 3,
+      y: 4,
+      width: null,
+      constraint_hint: 'rect',
+      points: [[-5, -4], [5, -4], [5, 4], [-5, 4]],
+      footprint: [[-2, 0], [8, 0], [8, 8], [-2, 8]],
+    });
+    expect(box.x).toBeCloseTo(3);
+    expect(box.y).toBeCloseTo(4);
+    expect(box.width).toBeCloseTo(10);
+    expect(box.depth).toBeCloseTo(8);
+    expect(box.rotation).toBeCloseTo(0);
+  });
+
+  it('recovers the angle of a turned rectangle', () => {
+    const turned = [
+      [0, -5], [4, 0], [0, 5], [-4, 0],
+    ];
+    const box = boxOf({
+      shape: 'polygon', x: 0, y: 0, width: null, constraint_hint: 'rect',
+      points: turned, footprint: turned,
+    });
+    // The first edge runs 4 east and 5 north, so the box is turned off north.
+    expect(box.width).toBeCloseTo(Math.hypot(4, 5));
+    expect(box.rotation).not.toBeCloseTo(0);
+  });
+
+  it('treats a circle as square, because it is', () => {
+    const box = boxOf({
+      shape: 'circle', x: 2, y: 1, width: 6, constraint_hint: null,
+      points: null, footprint: [[2, 4], [5, 1], [2, -2], [-1, 1]],
+    });
+    expect(box.width).toBeCloseTo(6);
+    expect(box.depth).toBeCloseTo(6);
+    expect(box.rotation).toBe(0);
+  });
+
+  it('falls back to the bounding box of a free shape', () => {
+    // A freehand outline has no width and no angle to recover. The handles
+    // still have to sit somewhere sensible.
+    const box = boxOf({
+      shape: 'polygon', x: 0, y: 0, width: null, constraint_hint: null,
+      points: [[0, 0], [6, 1], [4, 5], [-1, 3]],
+      footprint: [[0, 0], [6, 1], [4, 5], [-1, 3]],
+    });
+    expect(box.width).toBeCloseTo(7);
+    expect(box.depth).toBeCloseTo(5);
+    expect(box.rotation).toBe(0);
   });
 });

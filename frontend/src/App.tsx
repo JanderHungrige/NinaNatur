@@ -24,7 +24,7 @@ import { Landing } from './components/Landing';
 import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
-import type { Box } from './canvas/handles';
+import { type Box, boxOf } from './canvas/handles';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
@@ -424,8 +424,8 @@ export function App() {
         objectKind: found.kind,
         label: found.label,
         height: found.height,
-        width: found.width,
-        depth: found.depth,
+        width: boxOf(found).width,
+        depth: boxOf(found).depth,
       });
     },
     [garden],

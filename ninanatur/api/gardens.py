@@ -26,7 +26,8 @@ from ninanatur.api.schemas import (
     PlantingOut,
 )
 from ninanatur.auth.sessions import Account
-from ninanatur.garden.models import Bed, BedInput, Garden, ObstacleInput
+from ninanatur.garden.lighting import recompute_light
+from ninanatur.garden.models import BedInput, Element, Garden, ObstacleInput
 from ninanatur.garden.objects import (
     ObjectKind,
     default_height,
@@ -40,7 +41,6 @@ from ninanatur.garden.store import (
     delete_garden,
     garden_by_token,
     load_garden,
-    recompute_light,
     update_bed,
     update_obstacle,
 )
@@ -74,7 +74,7 @@ def to_out(garden: Garden) -> GardenOut:
         updated_at=garden.updated_at,
         beds=[
             BedOut(
-                bed_id=b.bed_id, name=b.name, polygon=b.polygon,
+                bed_id=b.bed_id, name=b.name or "", polygon=b.polygon,
                 soil_type=b.soil_type, moisture=b.moisture,
                 ellenberg_l=b.ellenberg_l, ellenberg_m=b.ellenberg_m,
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,
@@ -95,8 +95,8 @@ def to_out(garden: Garden) -> GardenOut:
             ObstacleOut(
                 obstacle_id=o.obstacle_id, kind=o.kind, label=o.label,
                 height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
-                width=o.width, depth=o.depth, rotation=o.rotation,
-                points=o.points, height=o.height,
+                width=o.width, points=o.points,
+                constraint_hint=o.constraint_hint, height=o.height,
                 footprint=[[px, py] for px, py in o.footprint],
             )
             for o in garden.obstacles
@@ -198,7 +198,7 @@ def remove(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def require_bed(garden: Garden, bed_id: int) -> Bed:
+def require_bed(garden: Garden, bed_id: int) -> Element:
     """A bed must belong to the garden the token opened.
 
     Without this, a valid token for one garden would let its holder reach any bed

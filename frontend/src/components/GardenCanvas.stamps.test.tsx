@@ -14,12 +14,11 @@ function obstacle(
     y: 0,
     shape: 'rect',
     width: 10,
-    depth: 8,
-    rotation: 0,
     height: 6,
     label: null,
     height_source: 'user',
     points: null,
+    constraint_hint: null,
     footprint: [[-5, 4], [5, 4], [5, -4], [-5, -4]],
     ...overrides,
   };

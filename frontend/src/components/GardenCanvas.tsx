@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut } from '../api/client';
-import { type Box, type Handle, resizeBy, rotateBy } from '../canvas/handles';
+import { type Box, type Handle, boxOf, resizeBy, rotateBy } from '../canvas/handles';
 import * as history from '../canvas/history';
 import { tidy } from '../canvas/freehand';
 import { isDegenerate, selfIntersects } from '../canvas/geometry';
@@ -141,17 +141,9 @@ export function GardenCanvas({
 
   const selected =
     garden.obstacles.find((o) => o.obstacle_id === selectedObstacleId) ?? null;
-  /** A circle has no depth of its own; its diameter is both. */
-  const selectedBox: Box | null =
-    selected === null
-      ? null
-      : {
-          x: selected.x,
-          y: selected.y,
-          width: selected.width,
-          depth: selected.depth ?? selected.width,
-          rotation: selected.rotation,
-        };
+  // Derived rather than stored: Wave 11 keeps points, and the box the handles
+  // work in is read back off them.
+  const selectedBox: Box | null = selected === null ? null : boxOf(selected);
 
   const metresPerPixel = view.spanM / view.widthPx;
 

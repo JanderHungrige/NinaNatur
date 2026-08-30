@@ -341,12 +341,18 @@ class ObstacleOut(BaseModel):
     height_source: str
     x: float
     y: float
+    #: 'polygon' | 'circle' | 'line'.
     shape: str
-    width: float
-    depth: float | None
-    rotation: float
+    #: A circle's diameter or a line's band width; absent for a polygon.
+    width: float | None
+    #: The outline for a polygon, the centreline for a line.
     points: list[list[float]] | None
-    height: float
+    #: 'rect' when the corners are meant to stay square. Wave 11 stores points
+    #: rather than a width and an angle, so this is a promise about how the
+    #: handles behave rather than a second geometry.
+    constraint_hint: str | None
+    #: None on a surface: Wave 8's rule that an unrecorded height is not a zero.
+    height: float | None
     #: The polygon this covers, so the drawing does not re-derive it. One
     #: answer to "what ground does this cover", not three.
     footprint: list[list[float]]

@@ -102,3 +102,60 @@ export function rotateBy(box: Box, pointer: Point, options: { free?: boolean } =
     ? wrapped
     : Math.round(wrapped / ROTATION_STEP_DEG) * ROTATION_STEP_DEG;
 }
+
+/** What the canvas needs to know about an element to put handles on it. */
+export interface Geometry {
+  shape: string;
+  x: number;
+  y: number;
+  width: number | null;
+  constraint_hint: string | null;
+  points: number[][] | null;
+  footprint: number[][];
+}
+
+/**
+ * The editing box for an element.
+ *
+ * Wave 11 stores points rather than a width, a depth and an angle, so dragging
+ * a vertex has nothing to convert. The handles still work in a box, so it is
+ * derived here — and the derivation has to survive a round trip, or selecting a
+ * shape would nudge it every time.
+ *
+ * A rectangle's corners are stored in a known order, so its own axes can be
+ * read straight off the first two edges. Anything else falls back to its
+ * bounding box: a freehand outline has no width and no angle to recover, and
+ * pretending otherwise would put the handles somewhere the user did not draw.
+ */
+export function boxOf(element: Geometry): Box {
+  if (element.shape === 'circle') {
+    const diameter = element.width ?? 0;
+    return { x: element.x, y: element.y, width: diameter, depth: diameter, rotation: 0 };
+  }
+
+  const points = element.points ?? element.footprint.map((p) => [p[0]! - element.x, p[1]! - element.y]);
+  const RECT_CORNERS = 4;
+  if (element.constraint_hint === 'rect' && points.length === RECT_CORNERS) {
+    const [a, b, c] = points as [number[], number[], number[]];
+    const ex = b[0]! - a[0]!;
+    const ey = b[1]! - a[1]!;
+    return {
+      x: element.x,
+      y: element.y,
+      width: Math.hypot(ex, ey),
+      depth: Math.hypot(c[0]! - b[0]!, c[1]! - b[1]!),
+      // Clockwise from north, matching the compass and the solar azimuth.
+      rotation: (Math.atan2(-ey, ex) * 180) / Math.PI,
+    };
+  }
+
+  const xs = points.map((p) => p[0]!);
+  const ys = points.map((p) => p[1]!);
+  return {
+    x: element.x,
+    y: element.y,
+    width: Math.max(...xs) - Math.min(...xs),
+    depth: Math.max(...ys) - Math.min(...ys),
+    rotation: 0,
+  };
+}

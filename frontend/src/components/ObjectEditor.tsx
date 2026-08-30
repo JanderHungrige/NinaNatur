@@ -16,7 +16,8 @@ export type EditableObject =
       id: number;
       objectKind: string;
       label: string | null;
-      height: number;
+      /** None on a surface: an unrecorded height is not a zero. */
+      height: number | null;
       width: number;
       depth: number | null;
     };
@@ -43,7 +44,7 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
     object.kind === 'obstacle' ? object.objectKind : '',
   );
   const [height, setHeight] = useState(
-    object.kind === 'obstacle' ? String(object.height) : '',
+    object.kind === 'obstacle' && object.height !== null ? String(object.height) : '',
   );
   const [raised, setRaised] = useState(
     object.kind === 'bed' ? String(object.heightAboveGround) : '',

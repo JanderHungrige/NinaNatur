@@ -50,8 +50,9 @@ from ninanatur.data.traits import resolve_trait
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.objects import ObjectKind, casts_shadow
+from ninanatur.garden.plantings import add_planting, remove_planting
 from ninanatur.garden.sightlines import Blocker, Target, Viewpoint, visibility
-from ninanatur.garden.store import add_planting, load_garden, remove_planting
+from ninanatur.garden.store import load_garden
 
 # A shortlist, not a second catalogue. Woody plants are a small set of large
 # decisions; twenty of them is a list nobody reads.
@@ -127,8 +128,8 @@ def delete_planting(
     garden = require_garden(conn, token)
     owned = conn.execute(
         """
-        SELECT 1 FROM planting p JOIN bed b ON b.bed_id = p.bed_id
-        WHERE p.planting_id = ? AND b.garden_id = ?
+        SELECT 1 FROM planting p JOIN element e ON e.element_id = p.element_id
+        WHERE p.planting_id = ? AND e.garden_id = ?
         """,
         (planting_id, garden.garden_id),
     ).fetchone()
@@ -209,7 +210,7 @@ def bed_suggestions(
 
     return BedSuggestions(
         bed_id=bed.bed_id,
-        bed_name=bed.name,
+        bed_name=bed.name or "",
         site_axes=axes,
         total=len(herbaceous),
         items=summarise(herbaceous[:limit]),
@@ -344,7 +345,10 @@ def sightlines(
             height_m=o.height,
             estimated=o.height_source != "user",
         )
+        # An element nobody has given a height to blocks nothing: a sightline
+        # resting on an invented number is exactly what Wave 9 refused to draw.
         for o in garden.obstacles
+        if o.height is not None
         # A lawn does not stand between you and anything.
         if casts_shadow(ObjectKind(o.kind))
     ]

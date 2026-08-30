@@ -135,7 +135,8 @@ def test_uncomputed_light_is_transported_as_null_never_zero(client: TestClient) 
     garden = garden_by_token(conn, token)
     assert garden is not None
     conn.execute(
-        "INSERT INTO bed (garden_id, name, polygon) VALUES (?, 'Roh', ?)",
+        "INSERT INTO element (garden_id, kind, shape, name, points)"
+        " VALUES (?, 'bed', 'polygon', 'Roh', ?)",
         (garden.garden_id, json.dumps(SQUARE)),
     )
     conn.commit()

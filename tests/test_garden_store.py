@@ -4,6 +4,7 @@ import sqlite3
 
 import pytest
 
+from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import BedInput, ObstacleInput
 from ninanatur.garden.store import (
     PolygonError,
@@ -13,7 +14,6 @@ from ninanatur.garden.store import (
     delete_garden,
     garden_by_token,
     load_garden,
-    recompute_light,
 )
 from ninanatur.ingest.db import connect, init_schema
 
@@ -94,8 +94,8 @@ def test_deleting_a_garden_removes_its_beds_and_obstacles(
         ObstacleInput(kind="wall", x=0, y=-3, shape="circle", width=10.0, height=6),
     )
     delete_garden(conn, gid)
-    assert conn.execute("SELECT COUNT(*) n FROM bed").fetchone()["n"] == 0
-    assert conn.execute("SELECT COUNT(*) n FROM obstacle").fetchone()["n"] == 0
+    assert conn.execute("SELECT COUNT(*) n FROM element").fetchone()["n"] == 0
+    assert conn.execute("SELECT COUNT(*) n FROM element WHERE kind != 'bed'").fetchone()["n"] == 0
 
 
 # --- light is computed on save --------------------------------------------

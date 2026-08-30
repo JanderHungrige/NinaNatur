@@ -1,7 +1,12 @@
-"""SQLite schema and connection handling.
+"""Opening the database, and bringing it up to the current schema.
 
-One module owns the schema. Every other module receives an open connection —
-nothing else opens a database or issues DDL.
+One module owns this. Every other module receives an open connection — nothing
+else opens a database or issues DDL.
+
+The schema itself lives in `schema.py` and the catch-up work in `migrations.py`.
+Splitting them was overdue: this file was 495 lines, and the two halves are read
+for different reasons — one says what the tables are, the other how a database
+that predates them catches up.
 """
 from __future__ import annotations
 
@@ -9,8 +14,31 @@ import os
 import sqlite3
 from pathlib import Path
 
+from ninanatur.ingest.migrations import (
+    ELEMENT_RESET_KEY,
+    RESET_KEY,
+    apply_column_migrations,
+    relax_planting_taxon,
+    wave_10_reset,
+    wave_11_reset,
+)
+from ninanatur.ingest.schema import SCHEMA
+
 DEFAULT_DB_PATH = Path("data/ninanatur.sqlite")
 DB_PATH_ENV = "NINANATUR_DB"
+
+#: Re-exported: callers and tests reach for these here, and moving the schema
+#: out should not move where the rest of the project imports from.
+__all__ = [
+    "DB_PATH_ENV",
+    "DEFAULT_DB_PATH",
+    "ELEMENT_RESET_KEY",
+    "RESET_KEY",
+    "SCHEMA",
+    "connect",
+    "database_path",
+    "init_schema",
+]
 
 
 def database_path() -> Path:
@@ -21,282 +49,6 @@ def database_path() -> Path:
     monkeypatching a module constant.
     """
     return Path(os.environ.get(DB_PATH_ENV) or DEFAULT_DB_PATH)
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS taxon (
-    taxon_id        INTEGER PRIMARY KEY,
-    scientific_name TEXT,
-    canonical_name  TEXT NOT NULL,
-    rank            TEXT,
-    status          TEXT,
-    family          TEXT,
-    genus           TEXT,
-    accepted_id     INTEGER,
-    occurs_de       INTEGER NOT NULL DEFAULT 0
-);
-
--- Deliberately NOT unique: a taxonomic backbone contains homonyms, and the same
--- canonical name legitimately appears under several usage keys (accepted plus
--- synonyms). Uniqueness here crashes the ingest partway through.
-CREATE INDEX IF NOT EXISTS idx_taxon_canonical ON taxon(canonical_name);
-
-CREATE TABLE IF NOT EXISTS taxon_name (
-    raw_name    TEXT    NOT NULL,
-    source      TEXT    NOT NULL,
-    taxon_id    INTEGER REFERENCES taxon(taxon_id),
-    match_type  TEXT,
-    confidence  INTEGER,
-    PRIMARY KEY (raw_name, source)
-);
-
-CREATE TABLE IF NOT EXISTS trait (
-    taxon_id     INTEGER NOT NULL REFERENCES taxon(taxon_id),
-    trait_key    TEXT    NOT NULL,
-    value_num    REAL,
-    value_text   TEXT,
-    unit         TEXT,
-    source       TEXT    NOT NULL,
-    license      TEXT    NOT NULL,
-    confidence   REAL,
-    retrieved_at TEXT    NOT NULL,
-    PRIMARY KEY (taxon_id, trait_key, source)
-);
-
-CREATE INDEX IF NOT EXISTS idx_trait_key ON trait(trait_key);
-
-CREATE TABLE IF NOT EXISTS interaction (
-    taxon_id         INTEGER NOT NULL REFERENCES taxon(taxon_id),
-    partner_name     TEXT    NOT NULL,
-    partner_group    TEXT,
-    interaction_type TEXT    NOT NULL,
-    source           TEXT    NOT NULL,
-    license          TEXT    NOT NULL,
-    n_records        INTEGER NOT NULL DEFAULT 1,
-    PRIMARY KEY (taxon_id, partner_name, interaction_type, source)
-);
-
-CREATE INDEX IF NOT EXISTS idx_interaction_taxon ON interaction(taxon_id);
-
--- Insects actually recorded in Germany, from the same GBIF occurrence facet used
--- for the plants. GloBI's relations are worldwide; without this list a plant's
--- partner count ranks it by global research effort rather than garden value.
--- Keyed by canonical name, because that is what the GloBI intersection joins on.
--- The names come straight from GBIF's SCIENTIFIC_NAME occurrence facet (19 calls
--- for ~19k species, versus one detail request each), so no backbone key is
--- involved and inventing one would only add a column nothing reads.
-CREATE TABLE IF NOT EXISTS insect_de (
-    canonical_name  TEXT PRIMARY KEY,
-    scientific_name TEXT,
-    occurrences     INTEGER NOT NULL DEFAULT 0,
-    -- bee / butterfly / hoverfly, or NULL for everything else. Beetles and wasps
-    -- are real visitors; they simply are not in a named group, and dropping them
-    -- would make the total disagree with the breakdown.
-    insect_group    TEXT,
-    -- 'insect' or 'bird'. The table kept its name when birds arrived; this
-    -- column, not the name, is what every read site must go by.
-    clade           TEXT NOT NULL DEFAULT 'insect'
-);
-
-CREATE INDEX IF NOT EXISTS idx_insect_group ON insect_de(insect_group);
-CREATE INDEX IF NOT EXISTS idx_insect_clade ON insect_de(clade);
-
--- A garden plan. `owner_id` is nullable and present from this first migration:
--- accounts are not being built (access is by share token), but adding the column
--- later would mean migrating live plans, and it costs one empty column now.
-CREATE TABLE IF NOT EXISTS garden (
-    garden_id   INTEGER PRIMARY KEY,
-    share_token TEXT    NOT NULL UNIQUE,
-    owner_id    TEXT,
-    name        TEXT    NOT NULL,
-    latitude    REAL    NOT NULL,
-    longitude   REAL    NOT NULL,
-    created_at  TEXT    NOT NULL,
-    updated_at  TEXT    NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS bed (
-    bed_id            INTEGER PRIMARY KEY,
-    garden_id         INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
-    name              TEXT    NOT NULL,
-    polygon           TEXT    NOT NULL,
-    soil_type         TEXT,
-    moisture          TEXT,
-    ellenberg_l       REAL,
-    ellenberg_m       REAL,
-    ellenberg_n       REAL,
-    ellenberg_r       REAL,
-    sun_hours         REAL,
-    light_computed_at TEXT,
-    -- A raised bed stands above the low things around it. Wave 9's sightlines
-    -- need the same number, which is why it is stored rather than derived.
-    height_above_ground REAL NOT NULL DEFAULT 0,
-    label             TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_bed_garden ON bed(garden_id);
-
--- What is actually growing in a bed. One row per species per bed, not per
--- individual plant: a timeline asking "does this bed have Salvia" must not have
--- to deduplicate first.
-CREATE TABLE IF NOT EXISTS planting (
-    planting_id INTEGER PRIMARY KEY,
-    bed_id      INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
-    -- Nullable since Wave 7: a plant the catalogue cannot name is still a plant
-    -- in someone's garden. NULLs are distinct in SQLite, so the UNIQUE below
-    -- still allows two unidentified roses in one bed, which is correct.
-    taxon_id    INTEGER REFERENCES taxon(taxon_id),
-    raw_name    TEXT,
-    quantity    INTEGER NOT NULL DEFAULT 1,
-    added_at    TEXT    NOT NULL,
-    UNIQUE (bed_id, taxon_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_planting_bed ON planting(bed_id);
-
--- An object on the plan. Wave 10 gave it a shape: `radius` is gone, because it
--- was the cylinder assumption in column form and a column nothing writes is a
--- column somebody will eventually read.
-CREATE TABLE IF NOT EXISTS obstacle (
-    obstacle_id INTEGER PRIMARY KEY,
-    garden_id   INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
-    kind        TEXT    NOT NULL,
-    x           REAL    NOT NULL,
-    y           REAL    NOT NULL,
-    -- 'circle' | 'rect' | 'polygon'. What shape it is, not a bag of points:
-    -- a rectangle is two numbers and an angle, which is what a resize handle
-    -- edits. Four stored corners would be re-derived on every drag and two of
-    -- them would eventually disagree with the other two.
-    shape       TEXT    NOT NULL DEFAULT 'circle',
-    width       REAL    NOT NULL,
-    depth       REAL,
-    -- Degrees clockwise from north, matching the compass on the plan and the
-    -- azimuth the solar model already uses.
-    rotation    REAL    NOT NULL DEFAULT 0,
-    -- JSON [[x, y], ...] in metres relative to (x, y), for freehand shapes only.
-    points      TEXT,
-    height      REAL    NOT NULL,
-    label       TEXT,
-    -- 'user' | 'osm_height' | 'osm_levels' | 'neighbourhood'. What the sightline
-    -- and the light model need in order to say how sure they are.
-    height_source TEXT NOT NULL DEFAULT 'user'
-);
-
-CREATE INDEX IF NOT EXISTS idx_obstacle_garden ON obstacle(garden_id);
-
--- Interaction counts per plant, computed once at ingest.
---
--- The 600k raw `interaction` rows are ingest-time data: the runtime only ever
--- asks "how many German partners does this plant have". Summarising them cuts
--- the shipped catalogue from 93 MB to 10 MB and turns a scan into a lookup.
-CREATE TABLE IF NOT EXISTS partner_summary (
-    taxon_id         INTEGER NOT NULL,
-    interaction_type TEXT    NOT NULL,
-    german           INTEGER NOT NULL,
-    PRIMARY KEY (taxon_id, interaction_type)
-);
-
--- Counts per insect group, so "1,055 partners" can become "40 wild bee species,
--- 12 butterflies" — a statement a gardener can act on.
-CREATE TABLE IF NOT EXISTS partner_groups (
-    taxon_id     INTEGER NOT NULL,
-    insect_group TEXT    NOT NULL,
-    german       INTEGER NOT NULL,
-    PRIMARY KEY (taxon_id, insect_group)
-);
-
--- German bird partners, counted separately and never folded into the insect
--- numbers. Its own table rather than a clade column on partner_summary: the
--- insect score's queries then keep working untouched, which is the difference
--- between adding a number and silently changing every score already shown.
-CREATE TABLE IF NOT EXISTS partner_birds (
-    taxon_id INTEGER PRIMARY KEY,
-    german   INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS partner_totals (
-    taxon_id     INTEGER PRIMARY KEY,
-    german       INTEGER NOT NULL,
-    global_total INTEGER NOT NULL,
-    unmatched    INTEGER NOT NULL
-);
-
--- Wave 9. Accounts, with the email deliberately nullable: it is optional, and
--- the consequence (no password reset) is stated where the choice is made.
-CREATE TABLE IF NOT EXISTS account (
-    account_id    INTEGER PRIMARY KEY,
-    username      TEXT    NOT NULL UNIQUE COLLATE NOCASE,
-    email         TEXT,
-    -- `scrypt$N$r$p$salt$hash`. The parameters travel with it so they can be
-    -- raised later without locking anybody out.
-    password_hash TEXT    NOT NULL,
-    created_at    TEXT    NOT NULL
-);
-
--- Sessions are stored as a *hash* of the token, never the token. A stolen
--- database is then a list of expired-looking strings rather than a drawer full
--- of usable logins — the same reasoning as the password column beside it.
-CREATE TABLE IF NOT EXISTS session (
-    token_hash TEXT    PRIMARY KEY,
-    account_id INTEGER NOT NULL REFERENCES account(account_id) ON DELETE CASCADE,
-    created_at TEXT    NOT NULL,
-    expires_at TEXT    NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_session_account ON session(account_id);
-
--- Which build of the shipped catalogue this database currently holds.
---
--- Seeding used to run only when there were no taxa at all, which stopped a newer
--- local ingest being overwritten — and also meant no catalogue improvement ever
--- reached an existing deployment. The insect group breakdown shipped and stayed
--- invisible in production for exactly that reason.
--- German names, so nobody has to know that Sal-Weide is Salix caprea.
---
--- `normalised` is stored rather than computed per query: a LIKE over a computed
--- expression cannot use an index, and this table is what every search touches.
-CREATE TABLE IF NOT EXISTS vernacular_name (
-    taxon_id     INTEGER NOT NULL REFERENCES taxon(taxon_id),
-    name         TEXT    NOT NULL,
-    normalised   TEXT    NOT NULL,
-    is_preferred INTEGER NOT NULL DEFAULT 0,
-    source       TEXT    NOT NULL,
-    PRIMARY KEY (taxon_id, name)
-);
-
-CREATE INDEX IF NOT EXISTS idx_vernacular_normalised ON vernacular_name(normalised);
-
--- Wikipedia summaries, cached per deployment.
---
--- Deliberately NOT part of the shipped catalogue: this is derived, refreshable
--- and per-deployment — the same shape as a garden, not the same shape as plant
--- data. Baking it into the image would make it stale on the release cycle and
--- re-inflate something just trimmed to 13 MB.
-CREATE TABLE IF NOT EXISTS species_info (
-    taxon_id      INTEGER PRIMARY KEY REFERENCES taxon(taxon_id),
-    title         TEXT,
-    extract       TEXT,
-    thumbnail_url TEXT,
-    page_url      TEXT,
-    language      TEXT,
-    found         INTEGER NOT NULL,
-    fetched_at    TEXT    NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS catalogue_meta (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS source_run (
-    source      TEXT NOT NULL,
-    started_at  TEXT NOT NULL,
-    finished_at TEXT,
-    rows        INTEGER NOT NULL DEFAULT 0,
-    status      TEXT NOT NULL,
-    note        TEXT,
-    PRIMARY KEY (source, started_at)
-);
-"""
 
 
 def connect(
@@ -317,177 +69,8 @@ def connect(
     return conn
 
 
-# Columns added to tables that already existed in a shipped release.
-#
-# CREATE TABLE IF NOT EXISTS silently does nothing when the table is there, so a
-# new column never reaches an existing database — including the production
-# volume, where startup would then fail on the first statement referencing it.
-# Additive migrations are all this project has needed; anything destructive
-# should be a deliberate, reviewed script rather than an entry here.
-#: Marks the one-time Wave 10 reset as done.
-RESET_KEY = "wave_10_geometry_reset"
-
-COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
-    ("insect_de", "insect_group", "TEXT"),
-    # Existing rows are insects, so the default carries their meaning forward
-    # without a data migration. Birds arrive with clade='bird'.
-    ("insect_de", "clade", "TEXT NOT NULL DEFAULT 'insect'"),
-    # Wave 7. Every existing bed sits on the ground, so the default keeps every
-    # stored light value meaning exactly what it meant.
-    ("bed", "height_above_ground", "REAL NOT NULL DEFAULT 0"),
-    # Free text, and it drives nothing. "Die Buche vom Nachbarn" is worth
-    # storing and is not a category.
-    ("obstacle", "label", "TEXT"),
-    ("bed", "label", "TEXT"),
-    # Wave 7. What the user typed, kept beside whatever it matched — that is how
-    # someone recognises their own entry, and how a later catalogue improvement
-    # can re-resolve it.
-    ("planting", "raw_name", "TEXT"),
-    # Wave 9. Wave 8 reported where a height came from and then threw it away;
-    # a sightline resting on a guessed building height must not be drawn as
-    # though it were surveyed. Existing obstacles were entered by hand.
-    ("obstacle", "height_source", "TEXT NOT NULL DEFAULT 'user'"),
-)
-
-
-def _apply_column_migrations(conn: sqlite3.Connection) -> list[str]:
-    """Add any missing columns. Returns what was added, for the startup log."""
-    applied: list[str] = []
-    for table, column, column_type in COLUMN_MIGRATIONS:
-        exists = conn.execute(
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
-        ).fetchone()
-        if exists is None:
-            continue  # the table itself is about to be created with the column
-        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
-        if column in columns:
-            continue
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
-        applied.append(f"{table}.{column}")
-    if applied:
-        conn.commit()
-    return applied
-
-
-def _relax_planting_taxon(conn: sqlite3.Connection) -> str | None:
-    """Let `planting.taxon_id` be NULL on a database that predates Wave 7.
-
-    `CREATE TABLE IF NOT EXISTS` does nothing to an existing table, and no
-    `ALTER TABLE` in SQLite removes a NOT NULL. The only way is the documented
-    rebuild: make the new table, copy the rows, swap the names.
-
-    Without it a fresh deployment works and the production volume rejects every
-    unidentified planting — after the deploy, in front of the user, with a green
-    suite behind it. That shape has cost this project five live findings already.
-    """
-    exists = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='planting'"
-    ).fetchone()
-    if exists is None:
-        return None  # about to be created with the right definition
-    columns = {row[1]: row for row in conn.execute("PRAGMA table_info(planting)")}
-    taxon = columns.get("taxon_id")
-    if taxon is None or taxon[3] == 0:
-        return None  # already nullable
-
-    carried = [
-        c for c in ("planting_id", "bed_id", "taxon_id", "quantity", "added_at")
-        if c in columns
-    ]
-    names = ", ".join(carried)
-    # Foreign keys off for the swap, or the rename trips over its own references.
-    conn.execute("PRAGMA foreign_keys=OFF")
-    conn.executescript(
-        f"""
-        CREATE TABLE planting_new (
-            planting_id INTEGER PRIMARY KEY,
-            bed_id      INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
-            taxon_id    INTEGER REFERENCES taxon(taxon_id),
-            raw_name    TEXT,
-            quantity    INTEGER NOT NULL DEFAULT 1,
-            added_at    TEXT    NOT NULL,
-            UNIQUE (bed_id, taxon_id)
-        );
-        INSERT INTO planting_new ({names}) SELECT {names} FROM planting;
-        DROP TABLE planting;
-        ALTER TABLE planting_new RENAME TO planting;
-        """  # noqa: S608
-    )
-    conn.execute("PRAGMA foreign_keys=ON")
-    conn.commit()
-    return "planting.taxon_id nullable"
-
-
-def _wave_10_reset(conn: sqlite3.Connection) -> str | None:
-    """Clear gardens once, when the plan's geometry changed under them.
-
-    Decided with the user: this is a test deployment, so gardens made against
-    the cylinder model go rather than being migrated. Every stored light value
-    came from a model in which a house was a circle, and keeping them would mean
-    either a compatibility path for circle-shaped houses or numbers that quietly
-    mean something else than they did.
-
-    Marked in `catalogue_meta` so it runs **once**. A migration that cleared
-    gardens on every startup would delete a garden the moment somebody made one
-    — which is the kind of thing that only shows up in production.
-    """
-    # Just this table, not the whole schema: `executescript(SCHEMA)` creates
-    # indexes over columns an existing database may not have yet, which is why
-    # the column migrations run before it. Reaching for the marker must not
-    # reorder that.
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS catalogue_meta"
-        " (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
-    )
-    done = conn.execute(
-        "SELECT 1 FROM catalogue_meta WHERE key = ?", (RESET_KEY,)
-    ).fetchone()
-    if done is not None:
-        return None
-    has_obstacle = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='obstacle'"
-    ).fetchone()
-    if has_obstacle is None:
-        # A brand-new database: nothing to clear, but the marker still goes in
-        # so the reset never fires later against real gardens.
-        conn.execute(
-            "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
-            (RESET_KEY, "fresh"),
-        )
-        conn.commit()
-        return None
-
-    columns = {row[1] for row in conn.execute("PRAGMA table_info(obstacle)")}
-    if "shape" in columns:
-        conn.execute(
-            "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
-            (RESET_KEY, "already"),
-        )
-        conn.commit()
-        return None
-
-    conn.execute("PRAGMA foreign_keys=OFF")
-    present = {
-        row[0]
-        for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-    }
-    # Only what is there. A half-built database is a state this has to survive,
-    # not a reason to refuse to start.
-    for table in ("planting", "obstacle", "bed", "garden"):
-        if table in present:
-            conn.execute(f"DELETE FROM {table}")  # noqa: S608
-    conn.execute('DROP TABLE obstacle;')
-    conn.execute(
-        "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
-        (RESET_KEY, "cleared"),
-    )
-    conn.execute("PRAGMA foreign_keys=ON")
-    conn.commit()
-    return "gardens cleared for the Wave 10 geometry"
-
-
 def init_schema(conn: sqlite3.Connection) -> list[str]:
-    """Create every table and index, and add columns missing from older databases.
+    """Create every table and index, and bring an older database up to date.
 
     Migrations run first: the schema script includes indexes over columns that an
     existing table may not have yet, and executescript would fail on those before
@@ -495,13 +78,13 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
 
     Returns the migrations applied, so a deployment can say what it changed.
     """
-    applied = _apply_column_migrations(conn)
-    rebuilt = _relax_planting_taxon(conn)
-    # After the column work and before the schema script: the reset drops the
-    # obstacle table, and `executescript` below is what builds the new one.
-    reset = _wave_10_reset(conn)
-    if reset is not None:
-        applied.append(reset)
+    applied = apply_column_migrations(conn)
+    rebuilt = relax_planting_taxon(conn)
+    # After the column work and before the schema script: these resets remove
+    # tables, and `executescript` below is what builds their replacements.
+    for reset in (wave_10_reset(conn), wave_11_reset(conn)):
+        if reset is not None:
+            applied.append(reset)
     if rebuilt is not None:
         applied.append(rebuilt)
     conn.executescript(SCHEMA)

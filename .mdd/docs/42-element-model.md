@@ -4,7 +4,7 @@ title: One Drawn Element, Named Afterwards
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-11
-wave_status: active
+wave_status: complete
 depends_on: [37-object-footprints]
 relates: [43-shape-tools, 45-relabel-and-skin, 12-bed-light]
 source_files:
@@ -21,7 +21,7 @@ test_files:
   - tests/test_footprint.py
 data_flow: writes-existing
 last_synced: 2026-08-30
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [schema, geometry, migration, elements, polyline]
@@ -34,13 +34,13 @@ satisfies_contracts:
   - from: 43-shape-tools
     function: element geometry as points
     when: a shape is drawn or resized
-    status: pending
-    verified_at: ""
+    status: done
+    verified_at: "ninanatur/garden/elements.py:60"
   - from: 45-relabel-and-skin
     function: kind is a column, not a table
     when: an element is re-labelled
-    status: pending
-    verified_at: ""
+    status: done
+    verified_at: "ninanatur/garden/elements.py:60"
 security_read_sites: []
 known_issues: []
 ---
