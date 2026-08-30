@@ -3,7 +3,7 @@ id: ninanatur-wave-11
 title: "Wave 11: Draw first, say what it is afterwards"
 initiative: ninanatur
 initiative_version: 12
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-10
 demo_state: "A user drags out a rectangle, a circle and a freehand path, moves a vertex to shape one of them, then clicks each and says what it is — and the plan redraws it as a bed, a gravel path and a pool"
 created: 2026-08-30
@@ -58,7 +58,7 @@ tools first would mean building them twice.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | element-model | 42-element-model | planned | — |
+| 1 | element-model | .mdd/docs/42-element-model.md | active | — |
 | 2 | shape-tools | 43-shape-tools | planned | 42 |
 | 3 | vertex-editing | 44-vertex-editing | planned | 43 |
 | 4 | relabel-and-skin | 45-relabel-and-skin | planned | 42 |

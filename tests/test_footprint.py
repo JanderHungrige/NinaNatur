@@ -130,3 +130,55 @@ def test_the_bounding_radius_contains_the_whole_shape() -> None:
     r = bounding_radius(poly)
     assert all(math.hypot(px, py) <= r + 1e-9 for px, py in poly)
     assert r == pytest.approx(math.hypot(5.0, 4.0))
+
+
+class TestLineShape:
+    """A line is a centreline and a band width (Wave 11).
+
+    The point of putting it here rather than beside the band arithmetic: what
+    matters to the rest of the system is that a line answers the same question
+    every other shape answers — what ground does this cover.
+    """
+
+    def test_a_line_covers_the_band_around_its_centreline(self) -> None:
+        band = footprint_of(
+            shape=Shape.LINE,
+            x=10.0,
+            y=5.0,
+            width=2.0,
+            depth=None,
+            rotation=0.0,
+            points=[[0.0, 0.0], [6.0, 0.0]],
+        )
+        # Points are relative to (x, y), like every other shape's.
+        assert covers(band, (13.0, 5.0))
+        assert covers(band, (13.0, 5.9))
+        assert not covers(band, (13.0, 7.0))
+
+    def test_a_bent_line_is_one_element(self) -> None:
+        """A wall that turns a corner was two obstacles before this."""
+        band = footprint_of(
+            shape=Shape.LINE,
+            x=0.0,
+            y=0.0,
+            width=1.0,
+            depth=None,
+            rotation=0.0,
+            points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]],
+        )
+        assert covers(band, (2.0, 0.0))
+        assert covers(band, (5.0, 3.0))
+
+    def test_a_line_needs_its_centreline(self) -> None:
+        with pytest.raises(ValueError, match="centreline"):
+            footprint_of(
+                shape=Shape.LINE, x=0.0, y=0.0, width=1.0,
+                depth=None, rotation=0.0, points=None,
+            )
+
+    def test_a_line_needs_a_width(self) -> None:
+        with pytest.raises(ValueError, match="width"):
+            footprint_of(
+                shape=Shape.LINE, x=0.0, y=0.0, width=None,
+                depth=None, rotation=0.0, points=[[0.0, 0.0], [3.0, 0.0]],
+            )
