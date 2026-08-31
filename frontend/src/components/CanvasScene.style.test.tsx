@@ -213,3 +213,72 @@ describe('CanvasScene — big things behind, small things in front', () => {
     expect(order.indexOf('lawn')).toBeLessThan(order.indexOf('shed'));
   });
 });
+
+describe('CanvasScene — flowers as dots', () => {
+  const plantedBed: GardenOut['beds'][number] = {
+    bed_id: 4, name: 'Staudenbeet',
+    polygon: [[0, 0], [8, 0], [8, 6], [0, 6]],
+    soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
+    ellenberg_n: null, ellenberg_r: null, sun_hours: null,
+    light_computed_at: null, height_above_ground: 0, label: null, plantings: [],
+  };
+
+  function bloom(palette: Record<number, { colours: string[]; unknown: number }>) {
+    return render(
+      <GardenCanvas
+        garden={{ ...garden([]), beds: [plantedBed] }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }}
+        palette={palette}
+      />,
+    ).container;
+  }
+
+  it('draws a dot per flower rather than a bar across the bed', () => {
+    const container = bloom({ 4: { colours: ['yellow', 'blue'], unknown: 0 } });
+    expect(container.querySelectorAll('.bloom-dot').length).toBeGreaterThan(4);
+    // The bed itself keeps its own fill: the colours are on top now.
+    const bed = container.querySelector('.bed') as SVGElement;
+    expect(bed.style.fill).toBe('');
+  });
+
+  it('keeps the hatch for a colour nobody recorded', () => {
+    // Not a grey dot among coloured ones: "we never recorded it" is its own
+    // mark, and a dot would put it in the same sentence as a known colour.
+    const container = bloom({ 4: { colours: [], unknown: 3 } });
+    expect(container.querySelectorAll('.bloom-dot')).toHaveLength(0);
+    expect((container.querySelector('.bed') as SVGElement).style.fill).toContain(
+      'bloom-unknown',
+    );
+  });
+
+  it('draws nothing for a bed with nothing in flower', () => {
+    const container = bloom({});
+    expect(container.querySelectorAll('.bloom-dot')).toHaveLength(0);
+  });
+});
+
+describe('CanvasScene — painted rather than plotted', () => {
+  it('varies the colour inside a shape, not just its edge', () => {
+    // A wobbled outline around a perfectly flat fill is still a technical
+    // drawing: one colour per shape is what reads as CAD.
+    const container = show([obstacle('lawn', 1)]);
+    const filter = container.querySelector('#watercolour');
+    expect(filter?.querySelector('feBlend[mode="multiply"]')).not.toBeNull();
+  });
+
+  it('pools the colour at the rim, the way paint does', () => {
+    const container = show([obstacle('lawn', 1)]);
+    const filter = container.querySelector('#watercolour');
+    expect(filter?.querySelector('feMorphology[operator="erode"]')).not.toBeNull();
+  });
+
+  it('keeps the rim measured in metres', () => {
+    // The same trap as every other length on this canvas: a radius in pixels
+    // would be a rim of a different width at every zoom.
+    const container = show([obstacle('lawn', 1)]);
+    const erode = container.querySelector('feMorphology');
+    expect(Number(erode?.getAttribute('radius'))).toBeLessThan(0.3);
+  });
+});

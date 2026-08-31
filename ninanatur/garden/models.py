@@ -33,7 +33,9 @@ class ObstacleInput:
     rotation: float = 0.0
     #: Metres relative to (x, y), for freehand shapes only.
     points: list[list[float]] | None = None
-    height: float = 0.0
+    #: None where nothing has a height — a street, a surface. Never a zero,
+    #: which would be a measurement nobody took.
+    height: float | None = None
     label: str | None = None
     height_source: str = "user"
 

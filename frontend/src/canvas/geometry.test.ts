@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Point, area, isDegenerate, selfIntersects } from './geometry';
+import { type Point, area, isDegenerate, selfIntersects, covers } from './geometry';
 
 const SQUARE: Point[] = [
   { x: 0, y: 0 },
@@ -58,5 +58,30 @@ describe('self-intersection', () => {
       { x: 0, y: 4 },
     ];
     expect(selfIntersects(L)).toBe(false);
+  });
+});
+
+describe('covers', () => {
+  const SQUARE = [
+    { x: 0, y: 0 }, { x: 4, y: 0 }, { x: 4, y: 4 }, { x: 0, y: 4 },
+  ];
+
+  it('finds a point in the middle', () => {
+    expect(covers(SQUARE, { x: 2, y: 2 })).toBe(true);
+  });
+
+  it('keeps a point outside out', () => {
+    expect(covers(SQUARE, { x: 6, y: 2 })).toBe(false);
+    expect(covers(SQUARE, { x: 2, y: -1 })).toBe(false);
+  });
+
+  it('keeps out of the notch of an L', () => {
+    // The whole reason this exists: a bounding box would say yes here.
+    const ell = [
+      { x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 4 },
+      { x: 4, y: 4 }, { x: 4, y: 10 }, { x: 0, y: 10 },
+    ];
+    expect(covers(ell, { x: 2, y: 8 })).toBe(true);
+    expect(covers(ell, { x: 8, y: 8 })).toBe(false);
   });
 });

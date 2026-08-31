@@ -252,3 +252,74 @@ def test_an_element_never_loses_the_points_it_was_not_asked_about(
 
     # And the garden is still readable, which is the part that actually broke.
     assert client.get(f"/api/v1/gardens/{token}").status_code == 200
+
+
+def test_an_element_can_be_deleted(client: TestClient) -> None:
+    """Nothing could be removed from a plan until now. A shape drawn by mistake
+    stayed on it."""
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "other", "x": 0, "y": 0, "shape": "polygon",
+              "points": [[-2, -2], [2, -2], [2, 2], [-2, 2]]},
+    ).json()["obstacles"][0]
+
+    left = client.delete(
+        f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}"
+    )
+    assert left.status_code == 200, left.json()
+    assert left.json()["obstacles"] == []
+
+
+def test_deleting_a_bed_takes_its_plants(client: TestClient) -> None:
+    """They cannot outlive the bed: `planting` hangs off `element_id`, and a
+    row whose parent is gone is a query that fails at the worst moment."""
+    token, bed_id = _garden(client)
+    # By name rather than by taxon: the plant does not have to be in the
+    # catalogue for the bed to hold it, and this test is about the bed.
+    planted = client.post(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/plantings",
+        json={"raw_name": "Nachbars Rose", "quantity": 2},
+    )
+    assert planted.status_code in {200, 201}, planted.json()
+    assert planted.json()["unidentified_plantings"] == 1
+
+    after = client.delete(f"/api/v1/gardens/{token}/obstacles/{bed_id}")
+    assert after.status_code == 200
+    assert after.json()["beds"] == []
+    assert after.json()["unidentified_plantings"] == 0
+
+
+def test_deleting_something_that_is_not_there_is_404(client: TestClient) -> None:
+    token, _bed_id = _garden(client)
+    assert client.delete(f"/api/v1/gardens/{token}/obstacles/9999").status_code == 404
+
+
+def test_a_kind_with_no_height_is_given_none_rather_than_zero(
+    client: TestClient,
+) -> None:
+    """Wave 8's rule, at the one edge that still broke it.
+
+    A street, a lawn, a pond have no height. The endpoint turned the
+    vocabulary's `None` into `0.0`, which is a measurement nobody took — and it
+    is the difference between "nothing stands here" and "something stands here,
+    zero metres tall".
+    """
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "street", "x": 0, "y": 0, "shape": "line", "width": 6,
+              "points": [[0, 0], [20, 0]]},
+    ).json()["obstacles"][0]
+    assert made["height"] is None
+
+
+def test_a_kind_that_stands_still_gets_its_usual_height(client: TestClient) -> None:
+    """The default is still filled in where the vocabulary has one."""
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "shed", "x": 0, "y": 0},
+    ).json()["obstacles"][0]
+    assert made["height"] is not None
+    assert made["height"] > 0

@@ -18,6 +18,8 @@
   --wash-stone-line: #b9b5a8;
   --wash-gravel: #e6e2d7;
   --wash-gravel-grain: #b8b2a1;
+  --wash-tarmac: #c9c6c0;
+  --wash-tarmac-grit: #a09d97;
   --wash-grass: #cfe0bc;
   --wash-grass-blade: #7fa564;
   --wash-water: #cfe0e8;
@@ -30,6 +32,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --wash-tarmac: #4a4844;
+    --wash-tarmac-grit: #6a6762;
     --bg: #12160f;
     --bg-raised: #1b211a;
     --ink: #e9eee3;
@@ -1443,3 +1447,29 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: #fff;
   cursor: pointer;
 }
+
+/* --- Flowers as dots, not as a bar (Wave 14, feature 56) ------------------ */
+
+.bloom-dot {
+  stroke: rgb(255 255 255 / 45%);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.element-menu__danger {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #a8442f;
+  border-radius: var(--radius);
+  background: #a8442f;
+  color: #fff;
+  cursor: pointer;
+}
+
+.element-menu__warning {
+  border-left: 3px solid #a8442f;
+  padding-left: 0.6rem;
+  color: var(--ink);
+}
+
+.symbol__tarmac { fill: var(--wash-tarmac); }
+.symbol__tarmac-grit { fill: var(--wash-tarmac-grit); }

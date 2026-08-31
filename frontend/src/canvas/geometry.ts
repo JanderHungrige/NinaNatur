@@ -96,3 +96,24 @@ export function selfIntersects(points: Point[]): boolean {
   }
   return false;
 }
+
+/**
+ * Whether a point lies inside an outline.
+ *
+ * Ray casting, the same rule the server's `covers` uses — a bed's notch is not
+ * in the bed, and anything placing things inside a shape has to know that.
+ * Points exactly on an edge are not worth deciding: nothing here places a
+ * flower to the millimetre.
+ */
+export function covers(polygon: Point[], at: Point): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const a = polygon[i]!;
+    const b = polygon[j]!;
+    const straddles = a.y > at.y !== b.y > at.y;
+    if (!straddles) continue;
+    const crossing = a.x + ((at.y - a.y) / (b.y - a.y)) * (b.x - a.x);
+    if (at.x < crossing) inside = !inside;
+  }
+  return inside;
+}

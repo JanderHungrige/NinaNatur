@@ -483,6 +483,7 @@ export function App() {
         kind: string;
         label: string | null;
         area: number;
+        plantings: number;
         at: { x: number; y: number };
       }
     | null
@@ -582,6 +583,7 @@ export function App() {
         kind: 'kind' in found ? found.kind : 'bed',
         label: found.label,
         area: areaOf(outline),
+        plantings: 'plantings' in found ? found.plantings.length : 0,
         at,
       });
     },
@@ -913,7 +915,19 @@ export function App() {
                   kind={asking.kind}
                   label={asking.label}
                   area={asking.area}
+                  plantings={asking.plantings}
                   busy={busy}
+                  onDelete={() => {
+                    const target = asking.id;
+                    setAsking(null);
+                    setSelectedObstacleId(null);
+                    void run('Objekt löschen', async () => {
+                      setGarden(
+                        await client.deleteObstacle(garden.share_token, target),
+                      );
+                      await refresh(garden.share_token, forage);
+                    });
+                  }}
                   onClose={() => setAsking(null)}
                   onSave={(changes) => {
                     const target = asking.id;

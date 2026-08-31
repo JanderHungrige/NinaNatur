@@ -34,6 +34,10 @@ class ObjectKind(StrEnum):
     GRAVEL = "gravel"
     POND = "pond"
     PATH = "path"
+    # From the map, not from the garden. A ten-metre carriageway and a
+    # one-metre slab path are not the same thing to look at, and giving the
+    # street its own kind is what lets the plan say which is which.
+    STREET = "street"
     OTHER = "other"
 
 
@@ -80,6 +84,7 @@ TRAITS: dict[ObjectKind, KindTraits] = {
     ObjectKind.GRAVEL: KindTraits(Shape.RECT, 3.0, 2.0, None, False, True, "stipple"),
     ObjectKind.POND:   KindTraits(Shape.CIRCLE, 3.0, None, None, False, True, "water"),
     ObjectKind.PATH:   KindTraits(Shape.RECT, 6.0, 1.0, None, False, True, "slabs"),
+    ObjectKind.STREET: KindTraits(Shape.RECT, 20.0, 6.0, None, False, True, "tarmac"),
     ObjectKind.OTHER:  KindTraits(Shape.RECT, 2.0, 2.0, None, True, False, "plain"),
 }
 

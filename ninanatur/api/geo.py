@@ -7,6 +7,7 @@ visitor's browser is not — and a visitor's browser cannot share a cache.
 """
 from __future__ import annotations
 
+import logging
 import sqlite3
 from typing import Annotated
 
@@ -33,9 +34,11 @@ from ninanatur.garden.store import (
     load_garden,
 )
 from ninanatur.geo.orthophotos import by_state
-from ninanatur.geo.osm import buildings_in, search_address, state_at
+from ninanatur.geo.osm import buildings_in, search_address, state_at, streets_in
 from ninanatur.geo.projection import LatLon, bounding_box, centroid, to_metres
 from ninanatur.geo.surroundings import MARGIN_M, NeighbourhoodKind, surroundings_from
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["geo"])
 
@@ -105,6 +108,8 @@ def garden_from_map(
         longitude=anchor.lon,
         owner_id=None if account is None else str(account.account_id),
     )
+    _add_streets(conn, garden_id, anchor, south, west, north, east)
+
     polygon = [[round(m.x, 2), round(m.y, 2)] for m in (to_metres(p, anchor) for p in outline)]
     add_bed(
         conn,
@@ -140,3 +145,56 @@ def garden_from_map(
             measured=around.measured, estimated=around.estimated, assumed=around.assumed
         ),
     )
+
+
+def _add_streets(
+    conn: sqlite3.Connection,
+    garden_id: int,
+    anchor: LatLon,
+    south: float,
+    west: float,
+    north: float,
+    east: float,
+) -> None:
+    """Draw the ways around the garden, as lines.
+
+    A street is a centreline and a width, which is exactly the `line` element
+    Wave 11 built — no polygon anybody had to trace around a road, and
+    `band_of` already turns it into the footprint everything downstream reads.
+
+    It carries no height on purpose. A road does not shade a garden, and a
+    height here would put it into the light model as an obstacle.
+
+    Overpass is a free service with the same no-SLA standing as Nominatim. A
+    refusal costs the streets, not the garden.
+    """
+    try:
+        found = streets_in(south, west, north, east)
+    except Exception as unreachable:  # noqa: BLE001 — the garden matters more
+        logger.warning("streets unavailable, garden made without them: %s", unreachable)
+        return
+
+    for street in found:
+        metres = [to_metres(p, anchor) for p in street.centreline]
+        # Around its own first point, so moving it later is one update rather
+        # than a rewrite of every corner.
+        origin = metres[0]
+        add_obstacle(
+            conn,
+            garden_id,
+            ObstacleInput(
+                kind="street",
+                x=round(origin.x, 2),
+                y=round(origin.y, 2),
+                shape="line",
+                width=street.width_m,
+                points=[
+                    [round(m.x - origin.x, 2), round(m.y - origin.y, 2)] for m in metres
+                ],
+                # None, not zero: a street has no height, and Wave 8's rule is
+                # that an unrecorded one is never a zero. With none it never
+                # reaches the light model as an obstacle.
+                height=None,
+                label=street.name,
+            ),
+        )
