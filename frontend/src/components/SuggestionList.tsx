@@ -22,6 +22,18 @@ const BAND_LABEL: Record<string, string> = {
   unsuitable: 'ungeeignet',
 };
 
+/** The colour, and whose word it is.
+ *
+ * The gardener's own answer wins over the catalogue's — they looked at the
+ * plant — but it says so, because a value the user typed and a value from GIFT
+ * are not the same kind of fact and this app cites every number it shows.
+ */
+function describeColour(item: Suggestion): string {
+  if (item.observed_colour != null) return `${colourLabel(item.observed_colour)} (von dir)`;
+  if (item.flower_colour === null) return 'Farbe unbekannt';
+  return colourLabel(item.flower_colour);
+}
+
 /** "Licht optimal · Feuchte grenzwertig" — why this plant, in words. */
 function describeFit(axes: Suggestion['fit']['axes']): string {
   const names: Record<string, string> = {
@@ -59,11 +71,7 @@ export function SuggestionList({
       </div>
       <div className="suggestion__meta">
         {/* Unknown stays unknown, at the last layer as at every other. */}
-        <span>
-          {item.flower_colour === null
-            ? 'Farbe unbekannt'
-            : colourLabel(item.flower_colour)}
-        </span>
+        <span>{describeColour(item)}</span>
         <span>
           {item.flowering_start_month !== null && item.flowering_end_month !== null
             ? `Blüte ${item.flowering_start_month}–${item.flowering_end_month}`

@@ -891,6 +891,18 @@ export function App() {
                             ),
                           );
                           await refresh(garden.share_token, forage);
+                          // The list is where the colour was missing from, and
+                          // `refresh` does not re-read it: without this the row
+                          // still said "Farbe unbekannt" after the panel closed.
+                          if (selectedBedId !== null) {
+                            setSuggestions(
+                              await client.bedSuggestions(
+                                garden.share_token,
+                                selectedBedId,
+                                filters,
+                              ),
+                            );
+                          }
                           // Only once it is stored. Setting it first showed
                           // "von dir eingetragen" over a 405 for a route that
                           // was mounted at the wrong path.

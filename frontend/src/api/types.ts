@@ -4,559 +4,6 @@
  */
 
 export interface paths {
-    "/api/v1/accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Register
-         * @description Create an account. Email is optional and the cost of that is returned.
-         */
-        post: operations["register_api_v1_accounts_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/accounts/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Me */
-        get: operations["me_api_v1_accounts_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/accounts/me/gardens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * My Gardens
-         * @description The gardens this account has claimed.
-         *
-         *     A place to keep the links, not a replacement for them: the share token is
-         *     still what opens a garden, and it comes back here so the list can.
-         */
-        get: operations["my_gardens_api_v1_accounts_me_gardens_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create
-         * @description Create a garden. The token comes back here and is the only way back in.
-         *
-         *     A signed-in visitor's garden is theirs from the moment it exists. It used to
-         *     be nobody's unless something called `/claim` afterwards, and nothing did —
-         *     so an account kept the links and then listed none of them.
-         *
-         *     `current_account` rather than `require_account`: making a garden without an
-         *     account is the ordinary case, and the token is still the whole of its
-         *     access control either way.
-         */
-        post: operations["create_api_v1_gardens_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/from-map": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Garden From Map
-         * @description Create a garden from an outline drawn on the map, with what shades it.
-         *
-         *     The margin is 50 m and objects are filtered by whether their shadow could
-         *     arrive at all — generous where it matters, quiet where it does not.
-         */
-        post: operations["garden_from_map_api_v1_gardens_from_map_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/gardens/{token}/colours/{taxon_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Note Colour
-         * @description Record what this species flowers in, here.
-         *
-         *     It never reaches the catalogue: that ships in the image and is re-synced at
-         *     startup, so a value written there would be overwritten by the next
-         *     deployment and would change every other garden until it was.
-         */
-        put: operations["note_colour_api_v1_gardens_gardens__token__colours__taxon_id__put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read */
-        get: operations["read_api_v1_gardens__token__get"];
-        put?: never;
-        post?: never;
-        /** Remove */
-        delete: operations["remove_api_v1_gardens__token__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/beds": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Bed
-         * @description Add a bed and compute its light immediately.
-         *
-         *     PolygonError, SoilTypeError and MoistureError all subclass ValueError, so they
-         *     surface as 422 with their reason rather than as a 500.
-         *
-         *     `add_bed` computes the light itself, so the invariant does not depend on which
-         *     entry point created the bed — it used to live here, and a bed made through the
-         *     store had no light at all.
-         */
-        post: operations["create_bed_api_v1_gardens__token__beds_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/beds/{bed_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Edit Bed
-         * @description Change what a bed is. Raising it changes its light, so the light is redone.
-         *
-         *     Leaving the stored number alone would leave the screen describing a bed that
-         *     no longer exists — the same reason adding an obstacle recomputes.
-         */
-        patch: operations["edit_bed_api_v1_gardens__token__beds__bed_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Planting
-         * @description Put a plant in a bed, named by id or by the words the user typed.
-         *
-         *     A name that resolves to exactly one species is stored with that species and
-         *     counts like any other planting. One that does not is stored anyway, marked
-         *     unidentified: discarding it would tell someone their garden is wrong because
-         *     our catalogue is incomplete.
-         */
-        post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Bed Suggestions
-         * @description Species that suit this bed, ranked by fit against its own site vector.
-         *
-         *     The bed's derived axes are the query, so the user never types an Ellenberg
-         *     number. Trees and shrubs are excluded by default: a bed is a few square
-         *     metres, and a hemlock that fits the light perfectly is still a useless
-         *     suggestion. Introduced species are excluded for a different reason: the
-         *     product promises native plants, and a third of the catalogue is not.
-         */
-        get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/bloom": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Bloom
-         * @description Which colours each bed carries in each month.
-         *
-         *     Server-side because the frontend has a bed's plantings but neither their
-         *     flowering windows nor their colours, and sending those per planting would
-         *     ship the catalogue to the browser to render a swatch.
-         */
-        get: operations["bloom_api_v1_gardens__token__bloom_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Claim
-         * @description Put a garden under an account.
-         *
-         *     Holding the link is enough to edit a garden — that was Wave 3's bargain and
-         *     it stays — but not enough to take it from whoever claimed it. Share links go
-         *     on working afterwards: removing them to push registration would be a
-         *     downgrade dressed as a feature.
-         */
-        post: operations["claim_api_v1_gardens__token__claim_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/improvements": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Improvements
-         * @description What to plant, and what it would gain.
-         *
-         *     Additions come first because they are the safer advice: a swap removes
-         *     something, and the score will recommend removing a valuable plant whose month
-         *     is already saturated. See the known issue in 19-swap-suggestions.
-         */
-        get: operations["improvements_api_v1_gardens__token__improvements_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/obstacles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Obstacle
-         * @description Add an obstacle and recompute in the same call.
-         *
-         *     Requiring a second request would leave the plan showing light values that no
-         *     longer match its own obstacles — and nothing would make that visible.
-         */
-        post: operations["create_obstacle_api_v1_gardens__token__obstacles_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove Element
-         * @description Remove an element from the plan.
-         *
-         *     Nothing could be removed until now: a shape drawn by mistake stayed. The
-         *     garden comes back rather than a 204, because deleting a bed changes what
-         *     every other bed gets — the light is recomputed and the caller needs the
-         *     result, not a second request to find it.
-         */
-        delete: operations["remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete"];
-        options?: never;
-        head?: never;
-        /**
-         * Edit Obstacle
-         * @description Change what an obstacle is, and redo every bed's light.
-         */
-        patch: operations["edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/plantings/{planting_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Planting
-         * @description Remove a planting. Reached through its garden, never by a bare id.
-         */
-        delete: operations["delete_planting_api_v1_gardens__token__plantings__planting_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/recompute": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recompute */
-        post: operations["recompute_api_v1_gardens__token__recompute_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/score": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Score
-         * @description What this planting is worth to insects, with its components.
-         */
-        get: operations["score_api_v1_gardens__token__score_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/sightlines": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sightlines
-         * @description What is visible from a point in the garden.
-         *
-         *     The same cylinders the shading model uses, seen from an eye instead of from
-         *     the sun — so a hedge blocks sight exactly as it blocks light, and a raised
-         *     bed stands above both.
-         */
-        post: operations["sightlines_api_v1_gardens__token__sightlines_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/soil": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Set Soil
-         * @description Record the garden's soil and moisture.
-         *
-         *     One question per garden. Beds drawn afterwards start from it; beds that
-         *     already carry their own answer are left alone, because a garden-level
-         *     change reaching back over a raised bed somebody set by hand is the kind of
-         *     helpfulness nobody asks for twice.
-         */
-        patch: operations["set_soil_api_v1_gardens__token__soil_patch"];
-        trace?: never;
-    };
-    "/api/v1/gardens/{token}/timeline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Timeline
-         * @description The garden's bloom year, month by month, with gaps marked.
-         *
-         *     `forage=true` (the default) weights each flowering planting by its counted
-         *     German insect partners, so a month of nectarless cultivars is correctly a
-         *     gap. `forage=false` counts every planting equally, for planning by looks.
-         */
-        get: operations["timeline_api_v1_gardens__token__timeline_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/geo/imagery": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Imagery At
-         * @description Which state's orthophotos may be shown here, if any.
-         *
-         *     Per Bundesland because the licences are: there is no federal source, and a
-         *     state without an entry gets no imagery rather than a neighbour's.
-         */
-        get: operations["imagery_at_api_v1_geo_imagery_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/geo/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Find Place
-         * @description Addresses matching a query. Empty in, empty out — a keystroke-per-request
-         *     search would be a poor way to treat a free community service.
-         */
-        get: operations["find_place_api_v1_geo_search_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/plants": {
         parameters: {
             query?: never;
@@ -620,6 +67,539 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stats
+         * @description The catalogue in numbers, for the page that introduces it.
+         */
+        get: operations["stats_api_v1_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create
+         * @description Create a garden. The token comes back here and is the only way back in.
+         *
+         *     A signed-in visitor's garden is theirs from the moment it exists. It used to
+         *     be nobody's unless something called `/claim` afterwards, and nothing did —
+         *     so an account kept the links and then listed none of them.
+         *
+         *     `current_account` rather than `require_account`: making a garden without an
+         *     account is the ordinary case, and the token is still the whole of its
+         *     access control either way.
+         */
+        post: operations["create_api_v1_gardens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read */
+        get: operations["read_api_v1_gardens__token__get"];
+        put?: never;
+        post?: never;
+        /** Remove */
+        delete: operations["remove_api_v1_gardens__token__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Bed
+         * @description Add a bed and compute its light immediately.
+         *
+         *     PolygonError, SoilTypeError and MoistureError all subclass ValueError, so they
+         *     surface as 422 with their reason rather than as a 500.
+         *
+         *     `add_bed` computes the light itself, so the invariant does not depend on which
+         *     entry point created the bed — it used to live here, and a bed made through the
+         *     store had no light at all.
+         */
+        post: operations["create_bed_api_v1_gardens__token__beds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/obstacles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Obstacle
+         * @description Add an obstacle and recompute in the same call.
+         *
+         *     Requiring a second request would leave the plan showing light values that no
+         *     longer match its own obstacles — and nothing would make that visible.
+         */
+        post: operations["create_obstacle_api_v1_gardens__token__obstacles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute */
+        post: operations["recompute_api_v1_gardens__token__recompute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds/{bed_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Bed
+         * @description Change what a bed is. Raising it changes its light, so the light is redone.
+         *
+         *     Leaving the stored number alone would leave the screen describing a bed that
+         *     no longer exists — the same reason adding an obstacle recomputes.
+         */
+        patch: operations["edit_bed_api_v1_gardens__token__beds__bed_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Element
+         * @description Remove an element from the plan.
+         *
+         *     Nothing could be removed until now: a shape drawn by mistake stayed. The
+         *     garden comes back rather than a 204, because deleting a bed changes what
+         *     every other bed gets — the light is recomputed and the caller needs the
+         *     result, not a second request to find it.
+         */
+        delete: operations["remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit Obstacle
+         * @description Change what an obstacle is, and redo every bed's light.
+         */
+        patch: operations["edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/soil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Soil
+         * @description Record the garden's soil and moisture.
+         *
+         *     One question per garden. Beds drawn afterwards start from it; beds that
+         *     already carry their own answer are left alone, because a garden-level
+         *     change reaching back over a raised bed somebody set by hand is the kind of
+         *     helpfulness nobody asks for twice.
+         */
+        patch: operations["set_soil_api_v1_gardens__token__soil_patch"];
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim
+         * @description Put a garden under an account.
+         *
+         *     Holding the link is enough to edit a garden — that was Wave 3's bargain and
+         *     it stays — but not enough to take it from whoever claimed it. Share links go
+         *     on working afterwards: removing them to push registration would be a
+         *     downgrade dressed as a feature.
+         */
+        post: operations["claim_api_v1_gardens__token__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/colours/{taxon_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Note Colour
+         * @description Record what this species flowers in, here.
+         *
+         *     It never reaches the catalogue: that ships in the image and is re-synced at
+         *     startup, so a value written there would be overwritten by the next
+         *     deployment and would change every other garden until it was.
+         */
+        put: operations["note_colour_api_v1_gardens__token__colours__taxon_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Planting
+         * @description Put a plant in a bed, named by id or by the words the user typed.
+         *
+         *     A name that resolves to exactly one species is stored with that species and
+         *     counts like any other planting. One that does not is stored anyway, marked
+         *     unidentified: discarding it would tell someone their garden is wrong because
+         *     our catalogue is incomplete.
+         */
+        post: operations["create_planting_api_v1_gardens__token__beds__bed_id__plantings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/plantings/{planting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Planting
+         * @description Remove a planting. Reached through its garden, never by a bare id.
+         */
+        delete: operations["delete_planting_api_v1_gardens__token__plantings__planting_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bed Suggestions
+         * @description Species that suit this bed, ranked by fit against its own site vector.
+         *
+         *     The bed's derived axes are the query, so the user never types an Ellenberg
+         *     number. Trees and shrubs are excluded by default: a bed is a few square
+         *     metres, and a hemlock that fits the light perfectly is still a useless
+         *     suggestion. Introduced species are excluded for a different reason: the
+         *     product promises native plants, and a third of the catalogue is not.
+         */
+        get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Timeline
+         * @description The garden's bloom year, month by month, with gaps marked.
+         *
+         *     `forage=true` (the default) weights each flowering planting by its counted
+         *     German insect partners, so a month of nectarless cultivars is correctly a
+         *     gap. `forage=false` counts every planting equally, for planning by looks.
+         */
+        get: operations["timeline_api_v1_gardens__token__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Score
+         * @description What this planting is worth to insects, with its components.
+         */
+        get: operations["score_api_v1_gardens__token__score_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/improvements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Improvements
+         * @description What to plant, and what it would gain.
+         *
+         *     Additions come first because they are the safer advice: a swap removes
+         *     something, and the score will recommend removing a valuable plant whose month
+         *     is already saturated. See the known issue in 19-swap-suggestions.
+         */
+        get: operations["improvements_api_v1_gardens__token__improvements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/bloom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bloom
+         * @description Which colours each bed carries in each month.
+         *
+         *     Server-side because the frontend has a bed's plantings but neither their
+         *     flowering windows nor their colours, and sending those per planting would
+         *     ship the catalogue to the browser to render a swatch.
+         */
+        get: operations["bloom_api_v1_gardens__token__bloom_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/sightlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sightlines
+         * @description What is visible from a point in the garden.
+         *
+         *     The same cylinders the shading model uses, seen from an eye instead of from
+         *     the sun — so a hedge blocks sight exactly as it blocks light, and a raised
+         *     bed stands above both.
+         */
+        post: operations["sightlines_api_v1_gardens__token__sightlines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geo/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find Place
+         * @description Addresses matching a query. Empty in, empty out — a keystroke-per-request
+         *     search would be a poor way to treat a free community service.
+         */
+        get: operations["find_place_api_v1_geo_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geo/imagery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Imagery At
+         * @description Which state's orthophotos may be shown here, if any.
+         *
+         *     Per Bundesland because the licences are: there is no federal source, and a
+         *     state without an entry gets no imagery rather than a neighbour's.
+         */
+        get: operations["imagery_at_api_v1_geo_imagery_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/from-map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Garden From Map
+         * @description Create a garden from an outline drawn on the map, with what shades it.
+         *
+         *     The margin is 50 m and objects are filtered by whether their shadow could
+         *     arrive at all — generous where it matters, quiet where it does not.
+         */
+        post: operations["garden_from_map_api_v1_gardens_from_map_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register
+         * @description Create an account. Email is optional and the cost of that is returned.
+         */
+        post: operations["register_api_v1_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions": {
         parameters: {
             query?: never;
@@ -641,7 +621,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/stats": {
+    "/api/v1/accounts/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_v1_accounts_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/me/gardens": {
         parameters: {
             query?: never;
             header?: never;
@@ -649,10 +646,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Stats
-         * @description The catalogue in numbers, for the page that introduces it.
+         * My Gardens
+         * @description The gardens this account has claimed.
+         *
+         *     A place to keep the links, not a replacement for them: the share token is
+         *     still what opens a garden, and it comes back here so the list can.
          */
-        get: operations["stats_api_v1_stats_get"];
+        get: operations["my_gardens_api_v1_accounts_me_gardens_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -693,12 +693,12 @@ export interface components {
          * @description Never carries the password or the hash — there is no field for either.
          */
         AccountOut: {
+            /** Username */
+            username: string;
             /** Email */
             email: string | null;
             /** Recovery Note */
             recovery_note: string;
-            /** Username */
-            username: string;
         };
         /**
          * AxisFitOut
@@ -707,43 +707,51 @@ export interface components {
         AxisFitOut: {
             /** Band */
             band: string;
-            /** Half Widths Away */
-            half_widths_away: number;
-            /** Niche Width */
-            niche_width: number;
             /** Score */
             score: number;
+            /** Half Widths Away */
+            half_widths_away: number;
             /** Species Value */
             species_value: number;
+            /** Niche Width */
+            niche_width: number;
             /** Width Estimated */
             width_estimated: boolean;
         };
         /** BedCreate */
         BedCreate: {
-            /** Moisture */
-            moisture?: string | null;
             /** Name */
             name: string;
             /** Polygon */
             polygon: number[][];
             /** Soil Type */
             soil_type?: string | null;
+            /** Moisture */
+            moisture?: string | null;
         };
         /** BedMonthColours */
         BedMonthColours: {
-            /** Colours */
-            colours: string[];
-            /** Flowering */
-            flowering: number;
             /** Month */
             month: number;
+            /** Colours */
+            colours: string[];
             /** Unknown */
             unknown: number;
+            /** Flowering */
+            flowering: number;
         };
         /** BedOut */
         BedOut: {
             /** Bed Id */
             bed_id: number;
+            /** Name */
+            name: string;
+            /** Polygon */
+            polygon: number[][];
+            /** Soil Type */
+            soil_type: string | null;
+            /** Moisture */
+            moisture: string | null;
             /** Ellenberg L */
             ellenberg_l: number | null;
             /** Ellenberg M */
@@ -752,24 +760,16 @@ export interface components {
             ellenberg_n: number | null;
             /** Ellenberg R */
             ellenberg_r: number | null;
+            /** Sun Hours */
+            sun_hours: number | null;
+            /** Light Computed At */
+            light_computed_at: string | null;
             /** Height Above Ground */
             height_above_ground: number;
             /** Label */
             label: string | null;
-            /** Light Computed At */
-            light_computed_at: string | null;
-            /** Moisture */
-            moisture: string | null;
-            /** Name */
-            name: string;
             /** Plantings */
             plantings: components["schemas"]["PlantingOut"][];
-            /** Polygon */
-            polygon: number[][];
-            /** Soil Type */
-            soil_type: string | null;
-            /** Sun Hours */
-            sun_hours: number | null;
         };
         /** BedPalette */
         BedPalette: {
@@ -788,21 +788,14 @@ export interface components {
             bed_id: number;
             /** Bed Name */
             bed_name: string;
-            /**
-             * Filters
-             * @default {}
-             */
-            filters: {
-                [key: string]: components["schemas"]["FilterCountsOut"];
-            };
-            /** Items */
-            items: components["schemas"]["PlantSummary"][];
             /** Site Axes */
             site_axes: {
                 [key: string]: number;
             };
             /** Total */
             total: number;
+            /** Items */
+            items: components["schemas"]["PlantSummary"][];
             /**
              * Woody
              * @default []
@@ -813,19 +806,26 @@ export interface components {
              * @default 0
              */
             woody_total: number;
+            /**
+             * Filters
+             * @default {}
+             */
+            filters: {
+                [key: string]: components["schemas"]["FilterCountsOut"];
+            };
         };
         /** BedUpdate */
         BedUpdate: {
-            /** Height Above Ground */
-            height_above_ground?: number | null;
-            /** Label */
-            label?: string | null;
-            /** Moisture */
-            moisture?: string | null;
             /** Name */
             name?: string | null;
             /** Soil Type */
             soil_type?: string | null;
+            /** Moisture */
+            moisture?: string | null;
+            /** Height Above Ground */
+            height_above_ground?: number | null;
+            /** Label */
+            label?: string | null;
         };
         /** BloomPalette */
         BloomPalette: {
@@ -834,26 +834,26 @@ export interface components {
         };
         /** ChangeOut */
         ChangeOut: {
+            /** Taxon Id */
+            taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
             /** Bed Id */
             bed_id: number;
             /** Bed Name */
             bed_name: string;
-            /** Canonical Name */
-            canonical_name: string;
             /** Gain */
             gain: number;
-            /** German Partners */
-            german_partners: number | null;
-            /** Reason */
-            reason: string;
-            /** Replaces Name */
-            replaces_name: string | null;
-            /** Replaces Planting Id */
-            replaces_planting_id: number | null;
             /** Resulting Score */
             resulting_score: number;
-            /** Taxon Id */
-            taxon_id: number;
+            /** Reason */
+            reason: string;
+            /** German Partners */
+            german_partners: number | null;
+            /** Replaces Planting Id */
+            replaces_planting_id: number | null;
+            /** Replaces Name */
+            replaces_name: string | null;
         };
         /**
          * ColourObservation
@@ -865,10 +865,10 @@ export interface components {
         };
         /** Credentials */
         Credentials: {
-            /** Password */
-            password: string;
             /** Username */
             username: string;
+            /** Password */
+            password: string;
         };
         /**
          * FilterCountsOut
@@ -879,28 +879,28 @@ export interface components {
          *     a filter that hides that is indistinguishable from one that is broken.
          */
         FilterCountsOut: {
-            /** Excluded */
-            excluded: number;
             /** Matched */
             matched: number;
             /** Unknown */
             unknown: number;
+            /** Excluded */
+            excluded: number;
         };
         /** FitOut */
         FitOut: {
+            /** Score */
+            score: number;
             /** Axes */
             axes: {
                 [key: string]: components["schemas"]["AxisFitOut"];
             };
-            /** Score */
-            score: number;
         };
         /** GapOut */
         GapOut: {
-            /** Length */
-            length: number;
             /** Months */
             months: number[];
+            /** Length */
+            length: number;
         };
         /**
          * GardenCreate
@@ -908,64 +908,64 @@ export interface components {
          *     they reach solar code that would happily compute a sun path for latitude 500.
          */
         GardenCreate: {
+            /** Name */
+            name: string;
             /** Latitude */
             latitude: number;
             /** Longitude */
             longitude: number;
-            /** Name */
-            name: string;
         };
         /**
          * GardenCreated
          * @description The token is returned; the numeric id deliberately is not.
          */
         GardenCreated: {
-            /** Name */
-            name: string;
             /** Share Token */
             share_token: string;
+            /** Name */
+            name: string;
         };
         /** GardenOut */
         GardenOut: {
-            /** Beds */
-            beds: components["schemas"]["BedOut"][];
-            /** Created At */
-            created_at: string;
-            /** Latitude */
-            latitude: number;
-            /** Longitude */
-            longitude: number;
-            /** Moisture */
-            moisture: string | null;
-            /** Name */
-            name: string;
-            /** Observed Colours */
-            observed_colours: {
-                [key: string]: string;
-            };
-            /** Obstacles */
-            obstacles: components["schemas"]["ObstacleOut"][];
-            /** Share Token */
-            share_token: string;
-            /** Soil Type */
-            soil_type: string | null;
             /**
              * Unidentified Plantings
              * @default 0
              */
             unidentified_plantings: number;
+            /** Share Token */
+            share_token: string;
+            /** Name */
+            name: string;
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /** Created At */
+            created_at: string;
             /** Updated At */
             updated_at: string;
+            /** Soil Type */
+            soil_type: string | null;
+            /** Moisture */
+            moisture: string | null;
+            /** Observed Colours */
+            observed_colours: {
+                [key: string]: string;
+            };
+            /** Beds */
+            beds: components["schemas"]["BedOut"][];
+            /** Obstacles */
+            obstacles: components["schemas"]["ObstacleOut"][];
         };
         /**
          * GardenSoil
          * @description What the ground is, asked once for the whole garden.
          */
         GardenSoil: {
-            /** Moisture */
-            moisture: string;
             /** Soil Type */
             soil_type: string;
+            /** Moisture */
+            moisture: string;
         };
         /**
          * GrowthForm
@@ -990,12 +990,12 @@ export interface components {
          *     lie as a filter that hides what it dropped.
          */
         HeightReport: {
-            /** Assumed */
-            assumed: number;
-            /** Estimated */
-            estimated: number;
             /** Measured */
             measured: number;
+            /** Estimated */
+            estimated: number;
+            /** Assumed */
+            assumed: number;
         };
         /**
          * ImageryOut
@@ -1006,25 +1006,25 @@ export interface components {
          *     imagery used outside its terms.
          */
         ImageryOut: {
-            /** Attribution */
-            attribution?: string | null;
             /** Available */
             available: boolean;
-            /** Layer */
-            layer?: string | null;
-            /** Licence */
-            licence?: string | null;
             /** State */
             state?: string | null;
             /** Url */
             url?: string | null;
+            /** Layer */
+            layer?: string | null;
+            /** Licence */
+            licence?: string | null;
+            /** Attribution */
+            attribution?: string | null;
         };
         /** ImprovementsOut */
         ImprovementsOut: {
-            /** Additions */
-            additions: components["schemas"]["ChangeOut"][];
             /** Current Score */
             current_score: number;
+            /** Additions */
+            additions: components["schemas"]["ChangeOut"][];
             /** Swaps */
             swaps: components["schemas"]["ChangeOut"][];
         };
@@ -1047,20 +1047,20 @@ export interface components {
         MapSelection: {
             /** Name */
             name: string;
+            /** Outline */
+            outline: components["schemas"]["LatLonIn"][];
             /**
              * Neighbourhood
              * @default detached
              */
             neighbourhood: string;
-            /** Outline */
-            outline: components["schemas"]["LatLonIn"][];
         };
         /** MonthOut */
         MonthOut: {
-            /** Coverage */
-            coverage: number;
             /** Month */
             month: number;
+            /** Coverage */
+            coverage: number;
             /** Species */
             species: string[];
         };
@@ -1075,86 +1075,86 @@ export interface components {
         ObjectKind: "house" | "shed" | "wall" | "fence" | "hedge" | "tree" | "shrub" | "bed" | "lawn" | "paving" | "gravel" | "pond" | "path" | "street" | "other";
         /** ObstacleCreate */
         ObstacleCreate: {
+            kind: components["schemas"]["ObjectKind"];
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            shape?: components["schemas"]["Shape"] | null;
+            /** Width */
+            width?: number | null;
             /** Depth */
             depth?: number | null;
-            /** Height */
-            height?: number | null;
-            kind: components["schemas"]["ObjectKind"];
-            /** Label */
-            label?: string | null;
-            /** Points */
-            points?: number[][] | null;
             /**
              * Rotation
              * @default 0
              */
             rotation: number;
-            shape?: components["schemas"]["Shape"] | null;
-            /** Width */
-            width?: number | null;
-            /** X */
-            x: number;
-            /** Y */
-            y: number;
+            /** Points */
+            points?: number[][] | null;
+            /** Height */
+            height?: number | null;
+            /** Label */
+            label?: string | null;
         };
         /** ObstacleOut */
         ObstacleOut: {
-            /** Constraint Hint */
-            constraint_hint: string | null;
-            /** Footprint */
-            footprint: number[][];
-            /** Height */
-            height: number | null;
-            /** Height Source */
-            height_source: string;
+            /** Obstacle Id */
+            obstacle_id: number;
             /** Kind */
             kind: string;
             /** Label */
             label: string | null;
-            /** Obstacle Id */
-            obstacle_id: number;
-            /** Points */
-            points: number[][] | null;
-            /** Shape */
-            shape: string;
-            /** Width */
-            width: number | null;
+            /** Height Source */
+            height_source: string;
             /** X */
             x: number;
             /** Y */
             y: number;
+            /** Shape */
+            shape: string;
+            /** Width */
+            width: number | null;
+            /** Points */
+            points: number[][] | null;
+            /** Constraint Hint */
+            constraint_hint: string | null;
+            /** Height */
+            height: number | null;
+            /** Footprint */
+            footprint: number[][];
         };
         /**
          * ObstacleUpdate
          * @description Every field optional: an edit says what changed, not what everything is.
          */
         ObstacleUpdate: {
-            /** Constraint Hint */
-            constraint_hint?: string | null;
-            /** Depth */
-            depth?: number | null;
-            /** Height */
-            height?: number | null;
-            /** Height Source */
-            height_source?: string | null;
             kind?: components["schemas"]["ObjectKind"] | null;
-            /** Label */
-            label?: string | null;
-            /** Moisture */
-            moisture?: string | null;
-            /** Points */
-            points?: number[][] | null;
-            /** Rotation */
-            rotation?: number | null;
-            shape?: components["schemas"]["Shape"] | null;
-            /** Soil Type */
-            soil_type?: string | null;
-            /** Width */
-            width?: number | null;
             /** X */
             x?: number | null;
             /** Y */
             y?: number | null;
+            shape?: components["schemas"]["Shape"] | null;
+            /** Width */
+            width?: number | null;
+            /** Depth */
+            depth?: number | null;
+            /** Rotation */
+            rotation?: number | null;
+            /** Points */
+            points?: number[][] | null;
+            /** Constraint Hint */
+            constraint_hint?: string | null;
+            /** Soil Type */
+            soil_type?: string | null;
+            /** Moisture */
+            moisture?: string | null;
+            /** Height */
+            height?: number | null;
+            /** Label */
+            label?: string | null;
+            /** Height Source */
+            height_source?: string | null;
         };
         /** OwnedGarden */
         OwnedGarden: {
@@ -1172,32 +1172,32 @@ export interface components {
         };
         /** PartnersOut */
         PartnersOut: {
+            /** German */
+            german: number;
+            /** Global Total */
+            global_total: number;
+            /** Unmatched */
+            unmatched: number;
+            /** Match Rate */
+            match_rate: number;
+            /** By Kind */
+            by_kind: {
+                [key: string]: number;
+            };
             /**
              * Birds
              * @default 0
              */
             birds: number;
-            /** By Kind */
-            by_kind: {
-                [key: string]: number;
-            };
-            /** German */
-            german: number;
-            /** Global Total */
-            global_total: number;
-            /** Match Rate */
-            match_rate: number;
-            /** Unmatched */
-            unmatched: number;
         };
         /** PlaceOut */
         PlaceOut: {
+            /** Name */
+            name: string;
             /** Lat */
             lat: number;
             /** Lon */
             lon: number;
-            /** Name */
-            name: string;
         };
         /** PlaceSearchOut */
         PlaceSearchOut: {
@@ -1206,22 +1206,30 @@ export interface components {
         };
         /** PlantDetail */
         PlantDetail: {
-            /** Canonical Name */
-            canonical_name: string;
-            /** Family */
-            family: string | null;
-            partners: components["schemas"]["PartnersOut"] | null;
-            /** Scientific Name */
-            scientific_name: string | null;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Scientific Name */
+            scientific_name: string | null;
+            /** Family */
+            family: string | null;
             /** Traits */
             traits: {
                 [key: string]: components["schemas"]["TraitOut"];
             };
+            partners: components["schemas"]["PartnersOut"] | null;
         };
         /** PlantSearchResponse */
         PlantSearchResponse: {
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Items */
+            items: components["schemas"]["PlantSummary"][];
             /**
              * Filters
              * @default {}
@@ -1229,40 +1237,34 @@ export interface components {
             filters: {
                 [key: string]: components["schemas"]["FilterCountsOut"];
             };
-            /** Items */
-            items: components["schemas"]["PlantSummary"][];
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
-            /** Total */
-            total: number;
         };
         /** PlantSummary */
         PlantSummary: {
-            /** Bird Partners */
-            bird_partners: number | null;
-            /** Canonical Name */
-            canonical_name: string;
-            /** Colour Known */
-            colour_known: boolean;
-            /** Family */
-            family: string | null;
-            fit: components["schemas"]["FitOut"];
-            /** Fits Bed */
-            fits_bed: boolean | null;
-            /** Flower Colour */
-            flower_colour: string | null;
-            /** Flowering End Month */
-            flowering_end_month: number | null;
-            /** Flowering Start Month */
-            flowering_start_month: number | null;
-            /** Height Max M */
-            height_max_m: number | null;
-            /** Space M2 */
-            space_m2: number | null;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Family */
+            family: string | null;
+            /** Height Max M */
+            height_max_m: number | null;
+            /** Flowering Start Month */
+            flowering_start_month: number | null;
+            /** Flowering End Month */
+            flowering_end_month: number | null;
+            /** Flower Colour */
+            flower_colour: string | null;
+            /** Observed Colour */
+            observed_colour?: string | null;
+            /** Colour Known */
+            colour_known: boolean;
+            /** Bird Partners */
+            bird_partners: number | null;
+            /** Space M2 */
+            space_m2: number | null;
+            /** Fits Bed */
+            fits_bed: boolean | null;
+            fit: components["schemas"]["FitOut"];
         };
         /**
          * PlantingCreate
@@ -1272,49 +1274,49 @@ export interface components {
          *     so a name it cannot match is an answer rather than a mistake.
          */
         PlantingCreate: {
+            /** Taxon Id */
+            taxon_id?: number | null;
+            /** Raw Name */
+            raw_name?: string | null;
             /**
              * Quantity
              * @default 1
              */
             quantity: number;
-            /** Raw Name */
-            raw_name?: string | null;
-            /** Taxon Id */
-            taxon_id?: number | null;
         };
         /** PlantingOut */
         PlantingOut: {
-            /** Added At */
-            added_at: string;
-            /** Canonical Name */
-            canonical_name: string | null;
             /** Planting Id */
             planting_id: number;
-            /** Quantity */
-            quantity: number;
-            /** Raw Name */
-            raw_name: string | null;
             /** Taxon Id */
             taxon_id: number | null;
+            /** Canonical Name */
+            canonical_name: string | null;
+            /** Raw Name */
+            raw_name: string | null;
+            /** Quantity */
+            quantity: number;
+            /** Added At */
+            added_at: string;
         };
         /** PlantingVisibility */
         PlantingVisibility: {
-            /** Bed Id */
-            bed_id: number;
-            /** Estimated */
-            estimated: boolean;
-            /** Height M */
-            height_m: number | null;
-            /** Hidden By */
-            hidden_by: number | null;
-            /** Name */
-            name: string;
             /** Planting Id */
             planting_id: number;
+            /** Name */
+            name: string;
+            /** Bed Id */
+            bed_id: number;
+            /** Height M */
+            height_m: number | null;
             /** Visible */
             visible: boolean | null;
             /** Visible From M */
             visible_from_m: number | null;
+            /** Hidden By */
+            hidden_by: number | null;
+            /** Estimated */
+            estimated: boolean;
         };
         /**
          * Registration
@@ -1325,12 +1327,12 @@ export interface components {
          *     note, which is worse than a long phrase.
          */
         Registration: {
-            /** Email */
-            email?: string | null;
-            /** Password */
-            password: string;
             /** Username */
             username: string;
+            /** Password */
+            password: string;
+            /** Email */
+            email?: string | null;
         };
         /**
          * ScoreOut
@@ -1338,24 +1340,24 @@ export interface components {
          *     interrogate is decoration, and this one will be trusted more than it deserves.
          */
         ScoreOut: {
-            /** By Group */
-            by_group: {
-                [key: string]: number;
-            };
+            /** Score */
+            score: number;
             /** By Month */
             by_month: {
                 [key: string]: number;
             };
             /** By Species */
             by_species: components["schemas"]["SpeciesContributionOut"][];
-            /** Is Empty */
-            is_empty: boolean;
+            /** By Group */
+            by_group: {
+                [key: string]: number;
+            };
             /** Plantings Total */
             plantings_total: number;
             /** Plantings Without Interaction Data */
             plantings_without_interaction_data: number;
-            /** Score */
-            score: number;
+            /** Is Empty */
+            is_empty: boolean;
         };
         /**
          * Shape
@@ -1364,36 +1366,36 @@ export interface components {
         Shape: "circle" | "rect" | "polygon" | "line";
         /** SightlinesOut */
         SightlinesOut: {
-            /** Estimated Count */
-            estimated_count: number;
             /** Plantings */
             plantings: components["schemas"]["PlantingVisibility"][];
+            /** Estimated Count */
+            estimated_count: number;
         };
         /** SourceOut */
         SourceOut: {
-            /** Contributes */
-            contributes: string;
-            /** Licence */
-            licence: string;
             /** Name */
             name: string;
+            /** Licence */
+            licence: string;
             /** Url */
             url: string;
+            /** Contributes */
+            contributes: string;
         };
         /** SpeciesContributionOut */
         SpeciesContributionOut: {
-            /** Canonical Name */
-            canonical_name: string;
-            /** Forage */
-            forage: number;
-            /** German Partners */
-            german_partners: number | null;
-            /** Months */
-            months: number[];
-            /** Origin */
-            origin: string;
             /** Taxon Id */
             taxon_id: number;
+            /** Canonical Name */
+            canonical_name: string;
+            /** German Partners */
+            german_partners: number | null;
+            /** Origin */
+            origin: string;
+            /** Forage */
+            forage: number;
+            /** Months */
+            months: number[];
         };
         /**
          * SpeciesInfoOut
@@ -1401,18 +1403,18 @@ export interface components {
          *     not decoration — the UI may not show the extract without them.
          */
         SpeciesInfoOut: {
+            /** Title */
+            title: string;
             /** Extract */
             extract: string;
+            /** Thumbnail Url */
+            thumbnail_url: string | null;
+            /** Page Url */
+            page_url: string;
             /** Language */
             language: string;
             /** Licence */
             licence: string;
-            /** Page Url */
-            page_url: string;
-            /** Thumbnail Url */
-            thumbnail_url: string | null;
-            /** Title */
-            title: string;
         };
         /**
          * StatsOut
@@ -1423,6 +1425,10 @@ export interface components {
          *     is making a claim.
          */
         StatsOut: {
+            /** Species */
+            species: number;
+            /** Species With Full Site Profile */
+            species_with_full_site_profile: number;
             /** Animal Partnerships */
             animal_partnerships: number;
             /** German Animals */
@@ -1431,10 +1437,6 @@ export interface components {
             german_names: number;
             /** Sources */
             sources: components["schemas"]["SourceOut"][];
-            /** Species */
-            species: number;
-            /** Species With Full Site Profile */
-            species_with_full_site_profile: number;
         };
         /**
          * TimelineOut
@@ -1442,61 +1444,61 @@ export interface components {
          *     timeline built mostly on unknowns is visible rather than merely optimistic.
          */
         TimelineOut: {
-            /** Gaps */
-            gaps: components["schemas"]["GapOut"][];
-            /** Is Empty */
-            is_empty: boolean;
             /** Mode */
             mode: string;
             /** Months */
             months: components["schemas"]["MonthOut"][];
+            /** Gaps */
+            gaps: components["schemas"]["GapOut"][];
             /** Plantings Total */
             plantings_total: number;
             /** Plantings Without Interaction Data */
             plantings_without_interaction_data: number;
+            /** Is Empty */
+            is_empty: boolean;
         };
         /** TraitOut */
         TraitOut: {
+            /** Value */
+            value: number | string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Source */
+            source: string;
+            /** License */
+            license: string;
             /** Alternatives */
             alternatives?: {
                 [key: string]: unknown;
             }[];
-            /** License */
-            license: string;
-            /** Source */
-            source: string;
-            /** Unit */
-            unit?: string | null;
-            /** Value */
-            value: number | string | null;
         };
         /** ValidationError */
         ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * ViewpointIn
          * @description Where somebody is standing, in garden metres.
          */
         ViewpointIn: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
             /**
              * Eye Height M
              * @default 1.6
              */
             eye_height_m: number;
-            /** X */
-            x: number;
-            /** Y */
-            y: number;
         };
     };
     responses: never;
@@ -1507,26 +1509,36 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    register_api_v1_accounts_post: {
+    search_plants_api_v1_plants_get: {
         parameters: {
-            query?: never;
+            query?: {
+                light?: number | null;
+                moisture?: number | null;
+                nutrients?: number | null;
+                reaction?: number | null;
+                temperature?: number | null;
+                height_min?: number | null;
+                height_max?: number | null;
+                flowering_month?: number | null;
+                growth_form?: components["schemas"]["GrowthForm"] | null;
+                include_unknown?: boolean;
+                colour?: string | null;
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Registration"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountOut"];
+                    "application/json": components["schemas"]["PlantSearchResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1540,11 +1552,13 @@ export interface operations {
             };
         };
     };
-    me_api_v1_accounts_me_get: {
+    plant_detail_api_v1_plants__taxon_id__get: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                taxon_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1555,12 +1569,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountOut"];
+                    "application/json": components["schemas"]["PlantDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
     };
-    my_gardens_api_v1_accounts_me_gardens_get: {
+    plant_info_api_v1_plants__taxon_id__info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxon_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpeciesInfoOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_api_v1_stats_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1575,7 +1629,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OwnedGardens"];
+                    "application/json": components["schemas"]["StatsOut"];
                 };
             };
         };
@@ -1600,75 +1654,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GardenCreated"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    garden_from_map_api_v1_gardens_from_map_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MapSelection"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MapGardenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    note_colour_api_v1_gardens_gardens__token__colours__taxon_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-                taxon_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ColourObservation"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GardenOut"];
                 };
             };
             /** @description Validation Error */
@@ -1777,6 +1762,72 @@ export interface operations {
             };
         };
     };
+    create_obstacle_api_v1_gardens__token__obstacles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObstacleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recompute_api_v1_gardens__token__recompute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     edit_bed_api_v1_gardens__token__beds__bed_id__patch: {
         parameters: {
             query?: never;
@@ -1795,213 +1846,6 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GardenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-                bed_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PlantingCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GardenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                colour?: string | null;
-                height_min?: number | null;
-                height_max?: number | null;
-                flowering_month?: number | null;
-                growth_form?: components["schemas"]["GrowthForm"] | null;
-                include_unknown?: boolean;
-                include_trees?: boolean;
-                include_introduced?: boolean;
-                exclude_planted?: boolean;
-            };
-            header?: never;
-            path: {
-                token: string;
-                bed_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BedSuggestions"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    bloom_api_v1_gardens__token__bloom_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BloomPalette"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    claim_api_v1_gardens__token__claim_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GardenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    improvements_api_v1_gardens__token__improvements_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ImprovementsOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_obstacle_api_v1_gardens__token__obstacles_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ObstacleCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2088,6 +1932,144 @@ export interface operations {
             };
         };
     };
+    set_soil_api_v1_gardens__token__soil_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GardenSoil"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_api_v1_gardens__token__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    note_colour_api_v1_gardens__token__colours__taxon_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                taxon_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ColourObservation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_planting_api_v1_gardens__token__beds__bed_id__plantings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlantingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_planting_api_v1_gardens__token__plantings__planting_id__delete: {
         parameters: {
             query?: never;
@@ -2120,9 +2102,54 @@ export interface operations {
             };
         };
     };
-    recompute_api_v1_gardens__token__recompute_post: {
+    bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                colour?: string | null;
+                height_min?: number | null;
+                height_max?: number | null;
+                flowering_month?: number | null;
+                growth_form?: components["schemas"]["GrowthForm"] | null;
+                include_unknown?: boolean;
+                include_trees?: boolean;
+                include_introduced?: boolean;
+                exclude_planted?: boolean;
+            };
+            header?: never;
+            path: {
+                token: string;
+                bed_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BedSuggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    timeline_api_v1_gardens__token__timeline_get: {
+        parameters: {
+            query?: {
+                forage?: boolean;
+            };
             header?: never;
             path: {
                 token: string;
@@ -2137,7 +2164,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GardenOut"];
+                    "application/json": components["schemas"]["TimelineOut"];
                 };
             };
             /** @description Validation Error */
@@ -2169,6 +2196,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScoreOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    improvements_api_v1_gardens__token__improvements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImprovementsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bloom_api_v1_gardens__token__bloom_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BloomPalette"];
                 };
             };
             /** @description Validation Error */
@@ -2217,50 +2306,13 @@ export interface operations {
             };
         };
     };
-    set_soil_api_v1_gardens__token__soil_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GardenSoil"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GardenOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    timeline_api_v1_gardens__token__timeline_get: {
+    find_place_api_v1_geo_search_get: {
         parameters: {
             query?: {
-                forage?: boolean;
+                q?: string;
             };
             header?: never;
-            path: {
-                token: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -2271,7 +2323,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TimelineOut"];
+                    "application/json": components["schemas"]["PlaceSearchOut"];
                 };
             };
             /** @description Validation Error */
@@ -2317,24 +2369,26 @@ export interface operations {
             };
         };
     };
-    find_place_api_v1_geo_search_get: {
+    garden_from_map_api_v1_gardens_from_map_post: {
         parameters: {
-            query?: {
-                q?: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapSelection"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlaceSearchOut"];
+                    "application/json": components["schemas"]["MapGardenOut"];
                 };
             };
             /** @description Validation Error */
@@ -2348,98 +2402,26 @@ export interface operations {
             };
         };
     };
-    search_plants_api_v1_plants_get: {
+    register_api_v1_accounts_post: {
         parameters: {
-            query?: {
-                light?: number | null;
-                moisture?: number | null;
-                nutrients?: number | null;
-                reaction?: number | null;
-                temperature?: number | null;
-                height_min?: number | null;
-                height_max?: number | null;
-                flowering_month?: number | null;
-                growth_form?: components["schemas"]["GrowthForm"] | null;
-                include_unknown?: boolean;
-                colour?: string | null;
-                limit?: number;
-                offset?: number;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Registration"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantSearchResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    plant_detail_api_v1_plants__taxon_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                taxon_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlantDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    plant_info_api_v1_plants__taxon_id__info_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                taxon_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SpeciesInfoOut"];
+                    "application/json": components["schemas"]["AccountOut"];
                 };
             };
             /** @description Validation Error */
@@ -2504,7 +2486,7 @@ export interface operations {
             };
         };
     };
-    stats_api_v1_stats_get: {
+    me_api_v1_accounts_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2519,7 +2501,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StatsOut"];
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+        };
+    };
+    my_gardens_api_v1_accounts_me_gardens_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnedGardens"];
                 };
             };
         };

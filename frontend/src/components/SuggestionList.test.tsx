@@ -134,4 +134,18 @@ describe('SuggestionList', () => {
 
     expect(screen.getByText('cream')).toBeDefined();
   });
+
+  it('shows the gardener\'s own colour, and says it is theirs', () => {
+    // Entering a colour and closing the panel left the row saying
+    // "Farbe unbekannt", because the list reads the catalogue and the
+    // observation is deliberately not in the catalogue.
+    show({
+      suggestions: suggestions({
+        items: [item({ flower_colour: null, observed_colour: 'yellow' })],
+      }),
+    });
+
+    expect(screen.getByText('gelb (von dir)')).toBeDefined();
+    expect(screen.queryByText('Farbe unbekannt')).toBeNull();
+  });
 });

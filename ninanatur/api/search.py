@@ -7,7 +7,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ninanatur.api.candidates import AXIS_PARAMS, PlantRow, ScoredPlant, load_candidates
+from ninanatur.api.candidates import (
+    AXIS_PARAMS,
+    PlantRow,
+    ScoredPlant,
+    load_candidates,
+    with_observed,
+)
 from ninanatur.api.filters import (
     FilterCounts,
     SearchFilters,
@@ -34,6 +40,7 @@ __all__ = [
     "is_woody",
     "load_candidates",
     "rank_plants",
+    "with_observed",
 ]
 
 

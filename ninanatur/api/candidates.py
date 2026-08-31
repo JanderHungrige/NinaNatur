@@ -6,9 +6,14 @@ of round trips for a single search.
 from __future__ import annotations
 
 import sqlite3
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass, field, replace
 
 from ninanatur.fit.score import AXES, FitResult, SpeciesNiche
+
+# Where a gardener's own answer about a species is carried through the ranking,
+# alongside the catalogue's rather than over it.
+OBSERVED_COLOUR = "observed_colour"
 
 # Query parameter -> canonical axis. Gardeners think "light", the data says
 # "ellenberg_l"; the translation belongs here and nowhere else.
@@ -30,6 +35,12 @@ class PlantRow:
     family: str | None
     niche: SpeciesNiche
     extras: dict[str, float | str] = field(default_factory=dict)
+
+    def colour(self) -> str | None:
+        """The colour to judge this plant by: the gardener's word over the
+        catalogue's. They looked at it; the catalogue inferred it from a
+        checklist, and for 94% of species holds nothing at all."""
+        return self.text(OBSERVED_COLOUR) or self.text("flower_colour")
 
     def number(self, key: str) -> float | None:
         value = self.extras.get(key)
@@ -94,4 +105,34 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
             extras=extras.get(tid, {}),
         )
         for tid, (name, family) in names.items()
+    ]
+
+
+def with_observed(
+    candidates: list[PlantRow], observed: Mapping[int, str]
+) -> list[PlantRow]:
+    """Lay one garden's own flower colours over the catalogue's.
+
+    The gardener looked at the photograph and answered a question the catalogue
+    could not: colour is recorded for 590 of 8,939 species. From here on that
+    answer is the plant's colour — it is what the list shows, what the colour
+    filter matches, and what the "unknown" count stops counting.
+
+    It is kept under its own key rather than written over `flower_colour`, so
+    that both answers survive to the client: the list can mark which one it is
+    showing, and the info panel can still say what the catalogue holds.
+
+    Rows are replaced, not mutated. The candidate set describes the catalogue,
+    which is shared by every garden and re-synced from the image; writing one
+    gardener's observation into it would show up in a stranger's plan.
+    """
+    if not observed:
+        return candidates
+    return [
+        replace(
+            plant, extras={**plant.extras, OBSERVED_COLOUR: observed[plant.taxon_id]}
+        )
+        if plant.taxon_id in observed
+        else plant
+        for plant in candidates
     ]

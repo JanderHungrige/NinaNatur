@@ -102,8 +102,11 @@ function bedLabel(bed: GardenOut['beds'][number]): string {
 
 function obstacleLabel(o: GardenOut['obstacles'][number]): string {
   const kind = labelOf(o.kind);
+  // A pond has no height, and the server stopped inventing 0.0 for one. The
+  // label went on reading it out anyway: "Teich, null m hoch".
+  const what = o.height === null ? kind : `${kind}, ${o.height} m hoch`;
   // The free label first when there is one: it is what the user calls the thing.
-  return o.label ? `${o.label} (${kind}, ${o.height} m hoch)` : `${kind}, ${o.height} m hoch`;
+  return o.label ? `${o.label} (${what})` : what;
 }
 
 // Patterns are sized relative to the bed rather than in metres. Metres were the
