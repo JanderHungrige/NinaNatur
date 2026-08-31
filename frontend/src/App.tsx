@@ -151,9 +151,13 @@ export function App() {
     }
   }, [account]);
 
+  // Also when a garden closes: coming back to the front door after making or
+  // deleting one must show what is actually there, not what was there when the
+  // page loaded.
+  const onFrontDoor = garden === null;
   useEffect(() => {
-    void loadMyGardens();
-  }, [loadMyGardens]);
+    if (onFrontDoor) void loadMyGardens();
+  }, [loadMyGardens, onFrontDoor]);
 
   /** Open one by its token — the same route the landing form takes, since the
    *  token is the credential either way. */

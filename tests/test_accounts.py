@@ -253,3 +253,64 @@ def test_nothing_is_demanded_of_a_password_but_length(client: TestClient) -> Non
         json={"username": "nurbuchstaben", "password": "gartenzaun"},
     )
     assert plain.status_code == 201, plain.json()
+
+
+def _sign_up(client: TestClient, username: str) -> None:
+    client.post(
+        "/api/v1/accounts", json={"username": username, "password": "gartenzaun"}
+    )
+    client.post(
+        "/api/v1/sessions", json={"username": username, "password": "gartenzaun"}
+    )
+
+
+def test_a_garden_made_while_signed_in_belongs_to_that_account(
+    client: TestClient,
+) -> None:
+    """Reported: "der Garten wird zu keinem Zeitpunkt gespeichert bzw. nicht auf
+    der Landing Page angezeigt".
+
+    Creating never set `owner_id` and nothing called `/claim` afterwards, so a
+    garden made while signed in belonged to nobody — and the list that filters
+    on owner found none of them. The account kept nothing.
+    """
+    _sign_up(client, "besitzerin")
+    made = client.post(
+        "/api/v1/gardens",
+        json={"name": "Vorgarten", "latitude": 52.5, "longitude": 13.4},
+    )
+    assert made.status_code == 201
+
+    mine = client.get("/api/v1/accounts/me/gardens").json()["gardens"]
+    assert [g["name"] for g in mine] == ["Vorgarten"]
+
+
+def test_a_garden_made_from_the_map_belongs_to_it_too(client: TestClient) -> None:
+    """The way most people start. It had the same gap."""
+    _sign_up(client, "kartennutzer")
+    made = client.post(
+        "/api/v1/gardens/from-map",
+        json={
+            "name": "Vom Plan",
+            "outline": [
+                {"lat": 52.5, "lon": 13.4},
+                {"lat": 52.5004, "lon": 13.4},
+                {"lat": 52.5004, "lon": 13.4006},
+            ],
+        },
+    )
+    assert made.status_code == 201, made.json()
+    mine = client.get("/api/v1/accounts/me/gardens").json()["gardens"]
+    assert [g["name"] for g in mine] == ["Vom Plan"]
+
+
+def test_a_garden_made_by_nobody_still_works(client: TestClient) -> None:
+    """Signing in stays optional. An anonymous garden is the ordinary case and
+    its token is still the whole of its access control."""
+    made = client.post(
+        "/api/v1/gardens",
+        json={"name": "Ohne Konto", "latitude": 52.5, "longitude": 13.4},
+    )
+    assert made.status_code == 201
+    token = made.json()["share_token"]
+    assert client.get(f"/api/v1/gardens/{token}").status_code == 200
