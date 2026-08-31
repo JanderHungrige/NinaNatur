@@ -50,6 +50,10 @@ interface Props {
   onCancelTool?: (() => void) | undefined;
   /** Escape also drops whatever is selected — one key out of everything. */
   onClearSelection?: (() => void) | undefined;
+  /** Right-click on an element: the short way to say what it is. */
+  onAskWhatItIs?:
+    | ((id: number, at: { x: number; y: number }) => void)
+    | undefined;
   /** The object wearing handles. Selection is the parent's, because the panel
    *  and the plan must agree on what is being edited. */
   selectedObstacleId?: number | null;
@@ -84,6 +88,7 @@ export function GardenCanvas({
   onDrawTrace,
   onCancelTool,
   onClearSelection,
+  onAskWhatItIs,
   onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
@@ -248,6 +253,7 @@ export function GardenCanvas({
           onSelectObstacle={onSelectObstacle}
           palette={palette}
           armed={tool !== null}
+          onAskWhatItIs={onAskWhatItIs}
         />
         <CanvasOverlays
           view={view}

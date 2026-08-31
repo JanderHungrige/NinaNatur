@@ -22,6 +22,10 @@ interface Props {
    *  `pointer-events: none`: not attaching is a guarantee, and a CSS property
    *  is a hope that nothing else ever sets it back. */
   armed?: boolean;
+  /** Right-click, or the keyboard's context-menu key, on an element. */
+  onAskWhatItIs?:
+    | ((id: number, at: { x: number; y: number }) => void)
+    | undefined;
   /** Colours in flower per bed for the month being shown, if any. */
   palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
 }
@@ -128,6 +132,7 @@ export function CanvasScene({
   onSelectObstacle,
   palette,
   armed = false,
+  onAskWhatItIs,
 }: Props) {
   const combinations = Object.values(palette ?? {})
     .map((e) => e.colours)
@@ -219,9 +224,25 @@ export function CanvasScene({
               role={armed ? undefined : 'button'}
               aria-pressed={armed ? undefined : item.bed_id === selectedBedId}
               aria-label={bedLabel(item)}
+              onContextMenu={
+                onAskWhatItIs === undefined || armed
+                  ? undefined
+                  : (event) => {
+                      event.preventDefault();
+                      onAskWhatItIs(item.bed_id, { x: event.clientX, y: event.clientY });
+                    }
+              }
               onClick={armed ? undefined : () => onSelectBed(item.bed_id)}
               onKeyDown={(event) => {
                 if (armed) return;
+                // Shift+F10 and the context-menu key are what a keyboard uses
+                // for a right-click, so the menu is not pointer-only.
+                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                  event.preventDefault();
+                  const box = event.currentTarget.getBoundingClientRect();
+                  onAskWhatItIs?.(item.bed_id, { x: box.left, y: box.top });
+                  return;
+                }
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   onSelectBed(item.bed_id);
@@ -247,8 +268,22 @@ export function CanvasScene({
                   ? undefined
                   : () => onSelectObstacle(item.obstacle_id)
               }
+              onContextMenu={
+                onAskWhatItIs === undefined || armed
+                  ? undefined
+                  : (event) => {
+                      event.preventDefault();
+                      onAskWhatItIs(item.obstacle_id, { x: event.clientX, y: event.clientY });
+                    }
+              }
               onKeyDown={(event) => {
                 if (onSelectObstacle === undefined || armed) return;
+                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                  event.preventDefault();
+                  const box = event.currentTarget.getBoundingClientRect();
+                  onAskWhatItIs?.(item.obstacle_id, { x: box.left, y: box.top });
+                  return;
+                }
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   onSelectObstacle(item.obstacle_id);

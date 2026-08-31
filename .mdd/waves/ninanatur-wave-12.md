@@ -58,8 +58,8 @@ back to the start — and the two drawing paths should close the same way.
 | 2 | garden-soil | .mdd/docs/48-garden-soil.md | complete | — |
 | 3 | drawing-focus | .mdd/docs/49-drawing-focus.md | complete | — |
 | 4 | polygon-closing | .mdd/docs/50-polygon-closing.md | complete | — |
-| 5 | element-context-menu | 51-element-context-menu | planned | — |
-| 6 | element-list | 52-element-list | planned | 5 |
+| 5 | element-context-menu | .mdd/docs/51-element-context-menu.md | complete | — |
+| 6 | element-list | .mdd/docs/52-element-list.md | complete | 5 |
 
 ### 1 — panel-order
 
@@ -134,7 +134,7 @@ draw order helps two, and nothing helps three.
 
 ## Open Research
 
-- [ ] Does the element list need to scroll independently of the plan, or is a
+- [x] Does the element list need to scroll independently of the plan, or is a
       garden small enough that it never gets long? A hundred elements is not
       unreasonable for a real garden.
 - [ ] **Can the soil be read rather than asked?** The map already fixes the
