@@ -76,6 +76,14 @@ export interface paths {
         /**
          * Create
          * @description Create a garden. The token comes back here and is the only way back in.
+         *
+         *     A signed-in visitor's garden is theirs from the moment it exists. It used to
+         *     be nobody's unless something called `/claim` afterwards, and nothing did —
+         *     so an account kept the links and then listed none of them.
+         *
+         *     `current_account` rather than `require_account`: making a garden without an
+         *     account is the ordinary case, and the token is still the whole of its
+         *     access control either way.
          */
         post: operations["create_api_v1_gardens_post"];
         delete?: never;
@@ -332,7 +340,16 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Remove Element
+         * @description Remove an element from the plan.
+         *
+         *     Nothing could be removed until now: a shape drawn by mistake stayed. The
+         *     garden comes back rather than a 204, because deleting a bed changes what
+         *     every other bed gets — the light is recomputed and the caller needs the
+         *     result, not a second request to find it.
+         */
+        delete: operations["remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete"];
         options?: never;
         head?: never;
         /**
@@ -1087,11 +1104,15 @@ export interface components {
             kind?: components["schemas"]["ObjectKind"] | null;
             /** Label */
             label?: string | null;
+            /** Moisture */
+            moisture?: string | null;
             /** Points */
             points?: number[][] | null;
             /** Rotation */
             rotation?: number | null;
             shape?: components["schemas"]["Shape"] | null;
+            /** Soil Type */
+            soil_type?: string | null;
             /** Width */
             width?: number | null;
             /** X */
@@ -1909,6 +1930,38 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                obstacle_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

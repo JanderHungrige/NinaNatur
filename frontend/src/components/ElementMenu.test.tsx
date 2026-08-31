@@ -12,6 +12,8 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
       kind="other"
       label={null}
       area={24}
+      plantings={0}
+      onDelete={vi.fn()}
       onSave={onSave}
       onClose={onClose}
       busy={false}
@@ -69,7 +71,7 @@ describe('ElementMenu — which element is this?', () => {
     render(
       <ElementMenu
         at={{ x: 0, y: 0 }} kind="pond" label="Der alte Teich" area={12.5}
-        onSave={vi.fn()} onClose={vi.fn()} busy={false}
+        plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={vi.fn()} busy={false}
       />,
     );
     const subject = screen.getByRole('dialog').textContent ?? '';
@@ -88,7 +90,7 @@ describe('ElementMenu — getting out of the way', () => {
         <button type="button">anderes Objekt</button>
         <ElementMenu
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          onSave={vi.fn()} onClose={onClose} busy={false}
+          plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
     );
@@ -103,7 +105,7 @@ describe('ElementMenu — getting out of the way', () => {
     render(
       <ElementMenu
         at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-        onSave={vi.fn()} onClose={onClose} busy={false}
+        plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
       />,
     );
     fireEvent.pointerDown(screen.getByLabelText('Art'));
@@ -127,11 +129,64 @@ describe('ElementMenu — a click that stops propagating', () => {
         </button>
         <ElementMenu
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          onSave={vi.fn()} onClose={onClose} busy={false}
+          plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
     );
     fireEvent.pointerDown(screen.getByRole('button', { name: 'anderes Objekt' }));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('ElementMenu — deleting', () => {
+  function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
+    const onDelete = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <ElementMenu
+        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0}
+        onSave={vi.fn()} onDelete={onDelete} onClose={onClose} busy={false}
+        {...props}
+      />,
+    );
+    return { onDelete, onClose };
+  }
+
+  it('asks before deleting', () => {
+    // An element cannot be got back, and this menu is one right-click away
+    // from every shape on the plan.
+    const { onDelete } = open();
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Endgültig löschen' })).toBeDefined();
+  });
+
+  it('deletes once confirmed', () => {
+    const { onDelete } = open();
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Endgültig löschen' }));
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('says what a planted bed costs before it goes', () => {
+    // The same warning re-labelling gives, for the same reason: the plants go
+    // with it and nobody should find that out afterwards.
+    open({ kind: 'bed', plantings: 7 });
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    expect(screen.getByRole('alert').textContent).toMatch(/7 Pflanzen/);
+  });
+
+  it('says nothing about plants when there are none', () => {
+    open({ kind: 'bed', plantings: 0 });
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('lets the question be withdrawn', () => {
+    const { onDelete } = open();
+    fireEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Doch nicht' }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Löschen' })).toBeDefined();
   });
 });

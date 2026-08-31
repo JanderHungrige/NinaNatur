@@ -158,3 +158,13 @@ def update_element(conn: sqlite3.Connection, element_id: int, **fields: Any) -> 
         f"UPDATE element SET {assignments} WHERE element_id = ?",  # noqa: S608
         (*fields.values(), element_id),
     )
+
+
+def delete_element(conn: sqlite3.Connection, element_id: int) -> None:
+    """Remove one element.
+
+    Its plantings go with it: `planting` hangs off `element_id` with
+    `ON DELETE CASCADE`, and a row whose parent is gone is a query that fails at
+    the worst moment. The interface says how many before asking.
+    """
+    conn.execute("DELETE FROM element WHERE element_id = ?", (element_id,))

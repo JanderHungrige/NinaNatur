@@ -27,6 +27,7 @@ from ninanatur.api.schemas import (
     PlantingOut,
 )
 from ninanatur.auth.sessions import Account
+from ninanatur.garden.elements import delete_element
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import BedInput, Element, Garden, ObstacleInput
 from ninanatur.garden.objects import (
@@ -297,6 +298,28 @@ def set_soil(
         )
     except ValueError as unknown:
         raise HTTPException(status_code=422, detail=str(unknown)) from unknown
+    return to_out(load_garden(conn, garden.garden_id))
+
+
+@router.delete("/{token}/obstacles/{obstacle_id}", response_model=GardenOut)
+def remove_element(
+    token: str,
+    obstacle_id: int,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Remove an element from the plan.
+
+    Nothing could be removed until now: a shape drawn by mistake stayed. The
+    garden comes back rather than a 204, because deleting a bed changes what
+    every other bed gets — the light is recomputed and the caller needs the
+    result, not a second request to find it.
+    """
+    garden = require_garden(conn, token)
+    if not any(e.element_id == obstacle_id for e in garden.elements):
+        raise HTTPException(status_code=404, detail=f"no such element: {obstacle_id}")
+    delete_element(conn, obstacle_id)
+    conn.commit()
+    recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
 
 

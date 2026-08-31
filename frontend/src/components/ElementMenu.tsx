@@ -10,7 +10,10 @@ interface Props {
   /** What it covers, so a menu opened on the wrong one of two overlapping
    *  shapes says so before anything is changed. */
   area: number;
+  /** How many plants stand in it, for the warning before they go with it. */
+  plantings: number;
   onSave: (changes: { kind: string; label: string }) => void;
+  onDelete: () => void;
   onClose: () => void;
   busy: boolean;
 }
@@ -23,10 +26,23 @@ interface Props {
  * menu that only a right-click reaches leaves out everyone working from the
  * keyboard.
  */
-export function ElementMenu({ at, kind, label, area, onSave, onClose, busy }: Props) {
+export function ElementMenu({
+  at,
+  kind,
+  label,
+  area,
+  plantings,
+  onSave,
+  onDelete,
+  onClose,
+  busy,
+}: Props) {
   const [chosen, setChosen] = useState(kind);
   const [text, setText] = useState(label ?? '');
   const box = useRef<HTMLDivElement | null>(null);
+  /** Deleting asks first. An element cannot be got back, and this menu is one
+   *  right-click away from every shape on the plan. */
+  const [confirming, setConfirming] = useState(false);
 
   // Focus goes into the menu when it opens, and Escape closes it. Without both
   // it is a trap for anyone not using a pointer.
@@ -94,17 +110,55 @@ export function ElementMenu({ at, kind, label, area, onSave, onClose, busy }: Pr
         onChange={(e) => setText(e.target.value)}
       />
 
+      {confirming && plantings > 0 && (
+        <p className="hint element-menu__warning" role="alert">
+          Hier {plantings === 1 ? 'steht eine Pflanze' : `stehen ${plantings} Pflanzen`}.
+          {plantings === 1 ? ' Sie geht' : ' Sie gehen'} mit verloren.
+        </p>
+      )}
+
       <div className="element-menu__actions">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onSave({ kind: chosen, label: text })}
-        >
-          Übernehmen
-        </button>
-        <button type="button" className="link-button" onClick={onClose}>
-          Abbrechen
-        </button>
+        {confirming ? (
+          <>
+            <button
+              type="button"
+              className="element-menu__danger"
+              disabled={busy}
+              onClick={onDelete}
+            >
+              Endgültig löschen
+            </button>
+            <button
+              type="button"
+              className="link-button"
+              disabled={busy}
+              onClick={() => setConfirming(false)}
+            >
+              Doch nicht
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onSave({ kind: chosen, label: text })}
+            >
+              Übernehmen
+            </button>
+            <button
+              type="button"
+              className="link-button element-menu__delete"
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            >
+              Löschen
+            </button>
+            <button type="button" className="link-button" onClick={onClose}>
+              Abbrechen
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

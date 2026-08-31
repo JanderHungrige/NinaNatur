@@ -1341,6 +1341,17 @@
             ],
             "title": "Label"
           },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
           "points": {
             "anyOf": [
               {
@@ -1381,6 +1392,17 @@
                 "type": "null"
               }
             ]
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
           },
           "width": {
             "anyOf": [
@@ -1953,7 +1975,7 @@
           },
           "password": {
             "maxLength": 200,
-            "minLength": 10,
+            "minLength": 8,
             "title": "Password",
             "type": "string"
           },
@@ -2391,7 +2413,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.11.20"
+    "version": "V0.13.31"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -2482,7 +2504,7 @@
     },
     "/api/v1/gardens": {
       "post": {
-        "description": "Create a garden. The token comes back here and is the only way back in.",
+        "description": "Create a garden. The token comes back here and is the only way back in.\n\nA signed-in visitor's garden is theirs from the moment it exists. It used to\nbe nobody's unless something called `/claim` afterwards, and nothing did \u2014\nso an account kept the links and then listed none of them.\n\n`current_account` rather than `require_account`: making a garden without an\naccount is the ordinary case, and the token is still the whole of its\naccess control either way.",
         "operationId": "create_api_v1_gardens_post",
         "requestBody": {
           "content": {
@@ -3187,6 +3209,56 @@
       }
     },
     "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
+      "delete": {
+        "description": "Remove an element from the plan.\n\nNothing could be removed until now: a shape drawn by mistake stayed. The\ngarden comes back rather than a 204, because deleting a bed changes what\nevery other bed gets \u2014 the light is recomputed and the caller needs the\nresult, not a second request to find it.",
+        "operationId": "remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "obstacle_id",
+            "required": true,
+            "schema": {
+              "title": "Obstacle Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Element",
+        "tags": [
+          "gardens"
+        ]
+      },
       "patch": {
         "description": "Change what an obstacle is, and redo every bed's light.",
         "operationId": "edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch",

@@ -252,3 +252,44 @@ def test_an_element_never_loses_the_points_it_was_not_asked_about(
 
     # And the garden is still readable, which is the part that actually broke.
     assert client.get(f"/api/v1/gardens/{token}").status_code == 200
+
+
+def test_an_element_can_be_deleted(client: TestClient) -> None:
+    """Nothing could be removed from a plan until now. A shape drawn by mistake
+    stayed on it."""
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "other", "x": 0, "y": 0, "shape": "polygon",
+              "points": [[-2, -2], [2, -2], [2, 2], [-2, 2]]},
+    ).json()["obstacles"][0]
+
+    left = client.delete(
+        f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}"
+    )
+    assert left.status_code == 200, left.json()
+    assert left.json()["obstacles"] == []
+
+
+def test_deleting_a_bed_takes_its_plants(client: TestClient) -> None:
+    """They cannot outlive the bed: `planting` hangs off `element_id`, and a
+    row whose parent is gone is a query that fails at the worst moment."""
+    token, bed_id = _garden(client)
+    # By name rather than by taxon: the plant does not have to be in the
+    # catalogue for the bed to hold it, and this test is about the bed.
+    planted = client.post(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/plantings",
+        json={"raw_name": "Nachbars Rose", "quantity": 2},
+    )
+    assert planted.status_code in {200, 201}, planted.json()
+    assert planted.json()["unidentified_plantings"] == 1
+
+    after = client.delete(f"/api/v1/gardens/{token}/obstacles/{bed_id}")
+    assert after.status_code == 200
+    assert after.json()["beds"] == []
+    assert after.json()["unidentified_plantings"] == 0
+
+
+def test_deleting_something_that_is_not_there_is_404(client: TestClient) -> None:
+    token, _bed_id = _garden(client)
+    assert client.delete(f"/api/v1/gardens/{token}/obstacles/9999").status_code == 404

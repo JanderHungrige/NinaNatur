@@ -1451,3 +1451,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   stroke-width: 0.5;
   vector-effect: non-scaling-stroke;
 }
+
+.element-menu__danger {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #a8442f;
+  border-radius: var(--radius);
+  background: #a8442f;
+  color: #fff;
+  cursor: pointer;
+}
+
+.element-menu__warning {
+  border-left: 3px solid #a8442f;
+  padding-left: 0.6rem;
+  color: var(--ink);
+}

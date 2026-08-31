@@ -204,6 +204,14 @@ export class NinaNaturClient {
     );
   }
 
+  /** Remove one element. The garden comes back because the light changes. */
+  async deleteObstacle(token: string, obstacleId: number): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/obstacles/${obstacleId}`,
+      { method: 'DELETE' },
+    );
+  }
+
   async deleteGarden(token: string): Promise<void> {
     await this.request<void>(`/api/v1/gardens/${encodeURIComponent(token)}`, {
       method: 'DELETE',
