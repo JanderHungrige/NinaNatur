@@ -1,26 +1,29 @@
 import { useState } from 'react';
 
-import { KINDS as KIND_LIST } from '../kinds';
+import { KINDS as KIND_LIST, PLANTING_KIND } from '../kinds';
 
 /** What the editor is looking at. A bed and an obstacle differ in what they own. */
-export type EditableObject =
-  | {
-      kind: 'bed';
-      id: number;
-      name: string;
-      label: string | null;
-      heightAboveGround: number;
-    }
-  | {
-      kind: 'obstacle';
-      id: number;
-      objectKind: string;
-      label: string | null;
-      /** None on a surface: an unrecorded height is not a zero. */
-      height: number | null;
-      width: number;
-      depth: number | null;
-    };
+/**
+ * What the editor is looking at.
+ *
+ * One shape, since Wave 11 made an element one thing. It used to be a union of
+ * bed and obstacle, which is the schema's old split wearing a TypeScript
+ * costume — and it made "say what this is" impossible to express, because a bed
+ * could not become anything else.
+ */
+export interface EditableObject {
+  id: number;
+  /** What it is. Changing this is the whole point of the panel. */
+  objectKind: string;
+  /** The bed's own name; null on everything else. */
+  name: string | null;
+  label: string | null;
+  /** None on a surface: an unrecorded height is not a zero. */
+  height: number | null;
+  heightAboveGround: number;
+  /** How many plants stand in it, for the warning before they are lost. */
+  plantings: number;
+}
 
 interface Props {
   object: EditableObject;
@@ -40,21 +43,20 @@ const KINDS = KIND_LIST.map((k) => ({ value: k.kind, label: k.label, height: k.h
 
 export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
   const [label, setLabel] = useState(object.label ?? '');
-  const [objectKind, setObjectKind] = useState(
-    object.kind === 'obstacle' ? object.objectKind : '',
-  );
-  const [height, setHeight] = useState(
-    object.kind === 'obstacle' && object.height !== null ? String(object.height) : '',
-  );
-  const [raised, setRaised] = useState(
-    object.kind === 'bed' ? String(object.heightAboveGround) : '',
-  );
+  const [objectKind, setObjectKind] = useState(object.objectKind);
+  const [height, setHeight] = useState(object.height === null ? '' : String(object.height));
+  const [raised, setRaised] = useState(String(object.heightAboveGround));
   /** Whether the height on screen is ours or theirs. */
   const [heightIsOurs, setHeightIsOurs] = useState(true);
 
-  const title = object.kind === 'bed' ? object.name : (
-    KINDS.find((k) => k.value === objectKind)?.label ?? 'Objekt'
-  );
+  const named = KINDS.find((k) => k.value === objectKind)?.label ?? 'Objekt';
+  const title = object.name ?? named;
+
+  /** What a re-label away from a bed would cost. */
+  const losing =
+    object.objectKind === PLANTING_KIND && objectKind !== PLANTING_KIND
+      ? object.plantings
+      : 0;
 
   const changeKind = (value: string) => {
     setObjectKind(value);
@@ -65,33 +67,47 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
   };
 
   const save = () => {
-    if (object.kind === 'bed') {
-      onSave({ height_above_ground: Number(raised), label });
-    } else {
-      onSave({ kind: objectKind, height: Number(height), label });
+    // The kind always goes: saying what a thing is *is* the panel, and Wave 11
+    // made it a property rather than a table. A bed that keeps its kind simply
+    // sends the same value back.
+    const changes: Record<string, string | number> = { kind: objectKind, label };
+    if (objectKind === PLANTING_KIND) {
+      changes.height_above_ground = Number(raised);
+    } else if (height !== '') {
+      changes.height = Number(height);
     }
+    onSave(changes);
   };
 
   return (
     <section className="panel object-editor" aria-labelledby="object-heading">
       <h2 id="object-heading">{title}</h2>
 
-      {object.kind === 'obstacle' && (
-        <>
-          <label htmlFor="object-kind">Art</label>
-          <select
-            id="object-kind"
-            value={objectKind}
-            disabled={busy}
-            onChange={(e) => changeKind(e.target.value)}
-          >
-            {KINDS.map((k) => (
-              <option key={k.value} value={k.value}>
-                {k.label}
-              </option>
-            ))}
-          </select>
+      {/* Always offered. A drawn shape has no kind until somebody says so, and
+          a bed that turns out to be a pool has to be able to say it. */}
+      <label htmlFor="object-kind">Art</label>
+      <select
+        id="object-kind"
+        value={objectKind}
+        disabled={busy}
+        onChange={(e) => changeKind(e.target.value)}
+      >
+        {KINDS.map((k) => (
+          <option key={k.value} value={k.value}>
+            {k.label}
+          </option>
+        ))}
+      </select>
 
+      {losing > 0 && (
+        <p className="hint object-editor__warning" role="alert">
+          Hier stehen {losing === 1 ? 'eine Pflanze' : `${losing} Pflanzen`}. Beim
+          Speichern als „{named}" {losing === 1 ? 'geht sie' : 'gehen sie'} verloren.
+        </p>
+      )}
+
+      {objectKind !== PLANTING_KIND && (
+        <>
           <label htmlFor="object-height">Höhe (m)</label>
           <input
             id="object-height"
@@ -108,7 +124,7 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
         </>
       )}
 
-      {object.kind === 'bed' && (
+      {objectKind === PLANTING_KIND && (
         <>
           <label htmlFor="object-raised">Höhe über Grund (m)</label>
           <input

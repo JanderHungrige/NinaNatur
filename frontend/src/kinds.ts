@@ -26,6 +26,9 @@ export interface Kind {
   symbol: string;
 }
 
+/** The one kind that holds plants. Mirrors `models.PLANTING_KIND`. */
+export const PLANTING_KIND = 'bed';
+
 export const KINDS: Kind[] = [
   { kind: 'house', label: 'Wohnhaus', size: '10 × 8 m', height: 6, standing: true, symbol: 'building' },
   { kind: 'shed', label: 'Schuppen', size: '3 × 2,5 m', height: 2.4, standing: true, symbol: 'building' },

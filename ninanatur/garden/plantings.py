@@ -121,3 +121,18 @@ def _plantings_for(conn: sqlite3.Connection, bed_id: int) -> list[Planting]:
             (bed_id,),
         )
     ]
+
+
+def drop_plantings(conn: sqlite3.Connection, element_id: int) -> int:
+    """Remove every plant in an element. Returns how many there were.
+
+    Called when an element stops being a planting site. Keeping them would
+    leave rows nothing displays and nothing can reach; refusing the change
+    would be a dead end in the middle of drawing.
+    """
+    lost = conn.execute(
+        "SELECT count(*) AS n FROM planting WHERE element_id = ?", (element_id,)
+    ).fetchone()["n"]
+    conn.execute("DELETE FROM planting WHERE element_id = ?", (element_id,))
+    conn.commit()
+    return int(lost)

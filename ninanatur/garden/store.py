@@ -29,7 +29,7 @@ from ninanatur.garden.models import (
     Planting,
     Polygon,
 )
-from ninanatur.garden.plantings import _plantings_for
+from ninanatur.garden.plantings import _plantings_for, drop_plantings
 from ninanatur.garden.soil import site_axes_from_soil
 from ninanatur.solar.position import Location
 
@@ -210,6 +210,13 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
 
     if not changes:
         return
+    # An element that stops being a planting site takes its plants with it.
+    # Decided with the user over refusing the change or keeping them hidden:
+    # a dead end mid-drawing is worse, and invisible data is worse still. The
+    # The UI warns first, counting the plants it is already displaying.
+    kind = changes.get("kind")
+    if isinstance(kind, str) and kind != PLANTING_KIND:
+        drop_plantings(conn, obstacle_id)
     update_element(conn, obstacle_id, **changes)
     conn.commit()
 

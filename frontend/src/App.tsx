@@ -24,7 +24,7 @@ import { Landing } from './components/Landing';
 import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
-import { type Box, boxOf } from './canvas/handles';
+import type { Box } from './canvas/handles';
 import type { DrawnShape, Tool } from './canvas/shapes';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
@@ -324,10 +324,9 @@ export function App() {
       if (garden === null || editing === null) return;
       const target = editing;
       void run('Speichern', async () => {
-        const updated =
-          target.kind === 'bed'
-            ? await client.editBed(garden.share_token, target.id, changes)
-            : await client.editObstacle(garden.share_token, target.id, changes);
+        // One endpoint, because there is one kind of thing now. `editBed`
+        // survives only for the bed-specific fields the suggestion panel edits.
+        const updated = await client.editObstacle(garden.share_token, target.id, changes);
         setGarden(updated);
         await refresh(garden.share_token, forage);
         setEditing(null);
@@ -401,11 +400,13 @@ export function App() {
     const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
     if (bed === undefined) return;
     setEditing({
-      kind: 'bed',
       id: bed.bed_id,
+      objectKind: 'bed',
       name: bed.name,
       label: bed.label,
+      height: null,
       heightAboveGround: bed.height_above_ground,
+      plantings: bed.plantings.length,
     });
   }, [garden, selectedBedId]);
 
@@ -420,13 +421,13 @@ export function App() {
       if (found === undefined) return;
       setSelectedObstacleId(obstacleId);
       setEditing({
-        kind: 'obstacle',
         id: found.obstacle_id,
         objectKind: found.kind,
+        name: null,
         label: found.label,
         height: found.height,
-        width: boxOf(found).width,
-        depth: boxOf(found).depth,
+        heightAboveGround: 0,
+        plantings: 0,
       });
     },
     [garden],

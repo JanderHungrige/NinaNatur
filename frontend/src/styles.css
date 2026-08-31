@@ -1000,3 +1000,10 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 }
 
 .vertex:hover { fill: var(--leaf); }
+
+/* A loss the user is about to cause, said before it happens. */
+.object-editor__warning {
+  border-left: 3px solid var(--leaf);
+  padding-left: 0.6rem;
+  color: var(--ink);
+}

@@ -2,24 +2,26 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { KINDS } from '../kinds';
-import { ObjectEditor } from './ObjectEditor';
+import { type EditableObject, ObjectEditor } from './ObjectEditor';
 
-const BED = {
-  kind: 'bed' as const,
+const BED: EditableObject = {
   id: 1,
+  objectKind: 'bed',
   name: 'Südbeet',
   label: null,
+  height: null,
   heightAboveGround: 0,
+  plantings: 0,
 };
 
-const TREE = {
-  kind: 'obstacle' as const,
+const TREE: EditableObject = {
   id: 2,
   objectKind: 'tree',
+  name: null,
   label: 'Die Buche vom Nachbarn',
   height: 8,
-  width: 6,
-  depth: null,
+  heightAboveGround: 0,
+  plantings: 0,
 };
 
 describe('ObjectEditor', () => {
@@ -33,7 +35,12 @@ describe('ObjectEditor', () => {
     render(<ObjectEditor object={BED} onSave={onSave} onClose={vi.fn()} busy={false} />);
     fireEvent.change(screen.getByLabelText(/Höhe über Grund/), { target: { value: '0.8' } });
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
-    expect(onSave).toHaveBeenCalledWith({ height_above_ground: 0.8, label: '' });
+    // The kind rides along on every save now: the panel is "what is this".
+    expect(onSave).toHaveBeenCalledWith({
+      kind: 'bed',
+      height_above_ground: 0.8,
+      label: '',
+    });
   });
 
   it('does not offer a raised height for an obstacle', () => {
@@ -79,5 +86,47 @@ describe('ObjectEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
     expect(onClose).toHaveBeenCalled();
     expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+describe('ObjectEditor — saying what a thing is', () => {
+  it('always offers the kind, bed or not', () => {
+    // Wave 10 hid it on a bed, which is the old two-table split showing
+    // through: a bed could not become anything else.
+    render(<ObjectEditor object={BED} onSave={vi.fn()} onClose={vi.fn()} busy={false} />);
+    expect(screen.getByLabelText('Art')).toBeDefined();
+  });
+
+  it('warns before a re-label costs the plants standing in it', () => {
+    const planted: EditableObject = { ...BED, plantings: 7 };
+    render(
+      <ObjectEditor object={planted} onSave={vi.fn()} onClose={vi.fn()} busy={false} />,
+    );
+    fireEvent.change(screen.getByLabelText('Art'), { target: { value: 'pond' } });
+    expect(screen.getByRole('alert').textContent).toMatch(/7 Pflanzen/);
+    expect(screen.getByRole('alert').textContent).toMatch(/Teich/);
+  });
+
+  it('says nothing when the element stays a bed', () => {
+    const planted: EditableObject = { ...BED, plantings: 7 };
+    render(
+      <ObjectEditor object={planted} onSave={vi.fn()} onClose={vi.fn()} busy={false} />,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('says nothing when there was nothing to lose', () => {
+    render(<ObjectEditor object={BED} onSave={vi.fn()} onClose={vi.fn()} busy={false} />);
+    fireEvent.change(screen.getByLabelText('Art'), { target: { value: 'pond' } });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('sends the kind even when it did not change', () => {
+    // The panel is "what is this". A save that omitted an unchanged kind would
+    // work until the day somebody relied on it.
+    const onSave = vi.fn();
+    render(<ObjectEditor object={BED} onSave={onSave} onClose={vi.fn()} busy={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({ kind: 'bed' });
   });
 });
