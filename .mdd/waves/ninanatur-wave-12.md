@@ -3,7 +3,7 @@ id: ninanatur-wave-12
 title: "Wave 12: The plan gets out of its own way"
 initiative: ninanatur
 initiative_version: 13
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-11
 demo_state: "A user opens a garden, finds the drawing tools at the top, drags out a shape without anything else being selected, closes a polygon by coming back to where they started, names it with a right-click, and finds every element again in a list"
 created: 2026-08-31
@@ -54,7 +54,7 @@ back to the start — and the two drawing paths should close the same way.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | panel-order | 47-panel-order | planned | — |
+| 1 | panel-order | .mdd/docs/47-panel-order.md | complete | — |
 | 2 | garden-soil | 48-garden-soil | planned | — |
 | 3 | drawing-focus | 49-drawing-focus | planned | — |
 | 4 | polygon-closing | 50-polygon-closing | planned | — |

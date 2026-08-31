@@ -1,8 +1,7 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GardenOut } from '../api/client';
-import { KINDS } from '../kinds';
 import { BedPanel } from './BedPanel';
 
 function garden(bedOverrides: Partial<GardenOut['beds'][number]> = {}): GardenOut {
@@ -88,57 +87,27 @@ describe('BedPanel', () => {
   });
 });
 
-describe('BedPanel — adding an obstacle by hand', () => {
-  function panel() {
-    const onAddObstacle = vi.fn().mockResolvedValue(undefined);
+// The tests for "Beet hinzufügen" and "Hindernis hinzufügen" stood here. Both
+// forms predate drawing: they were the only way to put anything on a plan
+// before Wave 11, and by Wave 12 they were the slower way to do what a drag
+// does — asking for coordinates the user would have to work out from the
+// drawing in front of them.
+
+describe('BedPanel — after the forms went', () => {
+  it('still lets a bed be picked, which is what the panel is for', () => {
+    const onSelectBed = vi.fn();
     render(
-      <BedPanel
-        garden={garden()}
-        selectedBedId={null}
-        onSelectBed={vi.fn()}
-        onAddBed={vi.fn()}
-        onAddObstacle={onAddObstacle}
-        busy={false}
-      />,
+      <BedPanel garden={garden()} selectedBedId={null} onSelectBed={onSelectBed} />,
     );
-    // Scoped: the bed form above has its own Breite and Tiefe.
-    const form = within(screen.getByRole('form', { name: 'Hindernis hinzufügen' }));
-    return { onAddObstacle, form };
-  }
-
-  it('offers the kinds rather than asking the user to spell one', () => {
-    // This was a free text field. Anything not in the server's closed set came
-    // back a 422 the user had no way to predict.
-    const { form } = panel();
-    const select = form.getByLabelText('Art') as HTMLSelectElement;
-    expect([...select.options].map((o) => o.value)).toEqual(KINDS.map((k) => k.kind));
+    fireEvent.click(screen.getByRole('button', { name: /Südbeet/ }));
+    expect(onSelectBed).toHaveBeenCalled();
   });
 
-  it('fills in the size and height that come with a kind', () => {
-    const { form } = panel();
-    fireEvent.change(form.getByLabelText('Art'), { target: { value: 'house' } });
-    expect((form.getByLabelText('Breite') as HTMLInputElement).value).toBe('10');
-    expect((form.getByLabelText('Tiefe') as HTMLInputElement).value).toBe('8');
-    expect((form.getByLabelText('Höhe') as HTMLInputElement).value).toBe('6');
-  });
-
-  it('sends no height for a surface', () => {
-    // Paving has none, and inventing one would have it shade the bed next door.
-    const { onAddObstacle, form } = panel();
-    fireEvent.change(form.getByLabelText('Art'), { target: { value: 'paving' } });
-    fireEvent.click(form.getByRole('button', { name: 'Hindernis hinzufügen' }));
-    expect(onAddObstacle).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'paving', width: 4, depth: 3 }),
-    );
-    expect(onAddObstacle.mock.calls[0]?.[0]).not.toHaveProperty('height');
-  });
-
-  it('sends width and depth, not a doubled radius', () => {
-    const { onAddObstacle, form } = panel();
-    fireEvent.change(form.getByLabelText('Art'), { target: { value: 'hedge' } });
-    fireEvent.click(form.getByRole('button', { name: 'Hindernis hinzufügen' }));
-    expect(onAddObstacle).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'hedge', width: 6, depth: 0.6, height: 2 }),
-    );
+  it('offers no way to type a bed into existence', () => {
+    // Drawing is the way. A second, slower path that asks for coordinates the
+    // user would have to read off the plan is worse than none.
+    render(<BedPanel garden={garden()} selectedBedId={null} onSelectBed={vi.fn()} />);
+    expect(screen.queryByText('Beet hinzufügen')).toBeNull();
+    expect(screen.queryByText('Hindernis hinzufügen')).toBeNull();
   });
 });

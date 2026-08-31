@@ -630,6 +630,7 @@ export function App() {
           <>
             <div className="column">
               <GardenId token={garden.share_token} />
+              <ShapeTools active={tool} onPick={setTool} disabled={busy} />
               {account !== null ? (
                 <button type="button" className="link-button" onClick={claim}>
                   Diesen Garten meinem Konto zuordnen
@@ -648,9 +649,6 @@ export function App() {
                 garden={garden}
                 selectedBedId={selectedBedId}
                 onSelectBed={selectBed}
-                onAddBed={addBed}
-                onAddObstacle={addObstacle}
-                busy={busy}
               />
               {selectedBedId !== null ? (
                 <ExistingPlanting
@@ -694,7 +692,6 @@ export function App() {
               ) : null}
             </div>
             <div className="column">
-              <ShapeTools active={tool} onPick={setTool} disabled={busy} />
               <GardenCanvas
                 garden={garden}
                 selectedBedId={selectedBedId}
