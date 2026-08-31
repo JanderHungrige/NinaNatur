@@ -11,6 +11,7 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
       at={{ x: 120, y: 80 }}
       kind="other"
       label={null}
+      area={24}
       onSave={onSave}
       onClose={onClose}
       busy={false}
@@ -57,5 +58,22 @@ describe('ElementMenu', () => {
     expect((screen.getByLabelText('Bezeichnung') as HTMLInputElement).value).toBe(
       'Nachbars Hecke',
     );
+  });
+});
+
+describe('ElementMenu — which element is this?', () => {
+  it('names what it is about, so an overlap does not fool the user', () => {
+    // Two shapes on top of each other take the same right-click. Without this
+    // the user names one and watches the other not change — which reads as the
+    // menu not saving at all.
+    render(
+      <ElementMenu
+        at={{ x: 0, y: 0 }} kind="pond" label="Der alte Teich" area={12.5}
+        onSave={vi.fn()} onClose={vi.fn()} busy={false}
+      />,
+    );
+    const subject = screen.getByRole('dialog').textContent ?? '';
+    expect(subject).toMatch(/Teich/);
+    expect(subject).toMatch(/12,5 m²/);
   });
 });

@@ -16,7 +16,7 @@ interface Row {
 }
 
 /** Shoelace, on the footprint the server already computed. */
-function areaOf(points: number[][]): number {
+export function areaOf(points: number[][]): number {
   let sum = 0;
   for (let i = 0; i < points.length; i += 1) {
     const a = points[i]!;

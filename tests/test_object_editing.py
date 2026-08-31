@@ -222,3 +222,33 @@ def test_moving_an_element_leaves_its_shape_alone(client: TestClient) -> None:
     assert moved["shape"] == "circle"
     assert moved["width"] == pytest.approx(5)
     assert moved["x"] == pytest.approx(7)
+
+
+def test_an_element_never_loses_the_points_it_was_not_asked_about(
+    client: TestClient,
+) -> None:
+    """Resizing a free polygon by width and depth used to null its points.
+
+    The element then had no geometry, and *reading the garden at all* raised
+    "a polygon footprint needs at least three points" — one resize of one
+    triangle made the whole plan unreadable. Whatever the caller means by a
+    width on a shape that has none, it cannot mean "throw the outline away".
+    """
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "other", "x": 0, "y": 0, "shape": "polygon",
+              "points": [[0, 3], [3, -3], [-3, -3]]},
+    ).json()["obstacles"][0]
+
+    resized = client.patch(
+        f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}",
+        json={"x": 0, "y": 0, "width": 8, "depth": 6, "rotation": 0},
+    )
+    assert resized.status_code == 200, resized.json()
+    kept = resized.json()["obstacles"][0]
+    assert kept["points"] is not None
+    assert len(kept["footprint"]) == 3
+
+    # And the garden is still readable, which is the part that actually broke.
+    assert client.get(f"/api/v1/gardens/{token}").status_code == 200

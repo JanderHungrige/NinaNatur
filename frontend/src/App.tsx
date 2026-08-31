@@ -17,7 +17,7 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
-import { ElementList } from './components/ElementList';
+import { ElementList, areaOf } from './components/ElementList';
 import { ElementMenu } from './components/ElementMenu';
 import { GardenSoil } from './components/GardenSoil';
 import { ShapeTools } from './components/ShapeTools';
@@ -27,7 +27,7 @@ import { Landing } from './components/Landing';
 import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
-import type { Box } from './canvas/handles';
+import { type Box, boxOf, rescale } from './canvas/handles';
 import type { DrawnShape, Tool } from './canvas/shapes';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
@@ -423,7 +423,14 @@ export function App() {
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
   /** The context menu, and which element it is asking about. */
   const [asking, setAsking] = useState<
-    { id: number; kind: string; label: string | null; at: { x: number; y: number } } | null
+    | {
+        id: number;
+        kind: string;
+        label: string | null;
+        area: number;
+        at: { x: number; y: number };
+      }
+    | null
   >(null);
 
   const editObstacleById = useCallback(
@@ -514,10 +521,12 @@ export function App() {
         garden?.obstacles.find((o) => o.obstacle_id === id) ??
         garden?.beds.find((b) => b.bed_id === id);
       if (found === undefined) return;
+      const outline = 'footprint' in found ? found.footprint : found.polygon;
       setAsking({
         id,
         kind: 'kind' in found ? found.kind : 'bed',
         label: found.label,
+        area: areaOf(outline),
         at,
       });
     },
@@ -578,18 +587,33 @@ export function App() {
     [addObstacle],
   );
 
+  /**
+   * A handle was let go: the shape is the same outline at a new size.
+   *
+   * Scaled points rather than a width and an angle. The server can only apply
+   * those to a rectangle, so for a triangle or a freehand outline they meant
+   * the points were discarded — and reading the garden afterwards raised.
+   */
   const resizeObstacle = useCallback(
     async (obstacleId: number, box: Box) => {
       if (garden === null) return;
+      const element = garden.obstacles.find((o) => o.obstacle_id === obstacleId);
+      if (element === undefined) return;
+      const at = {
+        x: Math.round(box.x * 100) / 100,
+        y: Math.round(box.y * 100) / 100,
+      };
       await run('Größe ändern', async () => {
-        const updated = await client.editObstacle(garden.share_token, obstacleId, {
-          x: Math.round(box.x * 100) / 100,
-          y: Math.round(box.y * 100) / 100,
-          width: Math.round(box.width * 100) / 100,
-          depth: Math.round(box.depth * 100) / 100,
-          rotation: Math.round(box.rotation * 10) / 10,
-        });
-        setGarden(updated);
+        setGarden(
+          await client.editObstacle(
+            garden.share_token,
+            obstacleId,
+            element.points === null
+              ? // A circle has a diameter and no corners to move.
+                { ...at, width: Math.round(box.width * 100) / 100 }
+              : { ...at, points: rescale(element.points, boxOf(element), box) },
+          ),
+        );
       });
     },
     [garden, run],
@@ -778,16 +802,20 @@ export function App() {
                   at={asking.at}
                   kind={asking.kind}
                   label={asking.label}
+                  area={asking.area}
                   busy={busy}
                   onClose={() => setAsking(null)}
                   onSave={(changes) => {
                     const target = asking.id;
-                    setAsking(null);
                     void run('Speichern', async () => {
                       setGarden(
                         await client.editObstacle(garden.share_token, target, changes),
                       );
                       await refresh(garden.share_token, forage);
+                      // Closed only once it worked. Closing first meant a
+                      // failure left nothing on screen but a status line, and
+                      // the shape looking exactly as it had.
+                      setAsking(null);
                     });
                   }}
                 />

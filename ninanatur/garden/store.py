@@ -5,6 +5,7 @@ several beds is far too slow to repeat on every page load.
 """
 from __future__ import annotations
 
+import json
 import secrets
 import sqlite3
 
@@ -205,7 +206,18 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
             rotation=_number(geometry.get("rotation")) or 0.0,
             points=raw_points if isinstance(raw_points, list) else None,
         )
-        changes.update(shape=shape, width=width, points=points)
+        # Never null out geometry nobody supplied. A caller sending a width for
+        # a free polygon means "make it this big", not "throw the outline away"
+        # — and doing the latter left the element with no footprint at all, so
+        # reading the garden raised rather than returning it.
+        if points is None and shape in {"polygon", "line"}:
+            points = None if current["points"] is None else json.loads(current["points"])
+        if points is None and shape in {"polygon", "line"}:
+            # Nothing stored and nothing given: leave the geometry alone
+            # entirely rather than writing a shape with no outline.
+            changes.update(width=width)
+        else:
+            changes.update(shape=shape, width=width, points=points)
         # Only overwrite the hint when the geometry itself decided one; an
         # explicit null from the caller still wins, and that is how dragging a
         # vertex ends the promise.

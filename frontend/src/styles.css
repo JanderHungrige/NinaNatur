@@ -1091,3 +1091,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .element-list__what { font-weight: 600; }
 .element-list__label { color: var(--ink-muted); min-width: 0; }
 .element-list__area { color: var(--ink-muted); font-size: 0.85rem; }
+
+.element-menu__subject {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+  color: var(--ink);
+}
