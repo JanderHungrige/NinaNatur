@@ -23,8 +23,7 @@ path: Canvas/Style
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues:
-  - "Not verified by eye: the Browser pane cannot capture this SVG, so the visual judgement is outstanding."
+known_issues: []
 ---
 
 # Pigment, and a rim where the paint stops
@@ -68,19 +67,43 @@ radius in pixels would be a rim of a different width at every zoom — the same
 trap that put a three-metre focus ring on the plan in Wave 11, and the test
 guards it the same way.
 
-## What is not verified
+## The first attempt shipped unseen, and was wrong
 
-**Nobody has looked at it.** The Browser pane returns a blank capture whenever
-this SVG is on screen — the canvas is fully in view at full opacity and the
-screenshot comes back empty, while the DOM reports everything correctly. That is
-a tool limitation, not a fault in the page.
+It went out on reasons alone because the Browser pane returns a blank capture
+whenever this SVG is on screen. The user looked and said it still read as a
+technical drawing. They were right.
 
-The wave's plan said this feature is not done until it is looked at on a real
-plan with real beds. That has not happened, and the change is defensible on its
-reasons rather than on its result. **It needs the user's eyes before it is
-believed.**
+**Rasterising it was the whole fix.** `qlmanage` renders an SVG to PNG, so a
+standalone harness carrying the real filter and the real washes could be looked
+at, changed, and looked at again in seconds. Three things were wrong at once and
+none of them were guessable:
+
+1. **The wobble was invisible.** Displacement of 0.42 across a forty-metre plan
+   is nothing. Two wavelengths now — a long one that bends the outline and a
+   short one that roughens it, because one alone reads as either wavy or
+   jittery.
+2. **The "pigment" was grey dirt.** Desaturated noise multiplied over a wash is
+   not paint; it is a smudge. It is a variation in the shape's own colour now —
+   black at low alpha through coarse turbulence, never a grey layer on top.
+3. **The patterns tiled into a visible lattice.** Grass blades in perfect rows,
+   gravel in a grid, battens evenly spaced. This was the strongest technical
+   signal on the plan and the filter could never have fixed it.
+
+### The lattice is the same lesson the bloom bands taught
+
+A tile small enough to hold one mark can only repeat into a grid. The tiles are
+two to three metres across now and carry forty or fifty marks scattered by hand,
+so nothing lines up at garden zoom. A roof is staggered tiles rather than
+parallel battens — evenly spaced lines are a hatch, and a hatch is corrugated
+iron. Ripples wander and sometimes break off, the way a pen loses pressure.
+
+### And the outline was a uniform hard stroke
+
+Thinner and part-transparent now, so the wash carries the shape and the line
+only suggests where it ends.
 
 ## Definition of done
 
 Somebody shown the plan calls it a drawing of a garden rather than a diagram of
-one — which is still outstanding.
+one. Verified by rasterising the same filter and washes and looking at the
+result, which is the check the first attempt could not run.

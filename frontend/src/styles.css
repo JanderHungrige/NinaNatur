@@ -931,6 +931,14 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    filter re-run per object. */
 .canvas__objects { filter: url(#watercolour); }
 
+/* A uniform hard outline is the strongest thing a plan can do to look
+   plotted. Thinner and part-transparent, so the wash carries the shape and
+   the line only suggests where it ends. */
+.obstacle,
+.bed {
+  stroke-opacity: 0.55;
+}
+
 /* Texture is decoration. When the system asks for more contrast, or paints its
    own colours, the washes go and the outline carries the meaning alone — a
    plan that only reads as a picture is not one that reads. */
