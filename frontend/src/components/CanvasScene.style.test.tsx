@@ -258,3 +258,27 @@ describe('CanvasScene — flowers as dots', () => {
     expect(container.querySelectorAll('.bloom-dot')).toHaveLength(0);
   });
 });
+
+describe('CanvasScene — painted rather than plotted', () => {
+  it('varies the colour inside a shape, not just its edge', () => {
+    // A wobbled outline around a perfectly flat fill is still a technical
+    // drawing: one colour per shape is what reads as CAD.
+    const container = show([obstacle('lawn', 1)]);
+    const filter = container.querySelector('#watercolour');
+    expect(filter?.querySelector('feBlend[mode="multiply"]')).not.toBeNull();
+  });
+
+  it('pools the colour at the rim, the way paint does', () => {
+    const container = show([obstacle('lawn', 1)]);
+    const filter = container.querySelector('#watercolour');
+    expect(filter?.querySelector('feMorphology[operator="erode"]')).not.toBeNull();
+  });
+
+  it('keeps the rim measured in metres', () => {
+    // The same trap as every other length on this canvas: a radius in pixels
+    // would be a rim of a different width at every zoom.
+    const container = show([obstacle('lawn', 1)]);
+    const erode = container.querySelector('feMorphology');
+    expect(Number(erode?.getAttribute('radius'))).toBeLessThan(0.3);
+  });
+});

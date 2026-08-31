@@ -28,12 +28,53 @@ export function GardenSymbols() {
         scale is in metres like everything else, so it stays proportionate
         when the user zooms.
       */}
-      <filter id="watercolour" x="-10%" y="-10%" width="120%" height="120%">
+      <filter id="watercolour" x="-15%" y="-15%" width="130%" height="130%">
         {/* The frequency is per metre. At 0.6 the wobble was finer than a
             pixel at ordinary zoom and averaged back into a straight line; a
             wave every six metres or so is what reads as a drawn edge. */}
         <feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves={2} seed={7} result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale={0.3} xChannelSelector="R" yChannelSelector="G" />
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="noise"
+          scale={0.42}
+          xChannelSelector="R"
+          yChannelSelector="G"
+          result="wobbled"
+        />
+
+        {/* Pigment, not paint. A wobbled edge around a perfectly flat fill is
+            still a technical drawing — one colour per shape is what reads as
+            CAD. Fine noise multiplied back in mottles every wash at once,
+            which is what watercolour does and what no per-symbol work would
+            have achieved. */}
+        <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves={2} seed={3} result="grain" />
+        <feColorMatrix in="grain" type="saturate" values="0" result="greyGrain" />
+        <feComponentTransfer in="greyGrain" result="softGrain">
+          {/* Kept faint. Past about a quarter it stops being paper and starts
+              being dirt. */}
+          <feFuncA type="linear" slope="0.22" intercept="0.78" />
+        </feComponentTransfer>
+        <feComposite in="softGrain" in2="wobbled" operator="in" result="grainInside" />
+        <feBlend in="wobbled" in2="grainInside" mode="multiply" result="painted" />
+
+        {/* The rim. Watercolour pools where it stops: darker at the edge,
+            thinner in the middle. Eroding the shape and keeping the
+            difference is that band, in metres like everything else. */}
+        <feMorphology in="painted" operator="erode" radius="0.11" result="inner" />
+        <feComposite in="painted" in2="inner" operator="out" result="rim" />
+        <feColorMatrix
+          in="rim"
+          type="matrix"
+          values="0.72 0 0 0 0
+                  0 0.72 0 0 0
+                  0 0 0.72 0 0
+                  0 0 0 0.5 0"
+          result="pooledRim"
+        />
+        <feMerge>
+          <feMergeNode in="painted" />
+          <feMergeNode in="pooledRim" />
+        </feMerge>
       </filter>
 
       {/* A roof, drawn as a roof. This was a flat wash on the grounds that a

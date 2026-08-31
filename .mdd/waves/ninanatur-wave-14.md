@@ -40,7 +40,7 @@ The plan works and looks like CAD. Four things from using it:
 |---|---------|-----|--------|------------|
 | 1 | bloom-dots | .mdd/docs/56-bloom-dots.md | complete | — |
 | 2 | delete-elements | .mdd/docs/57-delete-elements.md | complete | — |
-| 3 | painted-plan | 58-painted-plan | planned | — |
+| 3 | painted-plan | .mdd/docs/58-painted-plan.md | complete | — |
 | 4 | osm-streets | 59-osm-streets | planned | — |
 
 ### 1 — bloom-dots
