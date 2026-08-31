@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 17
-hash: 6555a9a0
+version: 18
+hash: 186c55a3
 created: 2026-08-27
 ---
 
@@ -194,5 +194,5 @@ data would be convenient.
 | Wave 10 | waves/ninanatur-wave-10.md | The garden drawn as a garden, with shadows that have a shape | complete |
 | Wave 11 | waves/ninanatur-wave-11.md | Draw first, say what it is afterwards — shapes, vertices, and a skin that follows the label | complete |
 | Wave 12 | waves/ninanatur-wave-12.md | The plan gets out of its own way — tools on top, drawing that works on the first click, and every element findable | complete |
-| Wave 13 | waves/ninanatur-wave-13.md | A front door that looks like one — sign-in top right, one way in, and a page that breathes | planned |
+| Wave 13 | waves/ninanatur-wave-13.md | A front door that looks like one — sign-in top right, one way in, and a page that breathes | complete |
 | Wave 20 | waves/ninanatur-wave-20.md | A finished plan split across as few nurseries as possible | planned |

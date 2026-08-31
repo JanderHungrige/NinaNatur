@@ -121,3 +121,49 @@ describe('Landing — opening a garden keeps it', () => {
     expect(onOpen).toHaveBeenCalledWith('tok');
   });
 });
+
+describe('Landing — one way in', () => {
+  it('offers the map as the way to start', () => {
+    render(
+      <Landing
+        createForm={<p>Formular</p>}
+        mapPicker={<p>Karte</p>}
+        onOpen={vi.fn()}
+        busy={false}
+        loadStats={async () => null}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Auf der Karte anfangen' })).toBeDefined();
+  });
+
+  it('keeps the map-less way reachable, and quiet', () => {
+    // Nominatim and Overpass are free services with no SLA. Without this,
+    // a bad afternoon at either leaves nobody able to start at all.
+    render(
+      <Landing
+        createForm={<p>Formular</p>}
+        mapPicker={<p>Karte</p>}
+        onOpen={vi.fn()}
+        busy={false}
+        loadStats={async () => null}
+      />,
+    );
+    const aside = screen.getByText('Ohne Karte anfangen');
+    expect(aside.tagName.toLowerCase()).toBe('summary');
+    expect(screen.getByText('Formular')).toBeDefined();
+  });
+
+  it('no longer carries an account panel in the middle of the page', () => {
+    // It is in the header now, which is where people look for it.
+    const { container } = render(
+      <Landing
+        createForm={<p>Formular</p>}
+        mapPicker={<p>Karte</p>}
+        onOpen={vi.fn()}
+        busy={false}
+        loadStats={async () => null}
+      />,
+    );
+    expect(container.querySelectorAll('.landing__way')).toHaveLength(2);
+  });
+});
