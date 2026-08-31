@@ -4,6 +4,7 @@ import {
   type Box,
   HANDLES,
   boxOf,
+  rescale,
   handleAt,
   resizeBy,
   rotateBy,
@@ -148,5 +149,49 @@ describe('boxOf', () => {
     expect(box.width).toBeCloseTo(7);
     expect(box.depth).toBeCloseTo(5);
     expect(box.rotation).toBe(0);
+  });
+});
+
+describe('rescale', () => {
+  const TRIANGLE = [[0, 3], [3, -3], [-3, -3]];
+  const FROM: Box = { x: 0, y: 0, width: 6, depth: 6, rotation: 0 };
+
+  it('scales every corner, so a triangle stays a triangle', () => {
+    // Dragging a handle used to send a width and a depth, which for a shape
+    // that has neither meant its points were thrown away — and the garden then
+    // could not be read at all.
+    const bigger = rescale(TRIANGLE, FROM, { ...FROM, width: 12, depth: 6 });
+    expect(bigger).toHaveLength(3);
+    expect(bigger[0]).toEqual([0, 3]);
+    expect(bigger[1]).toEqual([6, -3]);
+    expect(bigger[2]).toEqual([-6, -3]);
+  });
+
+  it('scales the two directions independently', () => {
+    const taller = rescale(TRIANGLE, FROM, { ...FROM, width: 6, depth: 12 });
+    expect(taller[0]).toEqual([0, 6]);
+  });
+
+  it('turns the corners when the box turns', () => {
+    const square = [[-2, -2], [2, -2], [2, 2], [-2, 2]];
+    const turned = rescale(square, { x: 0, y: 0, width: 4, depth: 4, rotation: 0 }, {
+      x: 0, y: 0, width: 4, depth: 4, rotation: 90,
+    });
+    // A quarter turn clockwise from north: the corner that was north-east is
+    // now south-east.
+    expect(turned[1]?.[0]).toBeCloseTo(-2);
+    expect(turned[1]?.[1]).toBeCloseTo(-2);
+  });
+
+  it('rounds to the centimetre like every other stored coordinate', () => {
+    const odd = rescale([[1, 1]], FROM, { ...FROM, width: 6.13579, depth: 6 });
+    expect(odd[0]?.[0]).toBe(1.02);
+  });
+
+  it('leaves the shape alone when the box has no size to scale from', () => {
+    // A degenerate box would otherwise divide by zero and send NaN to the
+    // server, which stores it and then cannot draw the garden.
+    const same = rescale(TRIANGLE, { ...FROM, width: 0, depth: 0 }, FROM);
+    expect(same).toEqual(TRIANGLE);
   });
 });

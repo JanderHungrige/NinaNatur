@@ -159,3 +159,33 @@ export function boxOf(element: Geometry): Box {
     rotation: 0,
   };
 }
+
+
+/**
+ * The same outline at a new size and angle.
+ *
+ * What a resize handle actually does to a shape made of points. It used to send
+ * a width, a depth and an angle instead, which the server could only apply to a
+ * rectangle — for a triangle or a freehand outline it meant the points were
+ * thrown away, and the garden could not be read afterwards.
+ *
+ * Scaling the points covers every shape that has them, and a rectangle stays
+ * rectangular because scaling a rectangle does.
+ */
+export function rescale(points: number[][], from: Box, to: Box): number[][] {
+  // A degenerate box would divide by zero and send NaN to the server, which
+  // stores it and then cannot draw the garden.
+  if (from.width === 0 || from.depth === 0) return points.map((p) => [...p]);
+
+  const sx = to.width / from.width;
+  const sy = to.depth / from.depth;
+  const turn = to.rotation - from.rotation;
+  const round = (v: number): number => Math.round(v * 100) / 100;
+
+  return points.map((p) => {
+    // Out of the old angle, scaled along the shape's own axes, back into the new.
+    const flat = rotate(p[0] ?? 0, p[1] ?? 0, -from.rotation);
+    const scaled = rotate(flat.x * sx, flat.y * sy, from.rotation + turn);
+    return [round(scaled.x), round(scaled.y)];
+  });
+}

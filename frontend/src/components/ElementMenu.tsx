@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { KINDS } from '../kinds';
+import { KINDS, labelOf } from '../kinds';
 
 interface Props {
   /** Where the menu opens, in page pixels. */
   at: { x: number; y: number };
   kind: string;
   label: string | null;
+  /** What it covers, so a menu opened on the wrong one of two overlapping
+   *  shapes says so before anything is changed. */
+  area: number;
   onSave: (changes: { kind: string; label: string }) => void;
   onClose: () => void;
   busy: boolean;
@@ -20,7 +23,7 @@ interface Props {
  * menu that only a right-click reaches leaves out everyone working from the
  * keyboard.
  */
-export function ElementMenu({ at, kind, label, onSave, onClose, busy }: Props) {
+export function ElementMenu({ at, kind, label, area, onSave, onClose, busy }: Props) {
   const [chosen, setChosen] = useState(kind);
   const [text, setText] = useState(label ?? '');
   const box = useRef<HTMLDivElement | null>(null);
@@ -44,6 +47,14 @@ export function ElementMenu({ at, kind, label, onSave, onClose, busy }: Props) {
       aria-label="Was ist das?"
       style={{ left: at.x, top: at.y }}
     >
+      {/* Which element this is about. Two shapes on top of each other take the
+          same right-click, and without this the user names one and watches the
+          other not change. */}
+      <p className="element-menu__subject">
+        {labelOf(kind)}
+        {label !== null && label !== '' ? ` — ${label}` : ''}
+        {`, ${area.toFixed(1).replace('.', ',')} m²`}
+      </p>
       <label htmlFor="menu-kind">Art</label>
       <select
         id="menu-kind"
