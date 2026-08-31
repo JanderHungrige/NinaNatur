@@ -672,7 +672,11 @@ export function App() {
         ) : null}
       </header>
 
-      <main id="main" className="layout">
+      {/* Not `layout`: that is the garden's two-column grid, and the landing
+          page rendered inside it was handed the 22rem sidebar column — 352 px
+          of landing page on a 1600 px window, correct again only when the
+          window was made smaller than the breakpoint. */}
+      <main id="main" className={garden === null ? 'landing-shell' : 'layout'}>
         {garden === null ? (
           <Landing
             createForm={<NewGardenForm onCreate={createGarden} busy={busy} />}

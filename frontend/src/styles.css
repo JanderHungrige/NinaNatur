@@ -1097,3 +1097,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-weight: 600;
   color: var(--ink);
 }
+
+/* The landing page gets the whole width, not the garden grid's sidebar. */
+.landing-shell {
+  display: block;
+}

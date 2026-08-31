@@ -1,59 +1,105 @@
 ---
 id: ninanatur-wave-13
-title: "Wave 13: One plan, fewest possible parcels"
+title: "Wave 13: A front door that looks like one"
 initiative: ninanatur
-initiative_version: 2
+initiative_version: 17
 status: planned
 depends_on: ninanatur-wave-12
-demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
-created: 2026-08-27
-hash: aa221134
+demo_state: "Somebody arriving at ninanatur.w3rth.de finds sign-in where every site puts it, one obvious way in, a note saying an account is optional but worth having — and a page that breathes"
+created: 2026-08-31
+hash: e3cf20b7
 ---
 
-# Wave 13 — One plan, fewest possible parcels
+# Wave 13 — A front door that looks like one
 
-*Moved from Wave 6, then to Wave 13 when the drawing rework took Wave 10
-and further waves were reserved between.*
+## Demo-State
 
-*Originally: Ordering plants is the last step of the loop, and four waves
-of making the garden itself worth planning come first.*
+Somebody arriving at ninanatur.w3rth.de finds sign-in where every site puts it,
+one obvious way in, a note saying an account is optional but worth having — and
+a page that breathes.
 
-## The problem, stated properly
+*(This wave is not complete until this can be manually demonstrated.)*
 
-This is not a sorting problem. Minimise
+## Why this wave exists
 
-    sum(shipping cost of each nursery used) + sum(item prices)
+The landing page has not been looked at since Wave 7 put it back. Since then it
+has grown a third way in, an account panel in the middle of the page, and a
+layout bug that only showed on a wide window.
 
-subject to every needed plant being covered by a nursery that stocks it. That is
-a set-cover with fixed costs — a CP-SAT model in OR-Tools, solved in
-milliseconds at this size.
+## What was already fixed, before planning
 
-The interesting extension: when one plant is stocked only by a nursery used for
-nothing else, offer an ecologically equivalent species that an already-used
-nursery carries. Near-identical score, one parcel fewer.
+**The landing page was rendered inside the garden's two-column grid.** Above the
+breakpoint it was handed the 22rem sidebar column: 352 px of landing page on a
+1600 px window, and correct again only when the window was made *smaller*.
 
-## Scope
+The same shape as the bug fixed in V0.12.20, in the one place that fix did not
+look. It is out of the grid now — 992 px at 1600, 846 at 900 — and the guard is
+on the markup rather than the CSS, because whichever way it is solved one
+element must not be both. That is why it is not a feature below.
 
-**In:**
-- Nursery adapters over partner feeds (Shopify/WooCommerce product endpoints
-  where offered) — by agreement, not by scraping
-- Availability and price sync
-- The optimisation, with the substitution option
-- Order list export
+## Features
 
-## Open — must be settled in this wave
+| # | Feature | Doc | Status | Depends on |
+|---|---------|-----|--------|------------|
+| 1 | account-in-header | 53-account-in-header | planned | — |
+| 2 | one-way-in | 54-one-way-in | planned | 53 |
+| 3 | living-background | 55-living-background | planned | — |
 
-Which nurseries to approach and on what terms. Deliberately left until now:
-deciding earlier binds the design to assumptions that will have changed.
+### 1 — account-in-header
 
-## Constraint
+Sign-in and sign-up move to the top right, where every site puts them and where
+people look without being told. The account panel comes out of the middle of the
+page.
 
-Nursery data is obtained with permission. Nurseries generally want referral
-traffic, so an email gets a feed; ten partners with clean data beat a fragile
-scraper across a hundred shops. This is the same reasoning that kept the trait
-layer on open sources.
+**A curved arrow to the sign-up button**, with a line saying an account is not
+needed but is the better way to keep a garden. That is the truth of it: the
+share token already works, and it is a link somebody has to not lose.
+
+The arrow is drawn, not an emoji — the plan is already a watercolour and a
+hand-drawn arrow belongs to it. It is decoration, so it is `aria-hidden`, and the
+sentence beside it carries the whole meaning on its own.
+
+### 2 — one-way-in
+
+Three equal boxes suggest three equal choices. There is one: start from the map.
+
+*Garten öffnen* stays beside it, because it is not a way of making a garden but
+of coming back to one. **"Ohne Karte anfangen" becomes a quiet link underneath**
+— decided with the user over removing it. Nominatim and Overpass are free
+services with no SLA, and without that link a bad afternoon at either one leaves
+nobody able to start at all.
+
+### 3 — living-background
+
+Slowly drifting leaves and seed heads in the palette the plan already uses.
+
+**CSS transforms only, no animation loop.** A `requestAnimationFrame` loop on a
+landing page runs until the tab is closed; transforms are composited and cost
+nothing measurable.
+
+**`prefers-reduced-motion: reduce` stops it entirely** — not slows it. That was
+promised in feature 41 and this is the first thing on the site that actually
+moves, so it is the first time the promise costs anything.
+
+It sits behind the content at low contrast and is `aria-hidden`. A background
+that competes with the words in front of it is a background that failed.
+
+## Risks
+
+- **A moving background is the easiest thing to overdo.** The measure is whether
+  the page is still readable with it — and the honest check is looking at it,
+  not asserting on it.
+- Moving sign-in to the header means it is no longer explained by the text
+  around it. The arrow and its sentence are what replace that explanation, so
+  they are part of feature 1 rather than a nicety.
+
+## Open Research
+
+- [ ] Does the arrow survive a narrow window, where the header wraps and the
+      button it points at moves? A drawn arrow pointing at nothing is worse than
+      no arrow.
 
 ## Definition of done
 
-A finished plan produces a shopping list grouped by nursery, with the parcel
-count and total cost shown, and substitution suggestions where they save a parcel.
+Sign-in is top right, one way in is obvious with the others still reachable, and
+the background moves — and stops when the system asks for less motion.
