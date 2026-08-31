@@ -14,6 +14,7 @@ from typing import Any
 
 from ninanatur.bloom.timeline import flowering_months
 from ninanatur.data.traits import resolve_trait
+from ninanatur.garden.observations import observed_colours
 from ninanatur.garden.store import load_garden
 
 MONTHS = tuple(range(1, 13))
@@ -30,7 +31,18 @@ def _window(conn: sqlite3.Connection, taxon_id: int) -> frozenset[int]:
     return frozenset(flowering_months(int(start.value_num), int(end.value_num)))
 
 
-def _colour(conn: sqlite3.Connection, taxon_id: int) -> str | None:
+def _colour(
+    conn: sqlite3.Connection, taxon_id: int, observed: dict[int, str]
+) -> str | None:
+    """What this garden should draw for this species.
+
+    The gardener's own answer wins. They are standing in front of the plant, and
+    for a cultivar they are a better witness than a continental average — while
+    the catalogue stays untouched for everybody else.
+    """
+    seen = observed.get(taxon_id)
+    if seen is not None:
+        return seen
     trait = resolve_trait(conn, taxon_id, "flower_colour")
     return None if trait is None else trait.value_text
 
@@ -44,6 +56,7 @@ def garden_palette(conn: sqlite3.Connection, garden_id: int) -> dict[str, Any]:
     confident thing a UI can draw.
     """
     garden = load_garden(conn, garden_id)
+    seen = observed_colours(conn, garden_id)
     windows: dict[int, frozenset[int]] = {}
     colours: dict[int, str | None] = {}
 
@@ -59,7 +72,7 @@ def garden_palette(conn: sqlite3.Connection, garden_id: int) -> dict[str, Any]:
             tid = planting.taxon_id
             if tid not in windows:
                 windows[tid] = _window(conn, tid)
-                colours[tid] = _colour(conn, tid)
+                colours[tid] = _colour(conn, tid, seen)
             for month in windows[tid]:
                 found, unknown, flowering = per_month[month]
                 colour = colours[tid]

@@ -212,6 +212,18 @@ export class NinaNaturClient {
     );
   }
 
+  /** Note what a species flowers in, here. `null` takes the note back. */
+  async noteColour(
+    token: string,
+    taxonId: number,
+    colour: string | null,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/colours/${taxonId}`,
+      { method: 'PUT', body: JSON.stringify({ colour }) },
+    );
+  }
+
   async deleteGarden(token: string): Promise<void> {
     await this.request<void>(`/api/v1/gardens/${encodeURIComponent(token)}`, {
       method: 'DELETE',

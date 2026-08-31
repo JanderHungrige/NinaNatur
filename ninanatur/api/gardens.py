@@ -77,6 +77,7 @@ def to_out(garden: Garden) -> GardenOut:
         updated_at=garden.updated_at,
         soil_type=garden.soil_type,
         moisture=garden.moisture,
+        observed_colours=garden.observed_colours,
         beds=[
             BedOut(
                 bed_id=b.bed_id, name=b.name or "", polygon=b.polygon,

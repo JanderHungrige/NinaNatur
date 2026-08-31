@@ -289,6 +289,12 @@ class GardenSoil(BaseModel):
     moisture: str
 
 
+class ColourObservation(BaseModel):
+    """A flower colour the gardener recorded. `null` takes it back."""
+
+    colour: str | None = None
+
+
 class BedUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     soil_type: str | None = None
@@ -564,6 +570,10 @@ class GardenOut(BaseModel):
     #: which is what the interface uses to know it still has to.
     soil_type: str | None
     moisture: str | None
+    #: Flower colours this garden recorded itself, by taxon id. Only what was
+    #: noted, so it stays small — and it is what lets the interface say which
+    #: colour is the gardener's own rather than the catalogue's.
+    observed_colours: dict[int, str]
     beds: list[BedOut]
     obstacles: list[ObstacleOut]
 

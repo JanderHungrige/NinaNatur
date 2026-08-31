@@ -9,7 +9,9 @@ function show(copy?: (text: string) => Promise<void>) {
   if (copy !== undefined) {
     vi.stubGlobal('navigator', { clipboard: { writeText: copy } });
   }
-  render(<GardenId token="abc123" />);
+  render(
+    <GardenId token="abc123" name="Südgarten" latitude={52.5} longitude={13.4} />,
+  );
 }
 
 describe('GardenId', () => {
@@ -53,7 +55,31 @@ describe('GardenId', () => {
 
   it('leaves the id selectable when copying is unavailable', () => {
     vi.stubGlobal('navigator', {});
-    render(<GardenId token="abc123" />);
+    render(
+    <GardenId token="abc123" name="Südgarten" latitude={52.5} longitude={13.4} />,
+  );
     expect(screen.getByText('abc123')).toBeDefined();
+  });
+});
+
+describe('GardenId — folded away', () => {
+  it('is closed until somebody asks for it', () => {
+    // A credential is needed once, when the link is saved. It was taking the
+    // top of the sidebar for a string nobody reads while planning.
+    const { container } = render(
+      <GardenId token="abc" name="Südgarten" latitude={52.5} longitude={13.4} />,
+    );
+    expect(container.querySelector('details')?.hasAttribute('open')).toBe(false);
+  });
+
+  it('names the garden on the fold, so the fold says something', () => {
+    render(<GardenId token="abc" name="Südgarten" latitude={52.5} longitude={13.4} />);
+    expect(screen.getByText(/Südgarten/)).toBeDefined();
+  });
+
+  it('shows the location, and says why it is only approximate', () => {
+    render(<GardenId token="abc" name="Südgarten" latitude={52.53} longitude={13.41} />);
+    expect(screen.getByText(/52,5° N/)).toBeDefined();
+    expect(screen.getByText(/11 km/)).toBeDefined();
   });
 });

@@ -30,6 +30,7 @@ from ninanatur.garden.models import (
     Planting,
     Polygon,
 )
+from ninanatur.garden.observations import observed_colours
 from ninanatur.garden.plantings import _plantings_for, drop_plantings
 from ninanatur.garden.soil import site_axes_from_soil
 from ninanatur.solar.position import Location
@@ -346,6 +347,7 @@ def _load(conn: sqlite3.Connection, row: sqlite3.Row | None) -> Garden | None:
         updated_at=row["updated_at"],
         soil_type=row["soil_type"],
         moisture=row["moisture"],
+        observed_colours=observed_colours(conn, garden_id),
         elements=elements_for(conn, garden_id, plantings),
     )
 

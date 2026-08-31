@@ -15,7 +15,7 @@ function obstacle(id: number, kind: string, label: string | null = null) {
 
 function garden(obstacles: GardenOut['obstacles'] = [], beds: GardenOut['beds'] = []): GardenOut {
   return {
-    unidentified_plantings: 0, soil_type: null, moisture: null,
+    unidentified_plantings: 0, soil_type: null, moisture: null, observed_colours: {},
     share_token: 'tok', name: 'G', latitude: 52.5, longitude: 13.4,
     created_at: '', updated_at: '', beds, obstacles,
   };

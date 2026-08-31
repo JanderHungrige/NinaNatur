@@ -115,6 +115,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/gardens/{token}/colours/{taxon_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Note Colour
+         * @description Record what this species flowers in, here.
+         *
+         *     It never reaches the catalogue: that ships in the image and is re-synced at
+         *     startup, so a value written there would be overwritten by the next
+         *     deployment and would change every other garden until it was.
+         */
+        put: operations["note_colour_api_v1_gardens_gardens__token__colours__taxon_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}": {
         parameters: {
             query?: never;
@@ -831,6 +855,14 @@ export interface components {
             /** Taxon Id */
             taxon_id: number;
         };
+        /**
+         * ColourObservation
+         * @description A flower colour the gardener recorded. `null` takes it back.
+         */
+        ColourObservation: {
+            /** Colour */
+            colour?: string | null;
+        };
         /** Credentials */
         Credentials: {
             /** Password */
@@ -907,6 +939,10 @@ export interface components {
             moisture: string | null;
             /** Name */
             name: string;
+            /** Observed Colours */
+            observed_colours: {
+                [key: string]: string;
+            };
             /** Obstacles */
             obstacles: components["schemas"]["ObstacleOut"][];
             /** Share Token */
@@ -1036,7 +1072,7 @@ export interface components {
          *     part of the data, not an implementation detail.
          * @enum {string}
          */
-        ObjectKind: "house" | "shed" | "wall" | "fence" | "hedge" | "tree" | "shrub" | "bed" | "lawn" | "paving" | "gravel" | "pond" | "path" | "other";
+        ObjectKind: "house" | "shed" | "wall" | "fence" | "hedge" | "tree" | "shrub" | "bed" | "lawn" | "paving" | "gravel" | "pond" | "path" | "street" | "other";
         /** ObstacleCreate */
         ObstacleCreate: {
             /** Depth */
@@ -1597,6 +1633,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MapGardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    note_colour_api_v1_gardens_gardens__token__colours__taxon_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                taxon_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ColourObservation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
                 };
             };
             /** @description Validation Error */

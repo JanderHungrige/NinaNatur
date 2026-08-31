@@ -168,6 +168,21 @@ CREATE TABLE IF NOT EXISTS planting (
 
 CREATE INDEX IF NOT EXISTS idx_planting_element ON planting(element_id);
 
+-- What the gardener saw, as opposed to what the catalogue says.
+--
+-- Deliberately *not* a row in `trait`. The catalogue ships inside the image and
+-- is re-synced at startup whenever the build stamps differ, so a user's value
+-- there would be overwritten by the next deployment — and until it was, it
+-- would change the suggestions of every other garden on the server. This is
+-- user data and lives on the volume with the gardens.
+CREATE TABLE IF NOT EXISTS observed_colour (
+    garden_id INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    taxon_id  INTEGER NOT NULL REFERENCES taxon(taxon_id),
+    colour    TEXT    NOT NULL,
+    noted_at  TEXT    NOT NULL,
+    PRIMARY KEY (garden_id, taxon_id)
+);
+
 -- Interaction counts per plant, computed once at ingest.
 --
 -- The 600k raw `interaction` rows are ingest-time data: the runtime only ever
