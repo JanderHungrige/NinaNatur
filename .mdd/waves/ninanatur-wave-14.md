@@ -3,7 +3,7 @@ id: ninanatur-wave-14
 title: "Wave 14: A plan that looks painted, not plotted"
 initiative: ninanatur
 initiative_version: 18
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-13
 demo_state: "A bed shows its flowers as clustered dots rather than a colour bar, an element can be deleted where it stands, the plan reads as a painting rather than a drawing, and the street outside is on it"
 created: 2026-08-31
@@ -38,7 +38,7 @@ The plan works and looks like CAD. Four things from using it:
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | bloom-dots | 56-bloom-dots | planned | — |
+| 1 | bloom-dots | .mdd/docs/56-bloom-dots.md | complete | — |
 | 2 | delete-elements | 57-delete-elements | planned | — |
 | 3 | painted-plan | 58-painted-plan | planned | — |
 | 4 | osm-streets | 59-osm-streets | planned | — |

@@ -1,3 +1,4 @@
+import { bloomDots } from '../canvas/blooms';
 import { KINDS, PLANTING_KIND, labelOf } from '../kinds';
 import type { GardenOut } from '../api/client';
 import type { Point, Viewport } from '../canvas/viewport';
@@ -128,16 +129,21 @@ const SWATCH: Record<string, string> = {
  * The fill for a bed in the month being shown.
  *
  * `null` means "render as usual" — a bed with nothing in flower is empty, not
- * black. An unrecorded colour gets the hatch and never a fill: colour is
- * recorded for 6.6% of the catalogue, and green, grey or beige all read as an
- * answer the data does not support.
+ * black. An unrecorded colour keeps the hatch and never becomes a fill: colour
+ * is recorded for 6.6% of the catalogue, and green, grey or beige all read as
+ * an answer the data does not support.
+ *
+ * Known colours are no longer a fill at all. They were bands across the bed,
+ * which says it is half yellow and half blue; what is true is that some of the
+ * flowers are yellow. Those are drawn as dots on top instead.
  */
 function bloomFill(
   entry: { colours: string[]; unknown: number } | undefined,
 ): string | null {
   if (entry === undefined) return null;
-  if (entry.colours.length > 0) return `url(#bloom-${entry.colours.join('-')})`;
-  return entry.unknown > 0 ? 'url(#bloom-unknown)' : null;
+  return entry.colours.length === 0 && entry.unknown > 0
+    ? 'url(#bloom-unknown)'
+    : null;
 }
 
 /** Garden metres to the SVG's own coordinates, which run y-down. */
@@ -171,9 +177,6 @@ export function CanvasScene({
     dragOffset !== null && dragOffset.id === id
       ? `translate(${dragOffset.dx} ${-dragOffset.dy})`
       : '';
-  const combinations = Object.values(palette ?? {})
-    .map((e) => e.colours)
-    .filter((c) => c.length > 0);
 
   return (
     <>
@@ -192,28 +195,6 @@ export function CanvasScene({
           <rect width="0.14" height="0.14" className="bloom-hatch__ground" />
           <rect width="0.07" height="0.14" className="bloom-hatch__line" />
         </pattern>
-        {combinations.map((combo) => (
-          <pattern
-            key={combo.join('-')}
-            id={`bloom-${combo.join('-')}`}
-            width="1"
-            height="1"
-            patternUnits="objectBoundingBox"
-            patternContentUnits="objectBoundingBox"
-          >
-            {/* Bands, never a blend: mixing yellow and blue into green would
-                invent a flower nobody planted. */}
-            {combo.map((colour, i) => (
-              <rect
-                key={colour}
-                x={i / combo.length}
-                width={1 / combo.length}
-                height="1"
-                fill={SWATCH[colour] ?? 'var(--ink-muted)'}
-              />
-            ))}
-          </pattern>
-        ))}
           <pattern
             id="grid"
             width={spacing}
@@ -343,6 +324,26 @@ export function CanvasScene({
             </polygon>
           ),
         )}
+        </g>
+
+        {/* Flowers, on top of the beds and outside the wobble filter: a dot
+            the size of a blossom disappears under a displacement map meant for
+            outlines. */}
+        <g className="blooms" aria-hidden="true" pointerEvents="none">
+          {garden.beds.flatMap((bed) =>
+            bloomDots(bed.bed_id, bed.polygon, palette?.[bed.bed_id]?.colours ?? []).map(
+              (dot, i) => (
+                <circle
+                  key={`${bed.bed_id}-${i}`}
+                  className="bloom-dot"
+                  cx={dot.x}
+                  cy={-dot.y}
+                  r={dot.r}
+                  fill={SWATCH[dot.colour] ?? 'var(--ink-muted)'}
+                />
+              ),
+            ),
+          )}
         </g>
 
         {viewpoint !== null && (
