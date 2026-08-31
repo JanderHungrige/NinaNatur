@@ -41,15 +41,22 @@ asked for something more imposing and gave a reference picture.
 
 ## Decisions
 
-### A dark hero, and daylight below it
+### The whole front door, edge to edge
 
-Decided with the user over darkening the whole landing page. The reference is
-dark and the contrast is what makes motes read as *lit* rather than as dots
-painted on a card — but the forms and the map below have no business being dark,
-and the jump to a light garden plan would be harsher the further the front door
-went.
+This went in two steps. It began as a dark hero band with daylight below —
+chosen over darkening everything, on the grounds that the forms and the map had
+no business being dark. Seeing it, the user asked for the whole page,
+borderless.
 
-So the hero carries the field and the page carries on underneath.
+They were right, and the first answer was the timid one. A dark band with a
+white page under it is a banner; the field only reads as a place once it runs
+past the edges of what it is behind. The panels became glass over the field
+rather than paper on top of it, which is what let the rest of the page go dark
+without becoming unreadable.
+
+**The garden view stays on paper.** The dark ground is scoped to
+`.app--front-door`, which is set only while no garden is open. A plan is a
+drawing to be read closely; the front door is a photograph.
 
 ### Three layers, not three hundred nodes
 
@@ -87,8 +94,8 @@ that instead.
 `aria-hidden`, `pointer-events: none`, behind the content. A background that
 competes with the words in front of it is a background that failed — and the
 check for that is looking at the page, which is why this feature's definition of
-done is not an assertion. It took three passes of looking: the first was too
-sparse, the second had a floor nobody could see.
+done is not an assertion. It took four passes of looking: too sparse, then a floor
+nobody could see, then a hero band that turned out to be a banner.
 
 ### Only on the front door
 
