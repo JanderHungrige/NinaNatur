@@ -40,6 +40,7 @@ from ninanatur.api.search import (
     is_woody,
     load_candidates,
     rank_plants,
+    with_observed,
 )
 from ninanatur.bloom.improve import Change, garden_improvements
 from ninanatur.bloom.palette import garden_palette
@@ -51,7 +52,7 @@ from ninanatur.data.traits import resolve_trait
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.garden.observations import record_colour
+from ninanatur.garden.observations import observed_colours, record_colour
 from ninanatur.garden.plantings import add_planting, remove_planting
 from ninanatur.garden.sightlines import Blocker, Target, Viewpoint, visibility
 from ninanatur.garden.store import load_garden
@@ -203,7 +204,9 @@ def bed_suggestions(
     )
     area = polygon_area(bed.polygon)
     ranked = rank_plants(
-        load_candidates(conn),
+        # The gardener's own colours first: a species they marked yellow must
+        # read "gelb" in the list they marked it from, and answer a filter for it.
+        with_observed(load_candidates(conn), observed_colours(conn, garden.garden_id)),
         SiteVector(values=axes),
         SearchFilters(
             height_min=height_min,

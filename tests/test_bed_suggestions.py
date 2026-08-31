@@ -207,3 +207,57 @@ def test_unknown_origin_is_still_suggested(client: TestClient) -> None:
 def test_a_species_with_no_origin_record_is_still_suggested(client: TestClient) -> None:
     token, bed_id = _sunny_bed(client)
     assert "Sonnenkraut" in _names(client, token, bed_id)
+
+
+def _item(client: TestClient, token: str, bed_id: int, name: str,
+          **params: object) -> dict[str, object]:
+    response = client.get(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/suggestions", params=params
+    )
+    assert response.status_code == 200, response.text
+    found = [i for i in response.json()["items"] if i["canonical_name"] == name]
+    assert found, f"{name} not among the suggestions"
+    return dict(found[0])
+
+
+def test_a_noted_colour_reaches_the_list_it_was_noted_from(client: TestClient) -> None:
+    """Entering a colour and closing the panel left the row saying "Farbe
+    unbekannt": the suggestion list reads the catalogue, and the observation is
+    deliberately not in the catalogue. It has to be laid over the candidates.
+    """
+    token, bed_id = _sunny_bed(client)
+    assert _item(client, token, bed_id, "Sonnenkraut")["observed_colour"] is None
+
+    client.put(f"/api/v1/gardens/{token}/colours/1", json={"colour": "yellow"})
+
+    row = _item(client, token, bed_id, "Sonnenkraut")
+    assert row["observed_colour"] == "yellow"
+    assert row["colour_known"] is True
+    # Beside the catalogue's answer, not over it: the panel still has to be able
+    # to say the catalogue holds nothing for this species.
+    assert row["flower_colour"] is None
+
+
+def test_a_noted_colour_answers_the_colour_filter(client: TestClient) -> None:
+    """Half a fix would show the colour and still not find it: the filter reads
+    the same field, so both must see the gardener's answer."""
+    token, bed_id = _sunny_bed(client)
+    client.put(f"/api/v1/gardens/{token}/colours/1", json={"colour": "yellow"})
+
+    counts = client.get(
+        f"/api/v1/gardens/{token}/beds/{bed_id}/suggestions", params={"colour": "yellow"}
+    ).json()["filters"]["colour"]
+    assert counts["matched"] == 1
+    assert _item(client, token, bed_id, "Sonnenkraut", colour="yellow")["fit"] is not None
+
+
+def test_one_gardeners_colour_does_not_reach_another_garden(client: TestClient) -> None:
+    """The candidate set is the catalogue, shared by every garden on the server
+    and reloaded per request. Writing the observation into those rows rather
+    than replacing them would put it in a stranger's list."""
+    mine, my_bed = _sunny_bed(client)
+    theirs, their_bed = _sunny_bed(client)
+    client.put(f"/api/v1/gardens/{mine}/colours/1", json={"colour": "yellow"})
+
+    assert _item(client, mine, my_bed, "Sonnenkraut")["observed_colour"] == "yellow"
+    assert _item(client, theirs, their_bed, "Sonnenkraut")["observed_colour"] is None

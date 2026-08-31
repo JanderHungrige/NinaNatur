@@ -98,6 +98,15 @@ describe('CanvasScene — how the plan looks', () => {
     expect(order.indexOf('lawn')).toBeLessThan(order.indexOf('house'));
   });
 
+  it('does not read out a height that does not exist', () => {
+    // The server stopped inventing 0.0 for a pond; the label went on reading it
+    // out, so the plan announced "Teich, null m hoch".
+    show([{ ...obstacle('pond', 1), height: null }]);
+
+    const node = screen.getByRole('button', { name: /Teich/ });
+    expect(node.getAttribute('aria-label')).toBe('Teich');
+  });
+
   it('names an object by what it is, texture or no texture', () => {
     // The texture is decoration and never the only thing carrying a meaning.
     show([obstacle('gravel', 1)]);

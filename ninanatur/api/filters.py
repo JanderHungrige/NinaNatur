@@ -175,7 +175,7 @@ def _colour_verdict(plant: PlantRow, colour: str | None) -> Verdict | None:
     """Colour ranks; a mismatch is ordered down, never removed."""
     if colour is None:
         return None
-    value = plant.text("flower_colour")
+    value = plant.colour()
     if value is None:
         return Verdict.UNKNOWN
     return Verdict.MATCH if value.lower() == colour.lower() else Verdict.MISMATCH

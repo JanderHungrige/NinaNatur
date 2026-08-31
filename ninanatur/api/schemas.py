@@ -46,6 +46,9 @@ class PlantSummary(BaseModel):
     flowering_start_month: int | None
     flowering_end_month: int | None
     flower_colour: str | None
+    """What this garden's owner entered, if they did. Beside the catalogue's
+    value rather than instead of it, so the list can say which one it shows."""
+    observed_colour: str | None = None
     colour_known: bool
     # German bird species recorded as partners, or None when GloBI holds no
     # relations at all. Zero and "never recorded" are different facts.

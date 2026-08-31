@@ -10,6 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ninanatur.api.candidates import OBSERVED_COLOUR
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     AxisFitOut,
@@ -59,7 +60,8 @@ def to_summary(
         flowering_start_month=int(start) if start is not None else None,
         flowering_end_month=int(end) if end is not None else None,
         flower_colour=plant.text("flower_colour"),
-        colour_known=plant.text("flower_colour") is not None,
+        observed_colour=plant.text(OBSERVED_COLOUR),
+        colour_known=plant.colour() is not None,
         bird_partners=birds,
         space_m2=canopy.area_m2 if canopy is not None else None,
         fits_bed=(
