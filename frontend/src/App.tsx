@@ -8,6 +8,7 @@ import type {
   SightlinesOut,
   SuggestionFilters,
   ImprovementsOut,
+  OwnedGardens,
   ScoreOut,
   TimelineOut,
 } from './api/client';
@@ -15,6 +16,7 @@ import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { AccountBar } from './components/AccountBar';
 import { LivingBackground } from './components/LivingBackground';
+import { MyGardens } from './components/MyGardens';
 import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
@@ -132,6 +134,49 @@ export function App() {
   useEffect(() => {
     void client.me().then(setAccount).catch(() => setAccount(null));
   }, []);
+
+  // Asked whenever there is somebody to ask about, and again after a change.
+  // The endpoint has existed since Wave 9; nothing had ever displayed it.
+  const loadMyGardens = useCallback(async () => {
+    if (account === null) {
+      setMyGardens(null);
+      return;
+    }
+    try {
+      setMyGardens((await client.myGardens()).gardens);
+    } catch {
+      // Not being able to list them is not a reason to break the page: the
+      // share link still opens a garden, which is what it is for.
+      setMyGardens([]);
+    }
+  }, [account]);
+
+  useEffect(() => {
+    void loadMyGardens();
+  }, [loadMyGardens]);
+
+  /** Open one by its token — the same route the landing form takes, since the
+   *  token is the credential either way. */
+  const openGarden = useCallback(
+    (token: string) => {
+      // Into the fragment, not a query parameter: the token is a credential,
+      // and a query would put it in the access log and any referrer.
+      window.location.hash = token;
+      void load(token);
+    },
+    [load],
+  );
+
+  const deleteMyGarden = useCallback(
+    (token: string) => {
+      void run('Garten löschen', async () => {
+        await client.deleteGarden(token);
+        await loadMyGardens();
+        setStatus('Garten gelöscht.');
+      });
+    },
+    [loadMyGardens, run],
+  );
 
   const register = useCallback(
     async (input: { username: string; password: string; email?: string }) => {
@@ -424,6 +469,8 @@ export function App() {
   const [tool, setTool] = useState<Tool | null>(null);
   /** The account forms, opened from the header rather than sitting in the page. */
   const [accountOpen, setAccountOpen] = useState(false);
+  /** The gardens this account has claimed. Null until asked. */
+  const [myGardens, setMyGardens] = useState<OwnedGardens['gardens'] | null>(null);
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
   /** The context menu, and which element it is asking about. */
   const [asking, setAsking] = useState<
@@ -714,6 +761,16 @@ export function App() {
       <main id="main" className={garden === null ? 'landing-shell' : 'layout'}>
         {garden === null ? (
           <Landing
+            myGardens={
+              account === null || myGardens === null ? undefined : (
+                <MyGardens
+                  gardens={myGardens}
+                  onOpen={openGarden}
+                  onDelete={deleteMyGarden}
+                  busy={busy}
+                />
+              )
+            }
             createForm={<NewGardenForm onCreate={createGarden} busy={busy} />}
             mapPicker={
               <MapPicker
