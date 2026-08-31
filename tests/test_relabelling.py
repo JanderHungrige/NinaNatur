@@ -19,7 +19,7 @@ from ninanatur.ingest.db import connect, init_schema
 
 @pytest.fixture()
 def conn() -> sqlite3.Connection:
-    connection = connect(":memory:")
+    connection = connect(":memory:", same_thread=False)
     init_schema(connection)
     connection.execute(
         "INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Salvia pratensis')"
@@ -83,3 +83,79 @@ def test_becoming_a_bed_costs_nothing(conn: sqlite3.Connection) -> None:
 # cost?" for the warning. It went: the browser already has the plantings in the
 # garden it is displaying, so counting them again on the server is a second
 # answer to a question that already has one.
+
+
+def test_a_bed_can_still_be_reached_after_it_becomes_one(conn: sqlite3.Connection) -> None:
+    """The endpoint used to look in `garden.obstacles`, which since the merge is
+    a *view* that excludes planting sites. An element that had just been made a
+    bed was then unreachable through the only endpoint that edits a kind — so
+    a bed could be created and never changed back."""
+    from fastapi.testclient import TestClient
+
+    from ninanatur.api.deps import get_connection
+    from ninanatur.web.app import app
+
+    app.dependency_overrides[get_connection] = lambda: conn
+    try:
+        with TestClient(app) as client:
+            token = client.post(
+                "/api/v1/gardens",
+                json={"name": "G", "latitude": 52.5, "longitude": 13.4},
+            ).json()["share_token"]
+            made = client.post(
+                f"/api/v1/gardens/{token}/obstacles",
+                json={"kind": "other", "x": 0, "y": 0, "shape": "polygon",
+                      "points": [[-3, -2], [3, -2], [3, 2], [-3, 2]]},
+            ).json()["obstacles"][0]
+
+            as_bed = client.patch(
+                f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}",
+                json={"kind": "bed"},
+            )
+            assert as_bed.status_code == 200
+
+            # And back again, which is the half that was impossible.
+            back = client.patch(
+                f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}",
+                json={"kind": "pond"},
+            )
+            assert back.status_code == 200, back.json()
+            assert back.json()["obstacles"][0]["kind"] == "pond"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_a_bed_can_be_told_its_own_soil(conn: sqlite3.Connection) -> None:
+    """A raised bed with bought soil. The store allowed it; the API model did
+    not carry the fields, so it never arrived."""
+    from fastapi.testclient import TestClient
+
+    from ninanatur.api.deps import get_connection
+    from ninanatur.web.app import app
+
+    app.dependency_overrides[get_connection] = lambda: conn
+    try:
+        with TestClient(app) as client:
+            token = client.post(
+                "/api/v1/gardens",
+                json={"name": "G", "latitude": 52.5, "longitude": 13.4},
+            ).json()["share_token"]
+            client.patch(
+                f"/api/v1/gardens/{token}/soil",
+                json={"soil_type": "clay", "moisture": "moist"},
+            )
+            made = client.post(
+                f"/api/v1/gardens/{token}/obstacles",
+                json={"kind": "bed", "x": 0, "y": 0, "shape": "polygon",
+                      "points": [[-3, -2], [3, -2], [3, 2], [-3, 2]]},
+            ).json()
+            bed_id = made["beds"][0]["bed_id"]
+            changed = client.patch(
+                f"/api/v1/gardens/{token}/obstacles/{bed_id}",
+                json={"soil_type": "humus", "moisture": "dry"},
+            ).json()
+            bed = changed["beds"][0]
+            assert bed["soil_type"] == "humus"
+            assert bed["moisture"] == "dry"
+    finally:
+        app.dependency_overrides.clear()

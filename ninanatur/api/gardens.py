@@ -243,8 +243,12 @@ def edit_obstacle(
 ) -> GardenOut:
     """Change what an obstacle is, and redo every bed's light."""
     garden = require_garden(conn, token)
-    if not any(o.obstacle_id == obstacle_id for o in garden.obstacles):
-        raise HTTPException(status_code=404, detail=f"no such obstacle: {obstacle_id}")
+    # Every element, not `garden.obstacles`: since Wave 11 that is a *view*
+    # excluding planting sites, so an element that had just been made a bed was
+    # unreachable through the only endpoint that edits a kind. A bed could be
+    # created and never changed back.
+    if not any(e.element_id == obstacle_id for e in garden.elements):
+        raise HTTPException(status_code=404, detail=f"no such element: {obstacle_id}")
     changes = payload.model_dump(exclude_unset=True)
     if "kind" in changes and changes["kind"] is not None:
         changes["kind"] = str(changes["kind"])

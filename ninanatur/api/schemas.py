@@ -272,6 +272,9 @@ class ObstacleUpdate(BaseModel):
     #: Set to null when a vertex is dragged out of true: the geometry does not
     #: change, but the promise that the corners stay square ends.
     constraint_hint: str | None = None
+    #: A bed may differ from its garden — bought soil, a watered corner.
+    soil_type: str | None = None
+    moisture: str | None = None
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
     # Correcting a height makes it the user's word on it; otherwise every
