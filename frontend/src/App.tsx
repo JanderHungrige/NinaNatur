@@ -14,7 +14,6 @@ import type {
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { AccountBar } from './components/AccountBar';
-import { LivingBackground } from './components/LivingBackground';
 import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
@@ -661,9 +660,6 @@ export function App() {
   return (
     <>
       <a className="skip-link" href="#main">Zum Inhalt springen</a>
-      {/* Only on the front door: inside a garden the plan is the picture. */}
-      {garden === null && <LivingBackground />}
-
       <header className="site-header">
         <button type="button" className="brand" onClick={goHome} aria-label="Zur Startseite">
           <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">

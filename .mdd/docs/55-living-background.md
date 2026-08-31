@@ -35,42 +35,67 @@ known_issues: []
 
 ## What this is
 
-Leaves drifting slowly behind the front door, in the palette the plan already
-uses.
+A field of motes rising slowly out of a lit floor, in green and gold, behind the
+title and the figures. The first version was seven drifting leaves; the user
+asked for something more imposing and gave a reference picture.
 
 ## Decisions
 
-### CSS transforms, and no animation loop
+### A dark hero, and daylight below it
 
-A `requestAnimationFrame` loop on a landing page runs until the tab is closed.
-These are seven composited transforms with no JavaScript running at all, so the
-cost is a repaint the compositor was going to do anyway.
+Decided with the user over darkening the whole landing page. The reference is
+dark and the contrast is what makes motes read as *lit* rather than as dots
+painted on a card — but the forms and the map below have no business being dark,
+and the jump to a light garden plan would be harsher the further the front door
+went.
 
-Negative delays start each leaf part-way through its journey, so the page does
-not open with all seven lined up at the top — and every one has its own
-duration, because identical timing reads as a machine rather than as weather.
+So the hero carries the field and the page carries on underneath.
 
-### Stopped, not slowed
+### Three layers, not three hundred nodes
 
-`prefers-reduced-motion: reduce` removes it. Slowing an animation is still an
-animation to somebody who asked their system for less motion.
+Each layer holds its entire field as repeated radial gradients in one background
+image. The browser composites three layers and animates one transform on each.
 
-Feature 41 promised this and nothing on the site moved, so the promise had cost
-nothing until now. It is guarded by a test rather than by good intentions.
+A node per particle would be a composited layer per particle; a canvas would be
+a `requestAnimationFrame` loop running until the tab is closed. This is neither,
+and it is dense enough to look like the reference.
+
+Each layer's height is a whole number of tiles and each travels exactly half of
+it, so the loop is seamless without anybody matching numbers to the viewport.
+The three speeds are the depth: faint motes drift far away while brighter ones
+climb past them.
+
+### A floor to rise from
+
+Without the bright band along the bottom the motes merely exist. With it they
+are coming from somewhere, which is what the reference picture is doing and what
+"aufsteigend" actually asks for.
+
+### Stopped, not slowed — and not hidden
+
+`prefers-reduced-motion: reduce` sets `animation: none`. Slowing an animation is
+still an animation to somebody who asked their system for less motion.
+
+**What changed from the first version:** it used to be `display: none`, which was
+right when the background was seven leaves over white and wrong now that the
+field is the hero's ground — hiding it would leave an empty dark box. The
+promise was never "no background"; it was "no motion", and the guard test asserts
+that instead.
 
 ### It is decoration and behaves like it
 
-`aria-hidden`, `pointer-events: none`, behind the content, and at 16% opacity.
-A background that competes with the words in front of it is a background that
-failed — and the check for that is looking at the page, which is why this
-feature's definition of done is not an assertion.
+`aria-hidden`, `pointer-events: none`, behind the content. A background that
+competes with the words in front of it is a background that failed — and the
+check for that is looking at the page, which is why this feature's definition of
+done is not an assertion. It took three passes of looking: the first was too
+sparse, the second had a floor nobody could see.
 
 ### Only on the front door
 
-Inside a garden the plan is the picture. Leaves drifting over somebody's bed
+Inside a garden the plan is the picture. A particle field over somebody's bed
 layout would be decoration arguing with data.
 
 ## Definition of done
 
-The landing page moves gently, the words stay the thing you read, and the motion
-stops entirely when the system asks for less.
+The hero moves the way the reference picture does, the words stay the thing you
+read, and the motion stops entirely when the system asks for less.

@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 
 import type { StatsOut } from '../api/client';
+import { LivingBackground } from './LivingBackground';
 
 interface Props {
   /**
@@ -65,6 +66,12 @@ export function Landing({
 
   return (
     <div className="landing">
+      {/* The dark hero: title, promise and figures over the particle field.
+          Everything below it carries on in daylight — the contrast is what
+          makes the motes read as lit rather than as dots on a card. */}
+      <div className="hero">
+        <LivingBackground />
+        <div className="hero__content">
       <h1 className="landing__title">
         Ein Garten, der
         <br />
@@ -91,6 +98,8 @@ export function Landing({
           </div>
         </dl>
       )}
+        </div>
+      </div>
 
       {/* One way in, not three. Three equal boxes said three equal choices;
           there is one, and "Garten öffnen" beside it is not a way of making a

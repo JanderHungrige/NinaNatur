@@ -1178,52 +1178,164 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* --- A page that breathes (Wave 13, feature 55) --------------------------- */
 
+/* The hero: a dark, lit ground for the particle field, with the rest of the
+   page carrying on in daylight underneath. Decided with the user over making
+   the whole landing page dark — the contrast is what makes the motes glow, and
+   the forms below have no business being dark. */
+.hero {
+  position: relative;
+  isolation: isolate;
+  margin: -1rem -1rem 2rem;
+  padding: clamp(2.5rem, 7vw, 5rem) clamp(1rem, 4vw, 3rem) clamp(3rem, 8vw, 5rem);
+  border-radius: 0 0 calc(var(--radius) * 2) calc(var(--radius) * 2);
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #1d4038 0%, #0f2620 45%, #081713 100%);
+  color: #eef3e8;
+}
+
+.hero__content { position: relative; z-index: 1; }
+.hero .landing__title { color: #f4f8ef; }
+.hero .landing__lede { color: #cfdcc6; }
+.hero .stat dt { color: #a9c0a0; }
+.hero .stat dd { color: #f4f8ef; }
+
 .living {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
-.living__leaf {
-  /* Overridden per leaf from the component. Declared here so a leaf whose
-     inline style never arrives still drifts instead of collapsing to nothing. */
-  --leaf-scale: 1;
-  --leaf-tilt: 0deg;
+/* Light from above. Without it the motes are dots painted on a dark card
+   rather than specks caught in a beam. */
+.living__glow {
   position: absolute;
-  top: -8vh;
-  display: block;
-  width: 2.2rem;
-  height: 2.2rem;
-  color: var(--leaf);
-  opacity: 0.16;
+  inset: -35% -10% auto;
+  height: 110%;
+  background:
+    radial-gradient(34% 60% at 50% -4%, rgb(244 228 176 / 46%) 0%,
+      rgb(206 224 158 / 20%) 34%, transparent 68%),
+    radial-gradient(78% 46% at 50% 2%, rgb(150 198 126 / 18%) 0%, transparent 76%);
+}
+
+/* The bright, dense band the reference has along the bottom: the field looks
+   as though it is rising *from* somewhere rather than merely existing. */
+.living__floor {
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  background:
+    radial-gradient(1.4px 1.4px at 12% 68%, rgb(236 248 224 / 80%) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 34% 84%, rgb(246 228 168 / 72%) 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 57% 74%, rgb(236 248 224 / 76%) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 78% 90%, rgb(246 228 168 / 66%) 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 92% 62%, rgb(236 248 224 / 70%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 22% 94%, rgb(246 228 168 / 60%) 50%, transparent 52%),
+    linear-gradient(to top, rgb(168 214 142 / 30%) 0%,
+      rgb(150 196 128 / 12%) 34%, transparent 84%);
+  background-size: 90px 70px, 105px 82px, 120px 92px, 98px 76px,
+    112px 88px, 84px 66px, 100% 100%;
+  opacity: 1;
+}
+
+/*
+ * One field of motes per layer, as repeated radial gradients in a single
+ * background image — three composited layers instead of three hundred nodes.
+ *
+ * The height is a whole number of tiles and the travel is exactly half of it,
+ * so the loop is seamless without anybody matching numbers to the viewport.
+ */
+.living__layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2400px;
+  background-repeat: repeat;
   will-change: transform;
-  animation-name: leaf-drift;
+  animation-name: motes-rise;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 
-.living__leaf svg { width: 100%; height: 100%; fill: currentColor; }
-.living__rib { stroke: var(--bg); stroke-width: 1.2; fill: none; opacity: 0.6; }
-
-/* Down and a little sideways, turning as it goes — one transform, composited,
-   no layout touched. */
-@keyframes leaf-drift {
-  from {
-    transform: translate3d(0, 0, 0) rotate(var(--leaf-tilt)) scale(var(--leaf-scale));
-  }
-  to {
-    transform: translate3d(4rem, 118vh, 0) rotate(calc(var(--leaf-tilt) + 220deg))
-      scale(var(--leaf-scale));
-  }
+.living__layer--far {
+  background-image:
+    radial-gradient(1px 1px at 18% 12%, rgb(198 224 186 / 62%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 62% 34%, rgb(226 205 141 / 52%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 84% 66%, rgb(198 224 186 / 48%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 33% 78%, rgb(226 205 141 / 42%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 7% 47%, rgb(198 224 186 / 44%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 47% 91%, rgb(226 205 141 / 40%) 50%, transparent 52%),
+    radial-gradient(1px 1px at 72% 6%, rgb(198 224 186 / 38%) 50%, transparent 52%);
+  background-size: 120px 150px;
+  animation-duration: 150s;
 }
 
-/* Stopped, not slowed. Feature 41 promised this, and this is the first thing
-   on the site that actually moves. */
+.living__layer--mid {
+  background-image:
+    radial-gradient(1.6px 1.6px at 28% 22%, rgb(214 236 200 / 78%) 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 71% 58%, rgb(238 216 152 / 70%) 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 9% 81%, rgb(214 236 200 / 60%) 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 52% 40%, rgb(238 216 152 / 56%) 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 88% 14%, rgb(214 236 200 / 52%) 50%, transparent 52%);
+  background-size: 190px 240px;
+  animation-duration: 96s;
+}
+
+.living__layer--near {
+  background-image:
+    radial-gradient(2.6px 2.6px at 46% 18%, rgb(232 246 220 / 85%) 50%, transparent 52%),
+    radial-gradient(2.6px 2.6px at 12% 62%, rgb(246 226 166 / 78%) 50%, transparent 52%),
+    radial-gradient(2.2px 2.2px at 88% 88%, rgb(232 246 220 / 66%) 50%, transparent 52%);
+  background-size: 400px 480px;
+  animation-duration: 62s;
+}
+
+/* Up and gone, half the layer's height — a whole number of tiles either way. */
+@keyframes motes-rise {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -1200px, 0); }
+}
+
+/* The few big soft ones in front, drifting slower than everything behind. */
+.living__bokeh {
+  position: absolute;
+  bottom: -14%;
+  display: block;
+  border-radius: 50%;
+  filter: blur(16px);
+  opacity: 0.22;
+  will-change: transform;
+  animation: bokeh-rise linear infinite;
+}
+
+.living__bokeh--0 { left: 8%;  width: 5rem;   height: 5rem;   background: #cfe6bd; animation-duration: 74s; animation-delay: -12s; }
+.living__bokeh--1 { left: 31%; width: 3.2rem; height: 3.2rem; background: #efd9a0; animation-duration: 58s; animation-delay: -34s; }
+.living__bokeh--2 { left: 54%; width: 6.5rem; height: 6.5rem; background: #b9dca6; animation-duration: 88s; animation-delay: -5s; }
+.living__bokeh--3 { left: 73%; width: 2.6rem; height: 2.6rem; background: #f2e2b4; animation-duration: 66s; animation-delay: -47s; }
+.living__bokeh--4 { left: 90%; width: 4.4rem; height: 4.4rem; background: #cfe6bd; animation-duration: 80s; animation-delay: -22s; }
+
+@keyframes bokeh-rise {
+  from { transform: translate3d(0, 0, 0) scale(0.8); opacity: 0; }
+  15%  { opacity: 0.26; }
+  85%  { opacity: 0.2; }
+  to   { transform: translate3d(2rem, -130vh, 0) scale(1.25); opacity: 0; }
+}
+
+/*
+ * Stopped, not slowed. Feature 41 promised this and the field is the first
+ * thing on the site that moves.
+ *
+ * The field stays put rather than disappearing: it is the hero's ground now,
+ * and hiding it would leave an empty dark box. What was promised is no motion,
+ * and a still field keeps that.
+ */
 @media (prefers-reduced-motion: reduce) {
-  .living { display: none; }
+  .living__layer,
+  .living__bokeh {
+    animation: none;
+  }
+  .living__bokeh { opacity: 0.2; }
 }
-
-/* The words in front stay the thing you read. */
-.living ~ * { position: relative; z-index: 1; }

@@ -5,33 +5,33 @@ import { LivingBackground } from './LivingBackground';
 
 describe('LivingBackground', () => {
   it('is hidden from anything that reads the page', () => {
-    // Decoration. A screen reader announcing seven leaves would be reading
+    // Decoration. A screen reader announcing a particle field would be reading
     // the wallpaper aloud.
     render(<LivingBackground />);
     expect(screen.getByTestId('living-background').getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('starts each leaf part-way through, so they do not arrive in a row', () => {
+  it('draws the field as layers, not as hundreds of nodes', () => {
+    // Each layer carries its whole field of motes in one background image. A
+    // node per particle would be a composited layer per particle.
     const { container } = render(<LivingBackground />);
-    const delays = [...container.querySelectorAll('.living__leaf')].map(
-      (n) => (n as HTMLElement).style.animationDelay,
-    );
-    expect(new Set(delays).size).toBeGreaterThan(1);
-    expect(delays.filter((d) => d.startsWith('-')).length).toBeGreaterThan(4);
+    expect(container.querySelectorAll('.living__layer')).toHaveLength(3);
+    expect(container.querySelectorAll('.living__bokeh').length).toBeLessThanOrEqual(8);
   });
 
-  it('gives each leaf its own pace', () => {
-    // Identical durations read as a machine rather than as weather.
+  it('gives the layers different depths to move at', () => {
+    // Identical speeds are a flat sheet of dots. The parallax is the depth.
     const { container } = render(<LivingBackground />);
-    const durations = [...container.querySelectorAll('.living__leaf')].map(
-      (n) => (n as HTMLElement).style.animationDuration,
-    );
-    expect(new Set(durations).size).toBeGreaterThan(3);
+    for (const depth of ['far', 'mid', 'near']) {
+      expect(container.querySelector(`.living__layer--${depth}`)).not.toBeNull();
+    }
   });
 
-  it('draws no more than a background needs', () => {
-    // Seven, not seventy. Every one is a composited layer.
+  it('lights the field from above and gives it a floor to rise from', () => {
+    // Without the floor the motes merely exist; with it they are coming from
+    // somewhere, which is what the reference picture is doing.
     const { container } = render(<LivingBackground />);
-    expect(container.querySelectorAll('.living__leaf').length).toBeLessThanOrEqual(12);
+    expect(container.querySelector('.living__glow')).not.toBeNull();
+    expect(container.querySelector('.living__floor')).not.toBeNull();
   });
 });

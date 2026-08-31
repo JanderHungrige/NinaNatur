@@ -162,11 +162,14 @@ def test_the_moving_background_stops_for_reduced_motion() -> None:
 
     Stopped, not slowed: a slower animation is still an animation to somebody
     who asked the system for less motion.
+
+    What is asserted is that the motion stops, not that the field disappears.
+    The field became the hero's ground when it stopped being seven leaves over
+    white, and hiding it would leave an empty dark box — which keeps neither the
+    promise nor the design. The promise was never "no background".
     """
     css = STYLESHEET.read_text(encoding="utf-8")
-    block = re.search(
-        r"@media \(prefers-reduced-motion: reduce\)\s*\{([^}]*\{[^}]*\}[^}]*)\}", css
-    )
-    assert block is not None, "no reduced-motion rule for the background"
-    assert ".living" in block.group(1)
-    assert "display: none" in block.group(1)
+    start = css.index("@media (prefers-reduced-motion: reduce)")
+    block = css[start : css.index("\n}", css.index("{", start))]
+    assert ".living" in block, "the particle field is not covered"
+    assert "animation: none" in block, "the field is not actually stopped"
