@@ -30,13 +30,30 @@ export function ElementMenu({ at, kind, label, area, onSave, onClose, busy }: Pr
 
   // Focus goes into the menu when it opens, and Escape closes it. Without both
   // it is a trap for anyone not using a pointer.
+  //
+  // A pointer landing anywhere else closes it too: clicking another shape used
+  // to leave the menu hanging over the plan, still asking about the shape
+  // before — which is how somebody ends up naming the wrong thing. The listener
+  // is added after mount, so the right-click that opened the menu cannot close
+  // it again — and it listens in the capture phase, because grabbing a shape
+  // stops the event propagating so the plan does not read it as a pan. A
+  // bubbling listener would never hear the one click that matters most.
   useEffect(() => {
     box.current?.querySelector('select')?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
+    const onPointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && box.current?.contains(target) === true) return;
+      onClose();
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('pointerdown', onPointer, true);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerdown', onPointer, true);
+    };
   }, [onClose]);
 
   return (

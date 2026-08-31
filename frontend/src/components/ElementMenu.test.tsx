@@ -77,3 +77,61 @@ describe('ElementMenu — which element is this?', () => {
     expect(subject).toMatch(/12,5 m²/);
   });
 });
+
+describe('ElementMenu — getting out of the way', () => {
+  it('closes when something else is clicked', () => {
+    // Clicking another shape while the menu is open left it hanging over the
+    // plan, still asking about the shape before.
+    const onClose = vi.fn();
+    render(
+      <>
+        <button type="button">anderes Objekt</button>
+        <ElementMenu
+          at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
+          onSave={vi.fn()} onClose={onClose} busy={false}
+        />
+      </>,
+    );
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'anderes Objekt' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('stays open while it is being used', () => {
+    // Closing on any pointerdown would close it the moment somebody reached
+    // for its own select.
+    const onClose = vi.fn();
+    render(
+      <ElementMenu
+        at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
+        onSave={vi.fn()} onClose={onClose} busy={false}
+      />,
+    );
+    fireEvent.pointerDown(screen.getByLabelText('Art'));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('ElementMenu — a click that stops propagating', () => {
+  it('still closes when the click is swallowed on its way up', () => {
+    // Grabbing a shape calls stopPropagation so the plan does not read it as a
+    // pan. A bubbling listener would never hear the click on another shape —
+    // which is precisely the one this needs to hear.
+    const onClose = vi.fn();
+    render(
+      <>
+        <button
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          anderes Objekt
+        </button>
+        <ElementMenu
+          at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
+          onSave={vi.fn()} onClose={onClose} busy={false}
+        />
+      </>,
+    );
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'anderes Objekt' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+});
