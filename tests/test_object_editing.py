@@ -149,3 +149,76 @@ def test_an_edited_height_becomes_the_users_word_on_it(client: TestClient) -> No
     ).json()["obstacles"][0]
     assert edited["height"] == 11.0
     assert edited["height_source"] == "user"
+
+
+def test_dragging_a_vertex_drops_the_rectangle_promise(client: TestClient) -> None:
+    """A rectangle's corners stay square only as long as it says they should.
+
+    Editing one out of true ends that promise. The geometry never converts —
+    it was points all along — so the only thing that changes is the hint.
+    """
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "shed", "x": 0, "y": 0, "shape": "rect", "width": 4,
+              "depth": 3, "height": 2},
+    ).json()
+    assert "obstacles" in made, made
+    element = made["obstacles"][0]
+    assert element["constraint_hint"] == "rect"
+
+    moved = client.patch(
+        f"/api/v1/gardens/{token}/obstacles/{element['obstacle_id']}",
+        json={
+            "points": [[-2, -1.5], [2, -1.5], [3.5, 1.5], [-2, 1.5]],
+            "constraint_hint": None,
+        },
+    ).json()
+    changed = moved["obstacles"][0]
+    assert changed["constraint_hint"] is None
+    assert len(changed["footprint"]) == 4
+    # The dragged corner is where it was put, not snapped back to square.
+    assert [3.5, 1.5] in changed["points"]
+
+
+def test_resizing_a_rectangle_keeps_it_rectangular(client: TestClient) -> None:
+    """The handles send a width, a depth and an angle — that is what a resize
+    handle produces. The store turns them into points and keeps the promise."""
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "house", "x": 0, "y": 0, "shape": "rect", "width": 10,
+              "depth": 8, "height": 6},
+    ).json()["obstacles"][0]
+
+    wider = client.patch(
+        f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}",
+        json={"width": 14, "depth": 8, "rotation": 90},
+    ).json()["obstacles"][0]
+
+    assert wider["constraint_hint"] == "rect"
+    assert len(wider["footprint"]) == 4
+    xs = [p[0] for p in wider["footprint"]]
+    ys = [p[1] for p in wider["footprint"]]
+    # Turned a quarter turn: the 14 m side now runs north-south.
+    assert max(ys) - min(ys) == pytest.approx(14, abs=0.05)
+    assert max(xs) - min(xs) == pytest.approx(8, abs=0.05)
+
+
+def test_moving_an_element_leaves_its_shape_alone(client: TestClient) -> None:
+    """Dragging the body is a move, not a redraw. An update that named only
+    x and y once reset the shape to its default, because the geometry
+    conversion ran on whatever was left."""
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "pond", "x": 0, "y": 0, "shape": "circle", "width": 5},
+    ).json()["obstacles"][0]
+
+    moved = client.patch(
+        f"/api/v1/gardens/{token}/obstacles/{made['obstacle_id']}",
+        json={"x": 7, "y": -3},
+    ).json()["obstacles"][0]
+    assert moved["shape"] == "circle"
+    assert moved["width"] == pytest.approx(5)
+    assert moved["x"] == pytest.approx(7)

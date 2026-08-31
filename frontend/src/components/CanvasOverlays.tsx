@@ -3,9 +3,18 @@ import type { Box } from '../canvas/handles';
 import type { Handle } from '../canvas/handles';
 import type { Point, Viewport } from '../canvas/viewport';
 import { PreviewBox, ResizeHandles } from './ResizeHandles';
+import { VertexHandles } from './VertexHandles';
 
 interface Props {
   view: Viewport;
+  /** The selected element's own outline, when it has one to edit. */
+  vertices: {
+    points: number[][];
+    origin: { x: number; y: number };
+    closed: boolean;
+    onChange: (points: number[][]) => void;
+    onGrab: (index: number, event: React.PointerEvent) => void;
+  } | null;
   band: Band | null;
   stroke: Point[] | null;
   selectedBox: Box | null;
@@ -20,7 +29,15 @@ interface Props {
  * own: everything here is a function of what the gesture hooks are holding, and
  * reading it should not mean scrolling past three pointer handlers.
  */
-export function CanvasOverlays({ view, band, stroke, selectedBox, preview, onGrab }: Props) {
+export function CanvasOverlays({
+  view,
+  vertices,
+  band,
+  stroke,
+  selectedBox,
+  preview,
+  onGrab,
+}: Props) {
   const perPixel = view.spanM / view.widthPx;
   return (
     <>
@@ -53,6 +70,16 @@ export function CanvasOverlays({ view, band, stroke, selectedBox, preview, onGra
             />
           </>
         ) : null}
+      {vertices !== null ? (
+        <VertexHandles
+          points={vertices.points}
+          origin={vertices.origin}
+          view={view}
+          closed={vertices.closed}
+          onChange={vertices.onChange}
+          onGrabVertex={vertices.onGrab}
+        />
+      ) : null}
     </>
   );
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GardenOut } from '../api/client';
 import { type Box, boxOf } from '../canvas/handles';
 import { useHandleDrag } from '../canvas/useHandleDrag';
+import { useVertexDrag } from '../canvas/useVertexDrag';
 import { usePolygonDraft } from '../canvas/usePolygonDraft';
 import { useViewport } from '../canvas/useViewport';
 import { useCanvasGestures } from '../canvas/useCanvasGestures';
@@ -45,6 +46,8 @@ interface Props {
    *  and the plan must agree on what is being edited. */
   selectedObstacleId?: number | null;
   onResizeObstacle?: ((obstacleId: number, box: Box) => void) | undefined;
+  /** Editing the outline itself, corner by corner. */
+  onReshapeObstacle?: ((obstacleId: number, points: number[][]) => void) | undefined;
 }
 
 
@@ -70,6 +73,7 @@ export function GardenCanvas({
   onResizeObstacle,
   tool = null,
   onDrawShape,
+  onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
   const [placing, setPlacing] = useState(false);
@@ -88,6 +92,17 @@ export function GardenCanvas({
       if (selected !== null) onResizeObstacle?.(selected.obstacle_id, box);
     },
   });
+  const reshape = (points: number[][]) => {
+    if (selected !== null) onReshapeObstacle?.(selected.obstacle_id, points);
+  };
+  const vertexDrag = useVertexDrag({
+    points: selected?.points ?? null,
+    origin: { x: selected?.x ?? 0, y: selected?.y ?? 0 },
+    view,
+    surface,
+    onFinish: reshape,
+  });
+
   const [drawing, setDrawing] = useState(false);
   /** Freehand mode, and the stroke being drawn in it.
    *
@@ -221,6 +236,19 @@ export function GardenCanvas({
           view={view}
           band={shapeBand.band}
           stroke={stroke}
+          vertices={
+            selected === null || selected.points === null || onReshapeObstacle === undefined
+              ? null
+              : {
+                  points: vertexDrag.preview ?? selected.points,
+                  origin: { x: selected.x, y: selected.y },
+                  // A line has two ends rather than a closing edge; offering
+                  // one would put a handle in mid-air between them.
+                  closed: selected.shape !== 'line',
+                  onChange: reshape,
+                  onGrab: vertexDrag.grab,
+                }
+          }
           selectedBox={selectedBox}
           preview={preview}
           onGrab={onResizeObstacle === undefined ? null : grabHandle}

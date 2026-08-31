@@ -269,6 +269,9 @@ class ObstacleUpdate(BaseModel):
     depth: float | None = Field(default=None, gt=0, le=500)
     rotation: float | None = Field(default=None, ge=-360, le=360)
     points: list[list[float]] | None = Field(default=None, max_length=500)
+    #: Set to null when a vertex is dragged out of true: the geometry does not
+    #: change, but the promise that the corners stay square ends.
+    constraint_hint: str | None = None
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
     # Correcting a height makes it the user's word on it; otherwise every

@@ -5,7 +5,6 @@ several beds is far too slow to repeat on every page load.
 """
 from __future__ import annotations
 
-import json
 import secrets
 import sqlite3
 
@@ -157,17 +156,66 @@ def update_bed(conn: sqlite3.Connection, bed_id: int, **fields: object) -> None:
     conn.commit()
 
 
+#: What a caller may change directly. `depth` and `rotation` are absent because
+#: they are not columns any more — they are still accepted as *input*, and
+#: converted below, because that is what a resize handle produces.
+_EDITABLE = frozenset(
+    {"kind", "x", "y", "label", "height", "height_source", "constraint_hint"}
+)
+_GEOMETRY = frozenset({"shape", "width", "depth", "rotation", "points"})
+
+
 def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object) -> None:
-    """Change some of an obstacle's fields. Only what was passed is written."""
-    allowed = {"kind", "x", "y", "shape", "width", "depth", "rotation",
-               "points", "height", "label", "height_source"}
-    changes = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    """Change some of an element's fields. Only what was passed is written.
+
+    An explicit None is a value here, not an omission: clearing the rectangle
+    hint is exactly `constraint_hint=None`, and a filter that dropped nulls
+    would make it impossible to say. The caller sends only what was set.
+    """
+    changes = {k: v for k, v in fields.items() if k in _EDITABLE}
+    geometry = {k: v for k, v in fields.items() if k in _GEOMETRY}
+
+    if geometry:
+        # Width, depth and an angle go in; points come out. Anything not named
+        # keeps what the element already has, so a resize does not silently
+        # reset a shape to its default.
+        current = conn.execute(
+            "SELECT shape, width, points, constraint_hint FROM element"
+            " WHERE element_id = ?",
+            (obstacle_id,),
+        ).fetchone()
+        if current is None:
+            return
+        shape_in = str(geometry.get("shape") or current["shape"])
+        # A stored polygon carrying the rect hint came from a width and a depth,
+        # so that is how a caller may go on editing it.
+        if shape_in == "polygon" and current["constraint_hint"] == "rect" and (
+            "width" in geometry or "depth" in geometry or "rotation" in geometry
+        ):
+            shape_in = "rect"
+        raw_points = geometry.get("points")
+        shape, points, width, hint = geometry_for(
+            shape=shape_in,
+            width=_number(geometry.get("width")),
+            depth=_number(geometry.get("depth")),
+            rotation=_number(geometry.get("rotation")) or 0.0,
+            points=raw_points if isinstance(raw_points, list) else None,
+        )
+        changes.update(shape=shape, width=width, points=points)
+        # Only overwrite the hint when the geometry itself decided one; an
+        # explicit null from the caller still wins, and that is how dragging a
+        # vertex ends the promise.
+        if "constraint_hint" not in fields:
+            changes["constraint_hint"] = hint
+
     if not changes:
         return
-    if isinstance(changes.get("points"), list):
-        changes["points"] = json.dumps(changes["points"])
     update_element(conn, obstacle_id, **changes)
     conn.commit()
+
+
+def _number(value: object) -> float | None:
+    return float(value) if isinstance(value, int | float) else None
 
 
 def _touch(conn: sqlite3.Connection, garden_id: int) -> None:

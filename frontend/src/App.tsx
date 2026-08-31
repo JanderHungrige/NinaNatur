@@ -485,6 +485,28 @@ export function App() {
     [addObstacle],
   );
 
+  /**
+   * The outline itself changed.
+   *
+   * `constraint_hint: null` goes with it: editing a corner is what ends the
+   * promise that a rectangle stays square. The geometry does not convert — it
+   * was points all along — so only the promise ends.
+   */
+  const reshapeObstacle = useCallback(
+    async (obstacleId: number, points: number[][]) => {
+      if (garden === null) return;
+      await run('Form ändern', async () => {
+        setGarden(
+          await client.editObstacle(garden.share_token, obstacleId, {
+            points,
+            constraint_hint: null,
+          }),
+        );
+      });
+    },
+    [garden, run],
+  );
+
   const resizeObstacle = useCallback(
     async (obstacleId: number, box: Box) => {
       if (garden === null) return;
@@ -652,6 +674,7 @@ export function App() {
                 onDrawShape={drawShape}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
+                onReshapeObstacle={reshapeObstacle}
               />
               {timeline !== null ? (
                 <>

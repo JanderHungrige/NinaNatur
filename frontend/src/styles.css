@@ -980,3 +980,23 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
+
+/* --- Editing an outline corner by corner (Wave 11, feature 44) ------------ */
+
+/* Corners are squares, insertion points are smaller diamonds. Two shapes, so
+   the difference reads without a legend. */
+.vertex {
+  fill: var(--bg-raised);
+  stroke: var(--leaf);
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5;
+  cursor: move;
+}
+
+.vertex--add {
+  fill: var(--leaf-alt);
+  stroke: var(--leaf);
+  cursor: copy;
+}
+
+.vertex:hover { fill: var(--leaf); }
