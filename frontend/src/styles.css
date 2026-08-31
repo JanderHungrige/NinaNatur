@@ -1520,3 +1520,11 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 [role='tabpanel'] { display: grid; gap: 1.5rem; }
 [role='tabpanel'][hidden] { display: none; }
+
+/* The garden's id, folded away. A credential somebody needs once, not a
+   heading to plan a garden under. */
+.garden-id__summary { cursor: pointer; font-weight: 600; }
+.garden-id__summary:focus-visible { outline: 3px solid var(--focus); }
+.garden-id__facts { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.8rem; margin: 0.75rem 0 0; }
+.garden-id__facts dt { color: var(--ink-muted); }
+.garden-id__facts dd { margin: 0; }

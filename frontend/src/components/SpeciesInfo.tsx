@@ -16,6 +16,8 @@ const defaultLoad = (taxonId: number): Promise<SpeciesInfoOut | null> =>
   defaultClient.speciesInfo(taxonId);
 
 interface Props {
+  /** Recording the flower colour from the photograph, if the caller wants it. */
+  colourNote?: React.ReactNode;
   taxonId: number;
   canonicalName: string;
   onClose: () => void;
@@ -40,6 +42,7 @@ export function SpeciesInfo({
   taxonId,
   canonicalName,
   onClose,
+  colourNote,
   load = defaultLoad,
 }: Props) {
   const [info, setInfo] = useState<SpeciesInfoOut | null>(null);
@@ -104,6 +107,8 @@ export function SpeciesInfo({
       <p className="hint">
         <em>{canonicalName}</em>
       </p>
+
+      {colourNote}
 
       {state === 'loading' && <p className="hint">Wird geladen…</p>}
 

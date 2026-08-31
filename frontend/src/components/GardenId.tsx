@@ -2,6 +2,10 @@ import { useState } from 'react';
 
 interface Props {
   token: string;
+  name: string;
+  /** Rounded to 0.1° before it was ever stored — about 11 km. */
+  latitude: number;
+  longitude: number;
 }
 
 type CopyState = 'idle' | 'copied' | 'failed';
@@ -17,7 +21,7 @@ type CopyState = 'idle' | 'copied' | 'failed';
  * fragment — never a query parameter — so it reaches neither the server's access
  * log nor a third party's referrer header.
  */
-export function GardenId({ token }: Props) {
+export function GardenId({ token, name, latitude, longitude }: Props) {
   const [state, setState] = useState<CopyState>('idle');
 
   const copy = () => {
@@ -31,10 +35,11 @@ export function GardenId({ token }: Props) {
   };
 
   return (
-    <section className="panel garden-id" aria-labelledby="garden-id-heading">
-      <h2 id="garden-id-heading" className="sr-only">
-        Garten-ID
-      </h2>
+    // Folded away by default. It is a credential somebody needs once, when they
+    // save the link — not something to look at while planning a garden, and it
+    // was taking the top of the sidebar for a string nobody reads.
+    <details className="panel garden-id">
+      <summary className="garden-id__summary">{name} — ID und Infos</summary>
       <div className="garden-id__row">
         {/* Selectable text, so it stays usable when the copy button cannot. */}
         <code className="garden-id__token">{token}</code>
@@ -42,12 +47,22 @@ export function GardenId({ token }: Props) {
           ID kopieren
         </button>
       </div>
+      <dl className="garden-id__facts">
+        <dt>Standort</dt>
+        <dd>
+          {latitude.toFixed(1).replace('.', ',')}° N, {longitude.toFixed(1).replace('.', ',')}° O
+        </dd>
+      </dl>
+      <p className="hint">
+        Der Standort ist auf 0,1° gerundet gespeichert — rund 11 km, für den
+        Sonnenstand genau genug und zu grob, um einen Garten zu finden.
+      </p>
       <p className="hint">
         Mit dieser ID kommst du wieder zu diesem Garten — bewahre sie auf. Wer
         sie hat, kann deinen Garten ändern.
         {state === 'copied' && ' Kopiert.'}
         {state === 'failed' && ' Konnte nicht kopieren — markiere die ID und kopiere sie selbst.'}
       </p>
-    </section>
+    </details>
   );
 }

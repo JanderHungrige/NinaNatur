@@ -54,7 +54,7 @@ describe('NinaNaturClient', () => {
         share_token: 't', name: 'G', latitude: 52.5, longitude: 13.4,
         created_at: '', updated_at: '', obstacles: [],
         beds: [{
-          bed_id: 1, name: 'Beet', polygon: [], soil_type: null, moisture: null,
+          bed_id: 1, name: 'Beet', polygon: [], soil_type: null, moisture: null, observed_colours: {},
           ellenberg_l: null, ellenberg_m: null, ellenberg_n: null, ellenberg_r: null,
           sun_hours: null, light_computed_at: null,
         }],

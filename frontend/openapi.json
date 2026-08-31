@@ -543,6 +543,24 @@
         "title": "ChangeOut",
         "type": "object"
       },
+      "ColourObservation": {
+        "description": "A flower colour the gardener recorded. `null` takes it back.",
+        "properties": {
+          "colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colour"
+          }
+        },
+        "title": "ColourObservation",
+        "type": "object"
+      },
       "Credentials": {
         "properties": {
           "password": {
@@ -716,6 +734,13 @@
             "title": "Name",
             "type": "string"
           },
+          "observed_colours": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Observed Colours",
+            "type": "object"
+          },
           "obstacles": {
             "items": {
               "$ref": "#/components/schemas/ObstacleOut"
@@ -757,6 +782,7 @@
           "updated_at",
           "soil_type",
           "moisture",
+          "observed_colours",
           "beds",
           "obstacles"
         ],
@@ -1040,6 +1066,7 @@
           "gravel",
           "pond",
           "path",
+          "street",
           "other"
         ],
         "title": "ObjectKind",
@@ -2413,7 +2440,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.13.31"
+    "version": "V0.14.34"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -2583,6 +2610,68 @@
         "summary": "Garden From Map",
         "tags": [
           "geo"
+        ]
+      }
+    },
+    "/api/v1/gardens/gardens/{token}/colours/{taxon_id}": {
+      "put": {
+        "description": "Record what this species flowers in, here.\n\nIt never reaches the catalogue: that ships in the image and is re-synced at\nstartup, so a value written there would be overwritten by the next\ndeployment and would change every other garden until it was.",
+        "operationId": "note_colour_api_v1_gardens_gardens__token__colours__taxon_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taxon_id",
+            "required": true,
+            "schema": {
+              "title": "Taxon Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColourObservation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Note Colour",
+        "tags": [
+          "planning"
         ]
       }
     },

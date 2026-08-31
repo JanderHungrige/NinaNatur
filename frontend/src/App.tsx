@@ -21,6 +21,7 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { ColourNote } from './components/ColourNote';
 import { ElementList, areaOf } from './components/ElementList';
 import { ElementMenu } from './components/ElementMenu';
 import { GardenSoil } from './components/GardenSoil';
@@ -63,7 +64,14 @@ export function App() {
   const [forage, setForage] = useState(true);
   const [score, setScore] = useState<ScoreOut | null>(null);
   const [version, setVersion] = useState<string | null>(null);
-  const [infoFor, setInfoFor] = useState<{ taxonId: number; name: string } | null>(null);
+  const [infoFor, setInfoFor] = useState<{
+    taxonId: number;
+    name: string;
+    /** What the catalogue says, if anything. */
+    recorded: string | null;
+    /** What this garden noted, if anything. */
+    noted: string | null;
+  } | null>(null);
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
   const [filters, setFilters] = useState<SuggestionFilters>({});
   const [palette, setPalette] = useState<BloomPalette | null>(null);
@@ -784,7 +792,12 @@ export function App() {
         ) : (
           <>
             <div className="column">
-              <GardenId token={garden.share_token} />
+              <GardenId
+                token={garden.share_token}
+                name={garden.name}
+                latitude={garden.latitude}
+                longitude={garden.longitude}
+              />
               <Tabs active={panel} onPick={setPanel} />
 
               <div
@@ -862,13 +875,44 @@ export function App() {
                   taxonId={infoFor.taxonId}
                   canonicalName={infoFor.name}
                   onClose={() => setInfoFor(null)}
+                  colourNote={
+                    <ColourNote
+                      recorded={infoFor.recorded}
+                      noted={infoFor.noted}
+                      busy={busy}
+                      onNote={(colour) => {
+                        const asked = infoFor;
+                        void run('Blütenfarbe merken', async () => {
+                          setGarden(
+                            await client.noteColour(
+                              garden.share_token,
+                              asked.taxonId,
+                              colour,
+                            ),
+                          );
+                          await refresh(garden.share_token, forage);
+                          // Only once it is stored. Setting it first showed
+                          // "von dir eingetragen" over a 405 for a route that
+                          // was mounted at the wrong path.
+                          setInfoFor({ ...asked, noted: colour });
+                        });
+                      }}
+                    />
+                  }
                 />
               ) : null}
               <SuggestionList
                 includeTrees={filters.includeTrees !== false}
                 suggestions={suggestions}
                 onPlant={plant}
-                onShowInfo={(taxonId, name) => setInfoFor({ taxonId, name })}
+                onShowInfo={(taxonId, name, recorded) =>
+                  setInfoFor({
+                    taxonId,
+                    name,
+                    recorded,
+                    noted: garden.observed_colours[taxonId] ?? null,
+                  })
+                }
                 busy={busy}
               />
               </div>

@@ -18,6 +18,7 @@ from ninanatur.api.schemas import (
     BedSuggestions,
     BloomPalette,
     ChangeOut,
+    ColourObservation,
     FilterCountsOut,
     GapOut,
     GardenOut,
@@ -50,6 +51,7 @@ from ninanatur.data.traits import resolve_trait
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.objects import ObjectKind, casts_shadow
+from ninanatur.garden.observations import record_colour
 from ninanatur.garden.plantings import add_planting, remove_planting
 from ninanatur.garden.sightlines import Blocker, Target, Viewpoint, visibility
 from ninanatur.garden.store import load_garden
@@ -83,6 +85,27 @@ def _by_value(conn: sqlite3.Connection, woody: list[ScoredPlant]) -> list[Scored
 
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["planning"])
+
+
+@router.put("/{token}/colours/{taxon_id}", response_model=GardenOut)
+def note_colour(
+    token: str,
+    taxon_id: int,
+    payload: ColourObservation,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Record what this species flowers in, here.
+
+    It never reaches the catalogue: that ships in the image and is re-synced at
+    startup, so a value written there would be overwritten by the next
+    deployment and would change every other garden until it was.
+    """
+    garden = require_garden(conn, token)
+    try:
+        record_colour(conn, garden.garden_id, taxon_id=taxon_id, colour=payload.colour)
+    except ValueError as undrawable:
+        raise HTTPException(status_code=422, detail=str(undrawable)) from undrawable
+    return to_out(load_garden(conn, garden.garden_id))
 
 
 @router.post(

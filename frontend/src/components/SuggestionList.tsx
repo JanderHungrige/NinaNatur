@@ -8,7 +8,9 @@ interface Props {
   /** Whether woody plants are listed — the hint used to claim they never were. */
   includeTrees: boolean;
   onPlant: (taxonId: number, name: string) => Promise<void>;
-  onShowInfo: (taxonId: number, name: string) => void;
+  /** The third argument is the catalogue's colour, so the panel can say
+   *  whether what it shows came from there or from the gardener. */
+  onShowInfo: (taxonId: number, name: string, colour: string | null) => void;
   busy: boolean;
 }
 
@@ -79,7 +81,9 @@ export function SuggestionList({
           type="button"
           className="icon-button"
           aria-label={`Informationen zu ${item.canonical_name}`}
-          onClick={() => onShowInfo(item.taxon_id, item.canonical_name)}
+          onClick={() =>
+            onShowInfo(item.taxon_id, item.canonical_name, item.flower_colour)
+          }
         >
           Info
         </button>

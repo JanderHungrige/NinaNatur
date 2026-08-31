@@ -172,6 +172,8 @@ class Garden:
     #: Asked once and used as the starting point for beds drawn afterwards.
     soil_type: str | None = None
     moisture: str | None = None
+    #: Flower colours this garden recorded itself. Never the catalogue's.
+    observed_colours: dict[int, str] = field(default_factory=dict)
     elements: list[Element] = field(default_factory=list)
 
     @property

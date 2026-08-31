@@ -27,7 +27,7 @@ function obstacle(
 
 function garden(obstacles: GardenOut['obstacles']): GardenOut {
   return {
-    unidentified_plantings: 0, soil_type: null, moisture: null,
+    unidentified_plantings: 0, soil_type: null, moisture: null, observed_colours: {},
     share_token: 'tok',
     name: 'Testgarten',
     latitude: 52.5,
