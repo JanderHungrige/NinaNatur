@@ -102,10 +102,17 @@ body {
 .layout {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  /* The sidebar gives ground before the plan does: at the old fixed 22rem it
+     took its full width first and left the drawing whatever remained. */
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
   align-items: start;
 }
-@media (max-width: 60rem) {
+
+/* One column until both fit. At the old 60rem the second column arrived while
+   the plan still had no room for it, so one pixel of extra window took 375 px
+   off the drawing — which reads exactly like the app deciding the window has
+   got smaller. */
+@media (max-width: 72rem) {
   .layout { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -887,6 +894,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    drawn by .obstacle. Strokes here are the marks inside the wash. */
 .symbol__building { fill: var(--wash-building); }
 .symbol__plain { fill: var(--wash-stone); }
+.symbol__plain-dot { fill: var(--wash-stone-line); }
+.symbol__building-line { stroke: var(--wash-building-line); stroke-width: 0.05; fill: none; }
 .symbol__planting { fill: var(--wash-soil); }
 
 .symbol__masonry { fill: var(--wash-building); }

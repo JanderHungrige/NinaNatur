@@ -36,10 +36,24 @@ export function GardenSymbols() {
         <feDisplacementMap in="SourceGraphic" in2="noise" scale={0.3} xChannelSelector="R" yChannelSelector="G" />
       </filter>
 
-      {/* Buildings: a flat wash, because a roof is the one thing on a garden
-          plan that is not a plant and should not pretend to be. */}
-      <Wash id="symbol-building" className="symbol__building" />
-      <Wash id="symbol-plain" className="symbol__plain" />
+      {/* A roof, drawn as a roof. This was a flat wash on the grounds that a
+          building should not pretend to be a plant — true, and it left a house
+          as a beige rectangle among textured ground, which reads as a plan that
+          has no symbols at all. Battens are what a plan has always drawn. */}
+      <pattern id="symbol-building" width="1.2" height="1.2" patternUnits="userSpaceOnUse">
+        <rect width="1.2" height="1.2" className="symbol__building" />
+        <path d="M0 0 L1.2 1.2 M-0.3 0.9 L0.3 1.5 M0.9 -0.3 L1.5 0.3"
+              className="symbol__building-line" />
+      </pattern>
+
+      {/* Nothing has said what this is yet, and it should look like it. An
+          unnamed element used to be a flat grey — indistinguishable from a
+          deliberate surface, so nobody knew there was a question outstanding. */}
+      <pattern id="symbol-plain" width="0.9" height="0.9" patternUnits="userSpaceOnUse">
+        <rect width="0.9" height="0.9" className="symbol__plain" />
+        <circle cx="0.45" cy="0.45" r="0.07" className="symbol__plain-dot" />
+      </pattern>
+
       <Wash id="symbol-planting" className="symbol__planting" />
 
       {/* Masonry: courses, not bricks. At garden scale a real bond is noise. */}

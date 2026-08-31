@@ -1,4 +1,4 @@
-import { KINDS, labelOf } from '../kinds';
+import { KINDS, PLANTING_KIND, labelOf } from '../kinds';
 import type { GardenOut } from '../api/client';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
@@ -32,11 +32,19 @@ function symbolOf(kind: string): string {
  * property of the kind — not of the order somebody happened to click. Sorted
  * rather than split into two lists so the array keeps one key space.
  */
-function surfacesFirst(
-  obstacles: GardenOut['obstacles'],
-): GardenOut['obstacles'] {
-  const rank = (kind: string): number => (BY_KIND.get(kind)?.standing === false ? 0 : 1);
-  return [...obstacles].sort((a, b) => rank(a.kind) - rank(b.kind));
+type Drawn = GardenOut['obstacles'][number] | GardenOut['beds'][number];
+
+/** A bed seen as what it is: an element of kind `bed`. */
+function asElement(bed: GardenOut['beds'][number]): Drawn {
+  return bed;
+}
+
+function surfacesFirst(items: Drawn[]): Drawn[] {
+  const rank = (item: Drawn): number => {
+    const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
+    return BY_KIND.get(kind)?.standing === false ? 0 : 1;
+  };
+  return [...items].sort((a, b) => rank(a) - rank(b));
 }
 
 function bedLabel(bed: GardenOut['beds'][number]): string {
@@ -181,63 +189,66 @@ export function CanvasScene({
           N ↑
         </text>
 
-        {/* One group, one filter run. The wobble is what makes the plan look
-            drawn rather than plotted. */}
+        {/* One group, one filter run, and one order. Beds used to be drawn in
+            a second pass after every object, which put them in front of
+            everything: a shape drawn on top of a bed could not be clicked,
+            because the click landed on the bed. Since Wave 11 a bed *is* an
+            element, so it belongs in the same ordered list. */}
         <g className="canvas__objects">
-        {surfacesFirst(garden.obstacles).map((obstacle) => (
-          <polygon
-            key={obstacle.obstacle_id}
-            className={`obstacle obstacle--${obstacle.kind}`}
-            fill={`url(#symbol-${symbolOf(obstacle.kind)})`}
-            /* The footprint the server computed. Re-deriving it here would be a
-               third answer to "what ground does this cover", and the two that
-               already existed agreed only by accident. */
-            points={obstacle.footprint.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-            tabIndex={onSelectObstacle === undefined ? undefined : 0}
-            role={onSelectObstacle === undefined ? undefined : 'button'}
-            aria-label={obstacleLabel(obstacle)}
-            onClick={
-              onSelectObstacle === undefined
-                ? undefined
-                : () => onSelectObstacle(obstacle.obstacle_id)
-            }
-            onKeyDown={(event) => {
-              if (onSelectObstacle === undefined) return;
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onSelectObstacle(obstacle.obstacle_id);
+        {surfacesFirst([...garden.obstacles, ...garden.beds.map(asElement)]).map((item) =>
+          'bed_id' in item ? (
+            <polygon
+              key={`bed-${item.bed_id}`}
+              className={item.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
+              style={(() => {
+                const fill = bloomFill(palette?.[item.bed_id]);
+                return fill === null ? undefined : { fill };
+              })()}
+              points={d(item.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
+              tabIndex={0}
+              role="button"
+              aria-pressed={item.bed_id === selectedBedId}
+              aria-label={bedLabel(item)}
+              onClick={() => onSelectBed(item.bed_id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onSelectBed(item.bed_id);
+                }
+              }}
+            >
+              <title>{bedLabel(item)}</title>
+            </polygon>
+          ) : (
+            <polygon
+              key={`obstacle-${item.obstacle_id}`}
+              className={`obstacle obstacle--${item.kind}`}
+              fill={`url(#symbol-${symbolOf(item.kind)})`}
+              /* The footprint the server computed. Re-deriving it here would be
+                 a third answer to "what ground does this cover", and the two
+                 that already existed agreed only by accident. */
+              points={item.footprint.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
+              tabIndex={onSelectObstacle === undefined ? undefined : 0}
+              role={onSelectObstacle === undefined ? undefined : 'button'}
+              aria-label={obstacleLabel(item)}
+              onClick={
+                onSelectObstacle === undefined
+                  ? undefined
+                  : () => onSelectObstacle(item.obstacle_id)
               }
-            }}
-          >
-            <title>{obstacleLabel(obstacle)}</title>
-          </polygon>
-        ))}
+              onKeyDown={(event) => {
+                if (onSelectObstacle === undefined) return;
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onSelectObstacle(item.obstacle_id);
+                }
+              }}
+            >
+              <title>{obstacleLabel(item)}</title>
+            </polygon>
+          ),
+        )}
         </g>
-
-        {garden.beds.map((bed) => (
-          <polygon
-            key={bed.bed_id}
-            className={bed.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
-            style={(() => {
-              const fill = bloomFill(palette?.[bed.bed_id]);
-              return fill === null ? undefined : { fill };
-            })()}
-            points={d(bed.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
-            tabIndex={0}
-            role="button"
-            aria-pressed={bed.bed_id === selectedBedId}
-            aria-label={bedLabel(bed)}
-            onClick={() => onSelectBed(bed.bed_id)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onSelectBed(bed.bed_id);
-              }
-            }}
-          >
-            <title>{bedLabel(bed)}</title>
-          </polygon>
-        ))}
 
         {viewpoint !== null && (
         <g className="viewpoint" data-testid="viewpoint">

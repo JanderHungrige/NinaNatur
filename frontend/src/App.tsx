@@ -707,6 +707,7 @@ export function App() {
                 tool={tool}
                 onDrawShape={drawShape}
                 onDrawTrace={drawTrace}
+                onCancelTool={() => setTool(null)}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
                 onReshapeObstacle={reshapeObstacle}
