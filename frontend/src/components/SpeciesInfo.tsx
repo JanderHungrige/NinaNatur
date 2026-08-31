@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { SpeciesInfoOut } from '../api/client';
 import { NinaNaturClient } from '../api/client';
@@ -44,6 +44,26 @@ export function SpeciesInfo({
 }: Props) {
   const [info, setInfo] = useState<SpeciesInfoOut | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'failed'>('loading');
+  const panel = useRef<HTMLElement | null>(null);
+
+  /**
+   * Bring it to where the reader is.
+   *
+   * It renders under a suggestion list that can be several thousand pixels
+   * long, so clicking "Info" on the first row opened it four screens below the
+   * viewport — which reads as the button doing nothing at all. Focus goes with
+   * the scroll, because somebody working from the keyboard has exactly the same
+   * problem and no scrollbar to notice it with.
+   */
+  useEffect(() => {
+    // Optional call: jsdom has no scrollIntoView, and neither has every browser
+    // this might run in.
+    // 'center' and no smoothing: 'nearest' does the least it can get away
+    // with, and a smooth scroll that is still running when the user looks is
+    // indistinguishable from no scroll at all.
+    panel.current?.scrollIntoView?.({ block: 'center' });
+    panel.current?.focus();
+  }, [taxonId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +89,12 @@ export function SpeciesInfo({
   }, [taxonId, load]);
 
   return (
-    <section className="panel info-panel" aria-labelledby="info-heading">
+    <section
+      ref={panel}
+      className="panel info-panel"
+      aria-labelledby="info-heading"
+      tabIndex={-1}
+    >
       <div className="info-panel__head">
         <h2 id="info-heading">{info?.title ?? canonicalName}</h2>
         <button type="button" className="link-button" onClick={onClose}>

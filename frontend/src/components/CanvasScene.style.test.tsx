@@ -259,51 +259,11 @@ describe('CanvasScene — flowers as dots', () => {
   });
 });
 
-describe('CanvasScene — painted rather than plotted', () => {
-  it('varies the colour inside a shape, not just its edge', () => {
-    // A wobbled outline around a perfectly flat fill is still a technical
-    // drawing: one colour per shape is what reads as CAD.
-    //
-    // This asserted `feBlend[mode="multiply"]` and had to change, because that
-    // was the mechanism rather than the property — and the mechanism was
-    // wrong. Multiplying desaturated noise over a wash makes grey dirt, which
-    // is what looking at a rasterised plan finally showed. What matters is
-    // that there is pigment *and* that it stays inside the shape.
-    const container = show([obstacle('lawn', 1)]);
-    const filter = container.querySelector('#watercolour');
-    // One turbulence bends the edge, another is the pigment.
-    expect(filter?.querySelectorAll('feTurbulence').length).toBeGreaterThan(1);
-    // And it is clipped to the shape rather than laid over the whole plan.
-    expect(filter?.querySelector('feComposite[operator="in"]')).not.toBeNull();
-  });
+// The tests for pigment, a pooled rim and large scattered tiles stood here.
+// The painted look was reverted at the user's request: it did not work, and
+// tuning it further was not worth the time it would take. What was learnt is
+// written down in .mdd/docs/58-painted-plan.md rather than lost — a tile small
+// enough to hold one mark can only repeat into a grid, a wobble under half a
+// metre is invisible across a garden, and desaturated noise multiplied over a
+// wash is dirt rather than paint.
 
-  it('pools the colour at the rim, the way paint does', () => {
-    const container = show([obstacle('lawn', 1)]);
-    const filter = container.querySelector('#watercolour');
-    expect(filter?.querySelector('feMorphology[operator="erode"]')).not.toBeNull();
-  });
-
-  it('keeps the rim measured in metres', () => {
-    // The same trap as every other length on this canvas: a radius in pixels
-    // would be a rim of a different width at every zoom.
-    const container = show([obstacle('lawn', 1)]);
-    const erode = container.querySelector('feMorphology');
-    expect(Number(erode?.getAttribute('radius'))).toBeLessThan(0.3);
-  });
-});
-
-describe('CanvasScene — no lattice', () => {
-  it('scatters marks across a large tile rather than repeating one', () => {
-    // The lattice was the strongest technical signal on the plan: grass blades
-    // in perfect rows, gravel in a grid, battens evenly spaced. A tile small
-    // enough to hold one mark can only repeat into a grid — the same lesson
-    // the bloom bands taught, at the symbols.
-    const container = show([obstacle('lawn', 1)]);
-    for (const id of ['symbol-grass', 'symbol-stipple', 'symbol-water']) {
-      const pattern = container.querySelector(`#${id}`);
-      expect(pattern).not.toBeNull();
-      // Metres. A tile under a metre across repeats visibly at garden zoom.
-      expect(Number(pattern?.getAttribute('width'))).toBeGreaterThan(2);
-    }
-  });
-});

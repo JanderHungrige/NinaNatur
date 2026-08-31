@@ -13,6 +13,7 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
       label={null}
       area={24}
       plantings={0}
+      shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
       onDelete={vi.fn()}
       onSave={onSave}
       onClose={onClose}
@@ -71,7 +72,8 @@ describe('ElementMenu — which element is this?', () => {
     render(
       <ElementMenu
         at={{ x: 0, y: 0 }} kind="pond" label="Der alte Teich" area={12.5}
-        plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={vi.fn()} busy={false}
+        plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        onSave={vi.fn()} onDelete={vi.fn()} onClose={vi.fn()} busy={false}
       />,
     );
     const subject = screen.getByRole('dialog').textContent ?? '';
@@ -90,7 +92,8 @@ describe('ElementMenu — getting out of the way', () => {
         <button type="button">anderes Objekt</button>
         <ElementMenu
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
+          plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
     );
@@ -105,7 +108,8 @@ describe('ElementMenu — getting out of the way', () => {
     render(
       <ElementMenu
         at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-        plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
+        plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
       />,
     );
     fireEvent.pointerDown(screen.getByLabelText('Art'));
@@ -129,7 +133,8 @@ describe('ElementMenu — a click that stops propagating', () => {
         </button>
         <ElementMenu
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          plantings={0} onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
+          plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
     );
@@ -144,7 +149,7 @@ describe('ElementMenu — deleting', () => {
     const onClose = vi.fn();
     render(
       <ElementMenu
-        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0}
+        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={onDelete} onClose={onClose} busy={false}
         {...props}
       />,
