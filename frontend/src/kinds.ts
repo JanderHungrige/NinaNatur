@@ -43,6 +43,7 @@ export const KINDS: Kind[] = [
   { kind: 'gravel', label: 'Kies', size: '3 × 2 m', height: null, standing: false, symbol: 'stipple' },
   { kind: 'pond', label: 'Teich', size: '3 m', height: null, standing: false, symbol: 'water' },
   { kind: 'path', label: 'Weg', size: '6 × 1 m', height: null, standing: false, symbol: 'slabs' },
+  { kind: 'street', label: 'Straße', size: '20 × 6 m', height: null, standing: false, symbol: 'tarmac' },
   { kind: 'other', label: 'Sonstiges', size: '2 × 2 m', height: null, standing: true, symbol: 'plain' },
 ];
 

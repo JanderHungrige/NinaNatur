@@ -285,8 +285,18 @@ def test_a_garden_made_while_signed_in_belongs_to_that_account(
     assert [g["name"] for g in mine] == ["Vorgarten"]
 
 
-def test_a_garden_made_from_the_map_belongs_to_it_too(client: TestClient) -> None:
-    """The way most people start. It had the same gap."""
+def test_a_garden_made_from_the_map_belongs_to_it_too(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The way most people start. It had the same gap.
+
+    Overpass is stubbed: a test that reaches the network passes on a warm cache
+    and fails in CI, which is the exact shape CLAUDE.md warns about.
+    """
+    from ninanatur.api import geo as geo_routes
+
+    monkeypatch.setattr(geo_routes, "buildings_in", lambda *_a, **_k: [])
+    monkeypatch.setattr(geo_routes, "streets_in", lambda *_a, **_k: [])
     _sign_up(client, "kartennutzer")
     made = client.post(
         "/api/v1/gardens/from-map",

@@ -115,6 +115,17 @@ export function GardenSymbols() {
         <rect x="0.05" y="0.05" width="0.9" height="0.9" className="symbol__slabs-stone" />
       </pattern>
 
+      {/* Tarmac: a dark wash with the faint grain of a road surface. Coarser
+          than gravel on purpose — the two sit next to each other on a plan and
+          must not read as the same ground. */}
+      <pattern id="symbol-tarmac" width="0.9" height="0.9" patternUnits="userSpaceOnUse">
+        <rect width="0.9" height="0.9" className="symbol__tarmac" />
+        <circle cx="0.22" cy="0.31" r="0.045" className="symbol__tarmac-grit" />
+        <circle cx="0.63" cy="0.14" r="0.035" className="symbol__tarmac-grit" />
+        <circle cx="0.71" cy="0.66" r="0.05" className="symbol__tarmac-grit" />
+        <circle cx="0.35" cy="0.74" r="0.03" className="symbol__tarmac-grit" />
+      </pattern>
+
       {/* Gravel: stipple. Irregular on purpose — evenly spaced dots read as a
           manufactured surface rather than as loose stone. */}
       <pattern id="symbol-stipple" width="0.6" height="0.6" patternUnits="userSpaceOnUse">

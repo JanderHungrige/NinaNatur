@@ -39,6 +39,10 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
         ]
 
     monkeypatch.setattr(geo_routes, "buildings_in", fake_buildings)
+    # Streets are stubbed here rather than per test, so no test can reach
+    # Overpass by forgetting to. A suite that sometimes goes to the network is
+    # a suite that sometimes fails for reasons nobody changed.
+    monkeypatch.setattr(geo_routes, "streets_in", lambda *_a, **_k: [])
     app.dependency_overrides[get_connection] = lambda: conn
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -154,3 +158,82 @@ def test_a_place_whose_state_is_unknown_gets_no_imagery(
     body = client.get("/api/v1/geo/imagery", params={"lat": 52.4, "lon": 13.2}).json()
     assert body["available"] is False
     assert body["url"] is None
+
+
+def test_a_garden_from_the_map_gets_the_streets_around_it(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient
+) -> None:
+    """The map knows the street and the plan did not show it. It is drawn so
+    somebody looking at the plan knows which way round it is."""
+    from ninanatur.api import geo as geo_routes
+    from ninanatur.geo.osm import OsmStreet
+    from ninanatur.geo.projection import LatLon
+
+    monkeypatch.setattr(geo_routes, "buildings_in", lambda *a, **k: [])
+    monkeypatch.setattr(
+        geo_routes,
+        "streets_in",
+        lambda *a, **k: [
+            OsmStreet(
+                osm_id=1,
+                name="Gartenweg",
+                centreline=[
+                    LatLon(lat=52.4998, lon=13.3998),
+                    LatLon(lat=52.5006, lon=13.4008),
+                ],
+                width_m=6.0,
+            )
+        ],
+    )
+
+    made = client.post(
+        "/api/v1/gardens/from-map",
+        json={
+            "name": "Mit Straße",
+            "outline": [
+                {"lat": 52.5, "lon": 13.4},
+                {"lat": 52.5004, "lon": 13.4},
+                {"lat": 52.5004, "lon": 13.4006},
+            ],
+        },
+    )
+    assert made.status_code == 201, made.json()
+    streets = [o for o in made.json()["garden"]["obstacles"] if o["kind"] == "street"]
+    assert len(streets) == 1
+    street = streets[0]
+    # A line with a width, which is the element Wave 11 built — not a polygon
+    # somebody had to draw around the road.
+    assert street["shape"] == "line"
+    assert street["width"] == 6.0
+    assert street["label"] == "Gartenweg"
+    # And it casts nothing: a road does not shade a garden.
+    assert street["height"] is None
+
+
+def test_a_street_is_not_fatal_when_overpass_will_not_answer(
+    monkeypatch: pytest.MonkeyPatch, client: TestClient
+) -> None:
+    """Overpass is free and has no SLA. A garden must still be made."""
+    from ninanatur.api import geo as geo_routes
+
+    monkeypatch.setattr(geo_routes, "buildings_in", lambda *a, **k: [])
+
+    def refuse(*_a: object, **_k: object) -> list[object]:
+        raise RuntimeError("Overpass says no")
+
+    monkeypatch.setattr(geo_routes, "streets_in", refuse)
+    made = client.post(
+        "/api/v1/gardens/from-map",
+        json={
+            "name": "Ohne Straße",
+            "outline": [
+                {"lat": 52.5, "lon": 13.4},
+                {"lat": 52.5004, "lon": 13.4},
+                {"lat": 52.5004, "lon": 13.4006},
+            ],
+        },
+    )
+    assert made.status_code == 201, made.json()
+    assert [
+        o for o in made.json()["garden"]["obstacles"] if o["kind"] == "street"
+    ] == []
