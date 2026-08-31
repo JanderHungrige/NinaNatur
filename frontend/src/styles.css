@@ -1178,30 +1178,73 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* --- A page that breathes (Wave 13, feature 55) --------------------------- */
 
-/* The hero: a dark, lit ground for the particle field, with the rest of the
-   page carrying on in daylight underneath. Decided with the user over making
-   the whole landing page dark — the contrast is what makes the motes glow, and
-   the forms below have no business being dark. */
-.hero {
+/*
+ * The front door, edge to edge.
+ *
+ * It began as a dark hero band with daylight below. Asked for the whole page,
+ * borderless — so the ground, the field and the panels all go dark, and only
+ * the garden view stays on paper.
+ */
+.app--front-door {
   position: relative;
-  isolation: isolate;
-  margin: -1rem -1rem 2rem;
-  padding: clamp(2.5rem, 7vw, 5rem) clamp(1rem, 4vw, 3rem) clamp(3rem, 8vw, 5rem);
-  border-radius: 0 0 calc(var(--radius) * 2) calc(var(--radius) * 2);
-  overflow: hidden;
+  min-height: 100vh;
+  margin: calc(clamp(1rem, 3vw, 2rem) * -1);
+  padding: clamp(1rem, 3vw, 2rem);
   background:
-    radial-gradient(120% 90% at 50% -10%, #1d4038 0%, #0f2620 45%, #081713 100%);
+    radial-gradient(120% 70% at 50% -8%, #1d4038 0%, #0f2620 42%, #071511 100%);
   color: #eef3e8;
 }
 
-.hero__content { position: relative; z-index: 1; }
-.hero .landing__title { color: #f4f8ef; }
-.hero .landing__lede { color: #cfdcc6; }
-.hero .stat dt { color: #a9c0a0; }
-.hero .stat dd { color: #f4f8ef; }
+.app--front-door .site-header,
+.app--front-door .hero__content,
+.app--front-door .landing,
+.app--front-door .account-drawer {
+  position: relative;
+  z-index: 1;
+}
 
+.app--front-door .brand__name { color: #f4f8ef; }
+.app--front-door .badge { color: #a9c0a0; border-color: rgb(233 238 227 / 22%); }
+.app--front-door .account-bar__note { color: #b9cdb0; }
+.app--front-door .link-button { color: #d8e6cf; }
+
+.hero { position: relative; }
+.hero__content { position: relative; z-index: 1; }
+.landing__title { color: #f4f8ef; }
+.landing__lede { color: #cfdcc6; }
+.app--front-door .stat dt { color: #a9c0a0; }
+.app--front-door .stat dd { color: #f4f8ef; }
+
+/* Panels stop being paper and become glass over the field: still readable,
+   still bounded, but the motes carry on behind them. */
+.app--front-door .panel,
+.app--front-door .landing__aside {
+  background: rgb(10 26 21 / 62%);
+  border-color: rgb(200 224 190 / 18%);
+  color: #e7efe0;
+  backdrop-filter: blur(3px);
+}
+
+.app--front-door .panel h2,
+.app--front-door .panel h3,
+.app--front-door .landing__aside summary { color: #f2f7ec; }
+.app--front-door .hint { color: #a9c0a0; }
+.app--front-door label { color: #c8d9bf; }
+
+.app--front-door input,
+.app--front-door select {
+  background: rgb(6 18 14 / 70%);
+  border-color: rgb(200 224 190 / 24%);
+  color: #eef3e8;
+}
+
+.app--front-door input::placeholder { color: #7e9576; }
+.app--front-door a { color: #cfe3c2; }
+
+/* Fixed, not absolute: the field is the page's ground now, so it must not
+   scroll away from the panels sitting on it. */
 .living {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
