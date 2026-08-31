@@ -3,11 +3,11 @@ id: ninanatur-wave-14
 title: "Wave 14: A plan that looks painted, not plotted"
 initiative: ninanatur
 initiative_version: 18
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-13
 demo_state: "A bed shows its flowers as clustered dots rather than a colour bar, an element can be deleted where it stands, the plan reads as a painting rather than a drawing, and the street outside is on it"
 created: 2026-08-31
-hash: c006755b
+hash: e7b57f79
 ---
 
 # Wave 14 — A plan that looks painted, not plotted
@@ -133,3 +133,25 @@ nothing downstream should start treating it as an obstacle.
 A bed's flowers read as clustered dots, an element can be deleted where it
 stands, the street outside appears, and somebody shown the plan calls it a
 drawing of a garden rather than a diagram of one.
+
+
+## What the wave found
+
+| Found by | Defect |
+|---|---|
+| an existing Wave 10 test | seventy flowers between the pointer and the bed would have swallowed every click that selects it |
+| adding the street call | a test reached Overpass for real and passed anyway on a warm cache — green here, red in CI |
+| the container check | the API turned "this kind has no height" into `0.0`, a measurement nobody took |
+
+The last one is the interesting one: the rule has been written down since Wave 8
+and the domain type had it right. The API kept an `or 0.0` at the one edge where
+a caller does not supply a height, so every heightless kind — street, lawn,
+pond, paving — has been stored as something zero metres tall rather than as
+something with no height.
+
+## What is not verified
+
+**The painted look has not been seen by anybody.** The Browser pane returns a
+blank capture whenever this SVG is on screen — canvas fully in view, opacity 1,
+DOM correct, image empty. The plan said this feature is not done until it is
+looked at on a real plan. It stands on its reasons until somebody looks.

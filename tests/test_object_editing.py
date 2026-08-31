@@ -293,3 +293,33 @@ def test_deleting_a_bed_takes_its_plants(client: TestClient) -> None:
 def test_deleting_something_that_is_not_there_is_404(client: TestClient) -> None:
     token, _bed_id = _garden(client)
     assert client.delete(f"/api/v1/gardens/{token}/obstacles/9999").status_code == 404
+
+
+def test_a_kind_with_no_height_is_given_none_rather_than_zero(
+    client: TestClient,
+) -> None:
+    """Wave 8's rule, at the one edge that still broke it.
+
+    A street, a lawn, a pond have no height. The endpoint turned the
+    vocabulary's `None` into `0.0`, which is a measurement nobody took — and it
+    is the difference between "nothing stands here" and "something stands here,
+    zero metres tall".
+    """
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "street", "x": 0, "y": 0, "shape": "line", "width": 6,
+              "points": [[0, 0], [20, 0]]},
+    ).json()["obstacles"][0]
+    assert made["height"] is None
+
+
+def test_a_kind_that_stands_still_gets_its_usual_height(client: TestClient) -> None:
+    """The default is still filled in where the vocabulary has one."""
+    token, _bed_id = _garden(client)
+    made = client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "shed", "x": 0, "y": 0},
+    ).json()["obstacles"][0]
+    assert made["height"] is not None
+    assert made["height"] > 0

@@ -191,7 +191,11 @@ def create_obstacle(
         depth=payload.depth if payload.depth is not None else depth,
         rotation=payload.rotation,
         points=payload.points,
-        height=payload.height if payload.height is not None else (default_height(kind) or 0.0),
+        # `or 0.0` turned the vocabulary's "this kind has no height" into a
+        # measurement nobody took. A street is not something zero metres tall;
+        # it is something with no height, which is what keeps it out of the
+        # light model rather than in it at zero.
+        height=payload.height if payload.height is not None else default_height(kind),
         label=payload.label,
     ))
     recompute_light(conn, garden.garden_id)
