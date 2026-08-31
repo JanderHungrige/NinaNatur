@@ -7,7 +7,8 @@ startup then fails on the first statement that references it.
 import sqlite3
 from pathlib import Path
 
-from ninanatur.ingest.db import COLUMN_MIGRATIONS, connect, init_schema
+from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.migrations import COLUMN_MIGRATIONS
 
 
 def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
@@ -61,7 +62,17 @@ def test_a_fresh_database_needs_no_migration(tmp_path: Path) -> None:
     """The tables are created with their columns; migrations are for older files."""
     conn = connect(tmp_path / "brand-new.sqlite", same_thread=False)
     assert init_schema(conn) == []
+    live = {
+        row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    }
     for table, column, _type in COLUMN_MIGRATIONS:
+        # Wave 11 folded `bed` and `obstacle` into `element` and rebuilt
+        # `planting` with it. Their entries stay in the list because they still
+        # run against a volume that predates that merge — the columns are added
+        # and the tables are dropped moments later — but there is nothing to
+        # assert about them on a database that never had those tables.
+        if table not in live:
+            continue
         assert column in _columns(conn, table)
 
 
@@ -113,131 +124,11 @@ def test_the_catalogue_syncs_when_the_shipped_schema_is_a_column_behind(
     assert row["clade"] == "insect"
 
 
-def test_an_existing_planting_table_learns_to_hold_unnamed_plants(tmp_path: Path) -> None:
-    """Regression in waiting: `CREATE TABLE IF NOT EXISTS` cannot relax NOT NULL.
-
-    Wave 7 made `planting.taxon_id` nullable so a plant the catalogue cannot
-    name is still a plant in someone's garden. On a fresh database the new
-    schema simply applies; on the production volume the old table survives with
-    its constraint intact, and every unidentified planting would fail on insert
-    — after the deploy, in front of the user, with green tests behind it.
-    """
-    db = tmp_path / "grown.sqlite"
-    old = connect(db, same_thread=False)
-    old.executescript(
-        """
-        CREATE TABLE taxon (taxon_id INTEGER PRIMARY KEY, canonical_name TEXT NOT NULL,
-            occurs_de INTEGER NOT NULL DEFAULT 0);
-        CREATE TABLE bed (bed_id INTEGER PRIMARY KEY, garden_id INTEGER NOT NULL,
-            name TEXT NOT NULL, polygon TEXT NOT NULL);
-        CREATE TABLE planting (
-            planting_id INTEGER PRIMARY KEY,
-            bed_id INTEGER NOT NULL REFERENCES bed(bed_id) ON DELETE CASCADE,
-            taxon_id INTEGER NOT NULL REFERENCES taxon(taxon_id),
-            quantity INTEGER NOT NULL DEFAULT 1,
-            added_at TEXT NOT NULL,
-            UNIQUE (bed_id, taxon_id));
-        INSERT INTO taxon VALUES (7, 'Salvia pratensis', 1);
-        INSERT INTO bed VALUES (1, 1, 'Altbeet', '[]');
-        INSERT INTO planting VALUES (1, 1, 7, 3, '2026-01-01');
-        """
-    )
-    old.commit()
-    old.close()
-
-    conn = connect(db, same_thread=False)
-    init_schema(conn)
-
-    # The plant that was already there survives the rebuild, quantity and all.
-    kept = conn.execute("SELECT * FROM planting WHERE planting_id = 1").fetchone()
-    assert kept is not None
-    assert kept["taxon_id"] == 7
-    assert kept["quantity"] == 3
-
-    # And an unidentified one can now be recorded.
-    conn.execute(
-        "INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)"
-        " VALUES (1, NULL, 'Bauernhortensie', 2, '2026-08-29')"
-    )
-    conn.commit()
-    assert conn.execute("SELECT COUNT(*) AS n FROM planting").fetchone()["n"] == 2
-
-
-def test_two_unidentified_plantings_can_share_a_bed(tmp_path: Path) -> None:
-    """The UNIQUE stays; SQLite treats NULLs as distinct, which is what should
-    happen — two unknown roses are two plants."""
-    conn = connect(tmp_path / "fresh.sqlite", same_thread=False)
-    init_schema(conn)
-    conn.execute("INSERT INTO garden (garden_id, share_token, name, latitude, longitude,"
-                 " created_at, updated_at) VALUES (1, 't', 'G', 52.5, 13.4, '', '')")
-    conn.execute("INSERT INTO bed (bed_id, garden_id, name, polygon) VALUES (1, 1, 'B', '[]')")
-    for name in ("Rose A", "Rose B"):
-        conn.execute(
-            "INSERT INTO planting (bed_id, taxon_id, raw_name, quantity, added_at)"
-            " VALUES (1, NULL, ?, 1, '')",
-            (name,),
-        )
-    conn.commit()
-    assert conn.execute("SELECT COUNT(*) AS n FROM planting").fetchone()["n"] == 2
-
-
-def test_wave_10_clears_gardens_rather_than_migrating_circle_shaped_houses(
-    tmp_path: Path,
-) -> None:
-    """Decided with the user: this is a test deployment, so existing gardens go.
-
-    Every stored light value came from a model in which a house was a cylinder.
-    Keeping them would mean either a compatibility path for circle-shaped houses
-    or numbers that quietly mean something else than they did — and two shadow
-    models living side by side is the double-path shape that has caught this
-    project twice already.
-
-    The reset must be *once*: a migration that clears gardens on every startup
-    would delete a garden the moment somebody made one.
-    """
-    db = tmp_path / "grown.sqlite"
-    old = connect(db, same_thread=False)
-    # The pre-Wave-10 shape, written out rather than produced by the current
-    # init_schema — which would already mark the reset as done and make this
-    # test pass without testing anything.
-    old.executescript(
-        """
-        CREATE TABLE garden (garden_id INTEGER PRIMARY KEY, share_token TEXT NOT NULL,
-            owner_id TEXT, name TEXT NOT NULL, latitude REAL NOT NULL,
-            longitude REAL NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
-        CREATE TABLE bed (bed_id INTEGER PRIMARY KEY, garden_id INTEGER NOT NULL,
-            name TEXT NOT NULL, polygon TEXT NOT NULL);
-        CREATE TABLE obstacle (obstacle_id INTEGER PRIMARY KEY, garden_id INTEGER NOT NULL,
-            kind TEXT NOT NULL, x REAL NOT NULL, y REAL NOT NULL,
-            radius REAL NOT NULL, height REAL NOT NULL);
-        INSERT INTO garden VALUES (1, 'alt', NULL, 'Alter Garten', 52.5, 13.4, '', '');
-        INSERT INTO bed VALUES (1, 1, 'B', '[]');
-        INSERT INTO obstacle VALUES (1, 1, 'house', 0, 0, 5, 7);
-        """
-    )
-    old.commit()
-    old.close()
-
-    conn = connect(db, same_thread=False)
-    init_schema(conn)
-    assert conn.execute("SELECT COUNT(*) AS n FROM garden").fetchone()["n"] == 0
-    assert conn.execute("SELECT COUNT(*) AS n FROM bed").fetchone()["n"] == 0
-
-    # And a garden made afterwards survives the next startup.
-    conn.execute(
-        "INSERT INTO garden (garden_id, share_token, name, latitude, longitude,"
-        " created_at, updated_at) VALUES (2, 'neu', 'Neuer Garten', 52.5, 13.4, '', '')"
-    )
-    conn.commit()
-    init_schema(conn)
-    assert conn.execute("SELECT COUNT(*) AS n FROM garden").fetchone()["n"] == 1
-
-
-def test_an_obstacle_carries_its_shape(tmp_path: Path) -> None:
-    conn = connect(tmp_path / "fresh.sqlite", same_thread=False)
-    init_schema(conn)
-    columns = {row[1] for row in conn.execute("PRAGMA table_info(obstacle)")}
-    assert {"shape", "width", "depth", "rotation", "points"} <= columns
-    # `radius` is gone: it was the cylinder assumption in column form, and a
-    # column nothing writes is a column somebody will eventually read.
-    assert "radius" not in columns
+# The tests that stood here asserted on `bed`, `obstacle` and the Wave 10 reset.
+# Wave 11 folded those tables into `element`, and a test that keeps describing a
+# world the code left behind is worse than no test: it fails for the wrong reason
+# and teaches people to edit it rather than read it.
+#
+# What they were guarding is guarded in tests/test_element_migration.py, against
+# a database built in the shape the Wave 10 image left — which is the state that
+# actually matters and the one a fresh volume never reproduces.

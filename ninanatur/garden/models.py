@@ -61,26 +61,74 @@ class Planting:
         return self.canonical_name or self.raw_name or "unbenannt"
 
 
-@dataclass(frozen=True)
-class Bed:
-    """A stored bed, with its derived site vector and the evidence behind it."""
+#: The one kind that holds plants. Everything else is ground, structure or
+#: planting-free surface — and which is which is a property of the element now,
+#: not a separate table.
+PLANTING_KIND = "bed"
 
-    bed_id: int
-    name: str
-    polygon: Polygon
-    soil_type: str | None
-    moisture: str | None
-    ellenberg_l: float | None
-    ellenberg_m: float | None
-    ellenberg_n: float | None
-    ellenberg_r: float | None
-    sun_hours: float | None
-    light_computed_at: str | None
-    # A raised bed stands above the low things around it, and its light is
-    # computed from up there.
-    height_above_ground: float = 0.0
+
+@dataclass(frozen=True)
+class Element:
+    """Anything drawn on the plan.
+
+    Wave 11 merged `Bed` and `Obstacle` into this. Being a planting site is a
+    property, which is what lets the user draw a shape first and say what it is
+    afterwards — the site attributes below are simply null on a paving slab.
+    """
+
+    element_id: int
+    kind: str
+    #: 'polygon' | 'circle' | 'line'.
+    shape: str
+    x: float
+    y: float
+    #: Outline for a polygon, centreline for a line, None for a circle.
+    points: list[list[float]] | None = None
+    #: A circle's diameter or a line's band width.
+    width: float | None = None
+    #: 'rect' when the corners are meant to stay square. A promise about how
+    #: handles behave, not a second geometry.
+    constraint_hint: str | None = None
+    height: float | None = None
+    height_source: str = "user"
     label: str | None = None
+
+    # --- what a planting site needs, null on everything else ----------------
+    name: str | None = None
+    soil_type: str | None = None
+    moisture: str | None = None
+    ellenberg_l: float | None = None
+    ellenberg_m: float | None = None
+    ellenberg_n: float | None = None
+    ellenberg_r: float | None = None
+    sun_hours: float | None = None
+    light_computed_at: str | None = None
+    #: A raised bed stands above the low things around it, and its light is
+    #: computed from up there.
+    height_above_ground: float = 0.0
     plantings: list[Planting] = field(default_factory=list)
+
+    @property
+    def is_planting_site(self) -> bool:
+        return self.kind == PLANTING_KIND
+
+    @property
+    def footprint(self) -> list[tuple[float, float]]:
+        """The ground this covers. One function for shading, sightlines and
+        drawing alike — three answers is how they drift."""
+        from ninanatur.garden.footprint import Shape, footprint_of
+
+        return footprint_of(
+            shape=Shape(self.shape), x=self.x, y=self.y, width=self.width,
+            # Gone from storage in Wave 11: a rectangle is its points, and
+            # rotation is applied to them rather than stored beside them.
+            depth=None, rotation=0.0, points=self.points,
+        )
+
+    @property
+    def polygon(self) -> Polygon:
+        """The outline in absolute metres, for callers that want a plain list."""
+        return [[px, py] for px, py in self.footprint]
 
     @property
     def site_axes(self) -> dict[str, float]:
@@ -93,32 +141,18 @@ class Bed:
         )
         return {key: value for key, value in pairs if value is not None}
 
-
-@dataclass(frozen=True)
-class Obstacle:
-    obstacle_id: int
-    kind: str
-    x: float
-    y: float
-    shape: str
-    width: float
-    depth: float | None
-    rotation: float
-    points: list[list[float]] | None
-    height: float
-    label: str | None = None
-    height_source: str = "user"
+    # --- names the rest of the project still speaks --------------------------
+    # Transitional, and said so plainly: features 43-46 move the API and the
+    # frontend onto `element_id`, and these go with the last of them. They exist
+    # so the merge lands in one piece instead of as a forty-file rewrite.
 
     @property
-    def footprint(self) -> list[tuple[float, float]]:
-        """The ground this covers. One function for shading, sightlines and
-        drawing alike — three answers is how they drift."""
-        from ninanatur.garden.footprint import Shape, footprint_of
+    def bed_id(self) -> int:
+        return self.element_id
 
-        return footprint_of(
-            shape=Shape(self.shape), x=self.x, y=self.y, width=self.width,
-            depth=self.depth, rotation=self.rotation, points=self.points,
-        )
+    @property
+    def obstacle_id(self) -> int:
+        return self.element_id
 
 
 @dataclass(frozen=True)
@@ -133,5 +167,15 @@ class Garden:
     longitude: float
     created_at: str
     updated_at: str
-    beds: list[Bed] = field(default_factory=list)
-    obstacles: list[Obstacle] = field(default_factory=list)
+    elements: list[Element] = field(default_factory=list)
+
+    @property
+    def beds(self) -> list[Element]:
+        """The elements you can plant in. A view, not a second store — which is
+        the whole point of the merge."""
+        return [e for e in self.elements if e.is_planting_site]
+
+    @property
+    def obstacles(self) -> list[Element]:
+        """Everything else. It still casts shade and blocks a view."""
+        return [e for e in self.elements if not e.is_planting_site]

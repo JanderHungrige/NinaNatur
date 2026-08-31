@@ -57,27 +57,31 @@ function drawStroke(surface: Element, path: Array<[number, number]>) {
 
 describe('GardenCanvas — freehand', () => {
   function draw(props: Partial<Parameters<typeof GardenCanvas>[0]> = {}) {
-    const onDrawBed = vi.fn();
+    const onDrawTrace = vi.fn();
     render(
       <GardenCanvas
         garden={garden()}
         selectedBedId={null}
         onSelectBed={vi.fn()}
         size={SIZE}
-        onDrawBed={onDrawBed}
+        tool="freehand"
+        onDrawTrace={onDrawTrace}
         {...props}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Freihand zeichnen' }));
-    return onDrawBed;
+    return onDrawTrace;
   }
 
+  /** The outline or centreline a stroke produced. */
+  const drawn = (spy: ReturnType<typeof vi.fn>) =>
+    (spy.mock.calls[0]?.[0] as { kind: string; points: number[][] });
+
   it('turns hundreds of jittered points into a handful of corners', () => {
-    const onDrawBed = draw();
+    const onDrawTrace = draw();
     drawStroke(screen.getByTestId('canvas-surface'), squareStroke());
 
-    expect(onDrawBed).toHaveBeenCalledTimes(1);
-    const polygon = onDrawBed.mock.calls[0]?.[0] as number[][];
+    expect(onDrawTrace).toHaveBeenCalledTimes(1);
+    const polygon = drawn(onDrawTrace).points;
     // Eighty-odd points went in. A square has four corners.
     expect(polygon.length).toBeGreaterThanOrEqual(4);
     expect(polygon.length).toBeLessThanOrEqual(8);
@@ -85,9 +89,9 @@ describe('GardenCanvas — freehand', () => {
 
   it('closes the outline the hand left slightly open', () => {
     // The stroke ends 3 px from where it started and is never told to close.
-    const onDrawBed = draw();
+    const onDrawTrace = draw();
     drawStroke(screen.getByTestId('canvas-surface'), squareStroke());
-    const polygon = onDrawBed.mock.calls[0]?.[0] as number[][];
+    const polygon = drawn(onDrawTrace).points;
     const first = polygon[0]!;
     const last = polygon[polygon.length - 1]!;
     // No duplicated corner: a polygon is closed by being one.
@@ -97,49 +101,52 @@ describe('GardenCanvas — freehand', () => {
   it('measures the shape in metres, not pixels', () => {
     // 200 px across a 40 m / 800 px surface is 10 m. A stroke stored in pixels
     // would be a different bed at every zoom level.
-    const onDrawBed = draw();
+    const onDrawTrace = draw();
     drawStroke(screen.getByTestId('canvas-surface'), squareStroke());
-    const polygon = onDrawBed.mock.calls[0]?.[0] as number[][];
+    const polygon = drawn(onDrawTrace).points;
     const xs = polygon.map((p) => p[0]!);
     expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(10, 0);
   });
 
-  it('says so rather than storing a stroke with no area', () => {
-    const onDrawBed = draw();
+  it('reads a straight sweep as a path, not as a failed outline', () => {
+    // Wave 10 refused this: a stroke with no area was not a shape. It is a
+    // path — which is the point of feature 46, and the gesture says so without
+    // the user choosing a mode.
+    const onDrawTrace = draw();
     const line: Array<[number, number]> = Array.from({ length: 40 }, (_, i) => [
       300 + i * 5,
       200,
     ]);
     drawStroke(screen.getByTestId('canvas-surface'), line);
-    expect(onDrawBed).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toMatch(/Fläche/);
+    expect(drawn(onDrawTrace).kind).toBe('path');
+  });
+
+  it('reads a closed loop as an area', () => {
+    const onDrawTrace = draw();
+    drawStroke(screen.getByTestId('canvas-surface'), squareStroke());
+    expect(drawn(onDrawTrace).kind).toBe('area');
   });
 
   it('does not pan the view while a stroke is being drawn', () => {
     // Dragging is how you pan. In freehand mode the same gesture draws, and
     // doing both would slide the garden out from under the line.
-    const onDrawBed = draw();
+    const onDrawTrace = draw();
     const surface = screen.getByTestId('canvas-surface');
     const before = surface.getAttribute('viewBox');
     drawStroke(surface, squareStroke());
     expect(surface.getAttribute('viewBox')).toBe(before);
-    expect(onDrawBed).toHaveBeenCalled();
+    expect(onDrawTrace).toHaveBeenCalled();
   });
 
-  it('leaves freehand mode after one shape', () => {
-    // One stroke, one bed. Staying armed turns every later pan into a bed.
-    draw();
-    drawStroke(screen.getByTestId('canvas-surface'), squareStroke());
-    expect(screen.getByRole('button', { name: 'Freihand zeichnen' })).toBeDefined();
-  });
+
 
   it('abandons a stroke on Escape', () => {
-    const onDrawBed = draw();
+    const onDrawTrace = draw();
     const surface = screen.getByTestId('canvas-surface');
     fireEvent.pointerDown(surface, { clientX: 300, clientY: 200, pointerId: 1 });
     fireEvent.pointerMove(surface, { clientX: 400, clientY: 300, pointerId: 1 });
     fireEvent.keyDown(window, { key: 'Escape' });
     fireEvent.pointerUp(surface, { clientX: 400, clientY: 300, pointerId: 1 });
-    expect(onDrawBed).not.toHaveBeenCalled();
+    expect(onDrawTrace).not.toHaveBeenCalled();
   });
 });

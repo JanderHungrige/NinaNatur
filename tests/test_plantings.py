@@ -4,15 +4,8 @@ import sqlite3
 import pytest
 
 from ninanatur.garden.models import BedInput
-from ninanatur.garden.store import (
-    UnknownTaxon,
-    add_bed,
-    add_planting,
-    create_garden,
-    delete_garden,
-    load_garden,
-    remove_planting,
-)
+from ninanatur.garden.plantings import UnknownTaxon, add_planting, remove_planting
+from ninanatur.garden.store import add_bed, create_garden, delete_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 
 SQUARE = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]
@@ -87,7 +80,7 @@ def test_deleting_a_garden_cascades_all_the_way_to_plantings(
     assert conn.execute("SELECT COUNT(*) n FROM planting").fetchone()["n"] == 2
 
     delete_garden(conn, garden_id)
-    assert conn.execute("SELECT COUNT(*) n FROM bed").fetchone()["n"] == 0
+    assert conn.execute("SELECT COUNT(*) n FROM element").fetchone()["n"] == 0
     assert conn.execute("SELECT COUNT(*) n FROM planting").fetchone()["n"] == 0
 
 

@@ -15,6 +15,8 @@ from __future__ import annotations
 import math
 from enum import StrEnum
 
+from ninanatur.garden.polyline import band_of
+
 Point = tuple[float, float]
 
 #: Segments in a circle's polygon. Enough that its shadow does not look like a
@@ -26,6 +28,10 @@ class Shape(StrEnum):
     CIRCLE = "circle"
     RECT = "rect"
     POLYGON = "polygon"
+    #: A centreline and a band width: paths, walls, fences, hedges. Two numbers
+    #: per corner where the equivalent outline would need twenty — and a wall
+    #: that turns a corner is one element rather than two.
+    LINE = "line"
 
 
 def _rotate(px: float, py: float, degrees: float) -> Point:
@@ -48,6 +54,15 @@ def footprint_of(
     points: list[list[float]] | None,
 ) -> list[Point]:
     """The polygon this object covers, in garden metres."""
+    if shape is Shape.LINE:
+        if points is None or len(points) < 2:
+            raise ValueError("a line footprint needs a centreline of two points or more")
+        if width is None or width <= 0:
+            raise ValueError(f"a line footprint needs a positive width, got {width}")
+        return band_of(
+            [(x + float(p[0]), y + float(p[1])) for p in points], width=width
+        )
+
     if shape is Shape.POLYGON:
         if points is None or len(points) < 3:
             raise ValueError("a polygon footprint needs at least three points")

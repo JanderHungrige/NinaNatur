@@ -11,7 +11,8 @@ import pytest
 
 from ninanatur.bloom.palette import garden_palette
 from ninanatur.garden.models import BedInput
-from ninanatur.garden.store import add_bed, add_planting, create_garden
+from ninanatur.garden.plantings import add_planting
+from ninanatur.garden.store import add_bed, create_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
 

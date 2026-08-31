@@ -269,6 +269,9 @@ class ObstacleUpdate(BaseModel):
     depth: float | None = Field(default=None, gt=0, le=500)
     rotation: float | None = Field(default=None, ge=-360, le=360)
     points: list[list[float]] | None = Field(default=None, max_length=500)
+    #: Set to null when a vertex is dragged out of true: the geometry does not
+    #: change, but the promise that the corners stay square ends.
+    constraint_hint: str | None = None
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
     # Correcting a height makes it the user's word on it; otherwise every
@@ -341,12 +344,18 @@ class ObstacleOut(BaseModel):
     height_source: str
     x: float
     y: float
+    #: 'polygon' | 'circle' | 'line'.
     shape: str
-    width: float
-    depth: float | None
-    rotation: float
+    #: A circle's diameter or a line's band width; absent for a polygon.
+    width: float | None
+    #: The outline for a polygon, the centreline for a line.
     points: list[list[float]] | None
-    height: float
+    #: 'rect' when the corners are meant to stay square. Wave 11 stores points
+    #: rather than a width and an angle, so this is a promise about how the
+    #: handles behave rather than a second geometry.
+    constraint_hint: str | None
+    #: None on a surface: Wave 8's rule that an unrecorded height is not a zero.
+    height: float | None
     #: The polygon this covers, so the drawing does not re-derive it. One
     #: answer to "what ground does this cover", not three.
     footprint: list[list[float]]

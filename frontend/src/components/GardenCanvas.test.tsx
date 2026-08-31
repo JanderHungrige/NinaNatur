@@ -72,8 +72,8 @@ describe('GardenCanvas', () => {
   it('names the plan itself so its contents are knowable without seeing it', () => {
     const g = garden({
       obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, height_source: 'user',
-          x: 0, y: -4, shape: 'rect', width: 10, depth: 1, rotation: 0,
-          points: null, height: 6,
+          x: 0, y: -4, shape: 'polygon', width: null, constraint_hint: 'rect',
+          points: [[-5, -0.5], [5, -0.5], [5, 0.5], [-5, 0.5]], height: 6,
           footprint: [[-5, -4.5], [5, -4.5], [5, -3.5], [-5, -3.5]] }],
     });
     render(<GardenCanvas garden={g} selectedBedId={null} onSelectBed={vi.fn()} />);

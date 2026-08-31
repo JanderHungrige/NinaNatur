@@ -17,7 +17,7 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
-import { StampPalette } from './components/StampPalette';
+import { ShapeTools } from './components/ShapeTools';
 import { GardenId } from './components/GardenId';
 import { objects } from './plural';
 import { Landing } from './components/Landing';
@@ -25,6 +25,7 @@ import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import type { Box } from './canvas/handles';
+import type { DrawnShape, Tool } from './canvas/shapes';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
@@ -323,10 +324,9 @@ export function App() {
       if (garden === null || editing === null) return;
       const target = editing;
       void run('Speichern', async () => {
-        const updated =
-          target.kind === 'bed'
-            ? await client.editBed(garden.share_token, target.id, changes)
-            : await client.editObstacle(garden.share_token, target.id, changes);
+        // One endpoint, because there is one kind of thing now. `editBed`
+        // survives only for the bed-specific fields the suggestion panel edits.
+        const updated = await client.editObstacle(garden.share_token, target.id, changes);
         setGarden(updated);
         await refresh(garden.share_token, forage);
         setEditing(null);
@@ -400,17 +400,21 @@ export function App() {
     const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
     if (bed === undefined) return;
     setEditing({
-      kind: 'bed',
       id: bed.bed_id,
+      objectKind: 'bed',
       name: bed.name,
       label: bed.label,
+      height: null,
       heightAboveGround: bed.height_above_ground,
+      plantings: bed.plantings.length,
+      shape: 'polygon',
+      width: null,
     });
   }, [garden, selectedBedId]);
 
   /** The element the palette has armed. Null is the ordinary state: a plan the
    *  user can click without placing anything. */
-  const [stampKind, setStampKind] = useState<string | null>(null);
+  const [tool, setTool] = useState<Tool | null>(null);
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
 
   const editObstacleById = useCallback(
@@ -419,13 +423,15 @@ export function App() {
       if (found === undefined) return;
       setSelectedObstacleId(obstacleId);
       setEditing({
-        kind: 'obstacle',
         id: found.obstacle_id,
         objectKind: found.kind,
+        name: null,
         label: found.label,
         height: found.height,
+        heightAboveGround: 0,
+        plantings: 0,
+        shape: found.shape,
         width: found.width,
-        depth: found.depth,
       });
     },
     [garden],
@@ -439,6 +445,7 @@ export function App() {
       shape?: string;
       width?: number;
       depth?: number;
+      points?: number[][];
       height?: number;
     }) => {
       if (garden === null) return;
@@ -461,16 +468,75 @@ export function App() {
   );
 
   /**
-   * Place an armed element at its default size, then disarm.
+   * A drawn shape becomes an element with no kind yet.
    *
-   * Disarming after one placement rather than staying armed: the palette is a
-   * stamp, not a mode to escape from, and a click that keeps producing houses
-   * is a click nobody expects.
+   * `other` and no height, which casts no shadow: the order the user asked for
+   * is draw first and say what it is afterwards, so a half-finished plan must
+   * not claim a shading effect nobody described.
    */
-  const placeStamp = useCallback(
-    async (kind: string, x: number, y: number) => {
-      setStampKind(null);
-      await addObstacle({ kind, x, y });
+  const drawShape = useCallback(
+    async (shape: DrawnShape) => {
+      setTool(null);
+      await addObstacle({
+        kind: 'other',
+        x: shape.x,
+        y: shape.y,
+        shape: shape.shape,
+        ...(shape.width === null ? {} : { width: shape.width }),
+        ...(shape.depth === null ? {} : { depth: shape.depth }),
+        ...(shape.points === null ? {} : { points: shape.points }),
+      });
+    },
+    [addObstacle],
+  );
+
+  /**
+   * The outline itself changed.
+   *
+   * `constraint_hint: null` goes with it: editing a corner is what ends the
+   * promise that a rectangle stays square. The geometry does not convert — it
+   * was points all along — so only the promise ends.
+   */
+  const reshapeObstacle = useCallback(
+    async (obstacleId: number, points: number[][]) => {
+      if (garden === null) return;
+      await run('Form ändern', async () => {
+        setGarden(
+          await client.editObstacle(garden.share_token, obstacleId, {
+            points,
+            constraint_hint: null,
+          }),
+        );
+      });
+    },
+    [garden, run],
+  );
+
+  /**
+   * A freehand stroke becomes an element.
+   *
+   * A closed loop is an outline; an open stroke is a path — a line with a width
+   * rather than twenty points around a one-metre strip. A metre is what a
+   * garden path usually is, and it stays editable afterwards.
+   */
+  const drawTrace = useCallback(
+    async (trace: { kind: 'area' | 'path'; points: number[][] }) => {
+      setTool(null);
+      const centre = trace.points.reduce(
+        (acc, p) => ({ x: acc.x + p[0]! / trace.points.length, y: acc.y + p[1]! / trace.points.length }),
+        { x: 0, y: 0 },
+      );
+      await addObstacle({
+        kind: trace.kind === 'path' ? 'path' : 'other',
+        x: Math.round(centre.x * 100) / 100,
+        y: Math.round(centre.y * 100) / 100,
+        shape: trace.kind === 'path' ? 'line' : 'polygon',
+        ...(trace.kind === 'path' ? { width: 1 } : {}),
+        points: trace.points.map((p) => [
+          Math.round((p[0]! - centre.x) * 100) / 100,
+          Math.round((p[1]! - centre.y) * 100) / 100,
+        ]),
+      });
     },
     [addObstacle],
   );
@@ -628,7 +694,7 @@ export function App() {
               ) : null}
             </div>
             <div className="column">
-              <StampPalette selected={stampKind} onPick={setStampKind} busy={busy} />
+              <ShapeTools active={tool} onPick={setTool} disabled={busy} />
               <GardenCanvas
                 garden={garden}
                 selectedBedId={selectedBedId}
@@ -638,10 +704,12 @@ export function App() {
                 palette={monthColours}
                 viewpoint={viewpoint}
                 onPlaceViewpoint={lookFrom}
-                stampKind={stampKind}
-                onPlaceStamp={placeStamp}
+                tool={tool}
+                onDrawShape={drawShape}
+                onDrawTrace={drawTrace}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
+                onReshapeObstacle={reshapeObstacle}
               />
               {timeline !== null ? (
                 <>

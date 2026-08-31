@@ -931,3 +931,79 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   .canvas__objects { filter: none; }
   .obstacle { fill: none !important; forced-color-adjust: none; stroke: CanvasText; }
 }
+
+/* --- Drawing tools (Wave 11, feature 43) ---------------------------------- */
+
+.shape-tools__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.shape-tool {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.shape-tool:hover:not(:disabled) { border-color: var(--leaf); }
+.shape-tool[aria-pressed='true'] { border-color: var(--leaf); background: var(--leaf-alt); }
+
+/* The rubber band while a shape is being dragged out. */
+.shape-preview {
+  fill: color-mix(in srgb, var(--leaf) 12%, transparent);
+  stroke: var(--leaf);
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5;
+}
+
+/* Handles you can find. Wave 10's were 8 px in the surface colour and appeared
+   only after a click, which is why the elements read as fixed in size — the
+   feature was there and invisible. */
+.handle { fill: var(--leaf); stroke: var(--bg-raised); }
+.handle--rotate { fill: var(--leaf-alt); }
+
+.handle[data-testid='handle-n'], .handle[data-testid='handle-s'] { cursor: ns-resize; }
+.handle[data-testid='handle-e'], .handle[data-testid='handle-w'] { cursor: ew-resize; }
+.handle[data-testid='handle-ne'], .handle[data-testid='handle-sw'] { cursor: nesw-resize; }
+.handle[data-testid='handle-nw'], .handle[data-testid='handle-se'] { cursor: nwse-resize; }
+.handle--rotate { cursor: grab; }
+
+/* Discoverable without a click: the shape says it can be picked up. */
+.obstacle[role='button']:hover, .bed:hover {
+  stroke: var(--leaf);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+/* --- Editing an outline corner by corner (Wave 11, feature 44) ------------ */
+
+/* Corners are squares, insertion points are smaller diamonds. Two shapes, so
+   the difference reads without a legend. */
+.vertex {
+  fill: var(--bg-raised);
+  stroke: var(--leaf);
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5;
+  cursor: move;
+}
+
+.vertex--add {
+  fill: var(--leaf-alt);
+  stroke: var(--leaf);
+  cursor: copy;
+}
+
+.vertex:hover { fill: var(--leaf); }
+
+/* A loss the user is about to cause, said before it happens. */
+.object-editor__warning {
+  border-left: 3px solid var(--leaf);
+  padding-left: 0.6rem;
+  color: var(--ink);
+}

@@ -181,6 +181,8 @@ export class NinaNaturClient {
       width?: number;
       depth?: number;
       rotation?: number;
+      /** A free outline, or a line's centreline. */
+      points?: number[][];
       height?: number;
     },
   ): Promise<GardenOut> {
@@ -239,7 +241,9 @@ export class NinaNaturClient {
   async editObstacle(
     token: string,
     obstacleId: number,
-    changes: Record<string, string | number>,
+    // `null` is a value here, not an omission: clearing the rectangle hint is
+    // exactly what a dragged corner does.
+    changes: Record<string, string | number | number[][] | null>,
   ): Promise<GardenOut> {
     return this.request<GardenOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/obstacles/${obstacleId}`,

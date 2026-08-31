@@ -161,3 +161,40 @@ export function tidy(
   if (rounded.length < 3 || Math.abs(area(rounded)) < MIN_AREA_M2) return null;
   return rounded;
 }
+
+
+export interface Trace {
+  /** An outline, or a line with a width. */
+  kind: 'area' | 'path';
+  points: Point[];
+}
+
+/**
+ * What a freehand stroke was: an area or a path.
+ *
+ * The gesture decides rather than a mode. A stroke that comes back near where
+ * it started is a shape somebody drew round; one that does not is a way from
+ * here to there. Making the user say which first would be one more thing to get
+ * right before drawing, which is the opposite of what freehand is for.
+ */
+export function traceFrom(
+  stroke: Point[],
+  options: { tolerance: number; closeWithin: number },
+): Trace | null {
+  const thinned = simplify(stroke, options.tolerance);
+  if (thinned.length < 2) return null;
+
+  const first = thinned[0];
+  const last = thinned[thinned.length - 1];
+  if (first === undefined || last === undefined) return null;
+  const returned =
+    Math.hypot(last.x - first.x, last.y - first.y) <= options.closeWithin;
+
+  if (returned) {
+    const closed = tidy(stroke, options);
+    // A loop that encloses nothing is a path that happened to end where it
+    // began, not an area — so it falls through rather than being refused.
+    if (closed !== null) return { kind: 'area', points: closed };
+  }
+  return { kind: 'path', points: thinned.map((p) => ({ x: round(p.x), y: round(p.y) })) };
+}
