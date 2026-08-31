@@ -3,11 +3,11 @@ id: ninanatur-wave-12
 title: "Wave 12: The plan gets out of its own way"
 initiative: ninanatur
 initiative_version: 13
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-11
 demo_state: "A user opens a garden, finds the drawing tools at the top, drags out a shape without anything else being selected, closes a polygon by coming back to where they started, names it with a right-click, and finds every element again in a list"
 created: 2026-08-31
-hash: 766fc32c
+hash: 20f7d2d4
 ---
 
 # Wave 12 — The plan gets out of its own way
@@ -161,3 +161,27 @@ draw order helps two, and nothing helps three.
 Drawing works on the first click, Escape always gets out, a polygon closes when
 the hand comes back to the start, and every element can be found and named both
 on the plan and in the list.
+
+
+## What the wave found
+
+Three defects, all from driving the running app rather than from a test:
+
+| Found by | Defect |
+|---|---|
+| using the plan | the first click with a tool armed selected the garden-wide bed and scrolled to the suggestions |
+| using the plan | a polygon refused to close when its last corner overlapped the first |
+| driving the API | the obstacle PATCH checked `garden.obstacles`, which since Wave 11 is a *view* excluding planting sites — so a bed fell out of the only endpoint that edits a kind, and could never be changed back |
+
+The third is the one worth remembering. It is the cost of the compatibility
+views `Garden.beds` and `Garden.obstacles`: they read like the old tables, so
+code written against them keeps compiling while quietly meaning something
+narrower. `ObstacleUpdate` had the same shape of gap — the store accepted soil
+and moisture, the API model did not carry them, and nothing in between said so.
+
+## Unlike the two before it, this migration keeps the gardens
+
+Waves 10 and 11 both cleared them. This one adds two nullable columns, and a
+volume built by the Wave 11 image comes up with its garden and its bed intact
+and `soil_type` null — which is exactly what "nobody has been asked yet" should
+look like.
