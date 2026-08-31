@@ -119,4 +119,19 @@ describe('SuggestionList', () => {
     show({ suggestions: suggestions({ items: [item({ bird_partners: 0 })] }) });
     expect(screen.queryByText(/0 Vogelarten/)).toBeNull();
   });
+
+  it('names the colour in German, as the pickers do', () => {
+    // The list printed the catalogue value raw, so a species recorded as
+    // `brown` read "brown" next to a colour picker offering "braun".
+    show({ suggestions: suggestions({ items: [item({ flower_colour: 'brown' })] }) });
+
+    expect(screen.getByText('braun')).toBeDefined();
+    expect(screen.queryByText('brown')).toBeNull();
+  });
+
+  it('shows a colour it has no German name for rather than nothing', () => {
+    show({ suggestions: suggestions({ items: [item({ flower_colour: 'cream' })] }) });
+
+    expect(screen.getByText('cream')).toBeDefined();
+  });
 });

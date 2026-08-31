@@ -1,16 +1,5 @@
-/** The colours the plan can draw. Mirrors the canvas swatches and the server. */
-const COLOURS: Array<[string, string]> = [
-  ['yellow', 'gelb'],
-  ['white', 'weiß'],
-  ['pink', 'rosa'],
-  ['violet', 'violett'],
-  ['blue', 'blau'],
-  ['red', 'rot'],
-  ['orange', 'orange'],
-  ['green', 'grün'],
-  ['brown', 'braun'],
-  ['black', 'schwarz'],
-];
+import { COLOURS } from '../colours';
+
 
 interface Props {
   /** What the catalogue says, if anything. */

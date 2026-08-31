@@ -1,3 +1,4 @@
+import { COLOURS } from '../colours';
 import type { SuggestionFilters } from '../api/client';
 
 interface Props {
@@ -19,14 +20,6 @@ const HEIGHTS: Array<[string, number]> = [
   ['bis 2 m', 2],
 ];
 
-const COLOURS: Array<[string, string]> = [
-  ['gelb', 'yellow'],
-  ['weiß', 'white'],
-  ['rosa', 'pink'],
-  ['violett', 'violet'],
-  ['blau', 'blue'],
-  ['rot', 'red'],
-];
 
 const FORMS: Array<[string, string]> = [
   ['Staude', 'forb'],
@@ -104,7 +97,7 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
           onChange={(e) => set('colour', e.target.value === '' ? undefined : e.target.value)}
         >
           <option value="">beliebig</option>
-          {COLOURS.map(([label, value]) => (
+          {COLOURS.map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>

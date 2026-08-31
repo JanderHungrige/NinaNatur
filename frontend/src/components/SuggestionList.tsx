@@ -1,3 +1,4 @@
+import { colourLabel } from '../colours';
 import type { BedSuggestions } from '../api/client';
 import { birds } from '../plural';
 
@@ -58,7 +59,11 @@ export function SuggestionList({
       </div>
       <div className="suggestion__meta">
         {/* Unknown stays unknown, at the last layer as at every other. */}
-        <span>{item.flower_colour ?? 'Farbe unbekannt'}</span>
+        <span>
+          {item.flower_colour === null
+            ? 'Farbe unbekannt'
+            : colourLabel(item.flower_colour)}
+        </span>
         <span>
           {item.flowering_start_month !== null && item.flowering_end_month !== null
             ? `Blüte ${item.flowering_start_month}–${item.flowering_end_month}`
