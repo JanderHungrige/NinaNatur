@@ -3,11 +3,11 @@ id: ninanatur-wave-11
 title: "Wave 11: Draw first, say what it is afterwards"
 initiative: ninanatur
 initiative_version: 12
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-10
 demo_state: "A user drags out a rectangle, a circle and a freehand path, moves a vertex to shape one of them, then clicks each and says what it is — and the plan redraws it as a bed, a gravel path and a pool"
 created: 2026-08-30
-hash: 9e83b775
+hash: 5abbd009
 ---
 
 # Wave 11 — Draw first, say what it is afterwards
@@ -185,3 +185,30 @@ Three shapes, down from Wave 10's three with clearer meaning:
 Drawing a rectangle, a circle and a freehand path, dragging one vertex, and
 labelling the three as bed, gravel path and pool produces a plan that shows
 all three correctly — and the bed still takes plantings and computes its light.
+
+
+## What the wave cost, and what it found
+
+Five features. The table merge was the whole of feature 1 and it moved twelve
+files; everything after it was small by comparison, which is what the data-flow
+analysis predicted and the reason the merge went first.
+
+| Found by | Defect |
+|---|---|
+| the test suite | `planning.py` still joined `bed` in a raw SQL string — nothing type-checks a query |
+| the test suite | my own schema edit swallowed the `garden` table; 156 tests failed with one cause |
+| writing feature 44 | `update_obstacle` dropped explicit nulls, so the rectangle hint could not be cleared |
+| writing feature 44 | its allow-list still named `depth` and `rotation`, which stopped being columns in feature 42 — a resize would have been refused |
+| a test | Escape did not abandon a freehand stroke after it moved into a hook |
+| the file-length hook | `GardenCanvas.tsx` at 521 lines carrying five interaction modes |
+
+The two in `update_obstacle` are the ones worth remembering: both were live,
+neither had a test, and both would have looked like the handles simply not
+working.
+
+## What is not done
+
+- A path is one metre wide until somebody changes it; the width cannot be set
+  while drawing.
+- `planning.py` and `schemas.py` are still over the 300-line limit. They were
+  before this wave too, and splitting them is its own task.

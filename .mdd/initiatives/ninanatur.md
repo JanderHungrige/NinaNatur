@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 12
-hash: 8b5e1942
+version: 13
+hash: bad1f15c
 created: 2026-08-27
 ---
 
@@ -192,6 +192,6 @@ data would be convenient.
 | Wave 8 | waves/ninanatur-wave-8.md | An address becomes a drawing carrying the surroundings that shade it | complete |
 | Wave 9 | waves/ninanatur-wave-9.md | What is visible from where you stand, and accounts without a required email | complete |
 | Wave 10 | waves/ninanatur-wave-10.md | The garden drawn as a garden, with shadows that have a shape | complete |
-| Wave 11 | waves/ninanatur-wave-11.md | Draw first, say what it is afterwards — shapes, vertices, and a skin that follows the label | planned |
+| Wave 11 | waves/ninanatur-wave-11.md | Draw first, say what it is afterwards — shapes, vertices, and a skin that follows the label | complete |
 | Wave 12 | — | reserved | — |
 | Wave 13 | waves/ninanatur-wave-13.md | A finished plan split across as few nurseries as possible | planned |
