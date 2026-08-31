@@ -1,4 +1,5 @@
 import type { SuggestionFilters } from '../api/client';
+import { colourLabel } from '../colours';
 
 /** How one active filter divided the catalogue, as the API reported it. */
 export interface FilterCounts {
@@ -18,17 +19,6 @@ const MONTHS = [
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
 ];
 
-const COLOURS: Record<string, string> = {
-  yellow: 'gelb',
-  white: 'weiß',
-  pink: 'rosa',
-  violet: 'violett',
-  blue: 'blau',
-  red: 'rot',
-  green: 'grün',
-  orange: 'orange',
-  brown: 'braun',
-};
 
 const FORMS: Record<string, string> = {
   forb: 'Staude',
@@ -78,7 +68,7 @@ function chipsFor(filters: SuggestionFilters): Chip[] {
   if (filters.colour !== undefined) {
     chips.push({
       key: 'colour',
-      label: COLOURS[filters.colour] ?? filters.colour,
+      label: colourLabel(filters.colour),
       clears: ['colour'],
     });
   }
