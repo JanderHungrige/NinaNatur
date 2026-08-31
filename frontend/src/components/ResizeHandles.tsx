@@ -25,7 +25,9 @@ const ROTATE_OFFSET_PX = 28;
  */
 export function ResizeHandles({ box, view, onGrab }: Props) {
   const scale = metresPerPixel(view);
-  const size = 8 * scale;
+  // Twelve, not eight: the smaller grips were there all along and nobody
+  // found them, which is the same as their not being there.
+  const size = 12 * scale;
   const rotateAt = handleAt(box, 'n');
   const lift = ROTATE_OFFSET_PX * scale;
 

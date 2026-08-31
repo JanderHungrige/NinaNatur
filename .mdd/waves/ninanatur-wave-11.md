@@ -59,7 +59,7 @@ tools first would mean building them twice.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 1 | element-model | .mdd/docs/42-element-model.md | complete | — |
-| 2 | shape-tools | 43-shape-tools | planned | 42 |
+| 2 | shape-tools | .mdd/docs/43-shape-tools.md | complete | 42 |
 | 3 | vertex-editing | 44-vertex-editing | planned | 43 |
 | 4 | relabel-and-skin | 45-relabel-and-skin | planned | 42 |
 | 5 | freehand-paths | 46-freehand-paths | planned | 43 |

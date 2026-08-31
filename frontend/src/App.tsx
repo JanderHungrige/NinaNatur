@@ -17,7 +17,7 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
-import { StampPalette } from './components/StampPalette';
+import { ShapeTools } from './components/ShapeTools';
 import { GardenId } from './components/GardenId';
 import { objects } from './plural';
 import { Landing } from './components/Landing';
@@ -25,6 +25,7 @@ import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import { type Box, boxOf } from './canvas/handles';
+import type { DrawnShape, Tool } from './canvas/shapes';
 import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
@@ -410,7 +411,7 @@ export function App() {
 
   /** The element the palette has armed. Null is the ordinary state: a plan the
    *  user can click without placing anything. */
-  const [stampKind, setStampKind] = useState<string | null>(null);
+  const [tool, setTool] = useState<Tool | null>(null);
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
 
   const editObstacleById = useCallback(
@@ -439,6 +440,7 @@ export function App() {
       shape?: string;
       width?: number;
       depth?: number;
+      points?: number[][];
       height?: number;
     }) => {
       if (garden === null) return;
@@ -461,16 +463,24 @@ export function App() {
   );
 
   /**
-   * Place an armed element at its default size, then disarm.
+   * A drawn shape becomes an element with no kind yet.
    *
-   * Disarming after one placement rather than staying armed: the palette is a
-   * stamp, not a mode to escape from, and a click that keeps producing houses
-   * is a click nobody expects.
+   * `other` and no height, which casts no shadow: the order the user asked for
+   * is draw first and say what it is afterwards, so a half-finished plan must
+   * not claim a shading effect nobody described.
    */
-  const placeStamp = useCallback(
-    async (kind: string, x: number, y: number) => {
-      setStampKind(null);
-      await addObstacle({ kind, x, y });
+  const drawShape = useCallback(
+    async (shape: DrawnShape) => {
+      setTool(null);
+      await addObstacle({
+        kind: 'other',
+        x: shape.x,
+        y: shape.y,
+        shape: shape.shape,
+        ...(shape.width === null ? {} : { width: shape.width }),
+        ...(shape.depth === null ? {} : { depth: shape.depth }),
+        ...(shape.points === null ? {} : { points: shape.points }),
+      });
     },
     [addObstacle],
   );
@@ -628,7 +638,7 @@ export function App() {
               ) : null}
             </div>
             <div className="column">
-              <StampPalette selected={stampKind} onPick={setStampKind} busy={busy} />
+              <ShapeTools active={tool} onPick={setTool} disabled={busy} />
               <GardenCanvas
                 garden={garden}
                 selectedBedId={selectedBedId}
@@ -638,8 +648,8 @@ export function App() {
                 palette={monthColours}
                 viewpoint={viewpoint}
                 onPlaceViewpoint={lookFrom}
-                stampKind={stampKind}
-                onPlaceStamp={placeStamp}
+                tool={tool}
+                onDrawShape={drawShape}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
               />

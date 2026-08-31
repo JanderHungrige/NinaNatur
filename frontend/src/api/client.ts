@@ -181,6 +181,8 @@ export class NinaNaturClient {
       width?: number;
       depth?: number;
       rotation?: number;
+      /** A free outline, or a line's centreline. */
+      points?: number[][];
       height?: number;
     },
   ): Promise<GardenOut> {
