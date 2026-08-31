@@ -153,3 +153,20 @@ def test_the_landing_page_is_not_squeezed_into_the_garden_sidebar() -> None:
     assert 'className="layout"' not in app[opening:landing], (
         "the landing page is inside the garden's two-column grid"
     )
+
+
+def test_the_moving_background_stops_for_reduced_motion() -> None:
+    """Feature 41 promised `prefers-reduced-motion` would be respected, and the
+    drifting leaves are the first thing on the site that actually moves — the
+    first time the promise costs anything.
+
+    Stopped, not slowed: a slower animation is still an animation to somebody
+    who asked the system for less motion.
+    """
+    css = STYLESHEET.read_text(encoding="utf-8")
+    block = re.search(
+        r"@media \(prefers-reduced-motion: reduce\)\s*\{([^}]*\{[^}]*\}[^}]*)\}", css
+    )
+    assert block is not None, "no reduced-motion rule for the background"
+    assert ".living" in block.group(1)
+    assert "display: none" in block.group(1)

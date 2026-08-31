@@ -1102,3 +1102,128 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .landing-shell {
   display: block;
 }
+
+/* --- Signing in, where sites put it (Wave 13, feature 53) ----------------- */
+
+.account-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.account-bar__who { color: var(--ink-muted); font-size: 0.9rem; }
+
+.account-bar__note {
+  position: relative;
+  max-width: 22rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* The arrow sits beside the sentence rather than pointing across the page: at a
+   narrow width the header wraps and anything aimed at a fixed spot ends up
+   pointing at nothing. */
+.account-bar__arrow {
+  display: inline-block;
+  width: 3.5rem;
+  height: 1.75rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  color: var(--leaf);
+}
+
+.account-bar__signup {
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--leaf);
+  border-radius: var(--radius);
+  background: var(--leaf);
+  color: var(--bg-raised);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.account-bar__signup:hover:not(:disabled) { background: var(--leaf-alt); }
+
+.account-drawer {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  max-width: 32rem;
+  margin: 0 0 1.5rem auto;
+}
+
+@media (max-width: 40rem) {
+  .account-drawer { margin-inline: 0; max-width: 100%; }
+  .account-bar__note { max-width: 100%; }
+}
+
+/* The way in that is not the way in. Reachable, and clearly secondary. */
+.landing__aside {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.landing__aside summary {
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.landing__aside summary:focus-visible { outline: 3px solid var(--focus); }
+
+/* --- A page that breathes (Wave 13, feature 55) --------------------------- */
+
+.living {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.living__leaf {
+  /* Overridden per leaf from the component. Declared here so a leaf whose
+     inline style never arrives still drifts instead of collapsing to nothing. */
+  --leaf-scale: 1;
+  --leaf-tilt: 0deg;
+  position: absolute;
+  top: -8vh;
+  display: block;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--leaf);
+  opacity: 0.16;
+  will-change: transform;
+  animation-name: leaf-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.living__leaf svg { width: 100%; height: 100%; fill: currentColor; }
+.living__rib { stroke: var(--bg); stroke-width: 1.2; fill: none; opacity: 0.6; }
+
+/* Down and a little sideways, turning as it goes — one transform, composited,
+   no layout touched. */
+@keyframes leaf-drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(var(--leaf-tilt)) scale(var(--leaf-scale));
+  }
+  to {
+    transform: translate3d(4rem, 118vh, 0) rotate(calc(var(--leaf-tilt) + 220deg))
+      scale(var(--leaf-scale));
+  }
+}
+
+/* Stopped, not slowed. Feature 41 promised this, and this is the first thing
+   on the site that actually moves. */
+@media (prefers-reduced-motion: reduce) {
+  .living { display: none; }
+}
+
+/* The words in front stay the thing you read. */
+.living ~ * { position: relative; z-index: 1; }

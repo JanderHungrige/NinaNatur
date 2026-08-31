@@ -13,8 +13,6 @@ interface Props {
   createForm: ReactNode;
   /** Finding the garden on a map — the way most people will actually start. */
   mapPicker?: ReactNode;
-  /** Registering and logging in — a place to keep the links, not to replace them. */
-  accountPanel?: ReactNode;
   onOpen: (token: string) => void;
   busy: boolean;
   loadStats: () => Promise<StatsOut | null>;
@@ -39,7 +37,6 @@ function de(n: number): string {
 export function Landing({
   createForm,
   mapPicker,
-  accountPanel,
   onOpen,
   busy,
   loadStats,
@@ -95,20 +92,15 @@ export function Landing({
         </dl>
       )}
 
+      {/* One way in, not three. Three equal boxes said three equal choices;
+          there is one, and "Garten öffnen" beside it is not a way of making a
+          garden but of coming back to one. */}
       <div className="landing__ways">
         {mapPicker !== undefined && (
           <section className="panel landing__way landing__way--wide">
             <h2>Auf der Karte anfangen</h2>
             {mapPicker}
           </section>
-        )}
-        <section className="panel landing__way">
-          <h2>Ohne Karte anfangen</h2>
-          {createForm}
-        </section>
-
-        {accountPanel !== undefined && (
-          <section className="panel landing__way">{accountPanel}</section>
         )}
         <section className="panel landing__way">
           <h2>Garten öffnen</h2>
@@ -137,6 +129,18 @@ export function Landing({
           )}
         </section>
       </div>
+
+      {/* Kept as a quiet way rather than removed, decided with the user:
+          Nominatim and Overpass are free services with no SLA, and without this
+          a bad afternoon at either leaves nobody able to start at all. */}
+      <details className="landing__aside">
+        <summary>Ohne Karte anfangen</summary>
+        <p className="hint">
+          Wenn die Kartensuche gerade nicht antwortet, oder du die Koordinaten
+          ohnehin kennst.
+        </p>
+        {createForm}
+      </details>
 
       {stats !== null && (
         <footer className="landing__sources">

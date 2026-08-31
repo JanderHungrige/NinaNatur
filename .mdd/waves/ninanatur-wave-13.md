@@ -3,11 +3,11 @@ id: ninanatur-wave-13
 title: "Wave 13: A front door that looks like one"
 initiative: ninanatur
 initiative_version: 17
-status: planned
+status: complete
 depends_on: ninanatur-wave-12
 demo_state: "Somebody arriving at ninanatur.w3rth.de finds sign-in where every site puts it, one obvious way in, a note saying an account is optional but worth having — and a page that breathes"
 created: 2026-08-31
-hash: e3cf20b7
+hash: 7fd640aa
 ---
 
 # Wave 13 — A front door that looks like one
@@ -41,9 +41,9 @@ element must not be both. That is why it is not a feature below.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | account-in-header | 53-account-in-header | planned | — |
-| 2 | one-way-in | 54-one-way-in | planned | 53 |
-| 3 | living-background | 55-living-background | planned | — |
+| 1 | account-in-header | .mdd/docs/53-account-in-header.md | complete | — |
+| 2 | one-way-in | .mdd/docs/54-one-way-in.md | complete | 53 |
+| 3 | living-background | .mdd/docs/55-living-background.md | complete | — |
 
 ### 1 — account-in-header
 
@@ -95,7 +95,7 @@ that competes with the words in front of it is a background that failed.
 
 ## Open Research
 
-- [ ] Does the arrow survive a narrow window, where the header wraps and the
+- [x] Does the arrow survive a narrow window, where the header wraps and the
       button it points at moves? A drawn arrow pointing at nothing is worse than
       no arrow.
 
@@ -103,3 +103,18 @@ that competes with the words in front of it is a background that failed.
 
 Sign-in is top right, one way in is obvious with the others still reachable, and
 the background moves — and stops when the system asks for less motion.
+
+
+## What this wave cost the site
+
+Almost nothing to run, and one promise finally came due.
+
+Feature 41 said `prefers-reduced-motion` would be respected. Nothing on the site
+moved, so the promise had been free for three waves. The drifting leaves are the
+first thing that does, and the rule that stops them is guarded by a test rather
+than by the memory of having meant it.
+
+The open research question is answered in feature 53: the arrow travels inside
+the sentence, immediately before the button, rather than pointing across the
+header at a fixed spot — which is what would have failed the moment the header
+wrapped.

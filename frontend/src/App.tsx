@@ -13,6 +13,8 @@ import type {
 } from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
+import { AccountBar } from './components/AccountBar';
+import { LivingBackground } from './components/LivingBackground';
 import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
@@ -420,6 +422,8 @@ export function App() {
   /** The element the palette has armed. Null is the ordinary state: a plan the
    *  user can click without placing anything. */
   const [tool, setTool] = useState<Tool | null>(null);
+  /** The account forms, opened from the header rather than sitting in the page. */
+  const [accountOpen, setAccountOpen] = useState(false);
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
   /** The context menu, and which element it is asking about. */
   const [asking, setAsking] = useState<
@@ -657,6 +661,9 @@ export function App() {
   return (
     <>
       <a className="skip-link" href="#main">Zum Inhalt springen</a>
+      {/* Only on the front door: inside a garden the plan is the picture. */}
+      {garden === null && <LivingBackground />}
+
       <header className="site-header">
         <button type="button" className="brand" onClick={goHome} aria-label="Zur Startseite">
           <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
@@ -670,7 +677,36 @@ export function App() {
         {version !== null ? (
           <span className="badge" title="Version · Wave · Merges auf main">{version}</span>
         ) : null}
+        <AccountBar
+          username={account?.username ?? null}
+          onSignIn={() => setAccountOpen(true)}
+          onSignUp={() => setAccountOpen(true)}
+          onSignOut={() => void logOut()}
+          inviting={garden === null && account === null}
+          busy={busy}
+        />
       </header>
+
+      {accountOpen && account === null && (
+        <div className="account-drawer">
+          <AccountPanel
+            account={account}
+            onRegister={async (input) => {
+              await register(input);
+              setAccountOpen(false);
+            }}
+            onLogin={async (input) => {
+              await logIn(input);
+              setAccountOpen(false);
+            }}
+            onLogout={logOut}
+            busy={busy}
+          />
+          <button type="button" className="link-button" onClick={() => setAccountOpen(false)}>
+            Schließen
+          </button>
+        </div>
+      )}
 
       {/* Not `layout`: that is the garden's two-column grid, and the landing
           page rendered inside it was handed the 22rem sidebar column — 352 px
@@ -699,15 +735,6 @@ export function App() {
             busy={busy}
             loadStats={loadStats}
             problem={openProblem}
-            accountPanel={
-              <AccountPanel
-                account={account}
-                onRegister={register}
-                onLogin={logIn}
-                onLogout={logOut}
-                busy={busy}
-              />
-            }
           />
         ) : (
           <>
