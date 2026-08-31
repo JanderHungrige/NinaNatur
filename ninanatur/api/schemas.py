@@ -272,11 +272,21 @@ class ObstacleUpdate(BaseModel):
     #: Set to null when a vertex is dragged out of true: the geometry does not
     #: change, but the promise that the corners stay square ends.
     constraint_hint: str | None = None
+    #: A bed may differ from its garden — bought soil, a watered corner.
+    soil_type: str | None = None
+    moisture: str | None = None
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
     # Correcting a height makes it the user's word on it; otherwise every
     # sightline would go on marking it as an assumption.
     height_source: str | None = None
+
+
+class GardenSoil(BaseModel):
+    """What the ground is, asked once for the whole garden."""
+
+    soil_type: str
+    moisture: str
 
 
 class BedUpdate(BaseModel):
@@ -546,6 +556,10 @@ class GardenOut(BaseModel):
     longitude: float
     created_at: str
     updated_at: str
+    #: What the ground is, asked once. Null until somebody has been asked —
+    #: which is what the interface uses to know it still has to.
+    soil_type: str | None
+    moisture: str | None
     beds: list[BedOut]
     obstacles: list[ObstacleOut]
 

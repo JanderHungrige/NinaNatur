@@ -26,7 +26,7 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
 
 function garden(overrides: Partial<GardenOut> = {}): GardenOut {
   return {
-    unidentified_plantings: 0,
+    unidentified_plantings: 0, soil_type: null, moisture: null,
     share_token: 'tok',
     name: 'Testgarten',
     latitude: 52.5,
@@ -186,9 +186,16 @@ describe('GardenCanvas — drawing', () => {
     expect(polygon[0]?.[0]).toBeCloseTo(0.5, 6);
   });
 
-  it('keeps the existing beds operable while drawing is off', () => {
-    draw();
-    expect(screen.getByRole('button', { name: /Südbeet/ })).toBeDefined();
+  it('keeps the existing beds operable while no tool is armed', () => {
+    // With a tool armed they are deliberately not: the click belongs to the
+    // drawing. That case is GardenCanvas.focus.test.tsx.
+    render(
+      <GardenCanvas
+        garden={garden()} selectedBedId={null} onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }} onDrawBed={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: /Südbeet/ })[0]).toBeDefined();
   });
 });
 

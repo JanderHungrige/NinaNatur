@@ -13,6 +13,19 @@ interface Props {
   viewpoint?: { x: number; y: number } | null;
   onSelectBed: (bedId: number) => void;
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
+  /** A drawing tool is armed: the plan takes the click, not what is under it.
+   *  Without this the first click to draw selects the garden-wide bed and the
+   *  page scrolls away to the suggestions, so the tool looks like it needs two
+   *  attempts.
+   *
+   *  The handlers are left off entirely rather than covered with
+   *  `pointer-events: none`: not attaching is a guarantee, and a CSS property
+   *  is a hope that nothing else ever sets it back. */
+  armed?: boolean;
+  /** Right-click, or the keyboard's context-menu key, on an element. */
+  onAskWhatItIs?:
+    | ((id: number, at: { x: number; y: number }) => void)
+    | undefined;
   /** Colours in flower per bed for the month being shown, if any. */
   palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
 }
@@ -118,6 +131,8 @@ export function CanvasScene({
   onSelectBed,
   onSelectObstacle,
   palette,
+  armed = false,
+  onAskWhatItIs,
 }: Props) {
   const combinations = Object.values(palette ?? {})
     .map((e) => e.colours)
@@ -205,12 +220,29 @@ export function CanvasScene({
                 return fill === null ? undefined : { fill };
               })()}
               points={d(item.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
-              tabIndex={0}
-              role="button"
-              aria-pressed={item.bed_id === selectedBedId}
+              tabIndex={armed ? undefined : 0}
+              role={armed ? undefined : 'button'}
+              aria-pressed={armed ? undefined : item.bed_id === selectedBedId}
               aria-label={bedLabel(item)}
-              onClick={() => onSelectBed(item.bed_id)}
+              onContextMenu={
+                onAskWhatItIs === undefined || armed
+                  ? undefined
+                  : (event) => {
+                      event.preventDefault();
+                      onAskWhatItIs(item.bed_id, { x: event.clientX, y: event.clientY });
+                    }
+              }
+              onClick={armed ? undefined : () => onSelectBed(item.bed_id)}
               onKeyDown={(event) => {
+                if (armed) return;
+                // Shift+F10 and the context-menu key are what a keyboard uses
+                // for a right-click, so the menu is not pointer-only.
+                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                  event.preventDefault();
+                  const box = event.currentTarget.getBoundingClientRect();
+                  onAskWhatItIs?.(item.bed_id, { x: box.left, y: box.top });
+                  return;
+                }
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   onSelectBed(item.bed_id);
@@ -228,16 +260,30 @@ export function CanvasScene({
                  a third answer to "what ground does this cover", and the two
                  that already existed agreed only by accident. */
               points={item.footprint.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-              tabIndex={onSelectObstacle === undefined ? undefined : 0}
-              role={onSelectObstacle === undefined ? undefined : 'button'}
+              tabIndex={onSelectObstacle === undefined || armed ? undefined : 0}
+              role={onSelectObstacle === undefined || armed ? undefined : 'button'}
               aria-label={obstacleLabel(item)}
               onClick={
-                onSelectObstacle === undefined
+                onSelectObstacle === undefined || armed
                   ? undefined
                   : () => onSelectObstacle(item.obstacle_id)
               }
+              onContextMenu={
+                onAskWhatItIs === undefined || armed
+                  ? undefined
+                  : (event) => {
+                      event.preventDefault();
+                      onAskWhatItIs(item.obstacle_id, { x: event.clientX, y: event.clientY });
+                    }
+              }
               onKeyDown={(event) => {
-                if (onSelectObstacle === undefined) return;
+                if (onSelectObstacle === undefined || armed) return;
+                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                  event.preventDefault();
+                  const box = event.currentTarget.getBoundingClientRect();
+                  onAskWhatItIs?.(item.obstacle_id, { x: box.left, y: box.top });
+                  return;
+                }
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   onSelectObstacle(item.obstacle_id);

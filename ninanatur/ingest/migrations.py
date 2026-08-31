@@ -33,6 +33,10 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # a sightline resting on a guessed building height must not be drawn as
     # though it were surveyed. Existing obstacles were entered by hand.
     ("obstacle", "height_source", "TEXT NOT NULL DEFAULT 'user'"),
+    # Wave 12. Null on every existing garden, which is right: nobody has been
+    # asked yet, and the question is what the feature adds.
+    ("garden", "soil_type", "TEXT"),
+    ("garden", "moisture", "TEXT"),
 )
 
 

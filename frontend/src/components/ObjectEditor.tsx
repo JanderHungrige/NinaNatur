@@ -26,6 +26,9 @@ export interface EditableObject {
   /** 'polygon' | 'circle' | 'line'. A line is the only one with a width to set. */
   shape: string;
   width: number | null;
+  /** A bed may differ from its garden: bought soil, a watered corner. */
+  soilType: string | null;
+  moisture: string | null;
 }
 
 interface Props {
@@ -50,6 +53,8 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
   const [height, setHeight] = useState(object.height === null ? '' : String(object.height));
   const [raised, setRaised] = useState(String(object.heightAboveGround));
   const [width, setWidth] = useState(object.width === null ? '' : String(object.width));
+  const [soil, setSoil] = useState(object.soilType ?? '');
+  const [wet, setWet] = useState(object.moisture ?? '');
   /** Whether the height on screen is ours or theirs. */
   const [heightIsOurs, setHeightIsOurs] = useState(true);
 
@@ -77,6 +82,10 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
     const changes: Record<string, string | number> = { kind: objectKind, label };
     if (objectKind === PLANTING_KIND) {
       changes.height_above_ground = Number(raised);
+      // Only when the user has actually said: an empty field means "whatever
+      // the garden says", not "no soil".
+      if (soil !== '') changes.soil_type = soil;
+      if (wet !== '') changes.moisture = wet;
     } else if (height !== '') {
       changes.height = Number(height);
     }
@@ -164,6 +173,26 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
             Ein Hochbeet steht über niedrigen Zäunen und bekommt dadurch mehr
             Sonne. Die Lichtwerte werden nach dem Speichern neu berechnet.
           </p>
+
+          <label htmlFor="object-soil">Boden</label>
+          <select id="object-soil" value={soil} disabled={busy}
+                  onChange={(e) => setSoil(e.target.value)}>
+            <option value="">wie im Garten</option>
+            <option value="sand">sandig</option>
+            <option value="loam">lehmig</option>
+            <option value="clay">tonig</option>
+            <option value="humus">humos</option>
+          </select>
+
+          <label htmlFor="object-moisture">Feuchte</label>
+          <select id="object-moisture" value={wet} disabled={busy}
+                  onChange={(e) => setWet(e.target.value)}>
+            <option value="">wie im Garten</option>
+            <option value="dry">trocken</option>
+            <option value="fresh">frisch</option>
+            <option value="moist">feucht</option>
+            <option value="wet">nass</option>
+          </select>
         </>
       )}
 

@@ -48,6 +48,12 @@ interface Props {
     | undefined;
   /** Escape and "Abbrechen" put the tool down; the parent owns which one it is. */
   onCancelTool?: (() => void) | undefined;
+  /** Escape also drops whatever is selected — one key out of everything. */
+  onClearSelection?: (() => void) | undefined;
+  /** Right-click on an element: the short way to say what it is. */
+  onAskWhatItIs?:
+    | ((id: number, at: { x: number; y: number }) => void)
+    | undefined;
   /** The object wearing handles. Selection is the parent's, because the panel
    *  and the plan must agree on what is being edited. */
   selectedObstacleId?: number | null;
@@ -81,10 +87,13 @@ export function GardenCanvas({
   onDrawShape,
   onDrawTrace,
   onCancelTool,
+  onClearSelection,
+  onAskWhatItIs,
   onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
   const [placing, setPlacing] = useState(false);
+  const spacing = gridSpacing(view);
 
   const selected =
     garden.obstacles.find((o) => o.obstacle_id === selectedObstacleId) ?? null;
@@ -148,6 +157,9 @@ export function GardenCanvas({
     onShape: (outline) => onDrawBed?.(outline),
     onProblem: setProblem,
     onDone: () => cancel(),
+    // A corner within one grid square of the first is a closure. In metres, so
+    // it means the same distance however far the user has zoomed.
+    closeWithin: spacing,
   });
   clearDraft.current = polygon.clear;
 
@@ -158,22 +170,24 @@ export function GardenCanvas({
     onCancelTool?.();
     cancelBand.current();
     cancelStroke.current();
+    onClearSelection?.();
     clearDraft.current();
     setProblem(null);
-  }, []);
+  }, [onClearSelection]);
 
-  const spacing = gridSpacing(view);
   const points = polygon.points;
 
 
   useEffect(() => {
-    if (!drawing && !shapeBand.active && !freehandStroke.active) return undefined;
+    // Always listening: Escape clears a selection too, and a selection can
+    // outlive every drawing mode.
+
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') cancel();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [drawing, shapeBand.active, freehandStroke.active, cancel]);
+  }, [cancel]);
 
 
   const gestures = useCanvasGestures({
@@ -238,6 +252,8 @@ export function GardenCanvas({
           onSelectBed={onSelectBed}
           onSelectObstacle={onSelectObstacle}
           palette={palette}
+          armed={tool !== null}
+          onAskWhatItIs={onAskWhatItIs}
         />
         <CanvasOverlays
           view={view}

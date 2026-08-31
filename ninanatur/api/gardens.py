@@ -20,6 +20,7 @@ from ninanatur.api.schemas import (
     GardenCreate,
     GardenCreated,
     GardenOut,
+    GardenSoil,
     ObstacleCreate,
     ObstacleOut,
     ObstacleUpdate,
@@ -41,6 +42,7 @@ from ninanatur.garden.store import (
     delete_garden,
     garden_by_token,
     load_garden,
+    set_garden_soil,
     update_bed,
     update_obstacle,
 )
@@ -72,6 +74,8 @@ def to_out(garden: Garden) -> GardenOut:
         longitude=garden.longitude,
         created_at=garden.created_at,
         updated_at=garden.updated_at,
+        soil_type=garden.soil_type,
+        moisture=garden.moisture,
         beds=[
             BedOut(
                 bed_id=b.bed_id, name=b.name or "", polygon=b.polygon,
@@ -239,8 +243,12 @@ def edit_obstacle(
 ) -> GardenOut:
     """Change what an obstacle is, and redo every bed's light."""
     garden = require_garden(conn, token)
-    if not any(o.obstacle_id == obstacle_id for o in garden.obstacles):
-        raise HTTPException(status_code=404, detail=f"no such obstacle: {obstacle_id}")
+    # Every element, not `garden.obstacles`: since Wave 11 that is a *view*
+    # excluding planting sites, so an element that had just been made a bed was
+    # unreachable through the only endpoint that edits a kind. A bed could be
+    # created and never changed back.
+    if not any(e.element_id == obstacle_id for e in garden.elements):
+        raise HTTPException(status_code=404, detail=f"no such element: {obstacle_id}")
     changes = payload.model_dump(exclude_unset=True)
     if "kind" in changes and changes["kind"] is not None:
         changes["kind"] = str(changes["kind"])
@@ -251,6 +259,30 @@ def edit_obstacle(
         changes.setdefault("height_source", "user")
     update_obstacle(conn, obstacle_id, **changes)
     recompute_light(conn, garden.garden_id)
+    return to_out(load_garden(conn, garden.garden_id))
+
+
+@router.patch("/{token}/soil", response_model=GardenOut)
+def set_soil(
+    token: str,
+    payload: GardenSoil,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Record the garden's soil and moisture.
+
+    One question per garden. Beds drawn afterwards start from it; beds that
+    already carry their own answer are left alone, because a garden-level
+    change reaching back over a raised bed somebody set by hand is the kind of
+    helpfulness nobody asks for twice.
+    """
+    garden = require_garden(conn, token)
+    try:
+        set_garden_soil(
+            conn, garden.garden_id,
+            soil_type=payload.soil_type, moisture=payload.moisture,
+        )
+    except ValueError as unknown:
+        raise HTTPException(status_code=422, detail=str(unknown)) from unknown
     return to_out(load_garden(conn, garden.garden_id))
 
 

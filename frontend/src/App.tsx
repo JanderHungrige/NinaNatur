@@ -17,6 +17,9 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { ElementList } from './components/ElementList';
+import { ElementMenu } from './components/ElementMenu';
+import { GardenSoil } from './components/GardenSoil';
 import { ShapeTools } from './components/ShapeTools';
 import { GardenId } from './components/GardenId';
 import { objects } from './plural';
@@ -409,6 +412,8 @@ export function App() {
       plantings: bed.plantings.length,
       shape: 'polygon',
       width: null,
+      soilType: bed.soil_type,
+      moisture: bed.moisture,
     });
   }, [garden, selectedBedId]);
 
@@ -416,6 +421,10 @@ export function App() {
    *  user can click without placing anything. */
   const [tool, setTool] = useState<Tool | null>(null);
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
+  /** The context menu, and which element it is asking about. */
+  const [asking, setAsking] = useState<
+    { id: number; kind: string; label: string | null; at: { x: number; y: number } } | null
+  >(null);
 
   const editObstacleById = useCallback(
     (obstacleId: number) => {
@@ -432,6 +441,8 @@ export function App() {
         plantings: 0,
         shape: found.shape,
         width: found.width,
+        soilType: null,
+        moisture: null,
       });
     },
     [garden],
@@ -497,6 +508,32 @@ export function App() {
    * promise that a rectangle stays square. The geometry does not convert — it
    * was points all along — so only the promise ends.
    */
+  const askWhatItIs = useCallback(
+    (id: number, at: { x: number; y: number }) => {
+      const found =
+        garden?.obstacles.find((o) => o.obstacle_id === id) ??
+        garden?.beds.find((b) => b.bed_id === id);
+      if (found === undefined) return;
+      setAsking({
+        id,
+        kind: 'kind' in found ? found.kind : 'bed',
+        label: found.label,
+        at,
+      });
+    },
+    [garden],
+  );
+
+  const saveGardenSoil = useCallback(
+    (soilType: string, moisture: string) => {
+      if (garden === null) return;
+      void run('Boden speichern', async () => {
+        setGarden(await client.setGardenSoil(garden.share_token, soilType, moisture));
+      });
+    },
+    [garden, run],
+  );
+
   const reshapeObstacle = useCallback(
     async (obstacleId: number, points: number[][]) => {
       if (garden === null) return;
@@ -630,6 +667,13 @@ export function App() {
           <>
             <div className="column">
               <GardenId token={garden.share_token} />
+              <ShapeTools active={tool} onPick={setTool} disabled={busy} />
+              <GardenSoil
+                soilType={garden.soil_type}
+                moisture={garden.moisture}
+                onSave={saveGardenSoil}
+                busy={busy}
+              />
               {account !== null ? (
                 <button type="button" className="link-button" onClick={claim}>
                   Diesen Garten meinem Konto zuordnen
@@ -648,9 +692,22 @@ export function App() {
                 garden={garden}
                 selectedBedId={selectedBedId}
                 onSelectBed={selectBed}
-                onAddBed={addBed}
-                onAddObstacle={addObstacle}
-                busy={busy}
+              />
+              <ElementList
+                garden={garden}
+                selectedId={selectedObstacleId ?? selectedBedId}
+                onSelect={(id) => {
+                  // One selection, whichever way it was reached — the plan and
+                  // the list disagreeing about what is selected is the obvious
+                  // way for two panels onto the same thing to go wrong.
+                  const isBed = garden.beds.some((b) => b.bed_id === id);
+                  if (isBed) {
+                    selectBed(id);
+                    setSelectedObstacleId(null);
+                  } else {
+                    editObstacleById(id);
+                  }
+                }}
               />
               {selectedBedId !== null ? (
                 <ExistingPlanting
@@ -694,7 +751,6 @@ export function App() {
               ) : null}
             </div>
             <div className="column">
-              <ShapeTools active={tool} onPick={setTool} disabled={busy} />
               <GardenCanvas
                 garden={garden}
                 selectedBedId={selectedBedId}
@@ -708,10 +764,35 @@ export function App() {
                 onDrawShape={drawShape}
                 onDrawTrace={drawTrace}
                 onCancelTool={() => setTool(null)}
+                onClearSelection={() => {
+                  setSelectedObstacleId(null);
+                  setAsking(null);
+                }}
+                onAskWhatItIs={askWhatItIs}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
                 onReshapeObstacle={reshapeObstacle}
               />
+              {asking !== null && garden !== null ? (
+                <ElementMenu
+                  at={asking.at}
+                  kind={asking.kind}
+                  label={asking.label}
+                  busy={busy}
+                  onClose={() => setAsking(null)}
+                  onSave={(changes) => {
+                    const target = asking.id;
+                    setAsking(null);
+                    void run('Speichern', async () => {
+                      setGarden(
+                        await client.editObstacle(garden.share_token, target, changes),
+                      );
+                      await refresh(garden.share_token, forage);
+                    });
+                  }}
+                />
+              ) : null}
+
               {timeline !== null ? (
                 <>
                 <BloomPlayer

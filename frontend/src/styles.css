@@ -1016,3 +1016,78 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   padding-left: 0.6rem;
   color: var(--ink);
 }
+
+/* --- The garden's soil, asked once (Wave 12, feature 48) ------------------ */
+
+.garden-soil__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.garden-soil__actions .link-button {
+  color: var(--leaf);
+  text-decoration: underline;
+}
+
+/* --- Saying what a thing is, at the thing (Wave 12, feature 51) ----------- */
+
+.element-menu {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 15rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.element-menu__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.4rem;
+}
+
+/* --- Everything drawn, as a list (Wave 12, feature 52) -------------------- */
+
+.element-list__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  /* A real garden can hold a hundred of these, and the plan beside it should
+     not have to grow to match. */
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.element-list__row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.element-list__row:hover { border-color: var(--line); }
+.element-list__row[aria-pressed='true'] {
+  border-color: var(--leaf);
+  background: var(--leaf-alt);
+}
+
+.element-list__what { font-weight: 600; }
+.element-list__label { color: var(--ink-muted); min-width: 0; }
+.element-list__area { color: var(--ink-muted); font-size: 0.85rem; }
