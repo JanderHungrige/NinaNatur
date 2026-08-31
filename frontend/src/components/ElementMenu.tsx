@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { KINDS, labelOf } from '../kinds';
+import { KINDS, PLANTING_KIND, labelOf } from '../kinds';
 
 interface Props {
   /** Where the menu opens, in page pixels. */
@@ -12,7 +12,14 @@ interface Props {
   area: number;
   /** How many plants stand in it, for the warning before they go with it. */
   plantings: number;
-  onSave: (changes: { kind: string; label: string }) => void;
+  /** 'polygon' | 'circle' | 'line'. Only a line has a width to set. */
+  shape: string;
+  height: number | null;
+  width: number | null;
+  soilType: string | null;
+  moisture: string | null;
+  heightAboveGround: number;
+  onSave: (changes: Record<string, string | number>) => void;
   onDelete: () => void;
   onClose: () => void;
   busy: boolean;
@@ -32,6 +39,12 @@ export function ElementMenu({
   label,
   area,
   plantings,
+  shape,
+  height,
+  width,
+  soilType,
+  moisture,
+  heightAboveGround,
   onSave,
   onDelete,
   onClose,
@@ -39,6 +52,14 @@ export function ElementMenu({
 }: Props) {
   const [chosen, setChosen] = useState(kind);
   const [text, setText] = useState(label ?? '');
+  // Everything the editor panel used to hold. It was a block in the sidebar
+  // showing whatever happened to be selected, and it is gone: this menu is
+  // already at the element, and two places to edit one thing is one too many.
+  const [tall, setTall] = useState(height === null ? '' : String(height));
+  const [band, setBand] = useState(width === null ? '' : String(width));
+  const [soil, setSoil] = useState(soilType ?? '');
+  const [wet, setWet] = useState(moisture ?? '');
+  const [raised, setRaised] = useState(String(heightAboveGround));
   const box = useRef<HTMLDivElement | null>(null);
   /** Deleting asks first. An element cannot be got back, and this menu is one
    *  right-click away from every shape on the plan. */
@@ -100,6 +121,50 @@ export function ElementMenu({
         ))}
       </select>
 
+      {chosen !== PLANTING_KIND && (
+        <>
+          <label htmlFor="menu-height">Höhe (m)</label>
+          <input id="menu-height" type="number" min="0" step="0.1" value={tall}
+                 disabled={busy} onChange={(e) => setTall(e.target.value)} />
+        </>
+      )}
+
+      {shape === 'line' && (
+        <>
+          <label htmlFor="menu-width">Breite (m)</label>
+          <input id="menu-width" type="number" min="0.05" step="any" value={band}
+                 disabled={busy} onChange={(e) => setBand(e.target.value)} />
+        </>
+      )}
+
+      {chosen === PLANTING_KIND && (
+        <>
+          <label htmlFor="menu-raised">Höhe über Grund (m)</label>
+          <input id="menu-raised" type="number" min="0" step="0.1" value={raised}
+                 disabled={busy} onChange={(e) => setRaised(e.target.value)} />
+
+          <label htmlFor="menu-soil">Boden</label>
+          <select id="menu-soil" value={soil} disabled={busy}
+                  onChange={(e) => setSoil(e.target.value)}>
+            <option value="">wie im Garten</option>
+            <option value="sand">sandig</option>
+            <option value="loam">lehmig</option>
+            <option value="clay">tonig</option>
+            <option value="humus">humos</option>
+          </select>
+
+          <label htmlFor="menu-moisture">Feuchte</label>
+          <select id="menu-moisture" value={wet} disabled={busy}
+                  onChange={(e) => setWet(e.target.value)}>
+            <option value="">wie im Garten</option>
+            <option value="dry">trocken</option>
+            <option value="fresh">frisch</option>
+            <option value="moist">feucht</option>
+            <option value="wet">nass</option>
+          </select>
+        </>
+      )}
+
       <label htmlFor="menu-label">Bezeichnung</label>
       <input
         id="menu-label"
@@ -142,7 +207,22 @@ export function ElementMenu({
             <button
               type="button"
               disabled={busy}
-              onClick={() => onSave({ kind: chosen, label: text })}
+              onClick={() => {
+                const changes: Record<string, string | number> = {
+                  kind: chosen,
+                  label: text,
+                };
+                if (chosen === PLANTING_KIND) {
+                  changes.height_above_ground = Number(raised);
+                  // Empty means "whatever the garden says", not "no soil".
+                  if (soil !== '') changes.soil_type = soil;
+                  if (wet !== '') changes.moisture = wet;
+                } else if (tall !== '') {
+                  changes.height = Number(tall);
+                }
+                if (shape === 'line' && band !== '') changes.width = Number(band);
+                onSave(changes);
+              }}
             >
               Übernehmen
             </button>

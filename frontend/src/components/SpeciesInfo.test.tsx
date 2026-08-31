@@ -187,3 +187,39 @@ describe('SpeciesInfo', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Roggen-Gerste' })).toBeDefined());
   });
 });
+
+describe('SpeciesInfo — reaching the reader', () => {
+  it('brings itself into view when it opens', async () => {
+    // It renders under a suggestion list thousands of pixels long. Opening it
+    // from the first row put it four screens below the viewport, which reads
+    // as the button doing nothing.
+    const seen: unknown[] = [];
+    Element.prototype.scrollIntoView = function scroll(this: Element, arg?: unknown) {
+      seen.push(arg);
+    } as typeof Element.prototype.scrollIntoView;
+
+    render(
+      <SpeciesInfo
+        taxonId={1}
+        canonicalName="Salvia pratensis"
+        onClose={vi.fn()}
+        load={async () => null}
+      />,
+    );
+    await waitFor(() => expect(seen.length).toBeGreaterThan(0));
+  });
+
+  it('takes focus, so a keyboard reader lands on it too', async () => {
+    render(
+      <SpeciesInfo
+        taxonId={2}
+        canonicalName="Salvia pratensis"
+        onClose={vi.fn()}
+        load={async () => null}
+      />,
+    );
+    await waitFor(() =>
+      expect(document.activeElement?.classList.contains('info-panel')).toBe(true),
+    );
+  });
+});

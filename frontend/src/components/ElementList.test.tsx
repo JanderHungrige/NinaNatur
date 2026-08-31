@@ -84,3 +84,48 @@ describe('ElementList', () => {
     expect(screen.getByRole('button', { name: /Die Buche vom Nachbarn/ })).toBeDefined();
   });
 });
+
+describe('ElementList — removing something', () => {
+  function list(props: Record<string, unknown> = {}) {
+    const onDelete = vi.fn();
+    render(
+      <ElementList
+        garden={garden([obstacle(1, 'house'), obstacle(2, 'pond')])}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onDelete={onDelete}
+        {...props}
+      />,
+    );
+    return onDelete;
+  }
+
+  it('offers delete where the elements are listed', () => {
+    // It existed only behind a right-click, which is where nobody looked —
+    // reported as "objects cannot be removed" when the endpoint worked fine.
+    const onDelete = list();
+    expect(screen.getByRole('button', { name: /Wohnhaus löschen/ })).toBeDefined();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it('asks before it removes', () => {
+    const onDelete = list();
+    fireEvent.click(screen.getByRole('button', { name: /Wohnhaus löschen/ }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Endgültig löschen' })).toBeDefined();
+  });
+
+  it('removes the one that was asked about', () => {
+    const onDelete = list();
+    fireEvent.click(screen.getByRole('button', { name: /Teich löschen/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Endgültig löschen' }));
+    expect(onDelete).toHaveBeenCalledWith(2);
+  });
+
+  it('asks about one at a time', () => {
+    list();
+    fireEvent.click(screen.getByRole('button', { name: /Wohnhaus löschen/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Teich löschen/ }));
+    expect(screen.getAllByRole('button', { name: 'Endgültig löschen' })).toHaveLength(1);
+  });
+});

@@ -25,6 +25,7 @@ import { ElementList, areaOf } from './components/ElementList';
 import { ElementMenu } from './components/ElementMenu';
 import { GardenSoil } from './components/GardenSoil';
 import { ShapeTools } from './components/ShapeTools';
+import { type Panel, Tabs } from './components/Tabs';
 import { GardenId } from './components/GardenId';
 import { objects } from './plural';
 import { Landing } from './components/Landing';
@@ -33,7 +34,6 @@ import { Sightlines } from './components/Sightlines';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import { type Box, boxOf, rescale } from './canvas/handles';
 import type { DrawnShape, Tool } from './canvas/shapes';
-import { ObjectEditor, type EditableObject } from './components/ObjectEditor';
 import { InsectScore } from './components/InsectScore';
 import { NewGardenForm } from './components/NewGardenForm';
 import { SpeciesInfo } from './components/SpeciesInfo';
@@ -66,7 +66,6 @@ export function App() {
   const [infoFor, setInfoFor] = useState<{ taxonId: number; name: string } | null>(null);
   const [improvements, setImprovements] = useState<ImprovementsOut | null>(null);
   const [filters, setFilters] = useState<SuggestionFilters>({});
-  const [editing, setEditing] = useState<EditableObject | null>(null);
   const [palette, setPalette] = useState<BloomPalette | null>(null);
   const [openProblem, setOpenProblem] = useState<string | undefined>(undefined);
   const [account, setAccount] = useState<AccountInfo | null>(null);
@@ -373,21 +372,6 @@ export function App() {
    * growing a hedge changes every bed's light, and only the server can say by
    * how much.
    */
-  const saveObject = useCallback(
-    (changes: Record<string, string | number>) => {
-      if (garden === null || editing === null) return;
-      const target = editing;
-      void run('Speichern', async () => {
-        // One endpoint, because there is one kind of thing now. `editBed`
-        // survives only for the bed-specific fields the suggestion panel edits.
-        const updated = await client.editObstacle(garden.share_token, target.id, changes);
-        setGarden(updated);
-        await refresh(garden.share_token, forage);
-        setEditing(null);
-      });
-    },
-    [garden, editing, forage, refresh, run],
-  );
 
   const addExisting = useCallback(
     (planting: { raw_name: string; quantity: number }) => {
@@ -450,27 +434,13 @@ export function App() {
     });
   }, [garden, run]);
 
-  const editSelectedBed = useCallback(() => {
-    const bed = garden?.beds.find((b) => b.bed_id === selectedBedId);
-    if (bed === undefined) return;
-    setEditing({
-      id: bed.bed_id,
-      objectKind: 'bed',
-      name: bed.name,
-      label: bed.label,
-      height: null,
-      heightAboveGround: bed.height_above_ground,
-      plantings: bed.plantings.length,
-      shape: 'polygon',
-      width: null,
-      soilType: bed.soil_type,
-      moisture: bed.moisture,
-    });
-  }, [garden, selectedBedId]);
 
   /** The element the palette has armed. Null is the ordinary state: a plan the
    *  user can click without placing anything. */
   const [tool, setTool] = useState<Tool | null>(null);
+  /** Which half of the work is showing. Nobody chooses a shape and reads a
+   *  bloom timeline in the same breath. */
+  const [panel, setPanel] = useState<Panel>('draw');
   /** The account forms, opened from the header rather than sitting in the page. */
   const [accountOpen, setAccountOpen] = useState(false);
   /** The gardens this account has claimed. Null until asked. */
@@ -484,6 +454,12 @@ export function App() {
         label: string | null;
         area: number;
         plantings: number;
+        shape: string;
+        height: number | null;
+        width: number | null;
+        soilType: string | null;
+        moisture: string | null;
+        heightAboveGround: number;
         at: { x: number; y: number };
       }
     | null
@@ -494,19 +470,6 @@ export function App() {
       const found = garden?.obstacles.find((o) => o.obstacle_id === obstacleId);
       if (found === undefined) return;
       setSelectedObstacleId(obstacleId);
-      setEditing({
-        id: found.obstacle_id,
-        objectKind: found.kind,
-        name: null,
-        label: found.label,
-        height: found.height,
-        heightAboveGround: 0,
-        plantings: 0,
-        shape: found.shape,
-        width: found.width,
-        soilType: null,
-        moisture: null,
-      });
     },
     [garden],
   );
@@ -571,6 +534,20 @@ export function App() {
    * promise that a rectangle stays square. The geometry does not convert — it
    * was points all along — so only the promise ends.
    */
+  /** Remove one element, from wherever it was asked for. */
+  const deleteElement = useCallback(
+    (id: number) => {
+      if (garden === null) return;
+      setAsking(null);
+      setSelectedObstacleId(null);
+      void run('Objekt löschen', async () => {
+        setGarden(await client.deleteObstacle(garden.share_token, id));
+        await refresh(garden.share_token, forage);
+      });
+    },
+    [garden, forage, refresh, run],
+  );
+
   const askWhatItIs = useCallback(
     (id: number, at: { x: number; y: number }) => {
       const found =
@@ -584,6 +561,13 @@ export function App() {
         label: found.label,
         area: areaOf(outline),
         plantings: 'plantings' in found ? found.plantings.length : 0,
+        shape: 'shape' in found ? found.shape : 'polygon',
+        height: 'height' in found ? found.height : null,
+        width: 'width' in found ? found.width : null,
+        soilType: 'soil_type' in found ? found.soil_type : null,
+        moisture: 'moisture' in found ? found.moisture : null,
+        heightAboveGround:
+          'height_above_ground' in found ? found.height_above_ground : 0,
         at,
       });
     },
@@ -707,7 +691,6 @@ export function App() {
     setScore(null);
     setImprovements(null);
     setPalette(null);
-    setEditing(null);
     setStatus('');
   };
 
@@ -802,6 +785,14 @@ export function App() {
           <>
             <div className="column">
               <GardenId token={garden.share_token} />
+              <Tabs active={panel} onPick={setPanel} />
+
+              <div
+                id="panel-draw"
+                role="tabpanel"
+                aria-labelledby="tab-draw"
+                hidden={panel !== 'draw'}
+              >
               <ShapeTools active={tool} onPick={setTool} disabled={busy} />
               <GardenSoil
                 soilType={garden.soil_type}
@@ -830,6 +821,7 @@ export function App() {
               />
               <ElementList
                 garden={garden}
+                onDelete={deleteElement}
                 selectedId={selectedObstacleId ?? selectedBedId}
                 onSelect={(id) => {
                   // One selection, whichever way it was reached — the plan and
@@ -844,23 +836,18 @@ export function App() {
                   }
                 }}
               />
+              </div>
+
+              <div
+                id="panel-sow"
+                role="tabpanel"
+                aria-labelledby="tab-sow"
+                hidden={panel !== 'sow'}
+              >
               {selectedBedId !== null ? (
                 <ExistingPlanting
                   onAdd={addExisting}
                   unidentified={garden.unidentified_plantings}
-                  busy={busy}
-                />
-              ) : null}
-              {selectedBedId !== null && editing === null ? (
-                <button type="button" className="link-button" onClick={editSelectedBed}>
-                  Gewähltes Beet bearbeiten
-                </button>
-              ) : null}
-              {editing !== null ? (
-                <ObjectEditor
-                  object={editing}
-                  onSave={saveObject}
-                  onClose={() => setEditing(null)}
                   busy={busy}
                 />
               ) : null}
@@ -870,13 +857,6 @@ export function App() {
                 counts={suggestions?.filters ?? {}}
                 onChange={changeFilters}
               />
-              <SuggestionList
-                includeTrees={filters.includeTrees !== false}
-                suggestions={suggestions}
-                onPlant={plant}
-                onShowInfo={(taxonId, name) => setInfoFor({ taxonId, name })}
-                busy={busy}
-              />
               {infoFor !== null ? (
                 <SpeciesInfo
                   taxonId={infoFor.taxonId}
@@ -884,6 +864,14 @@ export function App() {
                   onClose={() => setInfoFor(null)}
                 />
               ) : null}
+              <SuggestionList
+                includeTrees={filters.includeTrees !== false}
+                suggestions={suggestions}
+                onPlant={plant}
+                onShowInfo={(taxonId, name) => setInfoFor({ taxonId, name })}
+                busy={busy}
+              />
+              </div>
             </div>
             <div className="column">
               <GardenCanvas
@@ -916,18 +904,14 @@ export function App() {
                   label={asking.label}
                   area={asking.area}
                   plantings={asking.plantings}
+                  shape={asking.shape}
+                  height={asking.height}
+                  width={asking.width}
+                  soilType={asking.soilType}
+                  moisture={asking.moisture}
+                  heightAboveGround={asking.heightAboveGround}
                   busy={busy}
-                  onDelete={() => {
-                    const target = asking.id;
-                    setAsking(null);
-                    setSelectedObstacleId(null);
-                    void run('Objekt löschen', async () => {
-                      setGarden(
-                        await client.deleteObstacle(garden.share_token, target),
-                      );
-                      await refresh(garden.share_token, forage);
-                    });
-                  }}
+                  onDelete={() => deleteElement(asking.id)}
                   onClose={() => setAsking(null)}
                   onSave={(changes) => {
                     const target = asking.id;

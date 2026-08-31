@@ -4,7 +4,7 @@ title: Pigment, and a Rim Where the Paint Stops
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-14
-wave_status: complete
+wave_status: deprecated
 depends_on: [41-garden-style]
 relates: [56-bloom-dots]
 source_files:
@@ -27,6 +27,11 @@ known_issues: []
 ---
 
 # Pigment, and a rim where the paint stops
+
+> **Reverted.** The user looked at the second attempt and said it still did not
+> work, and that tuning it further was not worth the time. The plan is back to
+> the technical drawing it was before Wave 14. What was learnt is kept below
+> rather than deleted, because the next attempt should not rediscover it.
 
 ## What this is
 

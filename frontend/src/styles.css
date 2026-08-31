@@ -931,13 +931,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    filter re-run per object. */
 .canvas__objects { filter: url(#watercolour); }
 
-/* A uniform hard outline is the strongest thing a plan can do to look
-   plotted. Thinner and part-transparent, so the wash carries the shape and
-   the line only suggests where it ends. */
-.obstacle,
-.bed {
-  stroke-opacity: 0.55;
-}
 
 /* Texture is decoration. When the system asks for more contrast, or paints its
    own colours, the washes go and the outline carries the meaning alone — a
@@ -1481,3 +1474,49 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .symbol__tarmac { fill: var(--wash-tarmac); }
 .symbol__tarmac-grit { fill: var(--wash-tarmac-grit); }
+
+/* Deleting from the list — the place people actually look. */
+.element-list__row { flex-wrap: wrap; }
+.element-list__confirm { display: flex; align-items: center; gap: 0.6rem; }
+.element-list__danger {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #a8442f;
+  border-radius: var(--radius);
+  background: #a8442f;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* --- Two halves of the work (Wave 15) ------------------------------------ */
+
+.tabs__row {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs__tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tabs__tab[aria-selected='true'] {
+  border-color: var(--line);
+  background: var(--bg-raised);
+  color: var(--ink);
+  /* Sits on the line rather than under it, so the open tab and its panel read
+     as one surface. */
+  margin-bottom: -1px;
+}
+
+.tabs__hint { margin: 0.5rem 0 0; }
+
+[role='tabpanel'] { display: grid; gap: 1.5rem; }
+[role='tabpanel'][hidden] { display: none; }
