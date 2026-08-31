@@ -7,7 +7,6 @@ interface Props {
   problem: string | null;
   onZoomIn: () => void;
   onZoomOut: () => void;
-  onStartDrawing: () => void;
   onFinish: () => void;
   onCancel: () => void;
   onUndo: () => void;
@@ -36,7 +35,6 @@ export function CanvasControls({
   problem,
   onZoomIn,
   onZoomOut,
-  onStartDrawing,
   onFinish,
   onCancel,
   onUndo,
@@ -69,13 +67,7 @@ export function CanvasControls({
               Abbrechen
             </button>
           </>
-        ) : (
-          <>
-            <button type="button" onClick={onStartDrawing}>
-              Beet zeichnen
-            </button>
-          </>
-        )}
+        ) : null}
 
         {onPlaceViewpoint !== undefined && (
           <button

@@ -104,3 +104,54 @@ describe('CanvasScene — how the plan looks', () => {
     expect(screen.getByRole('button', { name: /Kies/ })).toBeDefined();
   });
 });
+
+describe('CanvasScene — what lies on top of what', () => {
+  it('does not bury a drawn element under a bed', () => {
+    // A bed used to be drawn after every object, so anything drawn on top of
+    // one was unreachable: the click landed on the bed. Reported from the
+    // running app, where it makes new shapes look unselectable.
+    const container = render(
+      <GardenCanvas
+        garden={{
+          ...garden([obstacle('other', 1)]),
+          beds: [
+            {
+              bed_id: 9, name: 'Gesamtfläche',
+              polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
+              soil_type: 'loam', moisture: 'fresh',
+              ellenberg_l: null, ellenberg_m: null, ellenberg_n: null,
+              ellenberg_r: null, sun_hours: null, light_computed_at: null,
+              height_above_ground: 0, label: null, plantings: [],
+            },
+          ],
+        }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }}
+        onSelectObstacle={vi.fn()}
+      />,
+    ).container;
+
+    const drawn = [...container.querySelectorAll('.bed, .obstacle')].map((n) =>
+      n.classList.contains('bed') ? 'bed' : 'obstacle',
+    );
+    // Later in document order is nearer the front in SVG.
+    expect(drawn.lastIndexOf('bed')).toBeLessThan(drawn.lastIndexOf('obstacle'));
+  });
+
+  it('still keeps surfaces under the things standing on them', () => {
+    const container = render(
+      <GardenCanvas
+        garden={garden([obstacle('shed', 1), obstacle('lawn', 2)])}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }}
+        onSelectObstacle={vi.fn()}
+      />,
+    ).container;
+    const order = [...container.querySelectorAll('.obstacle')].map((n) =>
+      (n.getAttribute('class') ?? '').replace('obstacle obstacle--', ''),
+    );
+    expect(order.indexOf('lawn')).toBeLessThan(order.indexOf('shed'));
+  });
+});

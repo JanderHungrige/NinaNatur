@@ -46,6 +46,8 @@ interface Props {
   onDrawTrace?:
     | ((trace: { kind: 'area' | 'path'; points: number[][] }) => void)
     | undefined;
+  /** Escape and "Abbrechen" put the tool down; the parent owns which one it is. */
+  onCancelTool?: (() => void) | undefined;
   /** The object wearing handles. Selection is the parent's, because the panel
    *  and the plan must agree on what is being edited. */
   selectedObstacleId?: number | null;
@@ -78,6 +80,7 @@ export function GardenCanvas({
   tool = null,
   onDrawShape,
   onDrawTrace,
+  onCancelTool,
   onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
@@ -108,7 +111,9 @@ export function GardenCanvas({
     onFinish: reshape,
   });
 
-  const [drawing, setDrawing] = useState(false);
+  // Derived, not stored: the polygon tool *is* the drawing mode, and two
+  // places holding the same fact is how they end up disagreeing.
+  const drawing = tool === 'polygon';
   /** Freehand mode, and the stroke being drawn in it.
    *
    * The points live in a ref and are mirrored into state for drawing. The ref
@@ -150,7 +155,7 @@ export function GardenCanvas({
    *  the Escape listener depends on it and re-registering that on every render
    *  is how one keypress ends up handled twice. */
   const cancel = useCallback(() => {
-    setDrawing(false);
+    onCancelTool?.();
     cancelBand.current();
     cancelStroke.current();
     clearDraft.current();
@@ -197,7 +202,6 @@ export function GardenCanvas({
           problem={problem}
           onZoomIn={() => zoom('in')}
           onZoomOut={() => zoom('out')}
-          onStartDrawing={() => setDrawing(true)}
           onFinish={polygon.finish}
           onCancel={cancel}
           onUndo={polygon.undo}

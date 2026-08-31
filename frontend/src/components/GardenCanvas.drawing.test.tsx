@@ -57,6 +57,7 @@ describe('GardenCanvas — drawing', () => {
         onSelectBed={vi.fn()}
         size={{ widthPx: 800, heightPx: 600 }}
         onDrawBed={onDrawBed}
+        tool="polygon"
         {...props}
       />,
     );
@@ -93,16 +94,25 @@ describe('GardenCanvas — drawing', () => {
     expect(screen.getByRole('button', { name: 'Herauszoomen' })).toBeDefined();
   });
 
-  it('does not accept clicks as vertices until drawing is started', () => {
-    const onDrawBed = draw();
-    clickAt(400, 300);
+  it('does not accept clicks as vertices until a tool is armed', () => {
+    // The polygon tool *is* the drawing mode since Wave 11 dropped the separate
+    // "Beet zeichnen" button — a shape is drawn and named afterwards.
+    const onDrawBed = vi.fn();
+    render(
+      <GardenCanvas
+        garden={garden()} selectedBedId={null} onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }} onDrawBed={onDrawBed} tool={null}
+      />,
+    );
+    fireEvent.click(screen.getAllByTestId('canvas-surface')[0]!, {
+      clientX: 400, clientY: 300,
+    });
     expect(screen.queryByTestId('draft')).toBeNull();
     expect(onDrawBed).not.toHaveBeenCalled();
   });
 
   it('collects vertices once drawing is started', () => {
     draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     clickAt(500, 300);
     expect(screen.getByTestId('draft')).toBeDefined();
@@ -112,7 +122,6 @@ describe('GardenCanvas — drawing', () => {
   it('hands back garden metres, snapped to the grid', () => {
     // 800 px across 40 m at centre (0,0): 20 px per metre, centre at (400, 300).
     const onDrawBed = draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     clickAt(480, 300);
     clickAt(480, 220);
@@ -124,7 +133,6 @@ describe('GardenCanvas — drawing', () => {
     // Two clicks and a double-click is a line. Stored, it would reach the area
     // and shading code as a shape with a centroid and no extent.
     const onDrawBed = draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     clickAt(480, 300);
     fireEvent.click(screen.getByRole('button', { name: 'Fertig' }));
@@ -134,7 +142,6 @@ describe('GardenCanvas — drawing', () => {
 
   it('refuses an outline that crosses itself', () => {
     const onDrawBed = draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     clickAt(480, 220);
     clickAt(480, 300);
@@ -146,7 +153,6 @@ describe('GardenCanvas — drawing', () => {
 
   it('undoes the last vertex', () => {
     draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     clickAt(480, 300);
     fireEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
@@ -155,7 +161,6 @@ describe('GardenCanvas — drawing', () => {
 
   it('redoes what it undid', () => {
     draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     clickAt(480, 300);
     fireEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
@@ -165,7 +170,6 @@ describe('GardenCanvas — drawing', () => {
 
   it('abandons the draft on Escape', () => {
     draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     clickAt(400, 300);
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByTestId('draft')).toBeNull();
@@ -174,7 +178,6 @@ describe('GardenCanvas — drawing', () => {
   it('places freely while Alt is held', () => {
     // A hedge does not run along grid lines just because the tool drew some.
     const onDrawBed = draw();
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     fireEvent.click(surface(), { clientX: 410, clientY: 300, altKey: true });
     fireEvent.click(surface(), { clientX: 480, clientY: 300 });
     fireEvent.click(surface(), { clientX: 480, clientY: 220 });
@@ -192,7 +195,8 @@ describe('GardenCanvas — drawing', () => {
 describe('GardenCanvas — panning', () => {
   it('drags the view without the garden moving under the pointer', () => {
     // Zoom without pan strands a user the moment they zoom in: the rest of
-    // their garden is off screen with no way to reach it.
+    // their garden is off screen with no way to reach it. No tool armed — a
+    // drag is a pan only when it is not a drawing gesture.
     render(
       <GardenCanvas
         garden={garden()}
@@ -218,10 +222,10 @@ describe('GardenCanvas — panning', () => {
         onSelectBed={vi.fn()}
         size={{ widthPx: 800, heightPx: 600 }}
         onDrawBed={vi.fn()}
+        tool="polygon"
       />,
     );
     const svg = screen.getByTestId('canvas-surface');
-    fireEvent.click(screen.getByRole('button', { name: /Beet zeichnen/ }));
     const before = svg.getAttribute('viewBox');
     fireEvent.pointerDown(svg, { clientX: 400, clientY: 300 });
     fireEvent.pointerMove(svg, { clientX: 500, clientY: 300 });
