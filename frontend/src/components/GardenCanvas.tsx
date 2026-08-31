@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut } from '../api/client';
 import { type Box, boxOf } from '../canvas/handles';
+import { useElementDrag } from '../canvas/useElementDrag';
 import { useHandleDrag } from '../canvas/useHandleDrag';
 import { useVertexDrag } from '../canvas/useVertexDrag';
 import { usePolygonDraft } from '../canvas/usePolygonDraft';
@@ -54,6 +55,8 @@ interface Props {
   onAskWhatItIs?:
     | ((id: number, at: { x: number; y: number }) => void)
     | undefined;
+  /** Dragging a shape's body moves it. By how far, in metres. */
+  onMoveObstacle?: ((id: number, by: { x: number; y: number }) => void) | undefined;
   /** The object wearing handles. Selection is the parent's, because the panel
    *  and the plan must agree on what is being edited. */
   selectedObstacleId?: number | null;
@@ -89,11 +92,17 @@ export function GardenCanvas({
   onCancelTool,
   onClearSelection,
   onAskWhatItIs,
+  onMoveObstacle,
   onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
   const [placing, setPlacing] = useState(false);
   const spacing = gridSpacing(view);
+  const elementDrag = useElementDrag({
+    view,
+    surface,
+    onFinish: (id, by) => onMoveObstacle?.(id, by),
+  });
 
   const selected =
     garden.obstacles.find((o) => o.obstacle_id === selectedObstacleId) ?? null;
@@ -254,6 +263,8 @@ export function GardenCanvas({
           palette={palette}
           armed={tool !== null}
           onAskWhatItIs={onAskWhatItIs}
+          onGrabElement={onMoveObstacle === undefined ? undefined : elementDrag.grab}
+          dragOffset={elementDrag.offset}
         />
         <CanvasOverlays
           view={view}
