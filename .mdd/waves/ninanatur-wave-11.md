@@ -62,7 +62,7 @@ tools first would mean building them twice.
 | 2 | shape-tools | .mdd/docs/43-shape-tools.md | complete | 42 |
 | 3 | vertex-editing | .mdd/docs/44-vertex-editing.md | complete | 43 |
 | 4 | relabel-and-skin | .mdd/docs/45-relabel-and-skin.md | complete | 42 |
-| 5 | freehand-paths | 46-freehand-paths | planned | 43 |
+| 5 | freehand-paths | .mdd/docs/46-freehand-paths.md | complete | 43 |
 
 ### 1 — element-model
 

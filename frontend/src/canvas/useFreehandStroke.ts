@@ -7,14 +7,14 @@
  */
 import { useRef, useState } from 'react';
 
-import { tidy } from './freehand';
+import { traceFrom } from './freehand';
 import type { Point } from './viewport';
 
 interface Options {
   view: { spanM: number; widthPx: number };
-  onShape: (polygon: number[][]) => void;
+  /** An outline the hand closed, or a way from here to there. */
+  onTrace: (trace: { kind: 'area' | 'path'; points: number[][] }) => void;
   onProblem: (message: string) => void;
-  onDone: () => void;
 }
 
 export function useFreehandStroke(options: Options) {
@@ -41,23 +41,32 @@ export function useFreehandStroke(options: Options) {
     points.current = null;
     setStroke(null);
     if (drawn === null) return;
-    options.onDone();
     const perPixel = options.view.spanM / options.view.widthPx;
     // Two pixels, but never finer than 10 cm however far the user has zoomed
     // in. Without the floor a close-up scribble stores a corner every few
     // millimetres — detail no gardener plants to, carried by every later
     // light computation. The floor matches the centimetre the outline is
     // rounded to.
-    const shape = tidy(drawn, {
+    const traced = traceFrom(drawn, {
       tolerance: Math.max(0.1, perPixel * 2),
       closeWithin: Math.max(0.5, perPixel * 12),
     });
-    if (shape === null) {
-      options.onProblem('Der Umriss spannt keine Fläche auf — zieh eine geschlossene Form.');
+    if (traced === null) {
+      options.onProblem('Der Strich ist zu kurz — zieh ihn etwas weiter.');
       return;
     }
-    options.onShape(shape.map((p) => [p.x, p.y]));
+    options.onTrace({
+      kind: traced.kind,
+      points: traced.points.map((p) => [p.x, p.y]),
+    });
   };
 
-  return { stroke, active: points.current !== null, begin, extend, end };
+  /** Abandon what is half-drawn. Escape has to reach this, or a stroke that
+   *  was cancelled still lands when the pointer comes up. */
+  const cancel = () => {
+    points.current = null;
+    setStroke(null);
+  };
+
+  return { stroke, active: points.current !== null, begin, extend, end, cancel };
 }

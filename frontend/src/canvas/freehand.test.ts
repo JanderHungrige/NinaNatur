@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { closeIfNear, resolveOverlap, simplify, tidy } from './freehand';
+import { closeIfNear, resolveOverlap, simplify, tidy, traceFrom } from './freehand';
 
 /** A jittered straight line: the shape is two points, the stream is many. */
 function noisyLine(count: number): { x: number; y: number }[] {
@@ -173,5 +173,45 @@ describe('tidy', () => {
   it('refuses a stroke with no area rather than storing a line', () => {
     const straight = Array.from({ length: 50 }, (_, i) => ({ x: i * 0.2, y: 0 }));
     expect(tidy(straight, { tolerance: 0.05, closeWithin: 1 })).toBeNull();
+  });
+});
+
+describe('traceFrom', () => {
+  const loop = Array.from({ length: 120 }, (_, i) => {
+    const a = (i / 119) * Math.PI * 2;
+    return { x: 4 * Math.cos(a), y: 4 * Math.sin(a) };
+  });
+  const sweep = Array.from({ length: 60 }, (_, i) => ({ x: i * 0.3, y: 0 }));
+
+  it('reads a closed loop as an area', () => {
+    const traced = traceFrom(loop, { tolerance: 0.2, closeWithin: 1 });
+    expect(traced?.kind).toBe('area');
+  });
+
+  it('reads an open stroke as a path', () => {
+    // The gesture decides, not a mode: a stroke that does not come back is a
+    // path, and a path is a line with a width rather than an outline.
+    const traced = traceFrom(sweep, { tolerance: 0.2, closeWithin: 1 });
+    expect(traced?.kind).toBe('path');
+  });
+
+  it('keeps a path open even though it has no area', () => {
+    // `tidy` refuses a stroke with no area, and rightly — for an outline. A
+    // path is exactly that stroke and must survive it.
+    const traced = traceFrom(sweep, { tolerance: 0.2, closeWithin: 1 });
+    expect(traced?.points.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('simplifies a path as it does an outline', () => {
+    const jittery = Array.from({ length: 200 }, (_, i) => ({
+      x: i * 0.1,
+      y: i % 2 === 0 ? 0.01 : -0.01,
+    }));
+    const traced = traceFrom(jittery, { tolerance: 0.2, closeWithin: 1 });
+    expect(traced?.points.length).toBeLessThan(10);
+  });
+
+  it('refuses a stroke too short to be either', () => {
+    expect(traceFrom([{ x: 0, y: 0 }], { tolerance: 0.2, closeWithin: 1 })).toBeNull();
   });
 });

@@ -42,6 +42,10 @@ interface Props {
   /** The shape tool that is armed, if any. A drag then draws instead of panning. */
   tool?: Tool | null;
   onDrawShape?: ((shape: DrawnShape) => void) | undefined;
+  /** A freehand stroke: an outline the hand closed, or a path. */
+  onDrawTrace?:
+    | ((trace: { kind: 'area' | 'path'; points: number[][] }) => void)
+    | undefined;
   /** The object wearing handles. Selection is the parent's, because the panel
    *  and the plan must agree on what is being edited. */
   selectedObstacleId?: number | null;
@@ -73,6 +77,7 @@ export function GardenCanvas({
   onResizeObstacle,
   tool = null,
   onDrawShape,
+  onDrawTrace,
   onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
@@ -110,16 +115,19 @@ export function GardenCanvas({
    * is what pointerup reads: state read from a render closure is one render
    * behind whenever events arrive faster than React re-renders, and losing the
    * last points of a stroke that way would be invisible until it wasn't. */
-  const [freehand, setFreehand] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
+  //  Held in refs so `cancel` can stay a stable callback: the Escape handler
+  //  depends on it, and re-registering that listener on every render is how a
+  //  keypress ends up handled twice.
+  const cancelStroke = useRef<() => void>(() => undefined);
   const freehandStroke = useFreehandStroke({
     view,
-    onShape: (polygon) => onDrawBed?.(polygon),
+    onTrace: (trace) => onDrawTrace?.(trace),
     onProblem: setProblem,
-    onDone: () => setFreehand(false),
   });
   const stroke = freehandStroke.stroke;
+  cancelStroke.current = freehandStroke.cancel;
   //  Held in a ref so `cancel` can stay a stable callback: the Escape handler
   //  depends on it, and re-registering that listener on every render is how a
   //  keypress ends up handled twice.
@@ -143,8 +151,8 @@ export function GardenCanvas({
    *  is how one keypress ends up handled twice. */
   const cancel = useCallback(() => {
     setDrawing(false);
-    setFreehand(false);
     cancelBand.current();
+    cancelStroke.current();
     clearDraft.current();
     setProblem(null);
   }, []);
@@ -154,13 +162,13 @@ export function GardenCanvas({
 
 
   useEffect(() => {
-    if (!drawing && !freehand && !shapeBand.active) return undefined;
+    if (!drawing && !shapeBand.active && !freehandStroke.active) return undefined;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') cancel();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [drawing, freehand, shapeBand.active, cancel]);
+  }, [drawing, shapeBand.active, freehandStroke.active, cancel]);
 
 
   const gestures = useCanvasGestures({
@@ -170,7 +178,7 @@ export function GardenCanvas({
     spacing,
     drawing,
     band: { ...shapeBand, armed: shapeBand.armed },
-    stroke: { ...freehandStroke, armed: freehand },
+    stroke: { ...freehandStroke, armed: tool === 'freehand' },
     addVertex: polygon.add,
     placing,
     onPlaceViewpoint,
@@ -190,11 +198,6 @@ export function GardenCanvas({
           onZoomIn={() => zoom('in')}
           onZoomOut={() => zoom('out')}
           onStartDrawing={() => setDrawing(true)}
-          freehand={freehand}
-          onStartFreehand={() => {
-            setFreehand((on) => !on);
-            setProblem(null);
-          }}
           onFinish={polygon.finish}
           onCancel={cancel}
           onUndo={polygon.undo}
@@ -210,7 +213,7 @@ export function GardenCanvas({
         ref={surface}
         data-testid="canvas-surface"
         className={
-          drawing || freehand || shapeBand.armed ? 'canvas canvas--drawing' : 'canvas'
+          drawing || tool !== null ? 'canvas canvas--drawing' : 'canvas'
         }
         viewBox={viewBox(view)}
         role="group"

@@ -407,6 +407,8 @@ export function App() {
       height: null,
       heightAboveGround: bed.height_above_ground,
       plantings: bed.plantings.length,
+      shape: 'polygon',
+      width: null,
     });
   }, [garden, selectedBedId]);
 
@@ -428,6 +430,8 @@ export function App() {
         height: found.height,
         heightAboveGround: 0,
         plantings: 0,
+        shape: found.shape,
+        width: found.width,
       });
     },
     [garden],
@@ -506,6 +510,35 @@ export function App() {
       });
     },
     [garden, run],
+  );
+
+  /**
+   * A freehand stroke becomes an element.
+   *
+   * A closed loop is an outline; an open stroke is a path — a line with a width
+   * rather than twenty points around a one-metre strip. A metre is what a
+   * garden path usually is, and it stays editable afterwards.
+   */
+  const drawTrace = useCallback(
+    async (trace: { kind: 'area' | 'path'; points: number[][] }) => {
+      setTool(null);
+      const centre = trace.points.reduce(
+        (acc, p) => ({ x: acc.x + p[0]! / trace.points.length, y: acc.y + p[1]! / trace.points.length }),
+        { x: 0, y: 0 },
+      );
+      await addObstacle({
+        kind: trace.kind === 'path' ? 'path' : 'other',
+        x: Math.round(centre.x * 100) / 100,
+        y: Math.round(centre.y * 100) / 100,
+        shape: trace.kind === 'path' ? 'line' : 'polygon',
+        ...(trace.kind === 'path' ? { width: 1 } : {}),
+        points: trace.points.map((p) => [
+          Math.round((p[0]! - centre.x) * 100) / 100,
+          Math.round((p[1]! - centre.y) * 100) / 100,
+        ]),
+      });
+    },
+    [addObstacle],
   );
 
   const resizeObstacle = useCallback(
@@ -673,6 +706,7 @@ export function App() {
                 onPlaceViewpoint={lookFrom}
                 tool={tool}
                 onDrawShape={drawShape}
+                onDrawTrace={drawTrace}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
                 onReshapeObstacle={reshapeObstacle}

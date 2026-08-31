@@ -12,6 +12,8 @@ const BED: EditableObject = {
   height: null,
   heightAboveGround: 0,
   plantings: 0,
+  shape: 'polygon',
+  width: null,
 };
 
 const TREE: EditableObject = {
@@ -22,6 +24,8 @@ const TREE: EditableObject = {
   height: 8,
   heightAboveGround: 0,
   plantings: 0,
+  shape: 'polygon',
+  width: null,
 };
 
 describe('ObjectEditor', () => {

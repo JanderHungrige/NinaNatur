@@ -23,6 +23,9 @@ export interface EditableObject {
   heightAboveGround: number;
   /** How many plants stand in it, for the warning before they are lost. */
   plantings: number;
+  /** 'polygon' | 'circle' | 'line'. A line is the only one with a width to set. */
+  shape: string;
+  width: number | null;
 }
 
 interface Props {
@@ -46,6 +49,7 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
   const [objectKind, setObjectKind] = useState(object.objectKind);
   const [height, setHeight] = useState(object.height === null ? '' : String(object.height));
   const [raised, setRaised] = useState(String(object.heightAboveGround));
+  const [width, setWidth] = useState(object.width === null ? '' : String(object.width));
   /** Whether the height on screen is ours or theirs. */
   const [heightIsOurs, setHeightIsOurs] = useState(true);
 
@@ -76,6 +80,7 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
     } else if (height !== '') {
       changes.height = Number(height);
     }
+    if (object.shape === 'line' && width !== '') changes.width = Number(width);
     onSave(changes);
   };
 
@@ -104,6 +109,25 @@ export function ObjectEditor({ object, onSave, onClose, busy }: Props) {
           Hier stehen {losing === 1 ? 'eine Pflanze' : `${losing} Pflanzen`}. Beim
           Speichern als „{named}" {losing === 1 ? 'geht sie' : 'gehen sie'} verloren.
         </p>
+      )}
+
+      {object.shape === 'line' && (
+        <>
+          <label htmlFor="object-width">Breite (m)</label>
+          <input
+            id="object-width"
+            type="number"
+            min="0.05"
+            step="any"
+            value={width}
+            disabled={busy}
+            onChange={(e) => setWidth(e.target.value)}
+          />
+          <p className="hint">
+            Ein Weg ist eine Linie mit einer Breite — zwei Zahlen pro Ecke statt
+            zwanzig Punkten um einen Streifen herum.
+          </p>
+        </>
       )}
 
       {objectKind !== PLANTING_KIND && (

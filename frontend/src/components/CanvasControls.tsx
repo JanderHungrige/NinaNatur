@@ -8,9 +8,6 @@ interface Props {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onStartDrawing: () => void;
-  /** Freehand: press and drag rather than clicking each corner. */
-  freehand: boolean;
-  onStartFreehand: () => void;
   onFinish: () => void;
   onCancel: () => void;
   onUndo: () => void;
@@ -40,8 +37,6 @@ export function CanvasControls({
   onZoomIn,
   onZoomOut,
   onStartDrawing,
-  freehand,
-  onStartFreehand,
   onFinish,
   onCancel,
   onUndo,
@@ -79,9 +74,6 @@ export function CanvasControls({
             <button type="button" onClick={onStartDrawing}>
               Beet zeichnen
             </button>
-            <button type="button" aria-pressed={freehand} onClick={onStartFreehand}>
-              Freihand zeichnen
-            </button>
           </>
         )}
 
@@ -113,13 +105,6 @@ export function CanvasControls({
           Klicke die Ecken des Beetes. Punkte rasten auf dem Raster ein — halte
           Alt gedrückt, um frei zu setzen. Escape bricht ab. Zoomen: Knöpfe oben
           oder Strg/Cmd + Mausrad.
-        </p>
-      )}
-      {freehand && (
-        <p className="hint">
-          Zieh den Umriss in einem Zug. Der Plan glättet die Linie, schließt sie
-          und löst Überschneidungen selbst auf — genau musst du nicht sein.
-          Escape bricht ab.
         </p>
       )}
       {problem !== null && (
