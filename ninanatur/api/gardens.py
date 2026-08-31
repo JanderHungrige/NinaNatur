@@ -11,7 +11,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from ninanatur.api.accounts import require_account
+from ninanatur.api.accounts import current_account, require_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     BedCreate,
@@ -112,10 +112,24 @@ def to_out(garden: Garden) -> GardenOut:
 def create(
     payload: GardenCreate,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+    account: Annotated[Account | None, Depends(current_account)] = None,
 ) -> GardenCreated:
-    """Create a garden. The token comes back here and is the only way back in."""
+    """Create a garden. The token comes back here and is the only way back in.
+
+    A signed-in visitor's garden is theirs from the moment it exists. It used to
+    be nobody's unless something called `/claim` afterwards, and nothing did —
+    so an account kept the links and then listed none of them.
+
+    `current_account` rather than `require_account`: making a garden without an
+    account is the ordinary case, and the token is still the whole of its
+    access control either way.
+    """
     garden_id = create_garden(
-        conn, name=payload.name, latitude=payload.latitude, longitude=payload.longitude
+        conn,
+        name=payload.name,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        owner_id=None if account is None else str(account.account_id),
     )
     garden = load_garden(conn, garden_id)
     return GardenCreated(share_token=garden.share_token, name=garden.name)

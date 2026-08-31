@@ -12,6 +12,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
+from ninanatur.api.accounts import current_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import to_out
 from ninanatur.api.schemas import (
@@ -22,6 +23,7 @@ from ninanatur.api.schemas import (
     PlaceOut,
     PlaceSearchOut,
 )
+from ninanatur.auth.sessions import Account
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import BedInput, ObstacleInput
 from ninanatur.garden.store import (
@@ -78,6 +80,7 @@ def imagery_at(
 def garden_from_map(
     payload: MapSelection,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+    account: Annotated[Account | None, Depends(current_account)] = None,
 ) -> MapGardenOut:
     """Create a garden from an outline drawn on the map, with what shades it.
 
@@ -93,8 +96,14 @@ def garden_from_map(
         anchor, found, neighbourhood=NeighbourhoodKind(payload.neighbourhood)
     )
 
+    # Theirs from the moment it exists, like the plain create. This is the way
+    # most people start, so it is the one that mattered most.
     garden_id = create_garden(
-        conn, name=payload.name, latitude=anchor.lat, longitude=anchor.lon
+        conn,
+        name=payload.name,
+        latitude=anchor.lat,
+        longitude=anchor.lon,
+        owner_id=None if account is None else str(account.account_id),
     )
     polygon = [[round(m.x, 2), round(m.y, 2)] for m in (to_metres(p, anchor) for p in outline)]
     add_bed(
