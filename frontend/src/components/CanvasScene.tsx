@@ -26,6 +26,10 @@ interface Props {
   onAskWhatItIs?:
     | ((id: number, at: { x: number; y: number }) => void)
     | undefined;
+  /** Grabbing a shape's body: a move, not a pan. */
+  onGrabElement?: ((id: number, event: React.PointerEvent) => void) | undefined;
+  /** Where the element being dragged is shown while the pointer holds it. */
+  dragOffset?: { id: number; dx: number; dy: number } | null;
   /** Colours in flower per bed for the month being shown, if any. */
   palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
 }
@@ -52,12 +56,38 @@ function asElement(bed: GardenOut['beds'][number]): Drawn {
   return bed;
 }
 
+/** Shoelace, on the outline the server already computed. */
+function coverage(item: Drawn): number {
+  const points = 'bed_id' in item ? item.polygon : item.footprint;
+  let sum = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i]!;
+    const b = points[(i + 1) % points.length]!;
+    sum += a[0]! * b[1]! - b[0]! * a[1]!;
+  }
+  return Math.abs(sum) / 2;
+}
+
+/**
+ * Surfaces behind the things standing on them, and among surfaces the big ones
+ * behind the small.
+ *
+ * Ranking on kind alone was not enough: a bed and a lawn are both surfaces, so
+ * they tied, and a stable sort put the beds last — in front. The garden-wide
+ * outline then covered every path and every patch of gravel drawn inside it.
+ *
+ * Size is the rule a plan follows anyway. The whole-garden bed is the largest
+ * thing there is, so it falls to the back on its own, and a small bed drawn on
+ * a lawn stays visible without anybody special-casing either.
+ */
 function surfacesFirst(items: Drawn[]): Drawn[] {
-  const rank = (item: Drawn): number => {
+  const standing = (item: Drawn): number => {
     const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
     return BY_KIND.get(kind)?.standing === false ? 0 : 1;
   };
-  return [...items].sort((a, b) => rank(a) - rank(b));
+  return [...items].sort(
+    (a, b) => standing(a) - standing(b) || coverage(b) - coverage(a),
+  );
 }
 
 function bedLabel(bed: GardenOut['beds'][number]): string {
@@ -133,7 +163,14 @@ export function CanvasScene({
   palette,
   armed = false,
   onAskWhatItIs,
+  onGrabElement,
+  dragOffset = null,
 }: Props) {
+  /** Shown where the pointer has it, saved where it is let go. */
+  const shift = (id: number): string =>
+    dragOffset !== null && dragOffset.id === id
+      ? `translate(${dragOffset.dx} ${-dragOffset.dy})`
+      : '';
   const combinations = Object.values(palette ?? {})
     .map((e) => e.colours)
     .filter((c) => c.length > 0);
@@ -224,6 +261,12 @@ export function CanvasScene({
               role={armed ? undefined : 'button'}
               aria-pressed={armed ? undefined : item.bed_id === selectedBedId}
               aria-label={bedLabel(item)}
+              transform={shift(item.bed_id)}
+              onPointerDown={
+                onGrabElement === undefined || armed
+                  ? undefined
+                  : (event) => onGrabElement(item.bed_id, event)
+              }
               onContextMenu={
                 onAskWhatItIs === undefined || armed
                   ? undefined
@@ -267,6 +310,12 @@ export function CanvasScene({
                 onSelectObstacle === undefined || armed
                   ? undefined
                   : () => onSelectObstacle(item.obstacle_id)
+              }
+              transform={shift(item.obstacle_id)}
+              onPointerDown={
+                onGrabElement === undefined || armed
+                  ? undefined
+                  : (event) => onGrabElement(item.obstacle_id, event)
               }
               onContextMenu={
                 onAskWhatItIs === undefined || armed

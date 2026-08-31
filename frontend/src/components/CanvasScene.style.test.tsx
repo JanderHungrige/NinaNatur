@@ -155,3 +155,61 @@ describe('CanvasScene — what lies on top of what', () => {
     expect(order.indexOf('lawn')).toBeLessThan(order.indexOf('shed'));
   });
 });
+
+describe('CanvasScene — big things behind, small things in front', () => {
+  function plan(obstacles: GardenOut['obstacles'], beds: GardenOut['beds']) {
+    return render(
+      <GardenCanvas
+        garden={{ ...garden(obstacles), beds }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }}
+        onSelectObstacle={vi.fn()}
+      />,
+    ).container;
+  }
+
+  const wholeGarden: GardenOut['beds'][number] = {
+    bed_id: 9, name: 'Gesamtfläche',
+    polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
+    soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
+    ellenberg_n: null, ellenberg_r: null, sun_hours: null,
+    light_computed_at: null, height_above_ground: 0, label: null, plantings: [],
+  };
+
+  it('keeps the garden-wide bed behind a surface drawn on it', () => {
+    // Both are surfaces, so they ranked equal and the stable sort put beds
+    // last — which is in front. A gravel path inside the garden outline was
+    // buried under it.
+    const container = plan([obstacle('gravel', 1)], [wholeGarden]);
+    const order = [...container.querySelectorAll('.bed, .obstacle')].map((n) =>
+      n.classList.contains('bed') ? 'bed' : 'obstacle',
+    );
+    expect(order.indexOf('bed')).toBeLessThan(order.indexOf('obstacle'));
+  });
+
+  it('keeps a small bed in front of a big lawn', () => {
+    // The rule is size, not kind: a bed drawn on a lawn is meant to be seen.
+    const lawn = { ...obstacle('lawn', 1) };
+    lawn.footprint = [[-15, -15], [15, -15], [15, 15], [-15, 15]];
+    const container = plan([lawn], [{
+      ...wholeGarden, bed_id: 3, name: 'Staudenbeet',
+      polygon: [[0, 0], [3, 0], [3, 2], [0, 2]],
+    }]);
+    const order = [...container.querySelectorAll('.bed, .obstacle')].map((n) =>
+      n.classList.contains('bed') ? 'bed' : 'obstacle',
+    );
+    expect(order.indexOf('obstacle')).toBeLessThan(order.indexOf('bed'));
+  });
+
+  it('still keeps everything standing in front of every surface', () => {
+    // A shed on a lawn, however small the lawn.
+    const shed = obstacle('shed', 2);
+    shed.footprint = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    const container = plan([shed, obstacle('lawn', 1)], []);
+    const order = [...container.querySelectorAll('.obstacle')].map((n) =>
+      (n.getAttribute('class') ?? '').replace('obstacle obstacle--', ''),
+    );
+    expect(order.indexOf('lawn')).toBeLessThan(order.indexOf('shed'));
+  });
+});

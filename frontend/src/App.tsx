@@ -543,6 +543,24 @@ export function App() {
     [garden, run],
   );
 
+  /** Dragged to a new place. The outline is untouched; only its origin moves. */
+  const moveObstacle = useCallback(
+    async (obstacleId: number, by: { x: number; y: number }) => {
+      if (garden === null) return;
+      const element = garden.obstacles.find((o) => o.obstacle_id === obstacleId);
+      if (element === undefined) return;
+      await run('Verschieben', async () => {
+        setGarden(
+          await client.editObstacle(garden.share_token, obstacleId, {
+            x: Math.round((element.x + by.x) * 100) / 100,
+            y: Math.round((element.y + by.y) * 100) / 100,
+          }),
+        );
+      });
+    },
+    [garden, run],
+  );
+
   const reshapeObstacle = useCallback(
     async (obstacleId: number, points: number[][]) => {
       if (garden === null) return;
@@ -795,6 +813,7 @@ export function App() {
                 onAskWhatItIs={askWhatItIs}
                 selectedObstacleId={selectedObstacleId}
                 onResizeObstacle={resizeObstacle}
+                onMoveObstacle={moveObstacle}
                 onReshapeObstacle={reshapeObstacle}
               />
               {asking !== null && garden !== null ? (
