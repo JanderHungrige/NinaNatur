@@ -1016,3 +1016,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   padding-left: 0.6rem;
   color: var(--ink);
 }
+
+/* --- The garden's soil, asked once (Wave 12, feature 48) ------------------ */
+
+.garden-soil__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.garden-soil__actions .link-button {
+  color: var(--leaf);
+  text-decoration: underline;
+}

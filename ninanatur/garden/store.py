@@ -160,7 +160,11 @@ def update_bed(conn: sqlite3.Connection, bed_id: int, **fields: object) -> None:
 #: they are not columns any more — they are still accepted as *input*, and
 #: converted below, because that is what a resize handle produces.
 _EDITABLE = frozenset(
-    {"kind", "x", "y", "label", "height", "height_source", "constraint_hint"}
+    {
+        "kind", "x", "y", "label", "height", "height_source", "constraint_hint",
+        # A bed may differ from its garden: bought soil, a watered corner.
+        "soil_type", "moisture",
+    }
 )
 _GEOMETRY = frozenset({"shape", "width", "depth", "rotation", "points"})
 
@@ -217,12 +221,84 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
     kind = changes.get("kind")
     if isinstance(kind, str) and kind != PLANTING_KIND:
         drop_plantings(conn, obstacle_id)
+    if isinstance(kind, str) and kind == PLANTING_KIND:
+        changes.update(_inherited_soil(conn, obstacle_id, changes))
+    elif "soil_type" in changes or "moisture" in changes:
+        changes.update(_axes_for(conn, obstacle_id, changes))
     update_element(conn, obstacle_id, **changes)
     conn.commit()
 
 
+def _inherited_soil(
+    conn: sqlite3.Connection, element_id: int, changes: dict[str, object]
+) -> dict[str, object]:
+    """What a new bed starts from: its own answer, or the garden's.
+
+    Only fills what is missing. A raised bed with bought soil keeps what it was
+    told, and a garden-level change never reaches back over it.
+    """
+    current = conn.execute(
+        "SELECT soil_type, moisture FROM element WHERE element_id = ?", (element_id,)
+    ).fetchone()
+    if current is None:
+        return {}
+    garden_soil, garden_moisture = _garden_soil(conn, element_id)
+    soil = changes.get("soil_type") or current["soil_type"] or garden_soil
+    moisture = changes.get("moisture") or current["moisture"] or garden_moisture
+    if not isinstance(soil, str) or not isinstance(moisture, str):
+        return {}
+    return {"soil_type": soil, "moisture": moisture, **site_axes_from_soil(soil, moisture)}
+
+
+def _axes_for(
+    conn: sqlite3.Connection, element_id: int, changes: dict[str, object]
+) -> dict[str, object]:
+    """Re-derive the axes when a bed is told a different soil or moisture."""
+    current = conn.execute(
+        "SELECT soil_type, moisture FROM element WHERE element_id = ?", (element_id,)
+    ).fetchone()
+    if current is None:
+        return {}
+    soil = changes.get("soil_type") or current["soil_type"]
+    moisture = changes.get("moisture") or current["moisture"]
+    if not isinstance(soil, str) or not isinstance(moisture, str):
+        return {}
+    return dict(site_axes_from_soil(soil, moisture))
+
+
 def _number(value: object) -> float | None:
     return float(value) if isinstance(value, int | float) else None
+
+
+def set_garden_soil(
+    conn: sqlite3.Connection, garden_id: int, *, soil_type: str, moisture: str
+) -> None:
+    """Record what the ground is, once, for the whole garden.
+
+    One question per garden rather than one per bed — the shape Wave 8 settled
+    on for building heights, and for the same reason: asking it of every bed is
+    a wall in front of somebody who has just arrived.
+
+    Beds that already carry their own answer are left alone. This value is a
+    starting point for what is drawn next, not a broadcast over what exists.
+    """
+    # Validated here rather than at the edge, so the invariant holds whatever
+    # the entry point — and an unknown soil would otherwise reach the axes.
+    site_axes_from_soil(soil_type, moisture)
+    conn.execute(
+        "UPDATE garden SET soil_type = ?, moisture = ? WHERE garden_id = ?",
+        (soil_type, moisture, garden_id),
+    )
+    _touch(conn, garden_id)
+
+
+def _garden_soil(conn: sqlite3.Connection, element_id: int) -> tuple[str | None, str | None]:
+    row = conn.execute(
+        "SELECT g.soil_type, g.moisture FROM element e"
+        " JOIN garden g ON g.garden_id = e.garden_id WHERE e.element_id = ?",
+        (element_id,),
+    ).fetchone()
+    return (None, None) if row is None else (row["soil_type"], row["moisture"])
 
 
 def _touch(conn: sqlite3.Connection, garden_id: int) -> None:
@@ -256,6 +332,8 @@ def _load(conn: sqlite3.Connection, row: sqlite3.Row | None) -> Garden | None:
         longitude=row["longitude"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        soil_type=row["soil_type"],
+        moisture=row["moisture"],
         elements=elements_for(conn, garden_id, plantings),
     )
 

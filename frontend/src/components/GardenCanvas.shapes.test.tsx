@@ -7,7 +7,7 @@ import { GardenCanvas } from './GardenCanvas';
 
 function garden(): GardenOut {
   return {
-    unidentified_plantings: 0, share_token: 'tok', name: 'Testgarten',
+    unidentified_plantings: 0, soil_type: null, moisture: null, share_token: 'tok', name: 'Testgarten',
     latitude: 52.5, longitude: 13.4, created_at: '', updated_at: '',
     beds: [], obstacles: [],
   };

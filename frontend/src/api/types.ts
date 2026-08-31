@@ -423,6 +423,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/soil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Soil
+         * @description Record the garden's soil and moisture.
+         *
+         *     One question per garden. Beds drawn afterwards start from it; beds that
+         *     already carry their own answer are left alone, because a garden-level
+         *     change reaching back over a raised bed somebody set by hand is the kind of
+         *     helpfulness nobody asks for twice.
+         */
+        patch: operations["set_soil_api_v1_gardens__token__soil_patch"];
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/timeline": {
         parameters: {
             query?: never;
@@ -861,12 +886,16 @@ export interface components {
             latitude: number;
             /** Longitude */
             longitude: number;
+            /** Moisture */
+            moisture: string | null;
             /** Name */
             name: string;
             /** Obstacles */
             obstacles: components["schemas"]["ObstacleOut"][];
             /** Share Token */
             share_token: string;
+            /** Soil Type */
+            soil_type: string | null;
             /**
              * Unidentified Plantings
              * @default 0
@@ -874,6 +903,16 @@ export interface components {
             unidentified_plantings: number;
             /** Updated At */
             updated_at: string;
+        };
+        /**
+         * GardenSoil
+         * @description What the ground is, asked once for the whole garden.
+         */
+        GardenSoil: {
+            /** Moisture */
+            moisture: string;
+            /** Soil Type */
+            soil_type: string;
         };
         /**
          * GrowthForm
@@ -1037,6 +1076,8 @@ export interface components {
          * @description Every field optional: an edit says what changed, not what everything is.
          */
         ObstacleUpdate: {
+            /** Constraint Hint */
+            constraint_hint?: string | null;
             /** Depth */
             depth?: number | null;
             /** Height */
@@ -2038,6 +2079,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SightlinesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_soil_api_v1_gardens__token__soil_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GardenSoil"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
                 };
             };
             /** @description Validation Error */

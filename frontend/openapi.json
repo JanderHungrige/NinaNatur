@@ -701,6 +701,17 @@
             "title": "Longitude",
             "type": "number"
           },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -715,6 +726,17 @@
           "share_token": {
             "title": "Share Token",
             "type": "string"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
           },
           "unidentified_plantings": {
             "default": 0,
@@ -733,10 +755,31 @@
           "longitude",
           "created_at",
           "updated_at",
+          "soil_type",
+          "moisture",
           "beds",
           "obstacles"
         ],
         "title": "GardenOut",
+        "type": "object"
+      },
+      "GardenSoil": {
+        "description": "What the ground is, asked once for the whole garden.",
+        "properties": {
+          "moisture": {
+            "title": "Moisture",
+            "type": "string"
+          },
+          "soil_type": {
+            "title": "Soil Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "soil_type",
+          "moisture"
+        ],
+        "title": "GardenSoil",
         "type": "object"
       },
       "GrowthForm": {
@@ -1228,6 +1271,17 @@
       "ObstacleUpdate": {
         "description": "Every field optional: an edit says what changed, not what everything is.",
         "properties": {
+          "constraint_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint Hint"
+          },
           "depth": {
             "anyOf": [
               {
@@ -2337,7 +2391,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.10.18"
+    "version": "V0.11.20"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3381,6 +3435,59 @@
         "summary": "Sightlines",
         "tags": [
           "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/soil": {
+      "patch": {
+        "description": "Record the garden's soil and moisture.\n\nOne question per garden. Beds drawn afterwards start from it; beds that\nalready carry their own answer are left alone, because a garden-level\nchange reaching back over a raised bed somebody set by hand is the kind of\nhelpfulness nobody asks for twice.",
+        "operationId": "set_soil_api_v1_gardens__token__soil_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GardenSoil"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Soil",
+        "tags": [
+          "gardens"
         ]
       }
     },

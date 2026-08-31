@@ -192,6 +192,18 @@ export class NinaNaturClient {
     });
   }
 
+  /** What the ground is, for the whole garden. */
+  async setGardenSoil(
+    token: string,
+    soilType: string,
+    moisture: string,
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/soil`,
+      { method: 'PATCH', body: JSON.stringify({ soil_type: soilType, moisture }) },
+    );
+  }
+
   async deleteGarden(token: string): Promise<void> {
     await this.request<void>(`/api/v1/gardens/${encodeURIComponent(token)}`, {
       method: 'DELETE',

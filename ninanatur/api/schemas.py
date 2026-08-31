@@ -279,6 +279,13 @@ class ObstacleUpdate(BaseModel):
     height_source: str | None = None
 
 
+class GardenSoil(BaseModel):
+    """What the ground is, asked once for the whole garden."""
+
+    soil_type: str
+    moisture: str
+
+
 class BedUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     soil_type: str | None = None
@@ -546,6 +553,10 @@ class GardenOut(BaseModel):
     longitude: float
     created_at: str
     updated_at: str
+    #: What the ground is, asked once. Null until somebody has been asked —
+    #: which is what the interface uses to know it still has to.
+    soil_type: str | None
+    moisture: str | None
     beds: list[BedOut]
     obstacles: list[ObstacleOut]
 

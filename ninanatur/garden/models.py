@@ -167,6 +167,9 @@ class Garden:
     longitude: float
     created_at: str
     updated_at: str
+    #: Asked once and used as the starting point for beds drawn afterwards.
+    soil_type: str | None = None
+    moisture: str | None = None
     elements: list[Element] = field(default_factory=list)
 
     @property

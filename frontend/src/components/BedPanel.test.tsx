@@ -7,6 +7,8 @@ import { BedPanel } from './BedPanel';
 function garden(bedOverrides: Partial<GardenOut['beds'][number]> = {}): GardenOut {
   return {
     unidentified_plantings: 0,
+    soil_type: null,
+    moisture: null,
     share_token: 'tok',
     name: 'Testgarten',
     latitude: 52.5,

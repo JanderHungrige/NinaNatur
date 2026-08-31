@@ -17,6 +17,7 @@ import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
+import { GardenSoil } from './components/GardenSoil';
 import { ShapeTools } from './components/ShapeTools';
 import { GardenId } from './components/GardenId';
 import { objects } from './plural';
@@ -409,6 +410,8 @@ export function App() {
       plantings: bed.plantings.length,
       shape: 'polygon',
       width: null,
+      soilType: bed.soil_type,
+      moisture: bed.moisture,
     });
   }, [garden, selectedBedId]);
 
@@ -432,6 +435,8 @@ export function App() {
         plantings: 0,
         shape: found.shape,
         width: found.width,
+        soilType: null,
+        moisture: null,
       });
     },
     [garden],
@@ -497,6 +502,16 @@ export function App() {
    * promise that a rectangle stays square. The geometry does not convert — it
    * was points all along — so only the promise ends.
    */
+  const saveGardenSoil = useCallback(
+    (soilType: string, moisture: string) => {
+      if (garden === null) return;
+      void run('Boden speichern', async () => {
+        setGarden(await client.setGardenSoil(garden.share_token, soilType, moisture));
+      });
+    },
+    [garden, run],
+  );
+
   const reshapeObstacle = useCallback(
     async (obstacleId: number, points: number[][]) => {
       if (garden === null) return;
@@ -631,6 +646,12 @@ export function App() {
             <div className="column">
               <GardenId token={garden.share_token} />
               <ShapeTools active={tool} onPick={setTool} disabled={busy} />
+              <GardenSoil
+                soilType={garden.soil_type}
+                moisture={garden.moisture}
+                onSave={saveGardenSoil}
+                busy={busy}
+              />
               {account !== null ? (
                 <button type="button" className="link-button" onClick={claim}>
                   Diesen Garten meinem Konto zuordnen

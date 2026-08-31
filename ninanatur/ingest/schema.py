@@ -95,7 +95,12 @@ CREATE TABLE IF NOT EXISTS garden (
     latitude    REAL    NOT NULL,
     longitude   REAL    NOT NULL,
     created_at  TEXT    NOT NULL,
-    updated_at  TEXT    NOT NULL
+    updated_at  TEXT    NOT NULL,
+    -- Asked once, after the garden is made, and used as the starting point for
+    -- every bed drawn afterwards. Null until somebody says: a default here
+    -- would be a claim about a place nobody has described.
+    soil_type   TEXT,
+    moisture    TEXT
 );
 
 -- Everything drawn on the plan. Wave 11 merged `bed` and `obstacle`: being a

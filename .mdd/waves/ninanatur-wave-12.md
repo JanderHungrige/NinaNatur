@@ -55,7 +55,7 @@ back to the start — and the two drawing paths should close the same way.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 1 | panel-order | .mdd/docs/47-panel-order.md | complete | — |
-| 2 | garden-soil | 48-garden-soil | planned | — |
+| 2 | garden-soil | .mdd/docs/48-garden-soil.md | complete | — |
 | 3 | drawing-focus | 49-drawing-focus | planned | — |
 | 4 | polygon-closing | 50-polygon-closing | planned | — |
 | 5 | element-context-menu | 51-element-context-menu | planned | — |
