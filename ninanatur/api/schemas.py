@@ -521,7 +521,11 @@ class Registration(BaseModel):
     """
 
     username: str = Field(min_length=3, max_length=40, pattern=r"^[\w.-]+$")
-    password: str = Field(min_length=10, max_length=200)
+    # Eight, not ten. Ten was arbitrary; eight is the floor NIST SP 800-63B
+    # sets for a user-chosen secret. The same guidance says not to add
+    # composition rules on top, so there are none — what makes a password
+    # strong is said in the form as a hint rather than enforced as a gate.
+    password: str = Field(min_length=8, max_length=200)
     email: str | None = Field(default=None, max_length=200)
 
     @model_validator(mode="after")

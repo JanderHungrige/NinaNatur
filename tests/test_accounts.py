@@ -222,3 +222,34 @@ def test_no_password_or_token_appears_in_a_log_line(
     assert GOOD["password"] not in logged
     cookie = client.cookies.get("ninanatur_session")
     assert cookie is None or cookie not in logged
+
+
+def test_an_eight_character_password_is_accepted(client: TestClient) -> None:
+    """Ten was arbitrary and read as officious. Eight is the floor NIST
+    SP 800-63B sets for a user-chosen secret, and the same guidance says not to
+    add composition rules on top — so there are none."""
+    made = client.post(
+        "/api/v1/accounts",
+        json={"username": "achtzeichen", "password": "garten12"},
+    )
+    assert made.status_code == 201, made.json()
+
+
+def test_a_seven_character_password_is_still_refused(client: TestClient) -> None:
+    """A floor, not a suggestion. Leaving it to the user entirely would put the
+    account below every published guideline."""
+    short = client.post(
+        "/api/v1/accounts",
+        json={"username": "siebenzeichen", "password": "garten1"},
+    )
+    assert short.status_code == 422
+
+
+def test_nothing_is_demanded_of_a_password_but_length(client: TestClient) -> None:
+    """Letters only, no digits, no symbols. A rule forcing a symbol produces
+    "Passwort1!" and very little security."""
+    plain = client.post(
+        "/api/v1/accounts",
+        json={"username": "nurbuchstaben", "password": "gartenzaun"},
+    )
+    assert plain.status_code == 201, plain.json()
