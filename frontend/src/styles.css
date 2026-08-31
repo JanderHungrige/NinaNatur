@@ -1270,12 +1270,12 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   inset: auto 0 0;
   height: 42%;
   background:
-    radial-gradient(1.4px 1.4px at 12% 68%, rgb(236 248 224 / 80%) 50%, transparent 52%),
-    radial-gradient(1.2px 1.2px at 34% 84%, rgb(246 228 168 / 72%) 50%, transparent 52%),
-    radial-gradient(1.6px 1.6px at 57% 74%, rgb(236 248 224 / 76%) 50%, transparent 52%),
-    radial-gradient(1.2px 1.2px at 78% 90%, rgb(246 228 168 / 66%) 50%, transparent 52%),
-    radial-gradient(1.4px 1.4px at 92% 62%, rgb(236 248 224 / 70%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 22% 94%, rgb(246 228 168 / 60%) 50%, transparent 52%),
+    radial-gradient(1.3px 1.3px at 12% 68%, rgb(236 248 224 / 84%) 52%, transparent 58%),
+    radial-gradient(0.8px 0.8px at 34% 84%, rgb(246 228 168 / 76%) 58%, transparent 62%),
+    radial-gradient(2.4px 2.4px at 57% 74%, rgb(236 248 224 / 44%) 12%, transparent 88%),
+    radial-gradient(1.1px 1.1px at 78% 90%, rgb(246 228 168 / 70%) 46%, transparent 60%),
+    radial-gradient(1.9px 1.9px at 92% 62%, rgb(236 248 224 / 52%) 24%, transparent 80%),
+    radial-gradient(0.7px 0.7px at 22% 94%, rgb(246 228 168 / 66%) 60%, transparent 64%),
     linear-gradient(to top, rgb(168 214 142 / 30%) 0%,
       rgb(150 196 128 / 12%) 34%, transparent 84%);
   background-size: 90px 70px, 105px 82px, 120px 92px, 98px 76px,
@@ -1303,35 +1303,47 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   animation-iteration-count: infinite;
 }
 
+/*
+ * Every mote a different size and a different softness.
+ *
+ * The stop positions are the blur: `48% → 54%` is a sharp speck, `10% → 90%`
+ * is a fogged one with no edge at all. Uniform stops were what made the first
+ * version read as a printed dot screen rather than as dust in the air — the
+ * sizes varied between layers but never within one.
+ */
 .living__layer--far {
   background-image:
-    radial-gradient(1px 1px at 18% 12%, rgb(198 224 186 / 62%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 62% 34%, rgb(226 205 141 / 52%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 84% 66%, rgb(198 224 186 / 48%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 33% 78%, rgb(226 205 141 / 42%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 7% 47%, rgb(198 224 186 / 44%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 47% 91%, rgb(226 205 141 / 40%) 50%, transparent 52%),
-    radial-gradient(1px 1px at 72% 6%, rgb(198 224 186 / 38%) 50%, transparent 52%);
+    radial-gradient(1.1px 1.1px at 18% 12%, rgb(198 224 186 / 62%) 45%, transparent 58%),
+    radial-gradient(0.7px 0.7px at 62% 34%, rgb(226 205 141 / 58%) 52%, transparent 56%),
+    radial-gradient(1.8px 1.8px at 84% 66%, rgb(198 224 186 / 34%) 12%, transparent 88%),
+    radial-gradient(0.9px 0.9px at 33% 78%, rgb(226 205 141 / 48%) 50%, transparent 54%),
+    radial-gradient(1.4px 1.4px at 7% 47%, rgb(198 224 186 / 38%) 22%, transparent 78%),
+    radial-gradient(0.6px 0.6px at 47% 91%, rgb(226 205 141 / 60%) 55%, transparent 60%),
+    radial-gradient(2.2px 2.2px at 72% 6%, rgb(198 224 186 / 26%) 8%, transparent 92%),
+    radial-gradient(1px 1px at 26% 58%, rgb(226 205 141 / 44%) 40%, transparent 66%);
   background-size: 120px 150px;
   animation-duration: 150s;
 }
 
 .living__layer--mid {
   background-image:
-    radial-gradient(1.6px 1.6px at 28% 22%, rgb(214 236 200 / 78%) 50%, transparent 52%),
-    radial-gradient(1.6px 1.6px at 71% 58%, rgb(238 216 152 / 70%) 50%, transparent 52%),
-    radial-gradient(1.6px 1.6px at 9% 81%, rgb(214 236 200 / 60%) 50%, transparent 52%),
-    radial-gradient(1.4px 1.4px at 52% 40%, rgb(238 216 152 / 56%) 50%, transparent 52%),
-    radial-gradient(1.4px 1.4px at 88% 14%, rgb(214 236 200 / 52%) 50%, transparent 52%);
+    radial-gradient(1.5px 1.5px at 28% 22%, rgb(214 236 200 / 78%) 48%, transparent 56%),
+    radial-gradient(2.4px 2.4px at 71% 58%, rgb(238 216 152 / 42%) 14%, transparent 86%),
+    radial-gradient(1px 1px at 9% 81%, rgb(214 236 200 / 72%) 56%, transparent 60%),
+    radial-gradient(1.9px 1.9px at 52% 40%, rgb(238 216 152 / 50%) 28%, transparent 74%),
+    radial-gradient(1.2px 1.2px at 88% 14%, rgb(214 236 200 / 64%) 44%, transparent 62%),
+    radial-gradient(3px 3px at 38% 68%, rgb(238 216 152 / 30%) 6%, transparent 94%);
   background-size: 190px 240px;
   animation-duration: 96s;
 }
 
 .living__layer--near {
   background-image:
-    radial-gradient(2.6px 2.6px at 46% 18%, rgb(232 246 220 / 85%) 50%, transparent 52%),
-    radial-gradient(2.6px 2.6px at 12% 62%, rgb(246 226 166 / 78%) 50%, transparent 52%),
-    radial-gradient(2.2px 2.2px at 88% 88%, rgb(232 246 220 / 66%) 50%, transparent 52%);
+    radial-gradient(2.2px 2.2px at 46% 18%, rgb(232 246 220 / 88%) 46%, transparent 58%),
+    radial-gradient(4px 4px at 12% 62%, rgb(246 226 166 / 38%) 8%, transparent 92%),
+    radial-gradient(1.4px 1.4px at 88% 88%, rgb(232 246 220 / 80%) 58%, transparent 62%),
+    radial-gradient(3px 3px at 64% 44%, rgb(246 226 166 / 46%) 18%, transparent 82%),
+    radial-gradient(1.8px 1.8px at 24% 8%, rgb(232 246 220 / 70%) 40%, transparent 68%);
   background-size: 400px 480px;
   animation-duration: 62s;
 }
