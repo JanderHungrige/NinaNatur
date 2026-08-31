@@ -13,6 +13,8 @@ interface Props {
   createForm: ReactNode;
   /** Finding the garden on a map — the way most people will actually start. */
   mapPicker?: ReactNode;
+  /** The signed-in visitor's own gardens. Absent when nobody is signed in. */
+  myGardens?: ReactNode;
   onOpen: (token: string) => void;
   busy: boolean;
   loadStats: () => Promise<StatsOut | null>;
@@ -37,6 +39,7 @@ function de(n: number): string {
 export function Landing({
   createForm,
   mapPicker,
+  myGardens,
   onOpen,
   busy,
   loadStats,
@@ -95,6 +98,10 @@ export function Landing({
       )}
         </div>
       </div>
+
+      {/* Somebody signed in has already made gardens; offering to make
+          another before showing them is the wrong order. */}
+      {myGardens !== undefined && <div className="landing__mine">{myGardens}</div>}
 
       {/* One way in, not three. Three equal boxes said three equal choices;
           there is one, and "Garten öffnen" beside it is not a way of making a

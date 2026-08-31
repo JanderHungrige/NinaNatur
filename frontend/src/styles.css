@@ -1394,3 +1394,52 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   }
   .living__bokeh { opacity: 0.2; }
 }
+
+/* --- The gardens an account has claimed ---------------------------------- */
+
+.landing__mine { margin-bottom: 1.5rem; }
+
+.my-gardens__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.my-gardens__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.my-gardens__open {
+  display: grid;
+  flex: 1 1 12rem;
+  min-width: 0;
+  gap: 0.1rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.my-gardens__open:hover:not(:disabled) { border-color: var(--leaf); }
+.my-gardens__name { font-weight: 600; }
+.my-gardens__when { color: var(--ink-muted); font-size: 0.82rem; }
+
+.my-gardens__confirm { display: flex; align-items: center; gap: 0.6rem; }
+
+/* Named, and it looks like what it does. */
+.my-gardens__danger {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #a8442f;
+  border-radius: var(--radius);
+  background: #a8442f;
+  color: #fff;
+  cursor: pointer;
+}
