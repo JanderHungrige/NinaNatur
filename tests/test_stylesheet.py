@@ -134,3 +134,22 @@ def test_the_second_column_only_appears_when_both_fit() -> None:
     assert float(breakpoint_.group(1)) >= needed, (
         f"two columns start at {breakpoint_.group(1)}rem but need {needed}rem"
     )
+
+
+def test_the_landing_page_is_not_squeezed_into_the_garden_sidebar() -> None:
+    """`.layout` is the garden's two-column grid. The landing page was rendered
+    inside it, so above the breakpoint it was handed the 22rem sidebar column —
+    352 px of landing page on a 1600 px window, and correct again only when the
+    window was made *smaller* than the breakpoint.
+
+    The guard is on the markup rather than the CSS: whichever way it is solved,
+    a single element must not be both.
+    """
+    app = (
+        STYLESHEET.parent / "App.tsx"
+    ).read_text(encoding="utf-8")
+    landing = app.index("<Landing")
+    opening = app.rindex("<main", 0, landing)
+    assert 'className="layout"' not in app[opening:landing], (
+        "the landing page is inside the garden's two-column grid"
+    )

@@ -1,16 +1,16 @@
 ---
-id: ninanatur-wave-13
-title: "Wave 13: One plan, fewest possible parcels"
+id: ninanatur-wave-20
+title: "Wave 20: One plan, fewest possible parcels"
 initiative: ninanatur
 initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-12
 demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
 created: 2026-08-27
-hash: aa221134
+hash: c663fa57
 ---
 
-# Wave 13 — One plan, fewest possible parcels
+# Wave 20 — One plan, fewest possible parcels
 
 *Moved from Wave 6, then to Wave 13 when the drawing rework took Wave 10
 and further waves were reserved between.*
