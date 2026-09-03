@@ -1,1 +1,4409 @@
-{"openapi":"3.1.0","info":{"title":"NinaNatur","version":"V0.14.36"},"paths":{"/api/v1/plants":{"get":{"tags":["plants"],"summary":"Search Plants","description":"Species ranked by how well they fit the given site conditions.","operationId":"search_plants_api_v1_plants_get","parameters":[{"name":"light","in":"query","required":false,"schema":{"anyOf":[{"type":"number","maximum":10,"minimum":0},{"type":"null"}],"title":"Light"}},{"name":"moisture","in":"query","required":false,"schema":{"anyOf":[{"type":"number","maximum":10,"minimum":0},{"type":"null"}],"title":"Moisture"}},{"name":"nutrients","in":"query","required":false,"schema":{"anyOf":[{"type":"number","maximum":10,"minimum":0},{"type":"null"}],"title":"Nutrients"}},{"name":"reaction","in":"query","required":false,"schema":{"anyOf":[{"type":"number","maximum":10,"minimum":0},{"type":"null"}],"title":"Reaction"}},{"name":"temperature","in":"query","required":false,"schema":{"anyOf":[{"type":"number","maximum":10,"minimum":0},{"type":"null"}],"title":"Temperature"}},{"name":"height_min","in":"query","required":false,"schema":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}],"title":"Height Min"}},{"name":"height_max","in":"query","required":false,"schema":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}],"title":"Height Max"}},{"name":"flowering_month","in":"query","required":false,"schema":{"anyOf":[{"type":"integer","maximum":12,"minimum":1},{"type":"null"}],"title":"Flowering Month"}},{"name":"growth_form","in":"query","required":false,"schema":{"anyOf":[{"$ref":"#/components/schemas/GrowthForm"},{"type":"null"}],"title":"Growth Form"}},{"name":"include_unknown","in":"query","required":false,"schema":{"type":"boolean","default":false,"title":"Include Unknown"}},{"name":"colour","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Colour"}},{"name":"limit","in":"query","required":false,"schema":{"type":"integer","maximum":200,"minimum":1,"default":50,"title":"Limit"}},{"name":"offset","in":"query","required":false,"schema":{"type":"integer","minimum":0,"default":0,"title":"Offset"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlantSearchResponse"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/plants/{taxon_id}":{"get":{"tags":["plants"],"summary":"Plant Detail","description":"One species, every trait with the source behind it.","operationId":"plant_detail_api_v1_plants__taxon_id__get","parameters":[{"name":"taxon_id","in":"path","required":true,"schema":{"type":"integer","title":"Taxon Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlantDetail"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/plants/{taxon_id}/info":{"get":{"tags":["plants"],"summary":"Plant Info","description":"A description and photograph, from Wikipedia, cached on this deployment.\n\n404 when no article exists in either language — an honest absence rather than\nan empty panel that looks like a loading failure.","operationId":"plant_info_api_v1_plants__taxon_id__info_get","parameters":[{"name":"taxon_id","in":"path","required":true,"schema":{"type":"integer","title":"Taxon Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SpeciesInfoOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/stats":{"get":{"tags":["plants"],"summary":"Stats","description":"The catalogue in numbers, for the page that introduces it.","operationId":"stats_api_v1_stats_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/StatsOut"}}}}}}},"/api/v1/gardens":{"post":{"tags":["gardens"],"summary":"Create","description":"Create a garden. The token comes back here and is the only way back in.\n\nA signed-in visitor's garden is theirs from the moment it exists. It used to\nbe nobody's unless something called `/claim` afterwards, and nothing did —\nso an account kept the links and then listed none of them.\n\n`current_account` rather than `require_account`: making a garden without an\naccount is the ordinary case, and the token is still the whole of its\naccess control either way.","operationId":"create_api_v1_gardens_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenCreate"}}},"required":true},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenCreated"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}":{"get":{"tags":["gardens"],"summary":"Read","operationId":"read_api_v1_gardens__token__get","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"delete":{"tags":["gardens"],"summary":"Remove","operationId":"remove_api_v1_gardens__token__delete","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"204":{"description":"Successful Response"},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/beds":{"post":{"tags":["gardens"],"summary":"Create Bed","description":"Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\n`add_bed` computes the light itself, so the invariant does not depend on which\nentry point created the bed — it used to live here, and a bed made through the\nstore had no light at all.","operationId":"create_bed_api_v1_gardens__token__beds_post","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BedCreate"}}}},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/obstacles":{"post":{"tags":["gardens"],"summary":"Create Obstacle","description":"Add an obstacle and recompute in the same call.\n\nRequiring a second request would leave the plan showing light values that no\nlonger match its own obstacles — and nothing would make that visible.","operationId":"create_obstacle_api_v1_gardens__token__obstacles_post","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ObstacleCreate"}}}},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/recompute":{"post":{"tags":["gardens"],"summary":"Recompute","operationId":"recompute_api_v1_gardens__token__recompute_post","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/beds/{bed_id}":{"patch":{"tags":["gardens"],"summary":"Edit Bed","description":"Change what a bed is. Raising it changes its light, so the light is redone.\n\nLeaving the stored number alone would leave the screen describing a bed that\nno longer exists — the same reason adding an obstacle recomputes.","operationId":"edit_bed_api_v1_gardens__token__beds__bed_id__patch","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"bed_id","in":"path","required":true,"schema":{"type":"integer","title":"Bed Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BedUpdate"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/obstacles/{obstacle_id}":{"patch":{"tags":["gardens"],"summary":"Edit Obstacle","description":"Change what an obstacle is, and redo every bed's light.","operationId":"edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"obstacle_id","in":"path","required":true,"schema":{"type":"integer","title":"Obstacle Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ObstacleUpdate"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"delete":{"tags":["gardens"],"summary":"Remove Element","description":"Remove an element from the plan.\n\nNothing could be removed until now: a shape drawn by mistake stayed. The\ngarden comes back rather than a 204, because deleting a bed changes what\nevery other bed gets — the light is recomputed and the caller needs the\nresult, not a second request to find it.","operationId":"remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"obstacle_id","in":"path","required":true,"schema":{"type":"integer","title":"Obstacle Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/soil":{"patch":{"tags":["gardens"],"summary":"Set Soil","description":"Record the garden's soil and moisture.\n\nOne question per garden. Beds drawn afterwards start from it; beds that\nalready carry their own answer are left alone, because a garden-level\nchange reaching back over a raised bed somebody set by hand is the kind of\nhelpfulness nobody asks for twice.","operationId":"set_soil_api_v1_gardens__token__soil_patch","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenSoil"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/claim":{"post":{"tags":["gardens"],"summary":"Claim","description":"Put a garden under an account.\n\nHolding the link is enough to edit a garden — that was Wave 3's bargain and\nit stays — but not enough to take it from whoever claimed it. Share links go\non working afterwards: removing them to push registration would be a\ndowngrade dressed as a feature.","operationId":"claim_api_v1_gardens__token__claim_post","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/colours/{taxon_id}":{"put":{"tags":["planning"],"summary":"Note Colour","description":"Record what this species flowers in, here.\n\nIt never reaches the catalogue: that ships in the image and is re-synced at\nstartup, so a value written there would be overwritten by the next\ndeployment and would change every other garden until it was.","operationId":"note_colour_api_v1_gardens__token__colours__taxon_id__put","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"taxon_id","in":"path","required":true,"schema":{"type":"integer","title":"Taxon Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ColourObservation"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/beds/{bed_id}/plantings":{"post":{"tags":["planning"],"summary":"Create Planting","description":"Put a plant in a bed, named by id or by the words the user typed.\n\nA name that resolves to exactly one species is stored with that species and\ncounts like any other planting. One that does not is stored anyway, marked\nunidentified: discarding it would tell someone their garden is wrong because\nour catalogue is incomplete.","operationId":"create_planting_api_v1_gardens__token__beds__bed_id__plantings_post","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"bed_id","in":"path","required":true,"schema":{"type":"integer","title":"Bed Id"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlantingCreate"}}}},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/plantings/{planting_id}":{"delete":{"tags":["planning"],"summary":"Delete Planting","description":"Remove a planting. Reached through its garden, never by a bare id.","operationId":"delete_planting_api_v1_gardens__token__plantings__planting_id__delete","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"planting_id","in":"path","required":true,"schema":{"type":"integer","title":"Planting Id"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/GardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/beds/{bed_id}/suggestions":{"get":{"tags":["planning"],"summary":"Bed Suggestions","description":"Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.","operationId":"bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"bed_id","in":"path","required":true,"schema":{"type":"integer","title":"Bed Id"}},{"name":"limit","in":"query","required":false,"schema":{"type":"integer","maximum":100,"minimum":1,"default":20,"title":"Limit"}},{"name":"colour","in":"query","required":false,"schema":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Colour"}},{"name":"height_min","in":"query","required":false,"schema":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}],"title":"Height Min"}},{"name":"height_max","in":"query","required":false,"schema":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}],"title":"Height Max"}},{"name":"flowering_month","in":"query","required":false,"schema":{"anyOf":[{"type":"integer","maximum":12,"minimum":1},{"type":"null"}],"title":"Flowering Month"}},{"name":"growth_form","in":"query","required":false,"schema":{"anyOf":[{"$ref":"#/components/schemas/GrowthForm"},{"type":"null"}],"title":"Growth Form"}},{"name":"include_unknown","in":"query","required":false,"schema":{"type":"boolean","default":false,"title":"Include Unknown"}},{"name":"include_trees","in":"query","required":false,"schema":{"type":"boolean","default":true,"title":"Include Trees"}},{"name":"include_introduced","in":"query","required":false,"schema":{"type":"boolean","default":false,"title":"Include Introduced"}},{"name":"exclude_planted","in":"query","required":false,"schema":{"type":"boolean","default":true,"title":"Exclude Planted"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BedSuggestions"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/timeline":{"get":{"tags":["planning"],"summary":"Timeline","description":"The garden's bloom year, month by month, with gaps marked.\n\n`forage=true` (the default) weights each flowering planting by its counted\nGerman insect partners, so a month of nectarless cultivars is correctly a\ngap. `forage=false` counts every planting equally, for planning by looks.","operationId":"timeline_api_v1_gardens__token__timeline_get","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}},{"name":"forage","in":"query","required":false,"schema":{"type":"boolean","default":true,"title":"Forage"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/TimelineOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/score":{"get":{"tags":["planning"],"summary":"Score","description":"What this planting is worth to insects, with its components.","operationId":"score_api_v1_gardens__token__score_get","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ScoreOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/improvements":{"get":{"tags":["planning"],"summary":"Improvements","description":"What to plant, and what it would gain.\n\nAdditions come first because they are the safer advice: a swap removes\nsomething, and the score will recommend removing a valuable plant whose month\nis already saturated. See the known issue in 19-swap-suggestions.","operationId":"improvements_api_v1_gardens__token__improvements_get","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ImprovementsOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/bloom":{"get":{"tags":["planning"],"summary":"Bloom","description":"Which colours each bed carries in each month.\n\nServer-side because the frontend has a bed's plantings but neither their\nflowering windows nor their colours, and sending those per planting would\nship the catalogue to the browser to render a swatch.","operationId":"bloom_api_v1_gardens__token__bloom_get","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/BloomPalette"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/{token}/sightlines":{"post":{"tags":["planning"],"summary":"Sightlines","description":"What is visible from a point in the garden.\n\nThe same cylinders the shading model uses, seen from an eye instead of from\nthe sun — so a hedge blocks sight exactly as it blocks light, and a raised\nbed stands above both.","operationId":"sightlines_api_v1_gardens__token__sightlines_post","parameters":[{"name":"token","in":"path","required":true,"schema":{"type":"string","title":"Token"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ViewpointIn"}}}},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/SightlinesOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/geo/search":{"get":{"tags":["geo"],"summary":"Find Place","description":"Addresses matching a query. Empty in, empty out — a keystroke-per-request\nsearch would be a poor way to treat a free community service.","operationId":"find_place_api_v1_geo_search_get","parameters":[{"name":"q","in":"query","required":false,"schema":{"type":"string","maxLength":200,"default":"","title":"Q"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlaceSearchOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/geo/imagery":{"get":{"tags":["geo"],"summary":"Imagery At","description":"Which state's orthophotos may be shown here, if any.\n\nPer Bundesland because the licences are: there is no federal source, and a\nstate without an entry gets no imagery rather than a neighbour's.","operationId":"imagery_at_api_v1_geo_imagery_get","parameters":[{"name":"lat","in":"query","required":true,"schema":{"type":"number","maximum":55.2,"minimum":47.0,"title":"Lat"}},{"name":"lon","in":"query","required":true,"schema":{"type":"number","maximum":15.2,"minimum":5.5,"title":"Lon"}}],"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ImageryOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/gardens/from-map":{"post":{"tags":["geo"],"summary":"Garden From Map","description":"Create a garden from an outline drawn on the map, with what shades it.\n\nThe margin is 50 m and objects are filtered by whether their shadow could\narrive at all — generous where it matters, quiet where it does not.","operationId":"garden_from_map_api_v1_gardens_from_map_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/MapSelection"}}},"required":true},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/MapGardenOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/accounts":{"post":{"tags":["accounts"],"summary":"Register","description":"Create an account. Email is optional and the cost of that is returned.","operationId":"register_api_v1_accounts_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Registration"}}},"required":true},"responses":{"201":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AccountOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}}},"/api/v1/sessions":{"post":{"tags":["accounts"],"summary":"Log In","description":"Log in. A wrong password and an unknown user answer identically.","operationId":"log_in_api_v1_sessions_post","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Credentials"}}},"required":true},"responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AccountOut"}}}},"422":{"description":"Validation Error","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HTTPValidationError"}}}}}},"delete":{"tags":["accounts"],"summary":"Log Out","operationId":"log_out_api_v1_sessions_delete","responses":{"204":{"description":"Successful Response"}}}},"/api/v1/accounts/me":{"get":{"tags":["accounts"],"summary":"Me","operationId":"me_api_v1_accounts_me_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/AccountOut"}}}}}}},"/api/v1/accounts/me/gardens":{"get":{"tags":["accounts"],"summary":"My Gardens","description":"The gardens this account has claimed.\n\nA place to keep the links, not a replacement for them: the share token is\nstill what opens a garden, and it comes back here so the list can.","operationId":"my_gardens_api_v1_accounts_me_gardens_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/OwnedGardens"}}}}}}},"/healthz":{"get":{"summary":"Healthz","description":"Liveness probe for the deploy cron and the reverse proxy.\n\nDeliberately dependency-free: it must answer while the app is otherwise\nbroken, or a failing deploy looks identical to a failing database.","operationId":"healthz_healthz_get","responses":{"200":{"description":"Successful Response","content":{"application/json":{"schema":{}}}}}}}},"components":{"schemas":{"AccountOut":{"properties":{"username":{"type":"string","title":"Username"},"email":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Email"},"recovery_note":{"type":"string","title":"Recovery Note"}},"type":"object","required":["username","email","recovery_note"],"title":"AccountOut","description":"Never carries the password or the hash — there is no field for either."},"AxisFitOut":{"properties":{"band":{"type":"string","title":"Band"},"score":{"type":"number","title":"Score"},"half_widths_away":{"type":"number","title":"Half Widths Away"},"species_value":{"type":"number","title":"Species Value"},"niche_width":{"type":"number","title":"Niche Width"},"width_estimated":{"type":"boolean","title":"Width Estimated"}},"type":"object","required":["band","score","half_widths_away","species_value","niche_width","width_estimated"],"title":"AxisFitOut","description":"Why one axis scored what it did — Wave 4 renders the band, not the number."},"BedCreate":{"properties":{"name":{"type":"string","maxLength":200,"minLength":1,"title":"Name"},"polygon":{"items":{"items":{"type":"number"},"type":"array"},"type":"array","title":"Polygon"},"soil_type":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Soil Type"},"moisture":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Moisture"}},"type":"object","required":["name","polygon"],"title":"BedCreate"},"BedMonthColours":{"properties":{"month":{"type":"integer","title":"Month"},"colours":{"items":{"type":"string"},"type":"array","title":"Colours"},"unknown":{"type":"integer","title":"Unknown"},"flowering":{"type":"integer","title":"Flowering"}},"type":"object","required":["month","colours","unknown","flowering"],"title":"BedMonthColours"},"BedOut":{"properties":{"bed_id":{"type":"integer","title":"Bed Id"},"name":{"type":"string","title":"Name"},"polygon":{"items":{"items":{"type":"number"},"type":"array"},"type":"array","title":"Polygon"},"soil_type":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Soil Type"},"moisture":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Moisture"},"ellenberg_l":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Ellenberg L"},"ellenberg_m":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Ellenberg M"},"ellenberg_n":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Ellenberg N"},"ellenberg_r":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Ellenberg R"},"sun_hours":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Sun Hours"},"light_computed_at":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Light Computed At"},"height_above_ground":{"type":"number","title":"Height Above Ground"},"label":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Label"},"plantings":{"items":{"$ref":"#/components/schemas/PlantingOut"},"type":"array","title":"Plantings"}},"type":"object","required":["bed_id","name","polygon","soil_type","moisture","ellenberg_l","ellenberg_m","ellenberg_n","ellenberg_r","sun_hours","light_computed_at","height_above_ground","label","plantings"],"title":"BedOut"},"BedPalette":{"properties":{"bed_id":{"type":"integer","title":"Bed Id"},"months":{"items":{"$ref":"#/components/schemas/BedMonthColours"},"type":"array","title":"Months"}},"type":"object","required":["bed_id","months"],"title":"BedPalette"},"BedSuggestions":{"properties":{"bed_id":{"type":"integer","title":"Bed Id"},"bed_name":{"type":"string","title":"Bed Name"},"site_axes":{"additionalProperties":{"type":"number"},"type":"object","title":"Site Axes"},"total":{"type":"integer","title":"Total"},"items":{"items":{"$ref":"#/components/schemas/PlantSummary"},"type":"array","title":"Items"},"woody":{"items":{"$ref":"#/components/schemas/PlantSummary"},"type":"array","title":"Woody","default":[]},"woody_total":{"type":"integer","title":"Woody Total","default":0},"filters":{"additionalProperties":{"$ref":"#/components/schemas/FilterCountsOut"},"type":"object","title":"Filters","default":{}}},"type":"object","required":["bed_id","bed_name","site_axes","total","items"],"title":"BedSuggestions","description":"Suggestions for one bed, with the site vector they were ranked against —\nso the UI can say what it matched on rather than showing a bare list."},"BedUpdate":{"properties":{"name":{"anyOf":[{"type":"string","maxLength":120,"minLength":1},{"type":"null"}],"title":"Name"},"soil_type":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Soil Type"},"moisture":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Moisture"},"height_above_ground":{"anyOf":[{"type":"number","maximum":20.0,"minimum":0.0},{"type":"null"}],"title":"Height Above Ground"},"label":{"anyOf":[{"type":"string","maxLength":200},{"type":"null"}],"title":"Label"}},"type":"object","title":"BedUpdate"},"BloomPalette":{"properties":{"beds":{"items":{"$ref":"#/components/schemas/BedPalette"},"type":"array","title":"Beds"}},"type":"object","required":["beds"],"title":"BloomPalette"},"ChangeOut":{"properties":{"taxon_id":{"type":"integer","title":"Taxon Id"},"canonical_name":{"type":"string","title":"Canonical Name"},"bed_id":{"type":"integer","title":"Bed Id"},"bed_name":{"type":"string","title":"Bed Name"},"gain":{"type":"number","title":"Gain"},"resulting_score":{"type":"number","title":"Resulting Score"},"reason":{"type":"string","title":"Reason"},"german_partners":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"German Partners"},"replaces_planting_id":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Replaces Planting Id"},"replaces_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Replaces Name"}},"type":"object","required":["taxon_id","canonical_name","bed_id","bed_name","gain","resulting_score","reason","german_partners","replaces_planting_id","replaces_name"],"title":"ChangeOut"},"ColourObservation":{"properties":{"colour":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Colour"}},"type":"object","title":"ColourObservation","description":"A flower colour the gardener recorded. `null` takes it back."},"Credentials":{"properties":{"username":{"type":"string","maxLength":40,"minLength":1,"title":"Username"},"password":{"type":"string","maxLength":200,"minLength":1,"title":"Password"}},"type":"object","required":["username","password"],"title":"Credentials"},"FilterCountsOut":{"properties":{"matched":{"type":"integer","title":"Matched"},"unknown":{"type":"integer","title":"Unknown"},"excluded":{"type":"integer","title":"Excluded"}},"type":"object","required":["matched","unknown","excluded"],"title":"FilterCountsOut","description":"How one active filter divided the candidate set.\n\nReported so the UI can say what was left out. `unknown` is not a rounding\nerror: height is recorded for 44% of German species and colour for 6.6%, and\na filter that hides that is indistinguishable from one that is broken."},"FitOut":{"properties":{"score":{"type":"number","title":"Score"},"axes":{"additionalProperties":{"$ref":"#/components/schemas/AxisFitOut"},"type":"object","title":"Axes"}},"type":"object","required":["score","axes"],"title":"FitOut"},"GapOut":{"properties":{"months":{"items":{"type":"integer"},"type":"array","title":"Months"},"length":{"type":"integer","title":"Length"}},"type":"object","required":["months","length"],"title":"GapOut"},"GardenCreate":{"properties":{"name":{"type":"string","maxLength":200,"minLength":1,"title":"Name"},"latitude":{"type":"number","maximum":90.0,"minimum":-90.0,"title":"Latitude"},"longitude":{"type":"number","maximum":180.0,"minimum":-180.0,"title":"Longitude"}},"type":"object","required":["name","latitude","longitude"],"title":"GardenCreate","description":"Creating a garden. Latitude and longitude are range-checked here, before\nthey reach solar code that would happily compute a sun path for latitude 500."},"GardenCreated":{"properties":{"share_token":{"type":"string","title":"Share Token"},"name":{"type":"string","title":"Name"}},"type":"object","required":["share_token","name"],"title":"GardenCreated","description":"The token is returned; the numeric id deliberately is not."},"GardenOut":{"properties":{"unidentified_plantings":{"type":"integer","title":"Unidentified Plantings","default":0},"share_token":{"type":"string","title":"Share Token"},"name":{"type":"string","title":"Name"},"latitude":{"type":"number","title":"Latitude"},"longitude":{"type":"number","title":"Longitude"},"created_at":{"type":"string","title":"Created At"},"updated_at":{"type":"string","title":"Updated At"},"soil_type":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Soil Type"},"moisture":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Moisture"},"observed_colours":{"additionalProperties":{"type":"string"},"type":"object","title":"Observed Colours"},"beds":{"items":{"$ref":"#/components/schemas/BedOut"},"type":"array","title":"Beds"},"obstacles":{"items":{"$ref":"#/components/schemas/ObstacleOut"},"type":"array","title":"Obstacles"}},"type":"object","required":["share_token","name","latitude","longitude","created_at","updated_at","soil_type","moisture","observed_colours","beds","obstacles"],"title":"GardenOut"},"GardenSoil":{"properties":{"soil_type":{"type":"string","title":"Soil Type"},"moisture":{"type":"string","title":"Moisture"}},"type":"object","required":["soil_type","moisture"],"title":"GardenSoil","description":"What the ground is, asked once for the whole garden."},"GrowthForm":{"type":"string","enum":["forb","herb","graminoid","shrub","subshrub","tree"],"title":"GrowthForm","description":"The growth forms the catalogue actually records.\n\nA closed set rather than a free string. The value never reaches SQL, but an\nunbounded parameter that silently matches nothing is its own kind of lie —\nthe user cannot tell a typo from an empty catalogue."},"HTTPValidationError":{"properties":{"detail":{"items":{"$ref":"#/components/schemas/ValidationError"},"type":"array","title":"Detail"}},"type":"object","title":"HTTPValidationError"},"HeightReport":{"properties":{"measured":{"type":"integer","title":"Measured"},"estimated":{"type":"integer","title":"Estimated"},"assumed":{"type":"integer","title":"Assumed"}},"type":"object","required":["measured","estimated","assumed"],"title":"HeightReport","description":"Where the heights around this garden came from.\n\nReported because an assumed height presented as a measured one is the same\nlie as a filter that hides what it dropped."},"ImageryOut":{"properties":{"available":{"type":"boolean","title":"Available"},"state":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"State"},"url":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Url"},"layer":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Layer"},"licence":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Licence"},"attribution":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Attribution"}},"type":"object","required":["available"],"title":"ImageryOut","description":"The aerial imagery available at a place, if any.\n\n`attribution` is a condition of the licence, not a caption — DL-DE/BY-2.0\nand CC-BY-4.0 both require the named credit, so imagery shown without it is\nimagery used outside its terms."},"ImprovementsOut":{"properties":{"current_score":{"type":"number","title":"Current Score"},"additions":{"items":{"$ref":"#/components/schemas/ChangeOut"},"type":"array","title":"Additions"},"swaps":{"items":{"$ref":"#/components/schemas/ChangeOut"},"type":"array","title":"Swaps"}},"type":"object","required":["current_score","additions","swaps"],"title":"ImprovementsOut"},"LatLonIn":{"properties":{"lat":{"type":"number","maximum":55.2,"minimum":47.0,"title":"Lat"},"lon":{"type":"number","maximum":15.2,"minimum":5.5,"title":"Lon"}},"type":"object","required":["lat","lon"],"title":"LatLonIn"},"MapGardenOut":{"properties":{"garden":{"$ref":"#/components/schemas/GardenOut"},"heights":{"$ref":"#/components/schemas/HeightReport"}},"type":"object","required":["garden","heights"],"title":"MapGardenOut","description":"A garden created from the map, and what the map could and could not say."},"MapSelection":{"properties":{"name":{"type":"string","maxLength":120,"minLength":1,"title":"Name"},"outline":{"items":{"$ref":"#/components/schemas/LatLonIn"},"type":"array","minItems":3,"title":"Outline"},"neighbourhood":{"type":"string","title":"Neighbourhood","default":"detached"}},"type":"object","required":["name","outline"],"title":"MapSelection"},"MonthOut":{"properties":{"month":{"type":"integer","title":"Month"},"coverage":{"type":"number","title":"Coverage"},"species":{"items":{"type":"string"},"type":"array","title":"Species"}},"type":"object","required":["month","coverage","species"],"title":"MonthOut"},"ObjectKind":{"type":"string","enum":["house","shed","wall","fence","hedge","tree","shrub","bed","lawn","paving","gravel","pond","path","street","other"],"title":"ObjectKind","description":"The things a gardener points at and names.\n\nStored as text, so a renamed member orphans every saved row — the values are\npart of the data, not an implementation detail."},"ObstacleCreate":{"properties":{"kind":{"$ref":"#/components/schemas/ObjectKind"},"x":{"type":"number","title":"X"},"y":{"type":"number","title":"Y"},"shape":{"anyOf":[{"$ref":"#/components/schemas/Shape"},{"type":"null"}]},"width":{"anyOf":[{"type":"number","maximum":500.0,"exclusiveMinimum":0.0},{"type":"null"}],"title":"Width"},"depth":{"anyOf":[{"type":"number","maximum":500.0,"exclusiveMinimum":0.0},{"type":"null"}],"title":"Depth"},"rotation":{"type":"number","maximum":360.0,"minimum":-360.0,"title":"Rotation","default":0.0},"points":{"anyOf":[{"items":{"items":{"type":"number"},"type":"array"},"type":"array","maxItems":500},{"type":"null"}],"title":"Points"},"height":{"anyOf":[{"type":"number","maximum":200.0,"exclusiveMinimum":0.0},{"type":"null"}],"title":"Height"},"label":{"anyOf":[{"type":"string","maxLength":200},{"type":"null"}],"title":"Label"}},"type":"object","required":["kind","x","y"],"title":"ObstacleCreate"},"ObstacleOut":{"properties":{"obstacle_id":{"type":"integer","title":"Obstacle Id"},"kind":{"type":"string","title":"Kind"},"label":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Label"},"height_source":{"type":"string","title":"Height Source"},"x":{"type":"number","title":"X"},"y":{"type":"number","title":"Y"},"shape":{"type":"string","title":"Shape"},"width":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Width"},"points":{"anyOf":[{"items":{"items":{"type":"number"},"type":"array"},"type":"array"},{"type":"null"}],"title":"Points"},"constraint_hint":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Constraint Hint"},"height":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Height"},"footprint":{"items":{"items":{"type":"number"},"type":"array"},"type":"array","title":"Footprint"}},"type":"object","required":["obstacle_id","kind","label","height_source","x","y","shape","width","points","constraint_hint","height","footprint"],"title":"ObstacleOut"},"ObstacleUpdate":{"properties":{"kind":{"anyOf":[{"$ref":"#/components/schemas/ObjectKind"},{"type":"null"}]},"x":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"X"},"y":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Y"},"shape":{"anyOf":[{"$ref":"#/components/schemas/Shape"},{"type":"null"}]},"width":{"anyOf":[{"type":"number","maximum":500.0,"exclusiveMinimum":0.0},{"type":"null"}],"title":"Width"},"depth":{"anyOf":[{"type":"number","maximum":500.0,"exclusiveMinimum":0.0},{"type":"null"}],"title":"Depth"},"rotation":{"anyOf":[{"type":"number","maximum":360.0,"minimum":-360.0},{"type":"null"}],"title":"Rotation"},"points":{"anyOf":[{"items":{"items":{"type":"number"},"type":"array"},"type":"array","maxItems":500},{"type":"null"}],"title":"Points"},"constraint_hint":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Constraint Hint"},"soil_type":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Soil Type"},"moisture":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Moisture"},"height":{"anyOf":[{"type":"number","maximum":200.0,"exclusiveMinimum":0.0},{"type":"null"}],"title":"Height"},"label":{"anyOf":[{"type":"string","maxLength":200},{"type":"null"}],"title":"Label"},"height_source":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Height Source"}},"type":"object","title":"ObstacleUpdate","description":"Every field optional: an edit says what changed, not what everything is."},"OwnedGarden":{"properties":{"name":{"type":"string","title":"Name"},"share_token":{"type":"string","title":"Share Token"},"updated_at":{"type":"string","title":"Updated At"}},"type":"object","required":["name","share_token","updated_at"],"title":"OwnedGarden"},"OwnedGardens":{"properties":{"gardens":{"items":{"$ref":"#/components/schemas/OwnedGarden"},"type":"array","title":"Gardens"}},"type":"object","required":["gardens"],"title":"OwnedGardens"},"PartnersOut":{"properties":{"german":{"type":"integer","title":"German"},"global_total":{"type":"integer","title":"Global Total"},"unmatched":{"type":"integer","title":"Unmatched"},"match_rate":{"type":"number","title":"Match Rate"},"by_kind":{"additionalProperties":{"type":"integer"},"type":"object","title":"By Kind"},"birds":{"type":"integer","title":"Birds","default":0}},"type":"object","required":["german","global_total","unmatched","match_rate","by_kind"],"title":"PartnersOut"},"PlaceOut":{"properties":{"name":{"type":"string","title":"Name"},"lat":{"type":"number","title":"Lat"},"lon":{"type":"number","title":"Lon"}},"type":"object","required":["name","lat","lon"],"title":"PlaceOut"},"PlaceSearchOut":{"properties":{"places":{"items":{"$ref":"#/components/schemas/PlaceOut"},"type":"array","title":"Places"}},"type":"object","required":["places"],"title":"PlaceSearchOut"},"PlantDetail":{"properties":{"taxon_id":{"type":"integer","title":"Taxon Id"},"canonical_name":{"type":"string","title":"Canonical Name"},"scientific_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Scientific Name"},"family":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Family"},"traits":{"additionalProperties":{"$ref":"#/components/schemas/TraitOut"},"type":"object","title":"Traits"},"partners":{"anyOf":[{"$ref":"#/components/schemas/PartnersOut"},{"type":"null"}]}},"type":"object","required":["taxon_id","canonical_name","scientific_name","family","traits","partners"],"title":"PlantDetail"},"PlantSearchResponse":{"properties":{"total":{"type":"integer","title":"Total"},"limit":{"type":"integer","title":"Limit"},"offset":{"type":"integer","title":"Offset"},"items":{"items":{"$ref":"#/components/schemas/PlantSummary"},"type":"array","title":"Items"},"filters":{"additionalProperties":{"$ref":"#/components/schemas/FilterCountsOut"},"type":"object","title":"Filters","default":{}}},"type":"object","required":["total","limit","offset","items"],"title":"PlantSearchResponse"},"PlantSummary":{"properties":{"taxon_id":{"type":"integer","title":"Taxon Id"},"canonical_name":{"type":"string","title":"Canonical Name"},"family":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Family"},"height_max_m":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Height Max M"},"flowering_start_month":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Flowering Start Month"},"flowering_end_month":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Flowering End Month"},"flower_colour":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Flower Colour"},"observed_colour":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Observed Colour"},"colour_known":{"type":"boolean","title":"Colour Known"},"bird_partners":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Bird Partners"},"space_m2":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Space M2"},"fits_bed":{"anyOf":[{"type":"boolean"},{"type":"null"}],"title":"Fits Bed"},"fit":{"$ref":"#/components/schemas/FitOut"}},"type":"object","required":["taxon_id","canonical_name","family","height_max_m","flowering_start_month","flowering_end_month","flower_colour","colour_known","bird_partners","space_m2","fits_bed","fit"],"title":"PlantSummary"},"PlantingCreate":{"properties":{"taxon_id":{"anyOf":[{"type":"integer","exclusiveMinimum":0.0},{"type":"null"}],"title":"Taxon Id"},"raw_name":{"anyOf":[{"type":"string","maxLength":200},{"type":"null"}],"title":"Raw Name"},"quantity":{"type":"integer","maximum":10000.0,"minimum":1.0,"title":"Quantity","default":1}},"type":"object","title":"PlantingCreate","description":"Either a species from the catalogue, or the words the user typed.\n\nBoth are ordinary. The catalogue holds 8,939 German species and no cultivars,\nso a name it cannot match is an answer rather than a mistake."},"PlantingOut":{"properties":{"planting_id":{"type":"integer","title":"Planting Id"},"taxon_id":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Taxon Id"},"canonical_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Canonical Name"},"raw_name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Raw Name"},"quantity":{"type":"integer","title":"Quantity"},"added_at":{"type":"string","title":"Added At"}},"type":"object","required":["planting_id","taxon_id","canonical_name","raw_name","quantity","added_at"],"title":"PlantingOut"},"PlantingVisibility":{"properties":{"planting_id":{"type":"integer","title":"Planting Id"},"name":{"type":"string","title":"Name"},"bed_id":{"type":"integer","title":"Bed Id"},"height_m":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Height M"},"visible":{"anyOf":[{"type":"boolean"},{"type":"null"}],"title":"Visible"},"visible_from_m":{"anyOf":[{"type":"number"},{"type":"null"}],"title":"Visible From M"},"hidden_by":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"Hidden By"},"estimated":{"type":"boolean","title":"Estimated"}},"type":"object","required":["planting_id","name","bed_id","height_m","visible","visible_from_m","hidden_by","estimated"],"title":"PlantingVisibility"},"Registration":{"properties":{"username":{"type":"string","maxLength":40,"minLength":3,"pattern":"^[\\w.-]+$","title":"Username"},"password":{"type":"string","maxLength":200,"minLength":8,"title":"Password"},"email":{"anyOf":[{"type":"string","maxLength":200},{"type":"null"}],"title":"Email"}},"type":"object","required":["username","password"],"title":"Registration","description":"What it takes to make an account.\n\nNo composition rules — length and the one obvious mistake, following NIST.\nA rule that demands a digit and a symbol produces `Passwort1!` and a sticky\nnote, which is worse than a long phrase."},"ScoreOut":{"properties":{"score":{"type":"number","title":"Score"},"by_month":{"additionalProperties":{"type":"number"},"type":"object","title":"By Month"},"by_species":{"items":{"$ref":"#/components/schemas/SpeciesContributionOut"},"type":"array","title":"By Species"},"by_group":{"additionalProperties":{"type":"integer"},"type":"object","title":"By Group"},"plantings_total":{"type":"integer","title":"Plantings Total"},"plantings_without_interaction_data":{"type":"integer","title":"Plantings Without Interaction Data"},"is_empty":{"type":"boolean","title":"Is Empty"}},"type":"object","required":["score","by_month","by_species","by_group","plantings_total","plantings_without_interaction_data","is_empty"],"title":"ScoreOut","description":"The score with everything needed to argue about it — a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves."},"Shape":{"type":"string","enum":["circle","rect","polygon","line"],"title":"Shape"},"SightlinesOut":{"properties":{"plantings":{"items":{"$ref":"#/components/schemas/PlantingVisibility"},"type":"array","title":"Plantings"},"estimated_count":{"type":"integer","title":"Estimated Count"}},"type":"object","required":["plantings","estimated_count"],"title":"SightlinesOut"},"SourceOut":{"properties":{"name":{"type":"string","title":"Name"},"licence":{"type":"string","title":"Licence"},"url":{"type":"string","title":"Url"},"contributes":{"type":"string","title":"Contributes"}},"type":"object","required":["name","licence","url","contributes"],"title":"SourceOut"},"SpeciesContributionOut":{"properties":{"taxon_id":{"type":"integer","title":"Taxon Id"},"canonical_name":{"type":"string","title":"Canonical Name"},"german_partners":{"anyOf":[{"type":"integer"},{"type":"null"}],"title":"German Partners"},"origin":{"type":"string","title":"Origin"},"forage":{"type":"number","title":"Forage"},"months":{"items":{"type":"integer"},"type":"array","title":"Months"}},"type":"object","required":["taxon_id","canonical_name","german_partners","origin","forage","months"],"title":"SpeciesContributionOut"},"SpeciesInfoOut":{"properties":{"title":{"type":"string","title":"Title"},"extract":{"type":"string","title":"Extract"},"thumbnail_url":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Thumbnail Url"},"page_url":{"type":"string","title":"Page Url"},"language":{"type":"string","title":"Language"},"licence":{"type":"string","title":"Licence"}},"type":"object","required":["title","extract","thumbnail_url","page_url","language","licence"],"title":"SpeciesInfoOut","description":"A description and photo. `licence` and `page_url` are conditions of use,\nnot decoration — the UI may not show the extract without them."},"StatsOut":{"properties":{"species":{"type":"integer","title":"Species"},"species_with_full_site_profile":{"type":"integer","title":"Species With Full Site Profile"},"animal_partnerships":{"type":"integer","title":"Animal Partnerships"},"german_animals":{"type":"integer","title":"German Animals"},"german_names":{"type":"integer","title":"German Names"},"sources":{"items":{"$ref":"#/components/schemas/SourceOut"},"type":"array","title":"Sources"}},"type":"object","required":["species","species_with_full_site_profile","animal_partnerships","german_animals","german_names","sources"],"title":"StatsOut","description":"What the catalogue actually holds, counted rather than typed.\n\nWave 1's landing page wrote \"3.087 Arten\" into its HTML by hand, and it was\nwrong the first time the catalogue was rebuilt. A page that states a number\nis making a claim."},"TimelineOut":{"properties":{"mode":{"type":"string","title":"Mode"},"months":{"items":{"$ref":"#/components/schemas/MonthOut"},"type":"array","title":"Months"},"gaps":{"items":{"$ref":"#/components/schemas/GapOut"},"type":"array","title":"Gaps"},"plantings_total":{"type":"integer","title":"Plantings Total"},"plantings_without_interaction_data":{"type":"integer","title":"Plantings Without Interaction Data"},"is_empty":{"type":"boolean","title":"Is Empty"}},"type":"object","required":["mode","months","gaps","plantings_total","plantings_without_interaction_data","is_empty"],"title":"TimelineOut","description":"The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic."},"TraitOut":{"properties":{"value":{"anyOf":[{"type":"number"},{"type":"string"},{"type":"null"}],"title":"Value"},"unit":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Unit"},"source":{"type":"string","title":"Source"},"license":{"type":"string","title":"License"},"alternatives":{"items":{"additionalProperties":true,"type":"object"},"type":"array","title":"Alternatives"}},"type":"object","required":["value","source","license"],"title":"TraitOut"},"ValidationError":{"properties":{"loc":{"items":{"anyOf":[{"type":"string"},{"type":"integer"}]},"type":"array","title":"Location"},"msg":{"type":"string","title":"Message"},"type":{"type":"string","title":"Error Type"},"input":{"title":"Input"},"ctx":{"type":"object","title":"Context"}},"type":"object","required":["loc","msg","type"],"title":"ValidationError"},"ViewpointIn":{"properties":{"x":{"type":"number","maximum":500.0,"minimum":-500.0,"title":"X"},"y":{"type":"number","maximum":500.0,"minimum":-500.0,"title":"Y"},"eye_height_m":{"type":"number","maximum":3.0,"minimum":0.3,"title":"Eye Height M","default":1.6}},"type":"object","required":["x","y"],"title":"ViewpointIn","description":"Where somebody is standing, in garden metres."}}}}
+{
+  "components": {
+    "schemas": {
+      "AccountOut": {
+        "description": "Never carries the password or the hash \u2014 there is no field for either.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "recovery_note": {
+            "title": "Recovery Note",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "recovery_note"
+        ],
+        "title": "AccountOut",
+        "type": "object"
+      },
+      "AxisFitOut": {
+        "description": "Why one axis scored what it did \u2014 Wave 4 renders the band, not the number.",
+        "properties": {
+          "band": {
+            "title": "Band",
+            "type": "string"
+          },
+          "half_widths_away": {
+            "title": "Half Widths Away",
+            "type": "number"
+          },
+          "niche_width": {
+            "title": "Niche Width",
+            "type": "number"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "species_value": {
+            "title": "Species Value",
+            "type": "number"
+          },
+          "width_estimated": {
+            "title": "Width Estimated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "band",
+          "score",
+          "half_widths_away",
+          "species_value",
+          "niche_width",
+          "width_estimated"
+        ],
+        "title": "AxisFitOut",
+        "type": "object"
+      },
+      "BedCreate": {
+        "properties": {
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "polygon": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Polygon",
+            "type": "array"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          }
+        },
+        "required": [
+          "name",
+          "polygon"
+        ],
+        "title": "BedCreate",
+        "type": "object"
+      },
+      "BedMonthColours": {
+        "properties": {
+          "colours": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Colours",
+            "type": "array"
+          },
+          "flowering": {
+            "title": "Flowering",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "integer"
+          },
+          "unknown": {
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "colours",
+          "unknown",
+          "flowering"
+        ],
+        "title": "BedMonthColours",
+        "type": "object"
+      },
+      "BedOut": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "ellenberg_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ellenberg L"
+          },
+          "ellenberg_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ellenberg M"
+          },
+          "ellenberg_n": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ellenberg N"
+          },
+          "ellenberg_r": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ellenberg R"
+          },
+          "height_above_ground": {
+            "title": "Height Above Ground",
+            "type": "number"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "light_computed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Light Computed At"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "plantings": {
+            "items": {
+              "$ref": "#/components/schemas/PlantingOut"
+            },
+            "title": "Plantings",
+            "type": "array"
+          },
+          "polygon": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Polygon",
+            "type": "array"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          },
+          "sun_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun Hours"
+          }
+        },
+        "required": [
+          "bed_id",
+          "name",
+          "polygon",
+          "soil_type",
+          "moisture",
+          "ellenberg_l",
+          "ellenberg_m",
+          "ellenberg_n",
+          "ellenberg_r",
+          "sun_hours",
+          "light_computed_at",
+          "height_above_ground",
+          "label",
+          "plantings"
+        ],
+        "title": "BedOut",
+        "type": "object"
+      },
+      "BedPalette": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/BedMonthColours"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bed_id",
+          "months"
+        ],
+        "title": "BedPalette",
+        "type": "object"
+      },
+      "BedSuggestions": {
+        "description": "Suggestions for one bed, with the site vector they were ranked against \u2014\nso the UI can say what it matched on rather than showing a bare list.",
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "bed_name": {
+            "title": "Bed Name",
+            "type": "string"
+          },
+          "filters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FilterCountsOut"
+            },
+            "default": {},
+            "title": "Filters",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlantSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "site_axes": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Site Axes",
+            "type": "object"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "woody": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlantSummary"
+            },
+            "title": "Woody",
+            "type": "array"
+          },
+          "woody_total": {
+            "default": 0,
+            "title": "Woody Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bed_id",
+          "bed_name",
+          "site_axes",
+          "total",
+          "items"
+        ],
+        "title": "BedSuggestions",
+        "type": "object"
+      },
+      "BedUpdate": {
+        "properties": {
+          "height_above_ground": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Above Ground"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          }
+        },
+        "title": "BedUpdate",
+        "type": "object"
+      },
+      "BloomPalette": {
+        "properties": {
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/BedPalette"
+            },
+            "title": "Beds",
+            "type": "array"
+          }
+        },
+        "required": [
+          "beds"
+        ],
+        "title": "BloomPalette",
+        "type": "object"
+      },
+      "ChangeOut": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "bed_name": {
+            "title": "Bed Name",
+            "type": "string"
+          },
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "gain": {
+            "title": "Gain",
+            "type": "number"
+          },
+          "german_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "German Partners"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "replaces_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces Name"
+          },
+          "replaces_planting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces Planting Id"
+          },
+          "resulting_score": {
+            "title": "Resulting Score",
+            "type": "number"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "taxon_id",
+          "canonical_name",
+          "bed_id",
+          "bed_name",
+          "gain",
+          "resulting_score",
+          "reason",
+          "german_partners",
+          "replaces_planting_id",
+          "replaces_name"
+        ],
+        "title": "ChangeOut",
+        "type": "object"
+      },
+      "ColourObservation": {
+        "description": "A flower colour the gardener recorded. `null` takes it back.",
+        "properties": {
+          "colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colour"
+          }
+        },
+        "title": "ColourObservation",
+        "type": "object"
+      },
+      "Credentials": {
+        "properties": {
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Credentials",
+        "type": "object"
+      },
+      "FeedbackIn": {
+        "properties": {
+          "answers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Answers",
+            "type": "object"
+          },
+          "kind": {
+            "pattern": "^(bug|idea)$",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "answers"
+        ],
+        "title": "FeedbackIn",
+        "type": "object"
+      },
+      "FeedbackOut": {
+        "description": "Whether it arrived, and where it went.\n\n`filed` is false when the report was kept but GitHub would not take it. That\nis not an error for the sender \u2014 nothing was lost \u2014 so it is said plainly\nrather than raised.",
+        "properties": {
+          "filed": {
+            "title": "Filed",
+            "type": "boolean"
+          },
+          "issue_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Url"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filed",
+          "issue_url",
+          "message"
+        ],
+        "title": "FeedbackOut",
+        "type": "object"
+      },
+      "FilterCountsOut": {
+        "description": "How one active filter divided the candidate set.\n\nReported so the UI can say what was left out. `unknown` is not a rounding\nerror: height is recorded for 44% of German species and colour for 6.6%, and\na filter that hides that is indistinguishable from one that is broken.",
+        "properties": {
+          "excluded": {
+            "title": "Excluded",
+            "type": "integer"
+          },
+          "matched": {
+            "title": "Matched",
+            "type": "integer"
+          },
+          "unknown": {
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "matched",
+          "unknown",
+          "excluded"
+        ],
+        "title": "FilterCountsOut",
+        "type": "object"
+      },
+      "FitOut": {
+        "properties": {
+          "axes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AxisFitOut"
+            },
+            "title": "Axes",
+            "type": "object"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "axes"
+        ],
+        "title": "FitOut",
+        "type": "object"
+      },
+      "GapOut": {
+        "properties": {
+          "length": {
+            "title": "Length",
+            "type": "integer"
+          },
+          "months": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "months",
+          "length"
+        ],
+        "title": "GapOut",
+        "type": "object"
+      },
+      "GardenCreate": {
+        "description": "Creating a garden. Latitude and longitude are range-checked here, before\nthey reach solar code that would happily compute a sun path for latitude 500.",
+        "properties": {
+          "latitude": {
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude",
+            "type": "number"
+          },
+          "longitude": {
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude",
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "latitude",
+          "longitude"
+        ],
+        "title": "GardenCreate",
+        "type": "object"
+      },
+      "GardenCreated": {
+        "description": "The token is returned; the numeric id deliberately is not.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share_token": {
+            "title": "Share Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "share_token",
+          "name"
+        ],
+        "title": "GardenCreated",
+        "type": "object"
+      },
+      "GardenOut": {
+        "properties": {
+          "beds": {
+            "items": {
+              "$ref": "#/components/schemas/BedOut"
+            },
+            "title": "Beds",
+            "type": "array"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "latitude": {
+            "title": "Latitude",
+            "type": "number"
+          },
+          "longitude": {
+            "title": "Longitude",
+            "type": "number"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "observed_colours": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Observed Colours",
+            "type": "object"
+          },
+          "obstacles": {
+            "items": {
+              "$ref": "#/components/schemas/ObstacleOut"
+            },
+            "title": "Obstacles",
+            "type": "array"
+          },
+          "share_token": {
+            "title": "Share Token",
+            "type": "string"
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          },
+          "unidentified_plantings": {
+            "default": 0,
+            "title": "Unidentified Plantings",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "share_token",
+          "name",
+          "latitude",
+          "longitude",
+          "created_at",
+          "updated_at",
+          "soil_type",
+          "moisture",
+          "observed_colours",
+          "beds",
+          "obstacles"
+        ],
+        "title": "GardenOut",
+        "type": "object"
+      },
+      "GardenSoil": {
+        "description": "What the ground is, asked once for the whole garden.",
+        "properties": {
+          "moisture": {
+            "title": "Moisture",
+            "type": "string"
+          },
+          "soil_type": {
+            "title": "Soil Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "soil_type",
+          "moisture"
+        ],
+        "title": "GardenSoil",
+        "type": "object"
+      },
+      "GrowthForm": {
+        "description": "The growth forms the catalogue actually records.\n\nA closed set rather than a free string. The value never reaches SQL, but an\nunbounded parameter that silently matches nothing is its own kind of lie \u2014\nthe user cannot tell a typo from an empty catalogue.",
+        "enum": [
+          "forb",
+          "herb",
+          "graminoid",
+          "shrub",
+          "subshrub",
+          "tree"
+        ],
+        "title": "GrowthForm",
+        "type": "string"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HeightReport": {
+        "description": "Where the heights around this garden came from.\n\nReported because an assumed height presented as a measured one is the same\nlie as a filter that hides what it dropped.",
+        "properties": {
+          "assumed": {
+            "title": "Assumed",
+            "type": "integer"
+          },
+          "estimated": {
+            "title": "Estimated",
+            "type": "integer"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "measured",
+          "estimated",
+          "assumed"
+        ],
+        "title": "HeightReport",
+        "type": "object"
+      },
+      "ImageryOut": {
+        "description": "The aerial imagery available at a place, if any.\n\n`attribution` is a condition of the licence, not a caption \u2014 DL-DE/BY-2.0\nand CC-BY-4.0 both require the named credit, so imagery shown without it is\nimagery used outside its terms.",
+        "properties": {
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layer"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "ImageryOut",
+        "type": "object"
+      },
+      "ImprovementsOut": {
+        "properties": {
+          "additions": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeOut"
+            },
+            "title": "Additions",
+            "type": "array"
+          },
+          "current_score": {
+            "title": "Current Score",
+            "type": "number"
+          },
+          "swaps": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeOut"
+            },
+            "title": "Swaps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "current_score",
+          "additions",
+          "swaps"
+        ],
+        "title": "ImprovementsOut",
+        "type": "object"
+      },
+      "LatLonIn": {
+        "properties": {
+          "lat": {
+            "maximum": 55.2,
+            "minimum": 47.0,
+            "title": "Lat",
+            "type": "number"
+          },
+          "lon": {
+            "maximum": 15.2,
+            "minimum": 5.5,
+            "title": "Lon",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lon"
+        ],
+        "title": "LatLonIn",
+        "type": "object"
+      },
+      "MapGardenOut": {
+        "description": "A garden created from the map, and what the map could and could not say.",
+        "properties": {
+          "garden": {
+            "$ref": "#/components/schemas/GardenOut"
+          },
+          "heights": {
+            "$ref": "#/components/schemas/HeightReport"
+          }
+        },
+        "required": [
+          "garden",
+          "heights"
+        ],
+        "title": "MapGardenOut",
+        "type": "object"
+      },
+      "MapSelection": {
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "neighbourhood": {
+            "default": "detached",
+            "title": "Neighbourhood",
+            "type": "string"
+          },
+          "outline": {
+            "items": {
+              "$ref": "#/components/schemas/LatLonIn"
+            },
+            "minItems": 3,
+            "title": "Outline",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "outline"
+        ],
+        "title": "MapSelection",
+        "type": "object"
+      },
+      "MonthOut": {
+        "properties": {
+          "coverage": {
+            "title": "Coverage",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "integer"
+          },
+          "species": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Species",
+            "type": "array"
+          }
+        },
+        "required": [
+          "month",
+          "coverage",
+          "species"
+        ],
+        "title": "MonthOut",
+        "type": "object"
+      },
+      "ObjectKind": {
+        "description": "The things a gardener points at and names.\n\nStored as text, so a renamed member orphans every saved row \u2014 the values are\npart of the data, not an implementation detail.",
+        "enum": [
+          "house",
+          "shed",
+          "wall",
+          "fence",
+          "hedge",
+          "tree",
+          "shrub",
+          "bed",
+          "lawn",
+          "paving",
+          "gravel",
+          "pond",
+          "path",
+          "street",
+          "other"
+        ],
+        "title": "ObjectKind",
+        "type": "string"
+      },
+      "ObstacleCreate": {
+        "properties": {
+          "depth": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 500.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 200.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ObjectKind"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "rotation": {
+            "default": 0.0,
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation",
+            "type": "number"
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Shape"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "width": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 500.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "x",
+          "y"
+        ],
+        "title": "ObstacleCreate",
+        "type": "object"
+      },
+      "ObstacleOut": {
+        "properties": {
+          "constraint_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint Hint"
+          },
+          "footprint": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Footprint",
+            "type": "array"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "height_source": {
+            "title": "Height Source",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "obstacle_id": {
+            "title": "Obstacle Id",
+            "type": "integer"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "shape": {
+            "title": "Shape",
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "obstacle_id",
+          "kind",
+          "label",
+          "height_source",
+          "x",
+          "y",
+          "shape",
+          "width",
+          "points",
+          "constraint_hint",
+          "height",
+          "footprint"
+        ],
+        "title": "ObstacleOut",
+        "type": "object"
+      },
+      "ObstacleUpdate": {
+        "description": "Every field optional: an edit says what changed, not what everything is.",
+        "properties": {
+          "constraint_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint Hint"
+          },
+          "depth": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 500.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depth"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 200.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "height_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Source"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "moisture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "rotation": {
+            "anyOf": [
+              {
+                "maximum": 360.0,
+                "minimum": -360.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation"
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Shape"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "soil_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soil Type"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 500.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y"
+          }
+        },
+        "title": "ObstacleUpdate",
+        "type": "object"
+      },
+      "OwnedGarden": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share_token": {
+            "title": "Share Token",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "share_token",
+          "updated_at"
+        ],
+        "title": "OwnedGarden",
+        "type": "object"
+      },
+      "OwnedGardens": {
+        "properties": {
+          "gardens": {
+            "items": {
+              "$ref": "#/components/schemas/OwnedGarden"
+            },
+            "title": "Gardens",
+            "type": "array"
+          }
+        },
+        "required": [
+          "gardens"
+        ],
+        "title": "OwnedGardens",
+        "type": "object"
+      },
+      "PartnersOut": {
+        "properties": {
+          "birds": {
+            "default": 0,
+            "title": "Birds",
+            "type": "integer"
+          },
+          "by_kind": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Kind",
+            "type": "object"
+          },
+          "german": {
+            "title": "German",
+            "type": "integer"
+          },
+          "global_total": {
+            "title": "Global Total",
+            "type": "integer"
+          },
+          "match_rate": {
+            "title": "Match Rate",
+            "type": "number"
+          },
+          "unmatched": {
+            "title": "Unmatched",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "german",
+          "global_total",
+          "unmatched",
+          "match_rate",
+          "by_kind"
+        ],
+        "title": "PartnersOut",
+        "type": "object"
+      },
+      "PlaceOut": {
+        "properties": {
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lon": {
+            "title": "Lon",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "lat",
+          "lon"
+        ],
+        "title": "PlaceOut",
+        "type": "object"
+      },
+      "PlaceSearchOut": {
+        "properties": {
+          "places": {
+            "items": {
+              "$ref": "#/components/schemas/PlaceOut"
+            },
+            "title": "Places",
+            "type": "array"
+          }
+        },
+        "required": [
+          "places"
+        ],
+        "title": "PlaceSearchOut",
+        "type": "object"
+      },
+      "PlantDetail": {
+        "properties": {
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family"
+          },
+          "partners": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartnersOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scientific_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scientific Name"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          },
+          "traits": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TraitOut"
+            },
+            "title": "Traits",
+            "type": "object"
+          }
+        },
+        "required": [
+          "taxon_id",
+          "canonical_name",
+          "scientific_name",
+          "family",
+          "traits",
+          "partners"
+        ],
+        "title": "PlantDetail",
+        "type": "object"
+      },
+      "PlantSearchResponse": {
+        "properties": {
+          "filters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FilterCountsOut"
+            },
+            "default": {},
+            "title": "Filters",
+            "type": "object"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlantSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "limit",
+          "offset",
+          "items"
+        ],
+        "title": "PlantSearchResponse",
+        "type": "object"
+      },
+      "PlantSummary": {
+        "properties": {
+          "bird_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bird Partners"
+          },
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "colour_known": {
+            "title": "Colour Known",
+            "type": "boolean"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family"
+          },
+          "fit": {
+            "$ref": "#/components/schemas/FitOut"
+          },
+          "fits_bed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fits Bed"
+          },
+          "flower_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flower Colour"
+          },
+          "flowering_end_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flowering End Month"
+          },
+          "flowering_start_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flowering Start Month"
+          },
+          "height_max_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Max M"
+          },
+          "observed_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Colour"
+          },
+          "space_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Space M2"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "taxon_id",
+          "canonical_name",
+          "family",
+          "height_max_m",
+          "flowering_start_month",
+          "flowering_end_month",
+          "flower_colour",
+          "colour_known",
+          "bird_partners",
+          "space_m2",
+          "fits_bed",
+          "fit"
+        ],
+        "title": "PlantSummary",
+        "type": "object"
+      },
+      "PlantingCreate": {
+        "description": "Either a species from the catalogue, or the words the user typed.\n\nBoth are ordinary. The catalogue holds 8,939 German species and no cultivars,\nso a name it cannot match is an answer rather than a mistake.",
+        "properties": {
+          "quantity": {
+            "default": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
+          },
+          "taxon_id": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxon Id"
+          }
+        },
+        "title": "PlantingCreate",
+        "type": "object"
+      },
+      "PlantingOut": {
+        "properties": {
+          "added_at": {
+            "title": "Added At",
+            "type": "string"
+          },
+          "canonical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Name"
+          },
+          "planting_id": {
+            "title": "Planting Id",
+            "type": "integer"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
+          },
+          "taxon_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxon Id"
+          }
+        },
+        "required": [
+          "planting_id",
+          "taxon_id",
+          "canonical_name",
+          "raw_name",
+          "quantity",
+          "added_at"
+        ],
+        "title": "PlantingOut",
+        "type": "object"
+      },
+      "PlantingVisibility": {
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "estimated": {
+            "title": "Estimated",
+            "type": "boolean"
+          },
+          "height_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height M"
+          },
+          "hidden_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden By"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planting_id": {
+            "title": "Planting Id",
+            "type": "integer"
+          },
+          "visible": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible"
+          },
+          "visible_from_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible From M"
+          }
+        },
+        "required": [
+          "planting_id",
+          "name",
+          "bed_id",
+          "height_m",
+          "visible",
+          "visible_from_m",
+          "hidden_by",
+          "estimated"
+        ],
+        "title": "PlantingVisibility",
+        "type": "object"
+      },
+      "QuestionOut": {
+        "properties": {
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "hint",
+          "required"
+        ],
+        "title": "QuestionOut",
+        "type": "object"
+      },
+      "QuestionsOut": {
+        "description": "What to ask, per kind. The form renders this rather than its own copy.",
+        "properties": {
+          "bug": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionOut"
+            },
+            "title": "Bug",
+            "type": "array"
+          },
+          "idea": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionOut"
+            },
+            "title": "Idea",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bug",
+          "idea"
+        ],
+        "title": "QuestionsOut",
+        "type": "object"
+      },
+      "Registration": {
+        "description": "What it takes to make an account.\n\nNo composition rules \u2014 length and the one obvious mistake, following NIST.\nA rule that demands a digit and a symbol produces `Passwort1!` and a sticky\nnote, which is worse than a long phrase.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 40,
+            "minLength": 3,
+            "pattern": "^[\\w.-]+$",
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Registration",
+        "type": "object"
+      },
+      "ScoreOut": {
+        "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves.",
+        "properties": {
+          "by_group": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "By Group",
+            "type": "object"
+          },
+          "by_month": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "By Month",
+            "type": "object"
+          },
+          "by_species": {
+            "items": {
+              "$ref": "#/components/schemas/SpeciesContributionOut"
+            },
+            "title": "By Species",
+            "type": "array"
+          },
+          "is_empty": {
+            "title": "Is Empty",
+            "type": "boolean"
+          },
+          "plantings_total": {
+            "title": "Plantings Total",
+            "type": "integer"
+          },
+          "plantings_without_interaction_data": {
+            "title": "Plantings Without Interaction Data",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score",
+          "by_month",
+          "by_species",
+          "by_group",
+          "plantings_total",
+          "plantings_without_interaction_data",
+          "is_empty"
+        ],
+        "title": "ScoreOut",
+        "type": "object"
+      },
+      "Shape": {
+        "enum": [
+          "circle",
+          "rect",
+          "polygon",
+          "line"
+        ],
+        "title": "Shape",
+        "type": "string"
+      },
+      "SightlinesOut": {
+        "properties": {
+          "estimated_count": {
+            "title": "Estimated Count",
+            "type": "integer"
+          },
+          "plantings": {
+            "items": {
+              "$ref": "#/components/schemas/PlantingVisibility"
+            },
+            "title": "Plantings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "plantings",
+          "estimated_count"
+        ],
+        "title": "SightlinesOut",
+        "type": "object"
+      },
+      "SourceOut": {
+        "properties": {
+          "contributes": {
+            "title": "Contributes",
+            "type": "string"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "licence",
+          "url",
+          "contributes"
+        ],
+        "title": "SourceOut",
+        "type": "object"
+      },
+      "SpeciesContributionOut": {
+        "properties": {
+          "canonical_name": {
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "forage": {
+            "title": "Forage",
+            "type": "number"
+          },
+          "german_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "German Partners"
+          },
+          "months": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "taxon_id",
+          "canonical_name",
+          "german_partners",
+          "origin",
+          "forage",
+          "months"
+        ],
+        "title": "SpeciesContributionOut",
+        "type": "object"
+      },
+      "SpeciesInfoOut": {
+        "description": "A description and photo. `licence` and `page_url` are conditions of use,\nnot decoration \u2014 the UI may not show the extract without them.",
+        "properties": {
+          "extract": {
+            "title": "Extract",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "page_url": {
+            "title": "Page Url",
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "extract",
+          "thumbnail_url",
+          "page_url",
+          "language",
+          "licence"
+        ],
+        "title": "SpeciesInfoOut",
+        "type": "object"
+      },
+      "StatsOut": {
+        "description": "What the catalogue actually holds, counted rather than typed.\n\nWave 1's landing page wrote \"3.087 Arten\" into its HTML by hand, and it was\nwrong the first time the catalogue was rebuilt. A page that states a number\nis making a claim.",
+        "properties": {
+          "animal_partnerships": {
+            "title": "Animal Partnerships",
+            "type": "integer"
+          },
+          "german_animals": {
+            "title": "German Animals",
+            "type": "integer"
+          },
+          "german_names": {
+            "title": "German Names",
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceOut"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "species": {
+            "title": "Species",
+            "type": "integer"
+          },
+          "species_with_full_site_profile": {
+            "title": "Species With Full Site Profile",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "species",
+          "species_with_full_site_profile",
+          "animal_partnerships",
+          "german_animals",
+          "german_names",
+          "sources"
+        ],
+        "title": "StatsOut",
+        "type": "object"
+      },
+      "TimelineOut": {
+        "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic.",
+        "properties": {
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapOut"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "is_empty": {
+            "title": "Is Empty",
+            "type": "boolean"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthOut"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "plantings_total": {
+            "title": "Plantings Total",
+            "type": "integer"
+          },
+          "plantings_without_interaction_data": {
+            "title": "Plantings Without Interaction Data",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mode",
+          "months",
+          "gaps",
+          "plantings_total",
+          "plantings_without_interaction_data",
+          "is_empty"
+        ],
+        "title": "TimelineOut",
+        "type": "object"
+      },
+      "TraitOut": {
+        "properties": {
+          "alternatives": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "license": {
+            "title": "License",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "source",
+          "license"
+        ],
+        "title": "TraitOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "ViewpointIn": {
+        "description": "Where somebody is standing, in garden metres.",
+        "properties": {
+          "eye_height_m": {
+            "default": 1.6,
+            "maximum": 3.0,
+            "minimum": 0.3,
+            "title": "Eye Height M",
+            "type": "number"
+          },
+          "x": {
+            "maximum": 500.0,
+            "minimum": -500.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 500.0,
+            "minimum": -500.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "ViewpointIn",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "NinaNatur",
+    "version": "V0.14.39"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/accounts": {
+      "post": {
+        "description": "Create an account. Email is optional and the cost of that is returned.",
+        "operationId": "register_api_v1_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/v1/accounts/me": {
+      "get": {
+        "operationId": "me_api_v1_accounts_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/v1/accounts/me/gardens": {
+      "get": {
+        "description": "The gardens this account has claimed.\n\nA place to keep the links, not a replacement for them: the share token is\nstill what opens a garden, and it comes back here so the list can.",
+        "operationId": "my_gardens_api_v1_accounts_me_gardens_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnedGardens"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Gardens",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/v1/feedback": {
+      "post": {
+        "operationId": "send_api_v1_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send",
+        "tags": [
+          "feedback"
+        ]
+      }
+    },
+    "/api/v1/feedback/questions": {
+      "get": {
+        "operationId": "questions_api_v1_feedback_questions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Questions",
+        "tags": [
+          "feedback"
+        ]
+      }
+    },
+    "/api/v1/gardens": {
+      "post": {
+        "description": "Create a garden. The token comes back here and is the only way back in.\n\nA signed-in visitor's garden is theirs from the moment it exists. It used to\nbe nobody's unless something called `/claim` afterwards, and nothing did \u2014\nso an account kept the links and then listed none of them.\n\n`current_account` rather than `require_account`: making a garden without an\naccount is the ordinary case, and the token is still the whole of its\naccess control either way.",
+        "operationId": "create_api_v1_gardens_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GardenCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/from-map": {
+      "post": {
+        "description": "Create a garden from an outline drawn on the map, with what shades it.\n\nThe margin is 50 m and objects are filtered by whether their shadow could\narrive at all \u2014 generous where it matters, quiet where it does not.",
+        "operationId": "garden_from_map_api_v1_gardens_from_map_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapGardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Garden From Map",
+        "tags": [
+          "geo"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}": {
+      "delete": {
+        "operationId": "remove_api_v1_gardens__token__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove",
+        "tags": [
+          "gardens"
+        ]
+      },
+      "get": {
+        "operationId": "read_api_v1_gardens__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/beds": {
+      "post": {
+        "description": "Add a bed and compute its light immediately.\n\nPolygonError, SoilTypeError and MoistureError all subclass ValueError, so they\nsurface as 422 with their reason rather than as a 500.\n\n`add_bed` computes the light itself, so the invariant does not depend on which\nentry point created the bed \u2014 it used to live here, and a bed made through the\nstore had no light at all.",
+        "operationId": "create_bed_api_v1_gardens__token__beds_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Bed",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}": {
+      "patch": {
+        "description": "Change what a bed is. Raising it changes its light, so the light is redone.\n\nLeaving the stored number alone would leave the screen describing a bed that\nno longer exists \u2014 the same reason adding an obstacle recomputes.",
+        "operationId": "edit_bed_api_v1_gardens__token__beds__bed_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bed_id",
+            "required": true,
+            "schema": {
+              "title": "Bed Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Bed",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}/plantings": {
+      "post": {
+        "description": "Put a plant in a bed, named by id or by the words the user typed.\n\nA name that resolves to exactly one species is stored with that species and\ncounts like any other planting. One that does not is stored anyway, marked\nunidentified: discarding it would tell someone their garden is wrong because\nour catalogue is incomplete.",
+        "operationId": "create_planting_api_v1_gardens__token__beds__bed_id__plantings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bed_id",
+            "required": true,
+            "schema": {
+              "title": "Bed Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlantingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Planting",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
+      "get": {
+        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.",
+        "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "bed_id",
+            "required": true,
+            "schema": {
+              "title": "Bed Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "colour",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Colour"
+            }
+          },
+          {
+            "in": "query",
+            "name": "height_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "height_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "flowering_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 12,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flowering Month"
+            }
+          },
+          {
+            "in": "query",
+            "name": "growth_form",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GrowthForm"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Growth Form"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_unknown",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Unknown",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_trees",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Include Trees",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_introduced",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Introduced",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "exclude_planted",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Exclude Planted",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BedSuggestions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bed Suggestions",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/bloom": {
+      "get": {
+        "description": "Which colours each bed carries in each month.\n\nServer-side because the frontend has a bed's plantings but neither their\nflowering windows nor their colours, and sending those per planting would\nship the catalogue to the browser to render a swatch.",
+        "operationId": "bloom_api_v1_gardens__token__bloom_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloomPalette"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bloom",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/claim": {
+      "post": {
+        "description": "Put a garden under an account.\n\nHolding the link is enough to edit a garden \u2014 that was Wave 3's bargain and\nit stays \u2014 but not enough to take it from whoever claimed it. Share links go\non working afterwards: removing them to push registration would be a\ndowngrade dressed as a feature.",
+        "operationId": "claim_api_v1_gardens__token__claim_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/colours/{taxon_id}": {
+      "put": {
+        "description": "Record what this species flowers in, here.\n\nIt never reaches the catalogue: that ships in the image and is re-synced at\nstartup, so a value written there would be overwritten by the next\ndeployment and would change every other garden until it was.",
+        "operationId": "note_colour_api_v1_gardens__token__colours__taxon_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "taxon_id",
+            "required": true,
+            "schema": {
+              "title": "Taxon Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ColourObservation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Note Colour",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/improvements": {
+      "get": {
+        "description": "What to plant, and what it would gain.\n\nAdditions come first because they are the safer advice: a swap removes\nsomething, and the score will recommend removing a valuable plant whose month\nis already saturated. See the known issue in 19-swap-suggestions.",
+        "operationId": "improvements_api_v1_gardens__token__improvements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImprovementsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Improvements",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/obstacles": {
+      "post": {
+        "description": "Add an obstacle and recompute in the same call.\n\nRequiring a second request would leave the plan showing light values that no\nlonger match its own obstacles \u2014 and nothing would make that visible.",
+        "operationId": "create_obstacle_api_v1_gardens__token__obstacles_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObstacleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Obstacle",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
+      "delete": {
+        "description": "Remove an element from the plan.\n\nNothing could be removed until now: a shape drawn by mistake stayed. The\ngarden comes back rather than a 204, because deleting a bed changes what\nevery other bed gets \u2014 the light is recomputed and the caller needs the\nresult, not a second request to find it.",
+        "operationId": "remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "obstacle_id",
+            "required": true,
+            "schema": {
+              "title": "Obstacle Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Element",
+        "tags": [
+          "gardens"
+        ]
+      },
+      "patch": {
+        "description": "Change what an obstacle is, and redo every bed's light.",
+        "operationId": "edit_obstacle_api_v1_gardens__token__obstacles__obstacle_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "obstacle_id",
+            "required": true,
+            "schema": {
+              "title": "Obstacle Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObstacleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Obstacle",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/plantings/{planting_id}": {
+      "delete": {
+        "description": "Remove a planting. Reached through its garden, never by a bare id.",
+        "operationId": "delete_planting_api_v1_gardens__token__plantings__planting_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "planting_id",
+            "required": true,
+            "schema": {
+              "title": "Planting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Planting",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/recompute": {
+      "post": {
+        "operationId": "recompute_api_v1_gardens__token__recompute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recompute",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/score": {
+      "get": {
+        "description": "What this planting is worth to insects, with its components.",
+        "operationId": "score_api_v1_gardens__token__score_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Score",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/sightlines": {
+      "post": {
+        "description": "What is visible from a point in the garden.\n\nThe same cylinders the shading model uses, seen from an eye instead of from\nthe sun \u2014 so a hedge blocks sight exactly as it blocks light, and a raised\nbed stands above both.",
+        "operationId": "sightlines_api_v1_gardens__token__sightlines_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewpointIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SightlinesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sightlines",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/soil": {
+      "patch": {
+        "description": "Record the garden's soil and moisture.\n\nOne question per garden. Beds drawn afterwards start from it; beds that\nalready carry their own answer are left alone, because a garden-level\nchange reaching back over a raised bed somebody set by hand is the kind of\nhelpfulness nobody asks for twice.",
+        "operationId": "set_soil_api_v1_gardens__token__soil_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GardenSoil"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Soil",
+        "tags": [
+          "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/timeline": {
+      "get": {
+        "description": "The garden's bloom year, month by month, with gaps marked.\n\n`forage=true` (the default) weights each flowering planting by its counted\nGerman insect partners, so a month of nectarless cultivars is correctly a\ngap. `forage=false` counts every planting equally, for planning by looks.",
+        "operationId": "timeline_api_v1_gardens__token__timeline_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "forage",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Forage",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Timeline",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/geo/imagery": {
+      "get": {
+        "description": "Which state's orthophotos may be shown here, if any.\n\nPer Bundesland because the licences are: there is no federal source, and a\nstate without an entry gets no imagery rather than a neighbour's.",
+        "operationId": "imagery_at_api_v1_geo_imagery_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lat",
+            "required": true,
+            "schema": {
+              "maximum": 55.2,
+              "minimum": 47.0,
+              "title": "Lat",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lon",
+            "required": true,
+            "schema": {
+              "maximum": 15.2,
+              "minimum": 5.5,
+              "title": "Lon",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Imagery At",
+        "tags": [
+          "geo"
+        ]
+      }
+    },
+    "/api/v1/geo/search": {
+      "get": {
+        "description": "Addresses matching a query. Empty in, empty out \u2014 a keystroke-per-request\nsearch would be a poor way to treat a free community service.",
+        "operationId": "find_place_api_v1_geo_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceSearchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Find Place",
+        "tags": [
+          "geo"
+        ]
+      }
+    },
+    "/api/v1/plants": {
+      "get": {
+        "description": "Species ranked by how well they fit the given site conditions.",
+        "operationId": "search_plants_api_v1_plants_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "light",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Light"
+            }
+          },
+          {
+            "in": "query",
+            "name": "moisture",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Moisture"
+            }
+          },
+          {
+            "in": "query",
+            "name": "nutrients",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nutrients"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reaction",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reaction"
+            }
+          },
+          {
+            "in": "query",
+            "name": "temperature",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperature"
+            }
+          },
+          {
+            "in": "query",
+            "name": "height_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "height_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Height Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "flowering_month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 12,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flowering Month"
+            }
+          },
+          {
+            "in": "query",
+            "name": "growth_form",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GrowthForm"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Growth Form"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_unknown",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Unknown",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "colour",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Colour"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Plants",
+        "tags": [
+          "plants"
+        ]
+      }
+    },
+    "/api/v1/plants/{taxon_id}": {
+      "get": {
+        "description": "One species, every trait with the source behind it.",
+        "operationId": "plant_detail_api_v1_plants__taxon_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "taxon_id",
+            "required": true,
+            "schema": {
+              "title": "Taxon Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlantDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Plant Detail",
+        "tags": [
+          "plants"
+        ]
+      }
+    },
+    "/api/v1/plants/{taxon_id}/info": {
+      "get": {
+        "description": "A description and photograph, from Wikipedia, cached on this deployment.\n\n404 when no article exists in either language \u2014 an honest absence rather than\nan empty panel that looks like a loading failure.",
+        "operationId": "plant_info_api_v1_plants__taxon_id__info_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "taxon_id",
+            "required": true,
+            "schema": {
+              "title": "Taxon Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Plant Info",
+        "tags": [
+          "plants"
+        ]
+      }
+    },
+    "/api/v1/sessions": {
+      "delete": {
+        "operationId": "log_out_api_v1_sessions_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Log Out",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "post": {
+        "description": "Log in. A wrong password and an unknown user answer identically.",
+        "operationId": "log_in_api_v1_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Log In",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "description": "The catalogue in numbers, for the page that introduces it.",
+        "operationId": "stats_api_v1_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stats",
+        "tags": [
+          "plants"
+        ]
+      }
+    },
+    "/healthz": {
+      "get": {
+        "description": "Liveness probe for the deploy cron and the reverse proxy.\n\nDeliberately dependency-free: it must answer while the app is otherwise\nbroken, or a failing deploy looks identical to a failing database.",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz"
+      }
+    }
+  }
+}

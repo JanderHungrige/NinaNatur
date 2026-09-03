@@ -132,7 +132,7 @@ body {
 .hint { margin: 0 0 0.75rem; color: var(--ink-muted); font-size: 0.85rem; }
 
 label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.8rem; color: var(--ink-muted); }
-input, select {
+input, select, textarea {
   width: 100%; padding: 0.45rem 0.6rem;
   border: 1px solid var(--line); border-radius: 8px;
   background: var(--bg); color: var(--ink); font: inherit; font-size: 0.9rem;
@@ -1165,6 +1165,78 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   .account-bar__note { max-width: 100%; }
 }
 
+/* --- Rückmeldung --------------------------------------------------------- */
+
+/* Quiet on purpose. It sits in the header beside the account actions, and a
+   second filled green button there would read as a second way in. */
+.header-link {
+  margin: 0;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.header-link:hover {
+  color: var(--ink);
+  border-color: var(--leaf);
+}
+
+.feedback { display: grid; gap: 0.7rem; width: 100%; }
+
+.feedback__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.feedback__head h2 { margin: 0; font-size: 1.05rem; }
+
+.feedback__kinds { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.feedback__kinds .chip {
+  margin: 0;
+  padding: 0.3rem 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip--on {
+  border-color: var(--leaf);
+  background: color-mix(in srgb, var(--leaf) 14%, transparent);
+  color: var(--ink);
+}
+
+.feedback__field { display: grid; gap: 0.25rem; font-size: 0.9rem; font-weight: 540; }
+.feedback__field textarea { resize: vertical; font-size: 0.9rem; }
+.feedback__field .hint { font-weight: 400; }
+
+.feedback__notice {
+  margin: 0;
+  padding-top: 0.2rem;
+  border-top: 1px solid var(--line);
+}
+
+.feedback__thanks { margin: 0; }
+
+/* The footage the front door is standing on. Small and quiet: a credit, not a
+   caption — but present, because the film is somebody's work.
+   Quiet by size, not by fade. The first attempt was the muted grey at 75%
+   opacity, which measured 2.35 against the meadow underneath: a credit nobody
+   can read is not a credit. #c6d8bd measures 4.82 and still reads as a footnote
+   at 0.78rem. */
+.landing__credit {
+  margin-top: 1.2rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.app--front-door .landing__credit { color: #c6d8bd; }
+
 /* The way in that is not the way in. Reachable, and clearly secondary. */
 .landing__aside {
   margin-top: 1.5rem;
@@ -1209,7 +1281,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 }
 
 .app--front-door .brand__name { color: #f4f8ef; }
-.app--front-door .badge { color: #a9c0a0; border-color: rgb(233 238 227 / 22%); }
+.app--front-door .badge { color: #c6d8bd; border-color: rgb(233 238 227 / 22%); }
+/* The header sits on the film. The default muted grey and the light-theme
+   border line both vanish into a sunlit meadow. */
+.app--front-door .header-link {
+  color: #dcead3;
+  border-color: rgb(233 238 227 / 34%);
+  background: rgb(6 20 14 / 32%);
+}
+.app--front-door .header-link:hover {
+  color: #f4f8ef;
+  border-color: rgb(233 238 227 / 62%);
+}
 .app--front-door .account-bar__note { color: #b9cdb0; }
 .app--front-door .link-button { color: #d8e6cf; }
 

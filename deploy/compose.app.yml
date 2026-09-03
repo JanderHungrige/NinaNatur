@@ -17,6 +17,11 @@ services:
     environment:
       NINANATUR_ENV: ${NINANATUR_ENV:-prod}
       NINANATUR_DB: /data/ninanatur.sqlite
+      # Lets the feedback box file an issue. Absent is a supported state: the
+      # report is still stored on the volume, and `feedback.issue_url IS NULL`
+      # is the list of what has not been filed yet.
+      NINANATUR_GITHUB_TOKEN: ${NINANATUR_GITHUB_TOKEN:-}
+      NINANATUR_GITHUB_REPO: ${NINANATUR_GITHUB_REPO:-JanderHungrige/NinaNatur}
     volumes:
       # A NAMED volume, not the Dockerfile's anonymous one. `VOLUME /data` alone
       # gives each container its own anonymous volume, so auto-deploy.sh rolling

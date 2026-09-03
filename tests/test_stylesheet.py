@@ -186,3 +186,15 @@ def test_the_film_covers_the_window_it_is_in() -> None:
     # Anchored low: a portrait phone crops the width, and the flowers are in the
     # lower half of the frame while the top is blurred hedge.
     assert "object-position" in block
+
+
+def test_the_video_credit_is_quiet_but_readable() -> None:
+    """The user asked for it small and light, and the first attempt took that
+    literally: muted grey at 75% opacity measured 2.35 contrast against the
+    meadow. Quiet is the font size's job — a credit nobody can read credits
+    nobody."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    start = css.index(".landing__credit {")
+    block = css[start : css.index("}", start)]
+    assert "opacity" not in block, "faded twice: the colour already carries it"
+    assert ".app--front-door .landing__credit" in css, "unreadable over the film"
