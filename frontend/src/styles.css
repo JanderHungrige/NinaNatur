@@ -1217,7 +1217,10 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .hero__content { position: relative; z-index: 1; }
 .landing__title { color: #f4f8ef; }
 .landing__lede { color: #cfdcc6; }
-.app--front-door .stat dt { color: #a9c0a0; }
+/* Lighter than the panels' own hint grey. These two sit on the film itself
+   rather than on glass, and #a9c0a0 measured 4.64 against the brightest frame
+   of the meadow — over the 4.5 floor by nothing at all. */
+.app--front-door .stat dt { color: #c6d8bd; }
 .app--front-door .stat dd { color: #f4f8ef; }
 
 /* Panels stop being paper and become glass over the field: still readable,
@@ -1233,7 +1236,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .app--front-door .panel h2,
 .app--front-door .panel h3,
 .app--front-door .landing__aside summary { color: #f2f7ec; }
-.app--front-door .hint { color: #a9c0a0; }
+.app--front-door .hint { color: #bccfb2; }
 .app--front-door label { color: #c8d9bf; }
 
 .app--front-door input,
@@ -1254,6 +1257,47 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* The filmed meadow, when there is one and the visitor has not asked for less
+ * movement. It covers rather than fits: the clip is 16:9 and a window is any
+ * shape at all, and a letterboxed background is a photograph in a frame.
+ *
+ * It sits *over* the mote field, which stays mounted underneath as what shows
+ * while the video loads and what remains if it never arrives.
+ */
+.living__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The meadow is filmed at eye level; the flowers are in the lower half and
+     the blurred hedge at the top. Anchoring low keeps the flowers on screen
+     when a tall window crops the width. */
+  object-position: 50% 65%;
+}
+
+/* Once the video is actually playing there is nothing to see behind it, and a
+   field of animated gradients composited under an opaque video is work done
+   for nobody. */
+.living__field[data-covered='true'] { display: none; }
+
+/*
+ * The reason the text is still readable.
+ *
+ * The clip is bright and busy — pale type over a sunlit meadow is unreadable
+ * however good the meadow is. Darkest at the top, where the title and the two
+ * buttons are, and never uniform: a flat 60% black turns a film into a grey
+ * rectangle that happens to move.
+ */
+.living__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(6 20 14 / 82%) 0%, rgb(6 20 14 / 62%) 38%,
+      rgb(6 20 14 / 46%) 72%, rgb(6 20 14 / 58%) 100%),
+    radial-gradient(120% 80% at 50% 0%, rgb(10 30 20 / 30%) 0%, transparent 70%);
 }
 
 /* Light from above. Without it the motes are dots painted on a dark card

@@ -706,7 +706,7 @@ export function App() {
     // The front door is dark all the way out to the edges; a garden is not.
     <div className={garden === null ? 'app app--front-door' : 'app'}>
       <a className="skip-link" href="#main">Zum Inhalt springen</a>
-      {garden === null && <LivingBackground />}
+      {garden === null && <LivingBackground videoSrc="/meadow.mp4" />}
       <header className="site-header">
         <button type="button" className="brand" onClick={goHome} aria-label="Zur Startseite">
           <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">
