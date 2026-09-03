@@ -173,3 +173,16 @@ def test_the_moving_background_stops_for_reduced_motion() -> None:
     block = css[start : css.index("\n}", css.index("{", start))]
     assert ".living" in block, "the particle field is not covered"
     assert "animation: none" in block, "the field is not actually stopped"
+
+
+def test_the_film_covers_the_window_it_is_in() -> None:
+    """A 16:9 clip and a window of any shape at all. `contain` would letterbox
+    it — a photograph in a frame rather than the page's ground — and no
+    object-fit at all stretches the meadow."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    start = css.index(".living__video")
+    block = css[start : css.index("}", start)]
+    assert "object-fit: cover" in block
+    # Anchored low: a portrait phone crops the width, and the flowers are in the
+    # lower half of the frame while the top is blurred hedge.
+    assert "object-position" in block
