@@ -153,6 +153,10 @@ export function Landing({
         {createForm}
       </details>
 
+      {/* The meadow behind all of this is somebody's footage, and a credit at
+          the foot of the page is the least it is owed. */}
+      <p className="landing__credit">Video: David Roberts</p>
+
       {stats !== null && (
         <footer className="landing__sources">
           <p className="hint">Alle Daten aus offen lizenzierten Quellen:</p>

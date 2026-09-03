@@ -26,6 +26,9 @@ export type MapGardenOut = components['schemas']['MapGardenOut'];
 export type SightlinesOut = components['schemas']['SightlinesOut'];
 export type AccountOut = components['schemas']['AccountOut'];
 export type OwnedGardens = components['schemas']['OwnedGardens'];
+export type FeedbackQuestions = components['schemas']['QuestionsOut'];
+export type FeedbackQuestion = components['schemas']['QuestionOut'];
+export type FeedbackSent = components['schemas']['FeedbackOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -222,6 +225,22 @@ export class NinaNaturClient {
       `/api/v1/gardens/${encodeURIComponent(token)}/colours/${taxonId}`,
       { method: 'PUT', body: JSON.stringify({ colour }) },
     );
+  }
+
+  /** What the feedback form should ask. The server owns the questions so the
+   *  headings in the filed issue cannot drift from what was on screen. */
+  async feedbackQuestions(): Promise<FeedbackQuestions> {
+    return this.request<FeedbackQuestions>('/api/v1/feedback/questions');
+  }
+
+  async sendFeedback(
+    kind: 'bug' | 'idea',
+    answers: Record<string, string>,
+  ): Promise<FeedbackSent> {
+    return this.request<FeedbackSent>('/api/v1/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ kind, answers }),
+    });
   }
 
   async deleteGarden(token: string): Promise<void> {

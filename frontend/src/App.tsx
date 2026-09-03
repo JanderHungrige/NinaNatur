@@ -4,6 +4,7 @@ import type {
   BedSuggestions,
   ChangeOut,
   BloomPalette,
+  FeedbackQuestions,
   GardenOut,
   SightlinesOut,
   SuggestionFilters,
@@ -15,6 +16,7 @@ import type {
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { AccountBar } from './components/AccountBar';
+import { FeedbackBox } from './components/FeedbackBox';
 import { LivingBackground } from './components/LivingBackground';
 import { MyGardens } from './components/MyGardens';
 import { AccountPanel, type AccountInfo } from './components/AccountPanel';
@@ -451,6 +453,11 @@ export function App() {
   const [panel, setPanel] = useState<Panel>('draw');
   /** The account forms, opened from the header rather than sitting in the page. */
   const [accountOpen, setAccountOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  /** What the feedback form should ask. Fetched once, when it is first opened —
+   *  nobody should pay for it on a visit that never uses it. */
+  const [feedbackQuestions, setFeedbackQuestions] =
+    useState<FeedbackQuestions | null>(null);
   /** The gardens this account has claimed. Null until asked. */
   const [myGardens, setMyGardens] = useState<OwnedGardens['gardens'] | null>(null);
   const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
@@ -720,6 +727,18 @@ export function App() {
         {version !== null ? (
           <span className="badge" title="Version · Wave · Merges auf main">{version}</span>
         ) : null}
+        <button
+          type="button"
+          className="header-link"
+          onClick={() => {
+            setFeedbackOpen(true);
+            if (feedbackQuestions === null) {
+              void client.feedbackQuestions().then(setFeedbackQuestions).catch(() => undefined);
+            }
+          }}
+        >
+          Rückmeldung
+        </button>
         <AccountBar
           username={account?.username ?? null}
           onSignIn={() => setAccountOpen(true)}
@@ -729,6 +748,19 @@ export function App() {
           busy={busy}
         />
       </header>
+
+      {feedbackOpen && (
+        <div className="account-drawer">
+          <FeedbackBox
+            questions={feedbackQuestions}
+            onSend={async (kind, answers) => {
+              const sent = await client.sendFeedback(kind, answers);
+              return sent.message;
+            }}
+            onClose={() => setFeedbackOpen(false)}
+          />
+        </div>
+      )}
 
       {accountOpen && account === null && (
         <div className="account-drawer">
