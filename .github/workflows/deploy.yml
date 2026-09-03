@@ -122,8 +122,25 @@ jobs:
           docker build \
             --build-arg NINANATUR_VERSION="${{ steps.cfg.outputs.version }}" \
             -t "$IMG:$TAG" -t "$IMG:$SHA" .
-          docker push "$IMG:$TAG"
-          docker push "$IMG:$SHA"
+
+          # GHCR answers "unknown blob" now and then on an otherwise fine push.
+          # Without a retry that red build is the whole outcome: the image never
+          # reaches the registry, the host's deploy cron keeps rolling the old
+          # one, and nothing says so until somebody looks at the version badge.
+          push () {
+            ref="$1"; n=1
+            until docker push "$ref"; do
+              if [ "$n" -ge 3 ]; then
+                echo "::error::docker push $ref failed after $n attempts"
+                return 1
+              fi
+              echo "push failed (attempt $n) — retrying in $((n * 15))s"
+              sleep $((n * 15))
+              n=$((n + 1))
+            done
+          }
+          push "$IMG:$TAG"
+          push "$IMG:$SHA"
 
       - name: Summary
         run: |
