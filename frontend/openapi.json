@@ -2729,7 +2729,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.14.40"
+    "version": "V0.15.44"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3492,7 +3492,7 @@
     },
     "/api/v1/gardens/{token}/colours/{taxon_id}": {
       "put": {
-        "description": "Record what this species flowers in, here.\n\nIt never reaches the catalogue: that ships in the image and is re-synced at\nstartup, so a value written there would be overwritten by the next\ndeployment and would change every other garden until it was.",
+        "description": "Record what this species flowers in.\n\nIt goes into the shared catalogue as a `manual` trait row, which is what was\nasked for: one general database, the entry marked as a hand entry, and any\npublished source allowed to override it. It is reached through a garden\nbecause that is where somebody is standing when they answer \u2014 the value\nitself belongs to no garden in particular.",
         "operationId": "note_colour_api_v1_gardens__token__colours__taxon_id__put",
         "parameters": [
           {

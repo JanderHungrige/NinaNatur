@@ -43,12 +43,17 @@ export function ColourNote({ recorded, noted, onNote, busy }: Props) {
           </option>
         ))}
       </select>
+      {/* Said before the entry, not after: it goes into the shared catalogue
+          and answers for every garden here, which somebody should know while
+          they are deciding what to type. */}
       <p className="hint">
         {noted !== null
-          ? 'Von dir eingetragen — gilt nur für diesen Garten.'
+          ? recorded !== null && recorded !== noted
+            ? `Von Hand eingetragen — eine Quelle sagt inzwischen „${recorded}“, und die gilt.`
+            : 'Von Hand eingetragen. Gilt für alle Gärten hier, bis eine Quelle etwas anderes sagt.'
           : recorded !== null
-            ? 'Aus dem Katalog. Du kannst es für diesen Garten überschreiben, etwa bei einer Sorte.'
-            : 'Für diese Art ist keine Farbe erfasst. Trag ein, was du auf dem Bild oder im Beet siehst.'}
+            ? 'Aus einer Quelle. Eine Handeingabe würde dahinter zurückstehen.'
+            : 'Für diese Art ist keine Farbe erfasst. Trag ein, was du auf dem Bild oder im Beet siehst — es hilft allen hier.'}
       </p>
     </div>
   );

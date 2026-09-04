@@ -327,11 +327,13 @@ export interface paths {
         get?: never;
         /**
          * Note Colour
-         * @description Record what this species flowers in, here.
+         * @description Record what this species flowers in.
          *
-         *     It never reaches the catalogue: that ships in the image and is re-synced at
-         *     startup, so a value written there would be overwritten by the next
-         *     deployment and would change every other garden until it was.
+         *     It goes into the shared catalogue as a `manual` trait row, which is what was
+         *     asked for: one general database, the entry marked as a hand entry, and any
+         *     published source allowed to override it. It is reached through a garden
+         *     because that is where somebody is standing when they answer — the value
+         *     itself belongs to no garden in particular.
          */
         put: operations["note_colour_api_v1_gardens__token__colours__taxon_id__put"];
         post?: never;

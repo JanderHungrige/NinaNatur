@@ -18,6 +18,7 @@ from ninanatur.ingest.migrations import (
     ELEMENT_RESET_KEY,
     RESET_KEY,
     apply_column_migrations,
+    move_observed_colours,
     relax_planting_taxon,
     wave_10_reset,
     wave_11_reset,
@@ -88,5 +89,10 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     if rebuilt is not None:
         applied.append(rebuilt)
     conn.executescript(SCHEMA)
+    # After the schema script: `trait` must exist before anything is written
+    # into it, and on a fresh database it does not exist before this line.
+    moved = move_observed_colours(conn)
+    if moved is not None:
+        applied.append(moved)
     conn.commit()
     return applied

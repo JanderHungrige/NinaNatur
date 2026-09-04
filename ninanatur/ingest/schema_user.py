@@ -108,11 +108,15 @@ CREATE INDEX IF NOT EXISTS idx_planting_element ON planting(element_id);
 
 -- What the gardener saw, as opposed to what the catalogue says.
 --
--- Deliberately *not* a row in `trait`. The catalogue ships inside the image and
--- is re-synced at startup whenever the build stamps differ, so a user's value
--- there would be overwritten by the next deployment — and until it was, it
--- would change the suggestions of every other garden on the server. This is
--- user data and lives on the volume with the gardens.
+-- Superseded in Wave 15 and kept empty rather than dropped.
+--
+-- Hand-entered colours are `trait` rows marked `manual` now — one general
+-- database, as the gardener asked, with any published source outranking them.
+-- `migrations.move_observed_colours` carried the existing rows across once.
+--
+-- The table stays because dropping it would take the only copy of those notes
+-- with it if the move ever has to be re-examined, and an empty table costs
+-- nothing. Nothing writes to it.
 CREATE TABLE IF NOT EXISTS observed_colour (
     garden_id INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
     taxon_id  INTEGER NOT NULL REFERENCES taxon(taxon_id),

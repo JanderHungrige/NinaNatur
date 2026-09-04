@@ -9,6 +9,7 @@ import sqlite3
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 
+from ninanatur.data.traits import source_rank
 from ninanatur.fit.score import AXES, FitResult, SpeciesNiche
 
 # Where a gardener's own answer about a species is carried through the ranking,
@@ -37,10 +38,14 @@ class PlantRow:
     extras: dict[str, float | str] = field(default_factory=dict)
 
     def colour(self) -> str | None:
-        """The colour to judge this plant by: the gardener's word over the
-        catalogue's. They looked at it; the catalogue inferred it from a
-        checklist, and for 94% of species holds nothing at all."""
-        return self.text(OBSERVED_COLOUR) or self.text("flower_colour")
+        """The colour to judge this plant by.
+
+        One answer now, not two. A hand entry is a `trait` row marked `manual`
+        and `load_candidates` has already ranked it against every published
+        source — so `flower_colour` *is* the resolved colour, and preferring the
+        hand entry here would put it back in front of the data that beat it.
+        """
+        return self.text("flower_colour")
 
     def number(self, key: str) -> float | None:
         value = self.extras.get(key)
@@ -70,7 +75,8 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
     """
     rows = conn.execute(
         """
-        SELECT x.taxon_id, x.canonical_name, x.family, t.trait_key, t.value_num, t.value_text
+        SELECT x.taxon_id, x.canonical_name, x.family,
+               t.trait_key, t.value_num, t.value_text, t.source
         FROM taxon x LEFT JOIN trait t ON t.taxon_id = x.taxon_id
         WHERE x.occurs_de = 1
         """
@@ -80,6 +86,9 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
     widths: dict[int, dict[str, float | None]] = {}
     extras: dict[int, dict[str, float | str]] = {}
     names: dict[int, tuple[str, str | None]] = {}
+    #: The rank of the source each value came from, so a better one can replace
+    #: it and a worse one cannot.
+    ranks: dict[int, dict[str, tuple[int, str]]] = {}
 
     for row in rows:
         tid = int(row["taxon_id"])
@@ -87,13 +96,21 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
         key = row["trait_key"]
         if key is None:
             continue
+        # Two sources can now claim the same key for the same species: a hand
+        # entry and whatever the catalogue holds. This loop used to let the last
+        # row win, which was harmless only because EIVE and GIFT overlap in no
+        # keys at all — the suggestion list would otherwise show whichever row
+        # SQLite happened to return last.
+        rank = source_rank(row["source"] or "")
         if key in AXES:
-            values.setdefault(tid, {})[key] = row["value_num"]
+            if _better(ranks, tid, key, rank):
+                values.setdefault(tid, {})[key] = row["value_num"]
         elif key.endswith("_nw"):
-            widths.setdefault(tid, {})[key[:-3]] = row["value_num"]
-        elif row["value_num"] is not None:
+            if _better(ranks, tid, key, rank):
+                widths.setdefault(tid, {})[key[:-3]] = row["value_num"]
+        elif row["value_num"] is not None and _better(ranks, tid, key, rank):
             extras.setdefault(tid, {})[key] = float(row["value_num"])
-        elif row["value_text"] is not None:
+        elif row["value_text"] is not None and _better(ranks, tid, key, rank):
             extras.setdefault(tid, {})[key] = str(row["value_text"])
 
     return [
@@ -136,3 +153,22 @@ def with_observed(
         else plant
         for plant in candidates
     ]
+
+
+def _better(
+    ranks: dict[int, dict[str, tuple[int, str]]],
+    taxon_id: int,
+    key: str,
+    rank: tuple[int, str],
+) -> bool:
+    """Whether this row's source beats whatever has been kept for this key.
+
+    Records the winner as a side effect, so the caller can write the value.
+    Mirrors `traits._resolve_group`, which does the same thing one species at a
+    time; this is the bulk path and the two must agree.
+    """
+    kept = ranks.setdefault(taxon_id, {}).get(key)
+    if kept is not None and kept <= rank:
+        return False
+    ranks[taxon_id][key] = rank
+    return True

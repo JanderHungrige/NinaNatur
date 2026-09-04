@@ -53,7 +53,7 @@ from ninanatur.data.traits import resolve_trait
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.garden.observations import observed_colours, record_colour
+from ninanatur.garden.observations import manual_colours, record_colour
 from ninanatur.garden.plantings import add_planting, place_planting, remove_planting
 from ninanatur.garden.sightlines import Blocker, Target, Viewpoint, visibility
 from ninanatur.garden.store import load_garden
@@ -96,15 +96,17 @@ def note_colour(
     payload: ColourObservation,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    """Record what this species flowers in, here.
+    """Record what this species flowers in.
 
-    It never reaches the catalogue: that ships in the image and is re-synced at
-    startup, so a value written there would be overwritten by the next
-    deployment and would change every other garden until it was.
+    It goes into the shared catalogue as a `manual` trait row, which is what was
+    asked for: one general database, the entry marked as a hand entry, and any
+    published source allowed to override it. It is reached through a garden
+    because that is where somebody is standing when they answer — the value
+    itself belongs to no garden in particular.
     """
     garden = require_garden(conn, token)
     try:
-        record_colour(conn, garden.garden_id, taxon_id=taxon_id, colour=payload.colour)
+        record_colour(conn, taxon_id=taxon_id, colour=payload.colour)
     except ValueError as undrawable:
         raise HTTPException(status_code=422, detail=str(undrawable)) from undrawable
     return to_out(load_garden(conn, garden.garden_id))
@@ -219,9 +221,11 @@ def bed_suggestions(
     )
     area = polygon_area(bed.polygon)
     ranked = rank_plants(
-        # The gardener's own colours first: a species they marked yellow must
-        # read "gelb" in the list they marked it from, and answer a filter for it.
-        with_observed(load_candidates(conn), observed_colours(conn, garden.garden_id)),
+        # Which colours were entered by hand, so the list can say so. It no
+        # longer changes *which* colour is shown: a hand entry is a trait row
+        # now, and `load_candidates` already resolved it against every other
+        # source before this line runs.
+        with_observed(load_candidates(conn), manual_colours(conn)),
         SiteVector(values=axes),
         SearchFilters(
             height_min=height_min,
