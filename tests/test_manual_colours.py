@@ -263,3 +263,46 @@ def test_the_move_runs_once(tmp_path: Path) -> None:
 
     assert move_observed_colours(db) is None
     assert resolve_trait(db, 1, "flower_colour") is None
+
+
+def test_the_entry_survives_the_request_that_made_it(tmp_path: Path) -> None:
+    """The bug that reached production, and the only shape of test that could
+    have caught it.
+
+    `upsert_trait` deliberately does not commit — the ingest pipeline writes
+    thousands of rows and commits once at the end — and `record_colour` is the
+    first caller that is a single request rather than a batch. Without its own
+    commit the row lives in an open transaction: the request that wrote it reads
+    it back happily, and every later request sees nothing.
+
+    Every other test in this file shares one connection with the code under
+    test, which is precisely why they all passed. This one opens a second.
+    """
+    db = tmp_path / "garden.sqlite"
+    writer: sqlite3.Connection = connect(str(db), same_thread=False)
+    init_schema(writer)
+    writer.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Salvia')")
+    writer.commit()
+
+    record_colour(writer, taxon_id=1, colour="violet")
+
+    reader: sqlite3.Connection = connect(str(db), same_thread=False)
+    resolved = resolve_trait(reader, 1, "flower_colour")
+    assert resolved is not None, "the write never left the transaction it was made in"
+    assert resolved.value_text == "violet"
+
+
+def test_taking_it_back_survives_too(tmp_path: Path) -> None:
+    """The delete branch always committed. Asserted anyway, so the two halves
+    cannot drift apart again."""
+    db = tmp_path / "garden.sqlite"
+    writer: sqlite3.Connection = connect(str(db), same_thread=False)
+    init_schema(writer)
+    writer.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Salvia')")
+    writer.commit()
+    record_colour(writer, taxon_id=1, colour="violet")
+
+    record_colour(writer, taxon_id=1, colour=None)
+
+    reader: sqlite3.Connection = connect(str(db), same_thread=False)
+    assert resolve_trait(reader, 1, "flower_colour") is None

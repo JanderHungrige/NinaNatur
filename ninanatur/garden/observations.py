@@ -82,6 +82,12 @@ def record_colour(
         value_text=colour,
         confidence=MANUAL_CONFIDENCE,
     )
+    # `upsert_trait` deliberately does not commit: the ingest pipeline writes
+    # thousands of rows and commits once at the end. This is the first caller
+    # that is one request rather than a batch, so the commit belongs here — and
+    # without it the write is visible to the very request that made it and to
+    # nothing afterwards, which is exactly how it behaved in production.
+    conn.commit()
 
 
 def manual_colours(conn: sqlite3.Connection) -> dict[int, str]:
