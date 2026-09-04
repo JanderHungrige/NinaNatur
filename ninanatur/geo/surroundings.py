@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 
-from ninanatur.geo.projection import LatLon, bounding_box, to_metres
+from ninanatur.geo.projection import LatLon, Metres, to_metres
 
 # How far past the garden the map is read. A 12 m house casts 45 m of shadow at
 # a 15 degree sun, so a 25 m margin loses the morning and evening shade of
@@ -149,26 +149,63 @@ def _radius_of(building: OsmBuilding, anchor: LatLon) -> float:
     return max(2.0, math.hypot(max(xs) - min(xs), max(ys) - min(ys)) / 2)
 
 
+def _distance_to_plot(here: Metres, plot: list[Metres]) -> float:
+    """From a point to the nearest part of the garden, in metres.
+
+    The garden is a plot, not a pin. Measuring to its centroid is the same thing
+    only while the plot is small: on a 60 m one the centroid is 30 m from the
+    hedge, which is the difference between a neighbour's shadow arriving and
+    being thrown away before anybody sees it.
+    """
+    if not plot:
+        return math.hypot(here.x, here.y)
+    best = math.inf
+    for index, corner in enumerate(plot):
+        nxt = plot[(index + 1) % len(plot)]
+        best = min(best, _to_segment(here, corner, nxt))
+    return best
+
+
+def _to_segment(point: Metres, a: Metres, b: Metres) -> float:
+    dx, dy = b.x - a.x, b.y - a.y
+    length = dx * dx + dy * dy
+    if length == 0:
+        return math.hypot(point.x - a.x, point.y - a.y)
+    t = max(0.0, min(1.0, ((point.x - a.x) * dx + (point.y - a.y) * dy) / length))
+    return math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy))
+
+
 def surroundings_from(
     anchor: LatLon,
     buildings: list[OsmBuilding],
     neighbourhood: NeighbourhoodKind = NeighbourhoodKind.DETACHED,
+    outline: list[LatLon] | None = None,
 ) -> Surroundings:
-    """Turn OSM buildings into shading objects around a garden."""
-    south, west, north, east = bounding_box(anchor, MARGIN_M)
+    """Turn OSM buildings into shading objects around a garden.
+
+    `outline` is the plot. Without it the anchor stands in for the whole garden,
+    which is right for a point and was wrong for everything else: a farmyard
+    with five buildings arrived in the plan as one, because the other four had
+    centres more than 50 m from the middle of a plot whose own hedge they nearly
+    touched.
+    """
+    plot = [to_metres(p, anchor) for p in (outline or [])]
     kept: list[Surrounding] = []
     counts = {HeightSource.OSM_HEIGHT: 0, HeightSource.OSM_LEVELS: 0,
               HeightSource.NEIGHBOURHOOD: 0}
 
     for building in buildings:
-        if not (south <= building.centre.lat <= north and west <= building.centre.lon <= east):
-            continue
         here = to_metres(building.centre, anchor)
         height, source = _height_of(building.tags, neighbourhood)
         radius = _radius_of(building, anchor)
-        # Distance to the nearest part of the building, not to its centre: a
-        # large building's edge is what stands next to the garden.
-        distance = max(0.0, math.hypot(here.x, here.y) - radius)
+        # To the nearest part of the building from the nearest part of the
+        # garden. Both halves matter: a long barn is measured by its wall, and a
+        # deep plot by the corner the shadow actually falls on.
+        distance = max(0.0, _distance_to_plot(here, plot) - radius)
+        # The margin, now measured from the boundary. The box this replaces was
+        # drawn around the centroid, so a large plot lost its own neighbours.
+        if distance > MARGIN_M:
+            continue
         if not reaches(height, distance):
             continue
         counts[source] += 1

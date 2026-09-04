@@ -1,6 +1,8 @@
 """Address search and building fetch, with the network stated rather than stubbed."""
 from typing import Any
 
+import pytest
+
 from ninanatur.geo.osm import COUNTRY_CODES, buildings_in, search_address
 
 
@@ -68,9 +70,18 @@ def test_an_element_without_a_centre_is_skipped() -> None:
     assert buildings_in(52.3, 13.1, 52.5, 13.3, fetch=fetch) == []
 
 
-def test_the_query_asks_for_centres_not_full_geometry() -> None:
-    # `out center` is a fraction of the payload and all the shading model needs;
-    # full geometry over a shared free service would be a poor way to behave.
+def test_the_query_asks_for_outlines_and_for_relations() -> None:
+    """Reversed, with the reason.
+
+    This used to assert `out tags center`, on the grounds that a centre is a
+    fraction of the payload and all the shading model needs. It is not: without
+    a size, a 60 m barn is judged and drawn as the same 9 m square as a garden
+    shed. The payload is larger and the disk cache means a rerun costs nothing.
+
+    `relation` alongside `way` for the same reason a centre was not enough — a
+    building drawn as a multipolygon is a relation, and asking only for ways
+    dropped it silently.
+    """
     seen: dict[str, Any] = {}
 
     def fetch(url: str, params: dict[str, Any] | None = None) -> Any:
@@ -78,4 +89,65 @@ def test_the_query_asks_for_centres_not_full_geometry() -> None:
         return {"elements": []}
 
     buildings_in(52.3, 13.1, 52.5, 13.3, fetch=fetch)
-    assert "out tags center" in seen["data"]
+    assert "out tags geom" in seen["data"]
+    assert 'relation["building"]' in seen["data"]
+
+
+def test_a_building_comes_back_with_its_outline() -> None:
+    """`out tags center` gave one point per building and nothing about its size,
+    so every house in a plan was drawn as the same 9 m square and judged for
+    shading as if it were one — a 60 m barn included.
+
+    `out tags geom` gives the node list. It costs more payload and the disk
+    cache means a rerun costs nothing at all.
+    """
+    from ninanatur.geo.osm import buildings_in
+
+    captured: dict[str, str] = {}
+
+    def fake(_url: str, params: dict[str, str] | None = None) -> dict[str, object]:
+        captured.update(params or {})
+        return {
+            "elements": [
+                {
+                    "id": 1,
+                    "tags": {"building": "house"},
+                    "geometry": [
+                        {"lat": 52.4000, "lon": 13.2000},
+                        {"lat": 52.4000, "lon": 13.2010},
+                        {"lat": 52.4005, "lon": 13.2010},
+                        {"lat": 52.4005, "lon": 13.2000},
+                    ],
+                }
+            ]
+        }
+
+    found = buildings_in(52.39, 13.19, 52.41, 13.21, fetch=fake)
+
+    assert "geom" in captured["data"], "the outline has to be asked for"
+    assert len(found) == 1
+    assert len(found[0].outline) == 4
+    # The centre is computed from the outline, because `out geom` does not also
+    # return `center` — verified against the live API, not assumed.
+    assert found[0].centre.lat == pytest.approx(52.40025, abs=1e-4)
+
+
+def test_a_building_without_geometry_still_arrives_if_it_has_a_centre() -> None:
+    """Relations answer with member geometry rather than their own, and an
+    element with neither is no use. A building with only a centre is still a
+    building that shades a garden."""
+    from ninanatur.geo.osm import buildings_in
+
+    def fake(_url: str, _params: dict[str, str] | None = None) -> dict[str, object]:
+        return {
+            "elements": [
+                {"id": 2, "tags": {"building": "yes"},
+                 "center": {"lat": 52.4, "lon": 13.2}},
+                {"id": 3, "tags": {"building": "yes"}},
+            ]
+        }
+
+    found = buildings_in(52.39, 13.19, 52.41, 13.21, fetch=fake)
+
+    assert [b.osm_id for b in found] == [2]
+    assert found[0].outline == []
