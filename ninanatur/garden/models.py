@@ -52,6 +52,11 @@ class Planting:
     quantity: int
     added_at: str
     raw_name: str | None = None
+    #: Where the gardener put this cluster, in metres from the bed's origin.
+    #: None until somebody moves it — the plan then derives a position from the
+    #: id, which is stable across renders without pretending to be a decision.
+    x: float | None = None
+    y: float | None = None
 
     @property
     def identified(self) -> bool:

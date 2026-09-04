@@ -108,13 +108,15 @@ def _plantings_for(conn: sqlite3.Connection, bed_id: int) -> list[Planting]:
             quantity=int(r["quantity"]),
             added_at=r["added_at"],
             raw_name=r["raw_name"],
+            x=None if r["x"] is None else float(r["x"]),
+            y=None if r["y"] is None else float(r["y"]),
         )
         for r in conn.execute(
             """
             -- LEFT, not INNER: an inner join drops exactly the rows this
             -- feature exists to keep — the plants the catalogue cannot name.
             SELECT p.planting_id, p.taxon_id, p.quantity, p.added_at, p.raw_name,
-                   x.canonical_name
+                   p.x, p.y, x.canonical_name
             FROM planting p LEFT JOIN taxon x ON x.taxon_id = p.taxon_id
             WHERE p.element_id = ? ORDER BY COALESCE(x.canonical_name, p.raw_name)
             """,
@@ -136,3 +138,21 @@ def drop_plantings(conn: sqlite3.Connection, element_id: int) -> int:
     conn.execute("DELETE FROM planting WHERE element_id = ?", (element_id,))
     conn.commit()
     return int(lost)
+
+
+def place_planting(
+    conn: sqlite3.Connection, planting_id: int, x: float, y: float
+) -> None:
+    """Put a cluster somewhere in its bed, in metres from the bed's origin.
+
+    Whether the point is actually inside the bed is the caller's question: the
+    plan clamps a drag to the outline, and a stored position that once was
+    inside can fall outside when the bed itself is reshaped. Refusing it here
+    would mean a bed could not be made smaller without first moving everything
+    in it.
+    """
+    conn.execute(
+        "UPDATE planting SET x = ?, y = ? WHERE planting_id = ?",
+        (x, y, planting_id),
+    )
+    conn.commit()

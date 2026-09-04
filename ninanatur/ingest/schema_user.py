@@ -93,6 +93,14 @@ CREATE TABLE IF NOT EXISTS planting (
     raw_name    TEXT,
     quantity    INTEGER NOT NULL DEFAULT 1,
     added_at    TEXT    NOT NULL,
+    -- Where the gardener dragged this cluster, relative to the bed's origin.
+    -- Null until somebody moves it; the position is derived from the id until
+    -- then, so an untouched garden still draws the same way twice.
+    x           REAL,
+    y           REAL,
+    -- One row per species per bed, which makes a planting *be* a cluster.
+    -- Adding the same species again raises the count rather than starting a
+    -- second patch of it, which is what a gardener means by planting more.
     UNIQUE (element_id, taxon_id)
 );
 
