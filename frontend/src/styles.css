@@ -7,6 +7,9 @@
   --leaf-alt: #78a55b;
   --line: #e2e4da;
   --focus: #1f5fbf;
+  /* The one action that cannot be undone. Warm rather than red: this is a
+     gardener removing a plant, not a system failing. */
+  --warn: #a4432b;
   --radius: 12px;
 
   /* The garden plan's own washes. Named after what they draw rather than
@@ -42,6 +45,7 @@
     --leaf-alt: #a9d47f;
     --line: #2c342a;
     --focus: #8ab4f8;
+    --warn: #e8927a;
 
     /* Dark mode is not the light plan inverted: a wash that works on paper
        glows on a dark ground. These are the same colours desaturated and
@@ -1179,6 +1183,29 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   .account-drawer { margin-inline: 0; max-width: 100%; }
   .account-bar__note { max-width: 100%; }
 }
+
+/* --- What is standing in this bed ---------------------------------------- */
+
+.bed-plantings__rows { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
+
+.bed-plantings__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.bed-plantings__name { font-size: 0.92rem; min-width: 0; }
+.bed-plantings__count { color: var(--ink-muted); }
+.bed-plantings__actions { display: flex; gap: 0.6rem; align-items: baseline; }
+
+/* Removal is the one action here that cannot be taken back, and it reads like
+   every other link until it is the one being confirmed. */
+.link-button--warn { color: var(--warn); font-weight: 560; }
 
 /* --- Rückmeldung --------------------------------------------------------- */
 
