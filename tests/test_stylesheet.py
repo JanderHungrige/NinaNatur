@@ -198,3 +198,31 @@ def test_the_video_credit_is_quiet_but_readable() -> None:
     block = css[start : css.index("}", start)]
     assert "opacity" not in block, "faded twice: the colour already carries it"
     assert ".app--front-door .landing__credit" in css, "unreadable over the film"
+
+
+def test_a_checkbox_is_not_stretched_across_the_panel() -> None:
+    """`input { width: 100% }` is right for a text field and wrong for a tick
+    box: it made the box 908 pixels wide and pushed its own label onto the next
+    line. Reported as "the checkbox is not aligned with the text", which is what
+    it looks like from outside — the box was simply the width of the panel.
+
+    Asserted on the selector rather than on a rendered pixel, because the whole
+    point is that the rule must never quietly take checkboxes back.
+    """
+    # Comments stripped first. Two earlier versions of this test passed while
+    # the bug was present: one matched a `:focus-visible` rule two hundred lines
+    # up, and one read the explanatory comment as the selector. A guard that
+    # cannot fail guards nothing, so this one was checked by putting the bug
+    # back and watching it go red.
+    css = re.sub(r"/\*.*?\*/", "", STYLESHEET.read_text(encoding="utf-8"), flags=re.S)
+    # *Any* selector that can reach an input, not only one that starts with it.
+    # The third version of this test still missed `.map-picker input` and
+    # `.landing__way input`, which are more specific than the base rule and were
+    # the ones actually stretching the box on the page somebody reported.
+    offenders = [
+        block.rsplit("}", 1)[-1].strip().rstrip("{").strip()
+        for block in css.split("width: 100%")[:-1]
+        if re.search(r"(^|[\s,>])input(?![\w-])", block.rsplit("}", 1)[-1])
+        and "checkbox" not in block.rsplit("}", 1)[-1]
+    ]
+    assert offenders == [], f"a full-width rule still catches tick boxes: {offenders}"
