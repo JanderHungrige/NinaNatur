@@ -173,6 +173,21 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    same grey no matter which texture it asked for. */
 .obstacle { stroke: var(--outline); stroke-width: 0.08; }
 
+/* The ground the plan is drawn on: seen, never pointed at.
+ *
+ * The handlers are already left off in the markup; this is the other half, and
+ * the one that matters for the pointer. Without it the shape still swallows
+ * clicks meant for the canvas underneath — a drawing tool armed over the middle
+ * of the garden would hit the ground and do nothing, which is exactly how the
+ * whole-garden bed used to get in the way. */
+.obstacle--garden {
+  pointer-events: none;
+  fill: color-mix(in srgb, var(--leaf) 5%, transparent);
+  stroke: var(--outline);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.6 0.3;
+}
+
 .status { margin-top: 1rem; color: var(--ink-muted); font-size: 0.9rem; min-height: 1.4em; }
 
 /* ---- wave 4: timeline and suggestions ---- */
