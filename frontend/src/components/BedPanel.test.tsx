@@ -20,6 +20,14 @@ function garden(bedOverrides: Partial<GardenOut['beds'][number]> = {}): GardenOu
     beds: [
       {
         bed_id: 1,
+        // Wave 15: a bed carries the same geometry an obstacle does.
+        kind: 'bed',
+        shape: 'polygon',
+        x: 0,
+        y: 0,
+        points: null,
+        width: null,
+        constraint_hint: null,
         name: 'Südbeet',
         polygon: [],
         soil_type: 'loam',

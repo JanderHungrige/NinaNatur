@@ -11,6 +11,14 @@ function garden(): GardenOut {
     created_at: '', updated_at: '',
     beds: [{
       bed_id: 1, name: 'Gesamtfläche',
+      // Wave 15: a bed carries the same geometry an obstacle does.
+      kind: 'bed',
+      shape: 'polygon',
+      x: 0,
+      y: 0,
+      points: null,
+      width: null,
+      constraint_hint: null,
       polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
       soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
       ellenberg_n: null, ellenberg_r: null, sun_hours: null,

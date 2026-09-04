@@ -65,17 +65,31 @@ def test_the_selection_becomes_a_garden_at_that_place(client: TestClient) -> Non
     assert body["garden"]["latitude"] == pytest.approx(52.4, abs=0.05)
 
 
-def test_the_outline_becomes_a_bed_in_metres(client: TestClient) -> None:
-    bed = _create(client)["garden"]["beds"][0]
-    xs = [p[0] for p in bed["polygon"]]
-    ys = [p[1] for p in bed["polygon"]]
+def test_the_outline_becomes_the_garden_in_metres(client: TestClient) -> None:
+    """Wave 15: the outline is a `garden`, not a bed.
+
+    It used to arrive as one large flower bed, which made the whole plot a
+    planting site and left nothing to distinguish "my garden" from "the patch I
+    am planting". A garden that arrives with no beds is correct: the beds are
+    what the gardener draws inside it.
+    """
+    body = _create(client)["garden"]
+    assert body["beds"] == [], "the outline is no longer a bed"
+
+    outline = next(o for o in body["obstacles"] if o["kind"] == "garden")
+    xs = [p[0] for p in outline["footprint"]]
+    ys = [p[1] for p in outline["footprint"]]
     assert max(xs) - min(xs) == pytest.approx(20, abs=3)
     assert max(ys) - min(ys) == pytest.approx(20, abs=3)
 
 
 def test_buildings_that_can_shade_it_come_with_it(client: TestClient) -> None:
+    # By kind, not by count: the outline itself is an element now, and so are
+    # the streets, so a bare length would pass or fail for reasons that have
+    # nothing to do with buildings.
     obstacles = _create(client)["garden"]["obstacles"]
-    assert len(obstacles) == 2, "the 2 m shed cannot reach and should not be here"
+    houses = [o for o in obstacles if o["kind"] == "house"]
+    assert len(houses) == 2, "the 2 m shed cannot reach and should not be here"
 
 
 def test_it_reports_how_many_heights_it_had_to_assume(client: TestClient) -> None:
@@ -89,14 +103,30 @@ def test_it_reports_how_many_heights_it_had_to_assume(client: TestClient) -> Non
 def test_the_neighbourhood_answer_sets_the_assumed_heights(client: TestClient) -> None:
     flats = _create(client, neighbourhood="apartment")["garden"]["obstacles"]
     houses = _create(client, neighbourhood="detached")["garden"]["obstacles"]
-    tallest = lambda obs: max(o["height"] for o in obs)  # noqa: E731
+    # Buildings only. The garden outline and the streets have no height at all,
+    # and `max` over a None is a TypeError rather than an answer.
+    tallest = lambda obs: max(  # noqa: E731
+        o["height"] for o in obs if o["kind"] == "house"
+    )
     assert tallest(flats) > tallest(houses)
 
 
 def test_the_light_is_computed_from_the_surroundings(client: TestClient) -> None:
-    # The point of the whole feature: a garden that arrives already knowing what
-    # shades it.
-    bed = _create(client)["garden"]["beds"][0]
+    """The point of the whole feature: a garden that arrives already knowing
+    what shades it.
+
+    Asserted on a bed the gardener draws rather than on the imported outline,
+    because since Wave 15 the outline is not a planting site. That is the
+    stronger test anyway: it proves the imported surroundings persisted and
+    still shade something drawn afterwards.
+    """
+    token = _create(client)["garden"]["share_token"]
+    client.post(
+        f"/api/v1/gardens/{token}/beds",
+        json={"name": "Staudenbeet", "polygon": [[0, 0], [3, 0], [3, 2], [0, 2]]},
+    )
+    bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+
     assert bed["sun_hours"] is not None
     assert bed["sun_hours"] < 12.6
 

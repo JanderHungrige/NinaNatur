@@ -126,6 +126,14 @@ describe('CanvasScene — what lies on top of what', () => {
           beds: [
             {
               bed_id: 9, name: 'Gesamtfläche',
+              // Wave 15: a bed carries the same geometry an obstacle does.
+              kind: 'bed',
+              shape: 'polygon',
+              x: 0,
+              y: 0,
+              points: null,
+              width: null,
+              constraint_hint: null,
               polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
               soil_type: 'loam', moisture: 'fresh',
               ellenberg_l: null, ellenberg_m: null, ellenberg_n: null,
@@ -180,6 +188,14 @@ describe('CanvasScene — big things behind, small things in front', () => {
 
   const wholeGarden: GardenOut['beds'][number] = {
     bed_id: 9, name: 'Gesamtfläche',
+    // Wave 15: a bed carries the same geometry an obstacle does.
+    kind: 'bed',
+    shape: 'polygon',
+    x: 0,
+    y: 0,
+    points: null,
+    width: null,
+    constraint_hint: null,
     polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
     ellenberg_n: null, ellenberg_r: null, sun_hours: null,
@@ -226,6 +242,14 @@ describe('CanvasScene — big things behind, small things in front', () => {
 describe('CanvasScene — flowers as dots', () => {
   const plantedBed: GardenOut['beds'][number] = {
     bed_id: 4, name: 'Staudenbeet',
+    // Wave 15: a bed carries the same geometry an obstacle does.
+    kind: 'bed',
+    shape: 'polygon',
+    x: 0,
+    y: 0,
+    points: null,
+    width: null,
+    constraint_hint: null,
     polygon: [[0, 0], [8, 0], [8, 6], [0, 6]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
     ellenberg_n: null, ellenberg_r: null, sun_hours: null,

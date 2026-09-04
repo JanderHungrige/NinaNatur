@@ -778,6 +778,8 @@ export interface components {
         BedOut: {
             /** Bed Id */
             bed_id: number;
+            /** Constraint Hint */
+            constraint_hint: string | null;
             /** Ellenberg L */
             ellenberg_l: number | null;
             /** Ellenberg M */
@@ -788,6 +790,8 @@ export interface components {
             ellenberg_r: number | null;
             /** Height Above Ground */
             height_above_ground: number;
+            /** Kind */
+            kind: string;
             /** Label */
             label: string | null;
             /** Light Computed At */
@@ -798,12 +802,22 @@ export interface components {
             name: string;
             /** Plantings */
             plantings: components["schemas"]["PlantingOut"][];
+            /** Points */
+            points: number[][] | null;
             /** Polygon */
             polygon: number[][];
+            /** Shape */
+            shape: string;
             /** Soil Type */
             soil_type: string | null;
             /** Sun Hours */
             sun_hours: number | null;
+            /** Width */
+            width: number | null;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** BedPalette */
         BedPalette: {

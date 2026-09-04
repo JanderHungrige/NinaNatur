@@ -27,6 +27,14 @@ describe('ElementList', () => {
       <ElementList
         garden={garden([obstacle(1, 'house')], [{
           bed_id: 9, name: 'Südbeet', polygon: [[0, 0], [2, 0], [2, 2], [0, 2]],
+          // Wave 15: a bed carries the same geometry an obstacle does.
+          kind: 'bed',
+          shape: 'polygon',
+          x: 0,
+          y: 0,
+          points: null,
+          width: null,
+          constraint_hint: null,
           soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
           ellenberg_n: null, ellenberg_r: null, sun_hours: null,
           light_computed_at: null, height_above_ground: 0, label: null, plantings: [],

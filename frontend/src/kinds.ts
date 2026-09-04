@@ -37,6 +37,10 @@ export const KINDS: Kind[] = [
   { kind: 'hedge', label: 'Hecke', size: '6 × 0,6 m', height: 2, standing: true, symbol: 'foliage' },
   { kind: 'tree', label: 'Baum', size: '6 m Krone', height: 8, standing: true, symbol: 'crown' },
   { kind: 'shrub', label: 'Strauch', size: '2 m Krone', height: 1.5, standing: true, symbol: 'crown' },
+  // The ground the rest sits on, drawn by the map import. Its own kind since
+  // Wave 15: arriving as a flower bed made the whole plot one bed and left no
+  // line between "my garden" and "a place I am planting".
+  { kind: 'garden', label: 'Garten', size: '20 × 20 m', height: null, standing: false, symbol: 'plain' },
   { kind: 'bed', label: 'Blumenbeet', size: '3 × 1,5 m', height: null, standing: false, symbol: 'planting' },
   { kind: 'lawn', label: 'Rasen', size: '8 × 6 m', height: null, standing: false, symbol: 'grass' },
   { kind: 'paving', label: 'Pflaster', size: '4 × 3 m', height: null, standing: false, symbol: 'slabs' },
@@ -60,4 +64,20 @@ export function labelOf(kind: string): string {
 
 export function heightOf(kind: string): number | null {
   return BY_KIND.get(kind)?.height ?? null;
+}
+
+/**
+ * The ground itself. It is not moved, resized or dragged.
+ *
+ * The map import draws it and it is where everything else is measured from —
+ * shifting it would move the garden out from under the plan rather than move
+ * anything in it. The gardener said as much: not being able to drag it is the
+ * behaviour they liked, and it survived Wave 15 only because it was noticed.
+ * Before, it held by accident: the outline was a bed, and beds happened to be
+ * unmovable because selection could not find them.
+ */
+export const GROUND_KIND = 'garden';
+
+export function isGround(kind: string): boolean {
+  return kind === GROUND_KIND;
 }

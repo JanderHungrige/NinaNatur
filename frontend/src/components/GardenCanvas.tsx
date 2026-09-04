@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut } from '../api/client';
+import { elementById } from '../canvas/elements';
 import { type Box, boxOf } from '../canvas/handles';
 import { useElementDrag } from '../canvas/useElementDrag';
 import { useHandleDrag } from '../canvas/useHandleDrag';
@@ -104,8 +105,9 @@ export function GardenCanvas({
     onFinish: (id, by) => onMoveObstacle?.(id, by),
   });
 
-  const selected =
-    garden.obstacles.find((o) => o.obstacle_id === selectedObstacleId) ?? null;
+  // Both arrays. A bed is an element of kind `bed`, and looking only in
+  // `obstacles` is what took a bed's handles away the moment it was labelled.
+  const selected = elementById(garden, selectedObstacleId);
   // Derived rather than stored: Wave 11 keeps points, and the box the handles
   // work in is read back off them.
   const selectedBox: Box | null = selected === null ? null : boxOf(selected);
@@ -115,11 +117,11 @@ export function GardenCanvas({
     view,
     surface,
     onFinish: (box) => {
-      if (selected !== null) onResizeObstacle?.(selected.obstacle_id, box);
+      if (selected !== null) onResizeObstacle?.(selected.id, box);
     },
   });
   const reshape = (points: number[][]) => {
-    if (selected !== null) onReshapeObstacle?.(selected.obstacle_id, points);
+    if (selected !== null) onReshapeObstacle?.(selected.id, points);
   };
   const vertexDrag = useVertexDrag({
     points: selected?.points ?? null,

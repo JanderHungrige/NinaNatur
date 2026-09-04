@@ -156,6 +156,17 @@
             "title": "Bed Id",
             "type": "integer"
           },
+          "constraint_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint Hint"
+          },
           "ellenberg_l": {
             "anyOf": [
               {
@@ -204,6 +215,10 @@
             "title": "Height Above Ground",
             "type": "number"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "label": {
             "anyOf": [
               {
@@ -248,6 +263,23 @@
             "title": "Plantings",
             "type": "array"
           },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
           "polygon": {
             "items": {
               "items": {
@@ -257,6 +289,10 @@
             },
             "title": "Polygon",
             "type": "array"
+          },
+          "shape": {
+            "title": "Shape",
+            "type": "string"
           },
           "soil_type": {
             "anyOf": [
@@ -279,12 +315,38 @@
               }
             ],
             "title": "Sun Hours"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
           }
         },
         "required": [
           "bed_id",
           "name",
           "polygon",
+          "kind",
+          "shape",
+          "x",
+          "y",
+          "points",
+          "width",
+          "constraint_hint",
           "soil_type",
           "moisture",
           "ellenberg_l",
@@ -2557,7 +2619,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.14.39"
+    "version": "V0.14.40"
   },
   "openapi": "3.1.0",
   "paths": {

@@ -8,6 +8,7 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
   const onClose = vi.fn();
   render(
     <ElementMenu
+      elementId={7}
       at={{ x: 120, y: 80 }}
       kind="other"
       label={null}
@@ -25,11 +26,33 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
 }
 
 describe('ElementMenu', () => {
-  it('opens where the pointer was', () => {
+  it('anchors to the shape, not to the pointer', () => {
+    // Wave 15. It used to sit at the click coordinate and stay there: a shape
+    // low in the window put half the menu below the fold, and because the menu
+    // is `position: fixed`, scrolling moved the page and the shape but never
+    // the menu. Anchoring is what lets it follow.
+    const shape = document.createElement('div');
+    shape.setAttribute('data-element-id', '7');
+    shape.getBoundingClientRect = () =>
+      ({ left: 300, top: 200, right: 400, bottom: 260, width: 100, height: 60,
+         x: 300, y: 200, toJSON: () => ({}) }) as DOMRect;
+    document.body.append(shape);
+
+    open();
+
+    const menu = screen.getByRole('dialog', { name: 'Was ist das?' });
+    expect(menu.style.left).toBe('300px');
+    expect(menu.style.top).toBe('266px');
+    shape.remove();
+  });
+
+  it('falls back to the pointer when the shape has gone', () => {
+    // Deleting an element while its menu is open, or a plan that has re-drawn
+    // since. Not off-screen, not at the origin: near where the hand was.
     open();
     const menu = screen.getByRole('dialog', { name: 'Was ist das?' });
     expect(menu.style.left).toBe('120px');
-    expect(menu.style.top).toBe('80px');
+    expect(Number.parseInt(menu.style.top, 10)).toBeGreaterThanOrEqual(80);
   });
 
   it('saves the kind and the label together', () => {
@@ -71,6 +94,7 @@ describe('ElementMenu — which element is this?', () => {
     // menu not saving at all.
     render(
       <ElementMenu
+        elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label="Der alte Teich" area={12.5}
         plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={vi.fn()} busy={false}
@@ -91,6 +115,7 @@ describe('ElementMenu — getting out of the way', () => {
       <>
         <button type="button">anderes Objekt</button>
         <ElementMenu
+          elementId={7}
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
           plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
@@ -107,6 +132,7 @@ describe('ElementMenu — getting out of the way', () => {
     const onClose = vi.fn();
     render(
       <ElementMenu
+        elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
         plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
@@ -132,6 +158,7 @@ describe('ElementMenu — a click that stops propagating', () => {
           anderes Objekt
         </button>
         <ElementMenu
+          elementId={7}
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
           plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
@@ -149,6 +176,7 @@ describe('ElementMenu — deleting', () => {
     const onClose = vi.fn();
     render(
       <ElementMenu
+        elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={onDelete} onClose={onClose} busy={false}
         {...props}

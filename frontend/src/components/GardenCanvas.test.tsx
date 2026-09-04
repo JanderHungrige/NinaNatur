@@ -7,6 +7,14 @@ import { GardenCanvas } from './GardenCanvas';
 function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['beds'][number] {
   return {
     bed_id: 1,
+    // Wave 15: a bed carries the same geometry an obstacle does.
+    kind: 'bed',
+    shape: 'polygon',
+    x: 0,
+    y: 0,
+    points: null,
+    width: null,
+    constraint_hint: null,
     name: 'Südbeet',
     polygon: [[0, 0], [3, 0], [3, 2], [0, 2]],
     soil_type: 'loam',

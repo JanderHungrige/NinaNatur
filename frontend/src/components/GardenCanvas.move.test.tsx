@@ -90,4 +90,32 @@ describe('GardenCanvas — moving an element', () => {
     fireEvent.pointerUp(surface, { clientX: 500, clientY: 400, pointerId: 1 });
     expect(onMove).not.toHaveBeenCalled();
   });
+
+  it('will not drag the ground the garden is drawn on', () => {
+    // The gardener asked to keep this. It used to hold by accident — the
+    // outline was a bed, and beds could not be moved because selection only
+    // ever looked in `obstacles`. Wave 15 fixed that lookup, which would have
+    // made the whole plot draggable as a side effect.
+    const onMove = vi.fn();
+    render(
+      <GardenCanvas
+        garden={{
+          ...garden(),
+          obstacles: [{ ...element(), obstacle_id: 3, kind: 'garden' }],
+        }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }}
+        onMoveObstacle={onMove}
+      />,
+    );
+
+    const ground = document.querySelector('[data-element-id="3"]');
+    expect(ground).not.toBeNull();
+    fireEvent.pointerDown(ground!, { clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(window, { clientX: 60, clientY: 60 });
+    fireEvent.pointerUp(window, { clientX: 60, clientY: 60 });
+
+    expect(onMove).not.toHaveBeenCalled();
+  });
 });
