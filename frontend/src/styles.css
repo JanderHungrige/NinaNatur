@@ -1198,6 +1198,20 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    every other link until it is the one being confirmed. */
 .link-button--warn { color: var(--warn); font-weight: 560; }
 
+.map-picker__surface { cursor: crosshair; }
+
+/* Two small buttons over the map's own controls-free corner. Zoom because
+   panning at street level to reach a plot three hundred metres away is a lot of
+   dragging — the same complaint that asked for panning at all. */
+.map-picker__zoom { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
+.map-picker__zoom button {
+  margin: 0;
+  width: 2.2rem;
+  padding: 0.2rem 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
 /* --- Rückmeldung --------------------------------------------------------- */
 
 /* Quiet on purpose. It sits in the header beside the account actions, and a

@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   ATTRIBUTION,
   type Imagery,
   imageryUrl,
   ATTRIBUTION_URL,
+  MAX_ZOOM,
+  MIN_ZOOM,
   type LatLon,
   type MapView,
   latLonToPixel,
@@ -56,17 +58,34 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
   const [query, setQuery] = useState('');
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [centre, setCentre] = useState<Place | null>(null);
+  /**
+   * Where the map is looking, which is not the same as which address was found.
+   *
+   * An allotment usually has no address of its own, so the one you can search
+   * for is a street away from the plot you mean. Holding this apart from
+   * `centre` is what lets the map be moved to the plot while the found address
+   * stays the thing that was searched for.
+   */
+  const [look, setLook] = useState<{ lat: number; lon: number; zoom: number } | null>(
+    null,
+  );
+  const [panning, setPanning] = useState(false);
+  const panFrom = useRef<{ x: number; y: number; lat: number; lon: number } | null>(null);
   const [outline, setOutline] = useState<LatLon[]>([]);
   const [neighbourhood, setNeighbourhood] = useState('detached');
   const [problem, setProblem] = useState<string | null>(null);
+  /** Said next to the search, not next to the create button: it is about the
+   *  address that was just picked, and `problem` lives at the far end of the
+   *  panel where nobody looks after choosing one. */
+  const [moved, setMoved] = useState<string | null>(null);
   const [imagery, setImagery] = useState<Imagery | null>(null);
   const [aerial, setAerial] = useState(false);
   const surface = useRef<HTMLDivElement | null>(null);
 
   const box = size ?? DEFAULT_SIZE;
-  const view: MapView = centre === null
+  const view: MapView = look === null
     ? { lat: 0, lon: 0, zoom: START_ZOOM, ...box }
-    : { lat: centre.lat, lon: centre.lon, zoom: START_ZOOM, ...box };
+    : { ...look, ...box };
 
   const find = () => {
     // Only when asked. A request per keystroke is how one gets blocked by a
@@ -74,6 +93,81 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
     const q = query.trim();
     if (q === '') return;
     void search(q).then(setPlaces).catch(() => setPlaces([]));
+  };
+
+  /** Look at a place that was found. */
+  const goTo = (place: Place) => {
+    // The corners belong to the address they were set on. Said, not silently
+    // dropped: a drawing that vanishes without a word looks like a bug.
+    if (outline.length > 0 && centre !== null && (
+      centre.lat !== place.lat || centre.lon !== place.lon
+    )) {
+      setOutline([]);
+      setMoved('Die Ecken gehörten zur alten Adresse und wurden entfernt.');
+    } else {
+      setMoved(null);
+    }
+    setCentre(place);
+    setLook({ lat: place.lat, lon: place.lon, zoom: START_ZOOM });
+    // Asked per place, because the licences are per Bundesland.
+    void findImagery?.(place.lat, place.lon).then(setImagery).catch(() => setImagery(null));
+  };
+
+  /**
+   * Right-drag moves the map.
+   *
+   * The right button because the left one is already how a corner is set, and
+   * asking somebody to put the drawing tool down before moving the paper is
+   * the sort of mode this picker has managed without.
+   *
+   * The corners do not move with it: they are stored as coordinates, so they
+   * stay on the ground while the view slides underneath.
+   */
+  const grabMap = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 2 || look === null) return;
+    event.preventDefault();
+    panFrom.current = { x: event.clientX, y: event.clientY, lat: look.lat, lon: look.lon };
+    setPanning(true);
+  };
+
+  useEffect(() => {
+    if (!panning) return undefined;
+    const onMove = (event: PointerEvent) => {
+      const from = panFrom.current;
+      if (from === null) return;
+      // Through the projection rather than by scaling degrees: a degree of
+      // longitude is not a degree of latitude, and at 52° it is not close.
+      setLook((current) => {
+        if (current === null) return current;
+        const at: MapView = { ...current, lat: from.lat, lon: from.lon, ...box };
+        const moved = pixelToLatLon(
+          {
+            x: box.widthPx / 2 - (event.clientX - from.x),
+            y: box.heightPx / 2 - (event.clientY - from.y),
+          },
+          at,
+        );
+        return { ...current, lat: moved.lat, lon: moved.lon };
+      });
+    };
+    const onUp = () => {
+      panFrom.current = null;
+      setPanning(false);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [panning, box.widthPx, box.heightPx]);
+
+  const zoomBy = (by: number) => {
+    setLook((current) =>
+      current === null
+        ? current
+        : { ...current, zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current.zoom + by)) },
+    );
   };
 
   const addCorner = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -130,18 +224,23 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
       {places !== null && places.length === 0 && (
         <p className="hint">Dazu haben wir nichts gefunden.</p>
       )}
-      {places !== null && places.length > 0 && centre === null && (
+      {moved !== null && (
+        <p className="hint" role="status">
+          {moved}
+        </p>
+      )}
+      {/* Shown whenever there are results, not only before one is picked. It
+          used to be hidden as soon as a centre existed, so searching again
+          updated a list nobody could see — and there was no way back to a
+          different address. */}
+      {places !== null && places.length > 0 && (
         <ul className="map-picker__places">
           {places.map((p) => (
             <li key={`${p.lat},${p.lon}`}>
               <button
                 type="button"
                 className="link-button"
-                onClick={() => {
-                  setCentre(p);
-                  // Asked per place, because the licences are per Bundesland.
-                  void findImagery?.(p.lat, p.lon).then(setImagery).catch(() => setImagery(null));
-                }}
+                onClick={() => goTo(p)}
               >
                 {p.name}
               </button>
@@ -155,7 +254,28 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
           <p className="hint">
             Klicke die Ecken deines Grundstücks. Was im Umkreis von 50 m steht und
             hoch genug ist, um Schatten bis zu dir zu werfen, wird mit übernommen.
+            Mit der <strong>rechten Maustaste</strong> verschiebst du die Karte —
+            nützlich, wenn dein Grundstück keine eigene Adresse hat.
           </p>
+
+          <div className="map-picker__zoom">
+            <button
+              type="button"
+              aria-label="Herauszoomen"
+              disabled={busy || (look?.zoom ?? START_ZOOM) <= MIN_ZOOM}
+              onClick={() => zoomBy(-1)}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              aria-label="Hineinzoomen"
+              disabled={busy || (look?.zoom ?? START_ZOOM) >= MAX_ZOOM}
+              onClick={() => zoomBy(1)}
+            >
+              +
+            </button>
+          </div>
 
           <div
             ref={surface}
@@ -163,6 +283,9 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
             className="map-picker__surface"
             style={{ width: box.widthPx, height: box.heightPx }}
             onClick={addCorner}
+            onPointerDown={grabMap}
+            // Otherwise the browser's own menu opens in the middle of a pan.
+            onContextMenu={(event) => event.preventDefault()}
           >
             {aerial && imagery !== null ? (
               <img
