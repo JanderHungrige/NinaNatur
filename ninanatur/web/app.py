@@ -18,6 +18,7 @@ from ninanatur.api.accounts import router as accounts_router
 from ninanatur.api.feedback import router as feedback_router
 from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.geo import router as geo_router
+from ninanatur.api.light import router as light_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
@@ -74,6 +75,7 @@ app.include_router(planning_router)
 app.include_router(geo_router)
 app.include_router(accounts_router)
 app.include_router(feedback_router)
+app.include_router(light_router)
 
 
 @app.exception_handler(ValueError)

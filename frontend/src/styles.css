@@ -10,6 +10,9 @@
   /* The one action that cannot be undone. Warm rather than red: this is a
      gardener removing a plant, not a system failing. */
   --warn: #a4432b;
+  /* The sun map's two inks. See `.sun-map__cell`. */
+  --wash-shade: #2b2f28;
+  --wash-sun: #e8c33a;
   --radius: 12px;
 
   /* The garden plan's own washes. Named after what they draw rather than
@@ -46,6 +49,13 @@
     --line: #2c342a;
     --focus: #8ab4f8;
     --warn: #e8927a;
+    /* Lighter, not darker. The dark theme's ground is #12160f — a warm
+       near-black — and nothing can be painted onto it that reads as "darker":
+       a near-black wash measures 1.09 contrast against it, which is nothing.
+       A cool grey at 2.36 is the only thing that carries the shade there, and
+       the legend is what says the wash means shade rather than light. */
+    --wash-shade: #5b6c80;
+    --wash-sun: #f0d264;
 
     /* Dark mode is not the light plan inverted: a wash that works on paper
        glows on a dark ground. These are the same colours desaturated and
@@ -1205,6 +1215,75 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: 1.1rem;
   line-height: 1;
 }
+
+/* --- Sonne und Schatten über dem Plan (Wave 16) --------------------------- */
+
+/* One colour per reading, not a ramp: the plan already spends its colour on
+   flowers and on what things are, and a heat map in red and blue over the top
+   would be two languages at once.
+   
+   Two inks because the two readings paint opposite things. Showing sun hours
+   washes the *shade*, so it is cold and dark; showing shade hours washes the
+   *sun*, so it is warm and light. Neither is "grey" in both themes — the first
+   version used one near-black ink and vanished over the dark theme's near-black
+   ground. */
+.sun-map__cell {
+  fill: var(--wash-shade);
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+
+.sun-map--shade .sun-map__cell { fill: var(--wash-sun); }
+
+/* One moment of one day, over everything: while it plays, where the shadow is
+   *now* is the only question being asked. */
+.day-shadows polygon {
+  fill: rgb(43 47 40 / 34%);
+  stroke: rgb(43 47 40 / 55%);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.shade-switch { display: grid; gap: 0.6rem; }
+.shade-switch h2 { margin: 0; font-size: 1.05rem; }
+.shade-switch__modes { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.shade-switch__modes .chip { margin: 0; padding: 0.3rem 0.85rem; cursor: pointer; }
+
+.shade-switch__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.shade-switch__legend li { display: flex; align-items: center; gap: 0.5rem; }
+
+/* The swatch shows the wash at the strength that band is drawn with, so the
+   legend and the map are the same statement rather than two. */
+.shade-switch__swatch {
+  width: 1.4rem;
+  height: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #2b2f28;
+  flex: none;
+}
+.shade-switch__swatch[data-band='0'] { opacity: 0.06; }
+.shade-switch__swatch[data-band='1'] { opacity: 0.24; }
+.shade-switch__swatch[data-band='2'] { opacity: 0.42; }
+.shade-switch__swatch[data-band='3'] { opacity: 0.58; }
+.shade-switch__swatch[data-band='4'] { opacity: 0.72; }
+
+.shade-switch__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.shade-switch__actions button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
 
 /* --- Rückmeldung --------------------------------------------------------- */
 

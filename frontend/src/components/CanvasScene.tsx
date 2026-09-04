@@ -1,9 +1,10 @@
 import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
-import type { GardenOut } from '../api/client';
+import type { GardenOut, LightMap } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
 import { ClusterLayer } from './ClusterLayer';
+import { type MapMode, SunMap } from './SunMap';
 import { GardenSymbols } from './GardenSymbols';
 
 interface Props {
@@ -40,6 +41,11 @@ interface Props {
   onSelectCluster?: ((plantingId: number) => void) | undefined;
   onGrabCluster?: ((plantingId: number, event: React.PointerEvent) => void) | undefined;
   onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
+  /** The sun map, when the switch is on. Drawn under the plantings and over the
+   *  ground: it is about the ground, and it must not hide what grows on it. */
+  sunMap?: { map: LightMap; mode: MapMode } | undefined;
+  /** One frame of a day's shadows, while the day is being played. */
+  shadows?: number[][][] | undefined;
 }
 
 const BY_KIND = new Map(KINDS.map((k) => [k.kind, k]));
@@ -148,6 +154,8 @@ export function CanvasScene({
   onSelectCluster,
   onGrabCluster,
   onShowClusterInfo,
+  sunMap,
+  shadows,
   armed = false,
   onAskWhatItIs,
   onGrabElement,
@@ -308,6 +316,23 @@ export function CanvasScene({
           ),
         )}
         </g>
+
+        {sunMap !== undefined && (
+          <SunMap map={sunMap.map} mode={sunMap.mode} />
+        )}
+
+        {/* One moment of one day, over everything: while it plays, where the
+            shadow is *now* is the only question being asked. */}
+        {shadows !== undefined && (
+          <g className="day-shadows" aria-hidden="true" pointerEvents="none">
+            {shadows.map((polygon, i) => (
+              <polygon
+                key={i}
+                points={polygon.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
+              />
+            ))}
+          </g>
+        )}
 
         <ClusterLayer
           clusters={clusters}
