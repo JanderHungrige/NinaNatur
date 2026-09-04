@@ -37,6 +37,7 @@ import { objects } from './plural';
 import { Landing } from './components/Landing';
 import { MapPicker, type MapSelection } from './components/MapPicker';
 import { Sightlines } from './components/Sightlines';
+import { BedPlantings } from './components/BedPlantings';
 import { ExistingPlanting } from './components/ExistingPlanting';
 import { type Box, boxOf, rescale } from './canvas/handles';
 import type { DrawnShape, Tool } from './canvas/shapes';
@@ -586,6 +587,23 @@ export function App() {
    * was points all along — so only the promise ends.
    */
   /** Remove one element, from wherever it was asked for. */
+  const removePlanting = useCallback(
+    (plantingId: number) => {
+      if (garden === null) return;
+      void run('Pflanze entfernen', async () => {
+        setGarden(await client.removePlanting(garden.share_token, plantingId));
+        // The bloom year, the insect score and the palette all counted it.
+        await refresh(garden.share_token, forage);
+        if (selectedBedId !== null) {
+          setSuggestions(
+            await client.bedSuggestions(garden.share_token, selectedBedId, filters),
+          );
+        }
+      });
+    },
+    [garden, forage, refresh, run, selectedBedId, filters],
+  );
+
   const deleteElement = useCallback(
     (id: number) => {
       if (garden === null) return;
@@ -955,11 +973,34 @@ export function App() {
                 hidden={panel !== 'sow'}
               >
               {selectedBedId !== null ? (
-                <ExistingPlanting
-                  onAdd={addExisting}
-                  unidentified={garden.unidentified_plantings}
-                  busy={busy}
-                />
+                <>
+                  {(() => {
+                    const bed = garden.beds.find((b) => b.bed_id === selectedBedId);
+                    return bed === undefined ? null : (
+                      <BedPlantings
+                        bed={bed}
+                        onRemove={removePlanting}
+                        onShowInfo={(taxonId, name) =>
+                          setInfoFor({
+                            taxonId,
+                            name,
+                            // The catalogue's colour is not carried on a
+                            // planting, so the panel asks for it as unknown and
+                            // the note the gardener made still shows.
+                            recorded: null,
+                            noted: garden.observed_colours[taxonId] ?? null,
+                          })
+                        }
+                        busy={busy}
+                      />
+                    );
+                  })()}
+                  <ExistingPlanting
+                    onAdd={addExisting}
+                    unidentified={garden.unidentified_plantings}
+                    busy={busy}
+                  />
+                </>
               ) : null}
               <FilterControls filters={filters} onChange={changeFilters} disabled={busy} />
               <FilterBar

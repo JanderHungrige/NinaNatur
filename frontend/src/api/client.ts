@@ -227,6 +227,14 @@ export class NinaNaturClient {
     );
   }
 
+  /** Take one species back out of a bed. */
+  async removePlanting(token: string, plantingId: number): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/plantings/${plantingId}`,
+      { method: 'DELETE' },
+    );
+  }
+
   /** What the feedback form should ask. The server owns the questions so the
    *  headings in the filed issue cannot drift from what was on screen. */
   async feedbackQuestions(): Promise<FeedbackQuestions> {
