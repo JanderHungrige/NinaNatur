@@ -55,6 +55,25 @@ def bounding_box(anchor: LatLon, radius_m: float) -> tuple[float, float, float, 
     return (anchor.lat - dlat, anchor.lon - dlon, anchor.lat + dlat, anchor.lon + dlon)
 
 
+def bounding_box_of(
+    points: list[LatLon], margin_m: float
+) -> tuple[float, float, float, float]:
+    """(south, west, north, east) covering every point, plus a margin.
+
+    A box around the centroid is the same thing only while the plot is small. On
+    a 60 m one it reaches 20 m past the hedge instead of 50, which is how a
+    farmyard's neighbours never reached the filter that would have kept them.
+    """
+    if not points:
+        raise ValueError("a box needs at least one point")
+    lats = [p.lat for p in points]
+    lons = [p.lon for p in points]
+    middle = LatLon(lat=sum(lats) / len(lats), lon=sum(lons) / len(lons))
+    dlat = margin_m / METRES_PER_DEGREE_LAT
+    dlon = margin_m / metres_per_degree_lon(middle.lat)
+    return (min(lats) - dlat, min(lons) - dlon, max(lats) + dlat, max(lons) + dlon)
+
+
 def centroid(points: list[LatLon]) -> LatLon:
     if not points:
         raise ValueError("a polygon with no points has no centroid")

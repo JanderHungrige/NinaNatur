@@ -34,7 +34,7 @@ from ninanatur.garden.store import (
 )
 from ninanatur.geo.orthophotos import by_state
 from ninanatur.geo.osm import buildings_in, search_address, state_at, streets_in
-from ninanatur.geo.projection import LatLon, bounding_box, centroid, to_metres
+from ninanatur.geo.projection import LatLon, bounding_box_of, centroid, to_metres
 from ninanatur.geo.surroundings import MARGIN_M, NeighbourhoodKind, surroundings_from
 
 logger = logging.getLogger(__name__)
@@ -92,10 +92,16 @@ def garden_from_map(
     outline = [LatLon(lat=p.lat, lon=p.lon) for p in payload.outline]
     anchor = centroid(outline)
 
-    south, west, north, east = bounding_box(anchor, MARGIN_M)
+    # Around the whole plot, not around its middle. A box drawn from the
+    # centroid of a 60 m garden reaches 20 m past the hedge instead of 50, so a
+    # farmyard's neighbours were never fetched to be judged at all.
+    south, west, north, east = bounding_box_of(outline, MARGIN_M)
     found = buildings_in(south, west, north, east)
     around = surroundings_from(
-        anchor, found, neighbourhood=NeighbourhoodKind(payload.neighbourhood)
+        anchor,
+        found,
+        neighbourhood=NeighbourhoodKind(payload.neighbourhood),
+        outline=outline,
     )
 
     # Theirs from the moment it exists, like the plain create. This is the way

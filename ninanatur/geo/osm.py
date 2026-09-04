@@ -59,12 +59,24 @@ def search_address(query: str, *, fetch: Fetch = get_json, limit: int = 5) -> li
 
 
 def _overpass_query(south: float, west: float, north: float, east: float) -> str:
-    # `out center` gives one point per way without the node list, which is a
+    # `out center` gives one point per element without the node list, which is a
     # fraction of the payload and all the shading model needs.
+    #
+    # Ways *and* relations. A building drawn as a multipolygon — a courtyard, a
+    # farm range, anything with a hole in it — is a relation, and asking only
+    # for ways dropped it without a word. On a farmyard that is most of the
+    # buildings somebody can plainly see on the map.
     return (
         f"[out:json][timeout:40];"
+        f"("
         f'way["building"]({south},{west},{north},{east});'
-        f"out tags center;"
+        f'relation["building"]({south},{west},{north},{east});'
+        f");"
+        # `geom`, not `center`. A centre alone says nothing about size, so every
+        # building was judged for shading — and drawn — as the same 9 m square,
+        # a 60 m barn included. Overpass answers one or the other, never both,
+        # which is why the centre is computed below.
+        f"out tags geom;"
     )
 
 
@@ -77,18 +89,55 @@ def buildings_in(
         return []
     found: list[OsmBuilding] = []
     for element in raw.get("elements", []):
-        centre = element.get("center")
+        outline = _outline_of(element)
+        centre = _centre_of(element, outline)
+        # Neither an outline nor a centre is nothing to place. A relation whose
+        # members were not returned lands here, which is why it is skipped
+        # rather than defaulted to somewhere.
         if centre is None:
             continue
         found.append(
             OsmBuilding(
                 osm_id=int(element.get("id", 0)),
-                centre=LatLon(lat=float(centre["lat"]), lon=float(centre["lon"])),
-                outline=[],
+                centre=centre,
+                outline=outline,
                 tags={str(k): str(v) for k, v in (element.get("tags") or {}).items()},
             )
         )
     return found
+
+
+def _outline_of(element: dict[str, Any]) -> list[LatLon]:
+    """The node list, from a way's own geometry or a relation's members."""
+    geometry = element.get("geometry")
+    if isinstance(geometry, list):
+        return [
+            LatLon(lat=float(p["lat"]), lon=float(p["lon"]))
+            for p in geometry
+            if isinstance(p, dict) and "lat" in p and "lon" in p
+        ]
+    points: list[LatLon] = []
+    for member in element.get("members") or []:
+        if not isinstance(member, dict):
+            continue
+        for point in member.get("geometry") or []:
+            if isinstance(point, dict) and "lat" in point and "lon" in point:
+                points.append(LatLon(lat=float(point["lat"]), lon=float(point["lon"])))
+    return points
+
+
+def _centre_of(element: dict[str, Any], outline: list[LatLon]) -> LatLon | None:
+    """Where the building is. From `center` when Overpass sent one, otherwise
+    the mean of the outline — `out geom` returns one or the other, never both."""
+    centre = element.get("center")
+    if isinstance(centre, dict) and "lat" in centre and "lon" in centre:
+        return LatLon(lat=float(centre["lat"]), lon=float(centre["lon"]))
+    if not outline:
+        return None
+    return LatLon(
+        lat=sum(p.lat for p in outline) / len(outline),
+        lon=sum(p.lon for p in outline) / len(outline),
+    )
 
 
 def state_at(lat: float, lon: float, *, fetch: Fetch = get_json) -> str | None:
