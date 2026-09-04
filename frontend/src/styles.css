@@ -548,15 +548,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   margin-bottom: 0.6rem;
 }
 
-.bloom-hatch__ground {
-  fill: var(--bg-raised);
-}
-
-.bloom-hatch__line {
-  fill: var(--ink-muted);
-  opacity: 0.55;
-}
-
 /* --- Landing page ------------------------------------------------------ */
 
 .brand {
@@ -1618,13 +1609,65 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   cursor: pointer;
 }
 
-/* --- Flowers as dots, not as a bar (Wave 14, feature 56) ------------------ */
+/* --- Plantings as patches (Wave 14 feature 56, Wave 15 feature 6) --------- */
 
 .bloom-dot {
   stroke: rgb(255 255 255 / 45%);
   stroke-width: 0.5;
   vector-effect: non-scaling-stroke;
 }
+
+/* One patch of one species. The reach is what the pointer hits — a dot is two
+   centimetres across in garden metres, and chasing that with a mouse is not a
+   gesture anybody can perform. */
+.cluster { cursor: grab; }
+.cluster:active { cursor: grabbing; }
+
+.cluster__reach {
+  fill: transparent;
+  stroke: none;
+}
+
+.cluster:hover .cluster__reach {
+  fill: color-mix(in srgb, var(--leaf) 10%, transparent);
+}
+
+.cluster--selected .cluster__reach {
+  fill: color-mix(in srgb, var(--leaf) 14%, transparent);
+  stroke: var(--leaf);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Shape-following, and in pixels via non-scaling-stroke: `outline` on an SVG
+   node draws the bounding box, and a 3px outline once came out three metres
+   wide because the viewBox is in metres. */
+.cluster:focus-visible { outline: none; }
+.cluster:focus-visible .cluster__reach {
+  stroke: var(--focus);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The name of the selected patch, written on the plan. */
+.cluster-tag__name {
+  fill: var(--ink);
+  font-weight: 560;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+/* `paint-order: stroke` above draws the halo behind the glyphs rather than
+   over them — without it the outline eats the letters it is meant to protect,
+   and the name is least readable exactly where it matters, over a dense patch. */
+
+.cluster-tag__info { cursor: pointer; }
+.cluster-tag__info circle { fill: var(--bg-raised); stroke: var(--leaf); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.cluster-tag__info text { fill: var(--leaf); font-weight: 700; }
+.cluster-tag__info:hover circle { fill: color-mix(in srgb, var(--leaf) 18%, var(--bg-raised)); }
 
 .element-menu__danger {
   padding: 0.4rem 0.8rem;

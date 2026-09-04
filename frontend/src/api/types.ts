@@ -434,7 +434,18 @@ export interface paths {
         delete: operations["delete_planting_api_v1_gardens__token__plantings__planting_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Place Cluster
+         * @description Put a cluster somewhere in its bed. Reached through its garden, never by
+         *     a bare id: a planting id is enumerable and the token is the whole of a
+         *     garden's access control.
+         *
+         *     A position outside the bed is accepted. The plan clamps a drag to the
+         *     outline, but a bed can be reshaped afterwards and a position that was inside
+         *     can end up outside — refusing it here would mean a bed could not be made
+         *     smaller without first moving everything in it.
+         */
+        patch: operations["place_cluster_api_v1_gardens__token__plantings__planting_id__patch"];
         trace?: never;
     };
     "/api/v1/gardens/{token}/recompute": {
@@ -825,6 +836,8 @@ export interface components {
             bed_id: number;
             /** Months */
             months: components["schemas"]["BedMonthColours"][];
+            /** Plantings */
+            plantings: components["schemas"]["PlantingColours"][];
         };
         /**
          * BedSuggestions
@@ -1145,7 +1158,7 @@ export interface components {
          *     part of the data, not an implementation detail.
          * @enum {string}
          */
-        ObjectKind: "house" | "shed" | "wall" | "fence" | "hedge" | "tree" | "shrub" | "bed" | "lawn" | "paving" | "gravel" | "pond" | "path" | "street" | "other";
+        ObjectKind: "house" | "shed" | "wall" | "fence" | "hedge" | "tree" | "shrub" | "garden" | "bed" | "lawn" | "paving" | "gravel" | "pond" | "path" | "street" | "other";
         /** ObstacleCreate */
         ObstacleCreate: {
             /** Depth */
@@ -1340,6 +1353,26 @@ export interface components {
             taxon_id: number;
         };
         /**
+         * PlantingColours
+         * @description One cluster's colour and season.
+         *
+         *     The per-bed palette answers "which colours are in this bed this month",
+         *     which is everything a colour band needed and not enough for a dot per
+         *     cluster: that has to know which cluster is which.
+         */
+        PlantingColours: {
+            /** Colour */
+            colour: string | null;
+            /** Months */
+            months: number[];
+            /** Planting Id */
+            planting_id: number;
+            /** Space M2 */
+            space_m2: number | null;
+            /** Taxon Id */
+            taxon_id: number | null;
+        };
+        /**
          * PlantingCreate
          * @description Either a species from the catalogue, or the words the user typed.
          *
@@ -1371,6 +1404,20 @@ export interface components {
             raw_name: string | null;
             /** Taxon Id */
             taxon_id: number | null;
+            /** X */
+            x: number | null;
+            /** Y */
+            y: number | null;
+        };
+        /**
+         * PlantingPlacement
+         * @description Where a cluster was dragged to.
+         */
+        PlantingPlacement: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /** PlantingVisibility */
         PlantingVisibility: {
@@ -2248,6 +2295,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    place_cluster_api_v1_gardens__token__plantings__planting_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                planting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlantingPlacement"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

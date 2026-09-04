@@ -3,11 +3,11 @@ id: ninanatur-wave-15
 title: "Wave 15: What is in the bed, and getting it out again"
 initiative: ninanatur
 initiative_version: 20
-status: planned
+status: complete
 depends_on: ninanatur-wave-14
 demo_state: "Ein Beet anklicken zeigt, was darin steht — jede Art einzeln wieder entfernbar. Das Gesäte steht als graue Punktcluster im Beet, so dass man sieht wie voll es ist; ein Cluster lässt sich anklicken, benennen, innerhalb der Beetgrenzen verschieben und zwischen Beeten kopieren. Das Rechtsklick-Menü bleibt am Objekt und im Bild, Beete lassen sich weiter umformen, die Gartenfläche ist kein Beet mehr, und Ctrl+Z nimmt die letzte Zeichenaktion zurück."
 created: 2026-09-04
-hash: b11b7e61
+hash: 653b4c2b
 ---
 
 # Wave 15: What is in the bed, and getting it out again
@@ -27,12 +27,12 @@ mehr, und Ctrl+Z nimmt die letzte Zeichenaktion zurück.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | menu-that-stays-put | — | planned | — |
-| 2 | a-bed-is-still-a-shape | — | planned | — |
-| 3 | garden-is-not-a-bed | — | planned | — |
-| 4 | undo-with-ctrl-z | — | planned | — |
-| 5 | what-is-planted-here | — | planned | — |
-| 6 | planting-clusters | — | planned | 5 |
+| 1 | menu-that-stays-put | — | complete | — |
+| 2 | a-bed-is-still-a-shape | — | complete | — |
+| 3 | garden-is-not-a-bed | — | complete | — |
+| 4 | undo-with-ctrl-z | — | complete | — |
+| 5 | what-is-planted-here | — | complete | — |
+| 6 | planting-clusters | docs/61-planting-clusters.md | complete | 5 |
 
 Six rather than the seven reported: the colour bands are the same change as the
 grey dots, and both are feature 6. Delivery is in two merges — 1 to 4 first,
@@ -138,3 +138,16 @@ clamped to the bed's polygon, not its bounding box.
   "a derived number that looks measured is worse than no number" — so a cluster
   gets no area figure and no crisp edge, and the info panel says the room it
   claims is estimated from height.
+
+## What the building added to the plan
+
+Two things the plan did not foresee, both worth keeping:
+
+- **The ground nearly became draggable.** Feature 2 fixed a selection lookup
+  that had been broken; the whole-garden outline could not be moved *because* of
+  that break, which the gardener liked. Fixing the lookup would have taken it
+  away. `isGround` is now an explicit rule rather than a side effect, and its
+  test was checked by putting the bug back.
+- **Feature 2 had two halves.** The lookup was one; the other was that clicking
+  a bed never set the shape selection at all, so the fixed lookup still showed
+  nothing. Either alone would have looked like a failed fix.

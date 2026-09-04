@@ -227,6 +227,19 @@ export class NinaNaturClient {
     );
   }
 
+  /** Put a patch of plants somewhere in its bed, in metres from the bed's
+   *  origin. */
+  async placePlanting(
+    token: string,
+    plantingId: number,
+    at: { x: number; y: number },
+  ): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/plantings/${plantingId}`,
+      { method: 'PATCH', body: JSON.stringify(at) },
+    );
+  }
+
   /** Take one species back out of a bed. */
   async removePlanting(token: string, plantingId: number): Promise<GardenOut> {
     return this.request<GardenOut>(

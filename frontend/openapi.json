@@ -374,11 +374,19 @@
             },
             "title": "Months",
             "type": "array"
+          },
+          "plantings": {
+            "items": {
+              "$ref": "#/components/schemas/PlantingColours"
+            },
+            "title": "Plantings",
+            "type": "array"
           }
         },
         "required": [
           "bed_id",
-          "months"
+          "months",
+          "plantings"
         ],
         "title": "BedPalette",
         "type": "object"
@@ -1175,6 +1183,7 @@
           "hedge",
           "tree",
           "shrub",
+          "garden",
           "bed",
           "lawn",
           "paving",
@@ -1938,6 +1947,64 @@
         "title": "PlantSummary",
         "type": "object"
       },
+      "PlantingColours": {
+        "description": "One cluster's colour and season.\n\nThe per-bed palette answers \"which colours are in this bed this month\",\nwhich is everything a colour band needed and not enough for a dot per\ncluster: that has to know which cluster is which.",
+        "properties": {
+          "colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colour"
+          },
+          "months": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "planting_id": {
+            "title": "Planting Id",
+            "type": "integer"
+          },
+          "space_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Space M2"
+          },
+          "taxon_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taxon Id"
+          }
+        },
+        "required": [
+          "planting_id",
+          "taxon_id",
+          "colour",
+          "months",
+          "space_m2"
+        ],
+        "title": "PlantingColours",
+        "type": "object"
+      },
       "PlantingCreate": {
         "description": "Either a species from the catalogue, or the words the user typed.\n\nBoth are ordinary. The catalogue holds 8,939 German species and no cultivars,\nso a name it cannot match is an answer rather than a mistake.",
         "properties": {
@@ -2022,6 +2089,28 @@
               }
             ],
             "title": "Taxon Id"
+          },
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y"
           }
         },
         "required": [
@@ -2030,9 +2119,30 @@
           "canonical_name",
           "raw_name",
           "quantity",
-          "added_at"
+          "added_at",
+          "x",
+          "y"
         ],
         "title": "PlantingOut",
+        "type": "object"
+      },
+      "PlantingPlacement": {
+        "description": "Where a cluster was dragged to.",
+        "properties": {
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PlantingPlacement",
         "type": "object"
       },
       "PlantingVisibility": {
@@ -3697,6 +3807,66 @@
           }
         },
         "summary": "Delete Planting",
+        "tags": [
+          "planning"
+        ]
+      },
+      "patch": {
+        "description": "Put a cluster somewhere in its bed. Reached through its garden, never by\na bare id: a planting id is enumerable and the token is the whole of a\ngarden's access control.\n\nA position outside the bed is accepted. The plan clamps a drag to the\noutline, but a bed can be reshaped afterwards and a position that was inside\ncan end up outside \u2014 refusing it here would mean a bed could not be made\nsmaller without first moving everything in it.",
+        "operationId": "place_cluster_api_v1_gardens__token__plantings__planting_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "planting_id",
+            "required": true,
+            "schema": {
+              "title": "Planting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlantingPlacement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Place Cluster",
         "tags": [
           "planning"
         ]
