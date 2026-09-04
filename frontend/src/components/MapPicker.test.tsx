@@ -163,4 +163,119 @@ describe('MapPicker — aerial imagery', () => {
     fireEvent.click(screen.getByLabelText(/Luftbild/));
     expect(screen.getByTestId('map-tiles')).toBeDefined();
   });
+
+});
+
+describe('MapPicker — finding the right spot', () => {
+  it('lets a second address be searched after one is chosen', () => {
+    // Reported: once an address was picked there was no way back. The results
+    // list was hidden as soon as a centre existed, so a new search updated a
+    // list nobody could see.
+    const search = vi.fn(async (q: string) =>
+      q === 'Weinberg' ? ORTE : [{ name: 'Gartenweg, Teltow', lat: 52.4, lon: 13.26 }],
+    );
+    show({ search });
+    fireEvent.change(screen.getByLabelText(/Adresse/), { target: { value: 'Weinberg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+    return waitFor(() => screen.getByText(/Am Weinberg/))
+      .then(() => {
+        fireEvent.click(screen.getByRole('button', { name: /Am Weinberg/ }));
+        expect(screen.getByTestId('map-surface')).toBeDefined();
+
+        fireEvent.change(screen.getByLabelText(/Adresse/), { target: { value: 'Teltow' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+        return waitFor(() => expect(screen.getByText(/Gartenweg/)).toBeDefined());
+      });
+  });
+
+  it('says so when a new address discards the corners already set', async () => {
+    // Those corners are somewhere else now. Clearing them silently would look
+    // like the drawing was lost.
+    const search = vi.fn(async (q: string) =>
+      q === 'Weinberg' ? ORTE : [{ name: 'Gartenweg, Teltow', lat: 52.4, lon: 13.26 }],
+    );
+    show({ search });
+    await findPlace();
+    fireEvent.click(screen.getByTestId('map-surface'), { clientX: 100, clientY: 100 });
+    expect(screen.getByText(/1 Punkt/)).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText(/Adresse/), { target: { value: 'Teltow' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+    await waitFor(() => screen.getByText(/Gartenweg/));
+    fireEvent.click(screen.getByRole('button', { name: /Gartenweg/ }));
+
+    expect(screen.getByText(/0 Punkte/)).toBeDefined();
+    expect(screen.getByText(/alten Adresse/)).toBeDefined();
+  });
+
+  it('pans on a right-drag', async () => {
+    // Reported: an allotment usually has no address of its own, so the one you
+    // can search for is a street away from the plot you mean.
+    show();
+    await findPlace();
+    const surface = screen.getByTestId('map-surface');
+    const before = [...surface.querySelectorAll('img')].map((i) => i.getAttribute('src'));
+
+    fireEvent.pointerDown(surface, { button: 2, clientX: 300, clientY: 200 });
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 60 });
+    fireEvent.pointerUp(window, { clientX: 100, clientY: 60 });
+
+    const after = [...surface.querySelectorAll('img')].map((i) => i.getAttribute('src'));
+    expect(after).not.toEqual(before);
+  });
+
+  it('does not drop a corner where a right-drag ended', async () => {
+    // The surface adds a corner on click. A pan that also planted one would
+    // make the map unusable exactly when it is needed most.
+    show();
+    await findPlace();
+    const surface = screen.getByTestId('map-surface');
+
+    fireEvent.pointerDown(surface, { button: 2, clientX: 300, clientY: 200 });
+    fireEvent.pointerMove(window, { clientX: 100, clientY: 60 });
+    fireEvent.pointerUp(window, { clientX: 100, clientY: 60 });
+
+    expect(screen.getByText(/0 Punkte/)).toBeDefined();
+  });
+
+  it('keeps the corners on the ground while panning', async () => {
+    // They are stored as coordinates, not as pixels. A corner that slid with
+    // the map would be a different corner.
+    show();
+    await findPlace();
+    const surface = screen.getByTestId('map-surface');
+    fireEvent.click(surface, { clientX: 320, clientY: 200 });
+    const before = surface.querySelector('circle')!.getAttribute('cx');
+
+    fireEvent.pointerDown(surface, { button: 2, clientX: 300, clientY: 200 });
+    fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
+    fireEvent.pointerUp(window, { clientX: 200, clientY: 200 });
+
+    expect(surface.querySelector('circle')!.getAttribute('cx')).not.toBe(before);
+    expect(screen.getByText(/1 Punkt/)).toBeDefined();
+  });
+
+  it('zooms out and back in', async () => {
+    // Panning at street zoom to reach a plot three hundred metres away is a lot
+    // of dragging. This is the same complaint.
+    show();
+    await findPlace();
+    const tiles = () =>
+      [...screen.getByTestId('map-surface').querySelectorAll('img')]
+        .map((i) => i.getAttribute('src') ?? '');
+
+    const start = tiles();
+    fireEvent.click(screen.getByRole('button', { name: 'Herauszoomen' }));
+    expect(tiles()).not.toEqual(start);
+    fireEvent.click(screen.getByRole('button', { name: 'Hineinzoomen' }));
+    expect(tiles()).toEqual(start);
+  });
+
+  it('does not open the browser menu on the map', async () => {
+    show();
+    await findPlace();
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    screen.getByTestId('map-surface').dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
 });
