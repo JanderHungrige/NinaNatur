@@ -261,6 +261,16 @@ class ObstacleCreate(BaseModel):
     label: str | None = Field(default=None, max_length=200)
 
 
+class RoofShape(StrEnum):
+    """Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step."""
+
+    FLAT = "flat"
+    GABLE = "gable"
+    HIP = "hip"
+    PENT = "pent"
+    UNKNOWN = "unknown"
+
+
 class ObstacleUpdate(BaseModel):
     """Every field optional: an edit says what changed, not what everything is."""
 
@@ -275,6 +285,10 @@ class ObstacleUpdate(BaseModel):
     #: Set to null when a vertex is dragged out of true: the geometry does not
     #: change, but the promise that the corners stay square ends.
     constraint_hint: str | None = None
+    #: What shape the roof is. OSM's `height` is the ridge, so a building with
+    #: no answer here is modelled as solid to it — which is what every building
+    #: was before this existed.
+    roof: RoofShape | None = None
     #: A bed may differ from its garden — bought soil, a watered corner.
     soil_type: str | None = None
     moisture: str | None = None
@@ -399,6 +413,9 @@ class BedOut(BaseModel):
 class ObstacleOut(BaseModel):
     obstacle_id: int
     kind: str
+    #: 'flat' | 'gable' | 'hip' | 'pent' | 'unknown'. OSM's height is the ridge,
+    #: so this says how much of the top is solid.
+    roof: str
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

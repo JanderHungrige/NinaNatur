@@ -12,7 +12,7 @@ import pytest
 
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import BedInput
-from ninanatur.garden.plantings import add_planting, remove_planting
+from ninanatur.garden.plantings import add_planting, place_planting, remove_planting
 from ninanatur.garden.store import add_bed, create_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
@@ -30,6 +30,7 @@ def conn() -> Iterator[sqlite3.Connection]:
         (1, "Quercus robur", 24.0, "tree"),
         (2, "Campanula rotundifolia", 0.4, "forb"),
         (3, "Namenlos", None, "shrub"),
+        (4, "Corylus avellana", 3.0, "shrub"),
     ):
         c.execute(
             "INSERT INTO taxon (taxon_id, canonical_name, occurs_de) VALUES (?, ?, 1)",
@@ -51,22 +52,31 @@ def _sunny_garden(c: sqlite3.Connection) -> tuple[int, int]:
     return garden_id, bed_id
 
 
+def _sun_hours(c: sqlite3.Connection, garden_id: int, bed_id: int) -> float:
+    bed = next(b for b in load_garden(c, garden_id).beds if b.bed_id == bed_id)
+    assert bed.sun_hours is not None
+    return float(bed.sun_hours)
+
+
 def _light(c: sqlite3.Connection, garden_id: int, bed_id: int) -> float:
     bed = next(b for b in load_garden(c, garden_id).beds if b.bed_id == bed_id)
     assert bed.ellenberg_l is not None
     return float(bed.ellenberg_l)
 
 
-def test_a_plant_does_not_shade_the_bed_it_stands_in(conn: sqlite3.Connection) -> None:
-    """Not because it casts no shade, but because nobody knows where it stands.
+def test_a_full_grown_oak_darkens_the_bed_it_stands_in(conn: sqlite3.Connection) -> None:
+    """Reversed in Wave 16, and this one is not the interesting half.
 
-    A planting has no coordinates, so it is placed at the bed centroid — which
-    is also where the light is sampled. The plant therefore always sits exactly
-    on the sample point, and one 2 m shrub took a 16 m² bed from 12.6 sun hours
-    to 0.0 and Ellenberg 8 to 3. That is an artifact of the missing position,
-    not a fact about shade, and it went straight into the running app.
+    A 24 m oak has a crown 16 m across. Standing in a 4 x 4 m bed it covers the
+    whole of it and a good deal besides, so the bed going dark is the right
+    answer and not an artifact.
 
-    Wave 7's drawing tool gives plantings a position; this exclusion goes then.
+    The bed used to be excluded from its own plantings, for a reason that was
+    sound at the time: a planting had no position, so it sat at the bed's
+    centroid — which was also the single point the light was sampled at. Every
+    plant therefore stood exactly on the sample point, and even a 2 m shrub took
+    the bed to zero. Wave 15 gave clusters coordinates and Wave 16 samples a
+    grid, so both halves of that artifact are gone.
     """
     garden_id, bed_id = _sunny_garden(conn)
     before = _light(conn, garden_id, bed_id)
@@ -74,7 +84,26 @@ def test_a_plant_does_not_shade_the_bed_it_stands_in(conn: sqlite3.Connection) -
     add_planting(conn, bed_id, taxon_id=1, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, bed_id) == before
+    assert _light(conn, garden_id, bed_id) < before
+
+
+def test_a_hazel_in_the_corner_costs_the_corner(conn: sqlite3.Connection) -> None:
+    """The half that shows what the grid bought.
+
+    A 3 m hazel has a 3 m crown. In a 16 m² bed it takes a share of the light
+    and not the lot — which the old model could not express at all, because it
+    sampled one point and the plant stood on it.
+    """
+    garden_id, bed_id = _sunny_garden(conn)
+    before = _sun_hours(conn, garden_id, bed_id)
+
+    planting_id = add_planting(conn, bed_id, taxon_id=4, quantity=1)
+    place_planting(conn, planting_id, 0.8, 0.8)
+    recompute_light(conn, garden_id)
+    after = _sun_hours(conn, garden_id, bed_id)
+
+    assert after < before, "it does cast a shadow onto its own bed"
+    assert after > before * 0.5, "and it is a corner, not the whole bed"
 
 
 def test_planting_a_harebell_changes_nothing(conn: sqlite3.Connection) -> None:

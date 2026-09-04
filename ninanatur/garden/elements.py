@@ -35,7 +35,8 @@ def polygon_centroid(polygon: Polygon) -> tuple[float, float]:
 #: Columns in the order `_row_to_element` expects them.
 _COLUMNS = (
     "element_id, kind, shape, x, y, points, width, constraint_hint, height,"
-    " height_source, label, name, soil_type, moisture, ellenberg_l, ellenberg_m,"
+    " height_source, roof, eaves_m, label, name, soil_type, moisture,"
+    " ellenberg_l, ellenberg_m,"
     " ellenberg_n, ellenberg_r, sun_hours, light_computed_at, height_above_ground"
 )
 
@@ -97,6 +98,8 @@ def _row_to_element(row: sqlite3.Row, plantings: list[Planting] | None = None) -
         constraint_hint=row["constraint_hint"],
         height=None if row["height"] is None else float(row["height"]),
         height_source=str(row["height_source"]),
+        roof=str(row["roof"] or "unknown"),
+        eaves_m=None if row["eaves_m"] is None else float(row["eaves_m"]),
         label=row["label"],
         name=row["name"],
         soil_type=row["soil_type"],

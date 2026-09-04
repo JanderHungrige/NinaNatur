@@ -144,7 +144,7 @@ describe('ElementList — removing something', () => {
     const ground = {
       obstacle_id: 3, kind: 'garden', x: 0, y: 0, shape: 'polygon',
       width: null, constraint_hint: null, points: null,
-      height: null, label: 'Mein Garten', height_source: 'user',
+      height: null, label: 'Mein Garten', roof: 'unknown', height_source: 'user',
       footprint: [[0, 0], [10, 0], [10, 10], [0, 10]],
     } as GardenOut['obstacles'][number];
     const onSelect = vi.fn();

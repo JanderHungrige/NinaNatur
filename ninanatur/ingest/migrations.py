@@ -44,6 +44,10 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # instead would stack every existing planting on one corner.
     ("planting", "x", "REAL"),
     ("planting", "y", "REAL"),
+    # Wave 16. 'unknown' on every existing element, which is exactly how they
+    # have always been treated: solid to the recorded height.
+    ("element", "roof", "TEXT NOT NULL DEFAULT 'unknown'"),
+    ("element", "eaves_m", "REAL"),
 )
 
 

@@ -38,6 +38,10 @@ class ObstacleInput:
     height: float | None = None
     label: str | None = None
     height_source: str = "user"
+    #: 'flat' | 'gable' | 'hip' | 'pent' | 'unknown'. OSM's `height` is the
+    #: ridge; without a shape the whole of it is treated as solid.
+    roof: str = "unknown"
+    eaves_m: float | None = None
 
 
 @dataclass(frozen=True)
@@ -98,6 +102,11 @@ class Element:
     constraint_hint: str | None = None
     height: float | None = None
     height_source: str = "user"
+    #: 'flat' | 'gable' | 'hip' | 'pent' | 'unknown'. OSM's height is the ridge,
+    #: so this is what says how much of the top is actually solid.
+    roof: str = "unknown"
+    #: Eaves height where it is known rather than assumed.
+    eaves_m: float | None = None
     label: str | None = None
 
     # --- what a planting site needs, null on everything else ----------------

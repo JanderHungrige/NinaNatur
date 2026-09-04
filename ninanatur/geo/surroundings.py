@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from ninanatur.garden.roofs import eaves_from_levels
 from ninanatur.geo.projection import LatLon, Metres, to_metres
 
 # How far past the garden the map is read. A 12 m house casts 45 m of shadow at
@@ -80,6 +81,12 @@ class Surrounding:
     height_m: float
     height_source: HeightSource
     label: str | None = None
+    #: What OSM says the roof is, mapped onto the shapes this model knows.
+    #: 'unknown' where it says nothing, which is most buildings.
+    roof: str = "unknown"
+    #: Eaves height from `building:levels`, where that exists. The one measured
+    #: input in the roof model.
+    eaves_m: float | None = None
     #: The footprint OSM drew, as offsets from this building's own x and y.
     #: Empty when Overpass answered without geometry. Relative rather than
     #: absolute because `footprint_of` adds the element's position to every
@@ -136,6 +143,37 @@ def _height_of(
     if from_levels is not None:
         return from_levels, HeightSource.OSM_LEVELS
     return neighbourhood.height_m, HeightSource.NEIGHBOURHOOD
+
+
+#: OSM's `roof:shape` vocabulary is long; these are the shapes this model has a
+#: ratio for. Anything else stays unknown rather than being forced into the
+#: nearest one — a wrong shape is a wrong height, silently.
+OSM_ROOFS: dict[str, str] = {
+    "flat": "flat",
+    "gabled": "gable",
+    "hipped": "hip",
+    "half-hipped": "hip",
+    "skillion": "pent",
+    "pitched": "gable",
+}
+
+
+def _roof_of(tags: dict[str, str]) -> str:
+    return OSM_ROOFS.get((tags.get("roof:shape") or "").strip().lower(), "unknown")
+
+
+def _levels(tags: dict[str, str]) -> float | None:
+    """`building:levels`, as a number or not at all.
+
+    OSM permits "2;3" and "2.5" and worse. Anything that is not a plain number
+    is refused rather than guessed at — the same rule `_osm_height` follows, and
+    for the same reason.
+    """
+    raw = (tags.get("building:levels") or "").strip()
+    try:
+        return float(raw)
+    except ValueError:
+        return None
 
 
 def _polygon_area(points: list[Metres]) -> float:
@@ -230,6 +268,8 @@ def surroundings_from(
                 radius_m=round(radius, 2),
                 height_m=height,
                 height_source=source,
+                roof=_roof_of(building.tags),
+                eaves_m=eaves_from_levels(_levels(building.tags)),
                 label=building.tags.get("name"),
                 outline=[
                     (round(p.x - here.x, 2), round(p.y - here.y, 2))

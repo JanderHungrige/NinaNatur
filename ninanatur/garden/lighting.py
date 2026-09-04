@@ -12,9 +12,11 @@ from ninanatur.garden.canopy import Canopy, canopy_of, shades
 from ninanatur.garden.elements import now as _now
 from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
 from ninanatur.garden.footprint import Shape, footprint_of
+from ninanatur.garden.lightgrid import compute_grid, save_grid, signature_of
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.solar.light import bed_light_value
+from ninanatur.garden.roofs import Roof, shading_height
+from ninanatur.solar.light import bed_light_value, ellenberg_from_sun_hours
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle as ShadingObstacle
 from ninanatur.solar.shading import Point
@@ -27,18 +29,21 @@ def _planted_obstacles(
 
     A bed is a marked area; a tree standing in it is not a different kind of bed,
     it is a thing that blocks the sun. The shading model already describes
-    obstacles as vertical cylinders — the exact shape of a tree — and simply was
-    never told about the ones the user plants.
+    obstacles as vertical cylinders — the exact shape of a tree.
 
-    Positioned at the bed's centroid because a planting has no coordinates of
-    its own — which is also why the bed it stands in is excluded from its
-    shadow. Light is sampled at that same centroid, so a plant would always sit
-    exactly on the sample point and darken its own bed completely: one 2 m shrub
-    in a 16 m² bed took it from 12.6 sun hours to 0.0 and Ellenberg 8 to 3.
+    **A tree now shades its own bed**, which it did not until this wave. The
+    exclusion existed because a planting had no position: it sat at the bed's
+    centroid, light was sampled at that same centroid, and one 2 m shrub in a
+    16 m² bed took the bed from 12.6 sun hours to 0.0. That was an artifact of
+    not knowing where the plant stood, not a fact about shade.
 
-    That is an artifact of not knowing where in the bed the plant stands, not a
-    fact about shade. Between beds the geometry is real and is used. Wave 7's
-    drawing tool gives plantings a position, and this exclusion goes with it.
+    Wave 15 gave clusters coordinates and Wave 16 samples a grid, so both halves
+    of the artifact are gone: the tree stands where the gardener put it and
+    darkens the cells it actually stands over. The bed's own value is the mean
+    across its cells, so a shrub in a corner costs the corner and not the bed.
+
+    A planting nobody has placed still falls back to the centroid, which is the
+    honest guess and no longer a catastrophic one.
     """
     heights = _woody_heights(
         conn,
@@ -46,7 +51,7 @@ def _planted_obstacles(
     )
     obstacles: list[tuple[int, ShadingObstacle]] = []
     for bed in garden.beds:
-        centre = Point(*_polygon_centroid(bed.polygon))
+        centroid = _polygon_centroid(bed.polygon)
         for planting in bed.plantings:
             if planting.taxon_id is None:
                 continue
@@ -54,12 +59,19 @@ def _planted_obstacles(
             if not shades(canopy):
                 continue
             assert canopy is not None  # narrowed by shades()
+            # Where the gardener put the cluster, or the middle of the bed for
+            # one nobody has moved.
+            at = (
+                (bed.x + planting.x, bed.y + planting.y)
+                if planting.x is not None and planting.y is not None
+                else centroid
+            )
             obstacles.append(
                 (
                     bed.bed_id,
                     ShadingObstacle(
                         footprint=footprint_of(
-                            shape=Shape.CIRCLE, x=centre.x, y=centre.y,
+                            shape=Shape.CIRCLE, x=at[0], y=at[1],
                             width=canopy.radius_m * 2, depth=None,
                             rotation=0.0, points=None,
                         ),
@@ -108,7 +120,12 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     """
     garden = load_garden(conn, garden_id)
     obstacles = [
-        ShadingObstacle(footprint=o.footprint, height=o.height)
+        ShadingObstacle(
+            footprint=o.footprint,
+            # The ridge is a line, not a wall. Without a roof shape this is the
+            # recorded height, exactly as before.
+            height=shading_height(o.height, Roof(o.roof), o.eaves_m),
+        )
         for o in garden.obstacles
         # A height of None is an element nobody has said the height of. Treating
         # it as zero would be a claim; skipping it is the same answer Wave 8
@@ -118,20 +135,37 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     planted = _planted_obstacles(conn, garden)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
 
+    # Everything that casts a shadow, including what grows in the beds. The
+    # exclusion of a bed from its own plantings is gone — see
+    # `_planted_obstacles` for why it existed and why it no longer has to.
+    everything = obstacles + [o for _owner, o in planted]
+
+    # The grid, once for the garden. Raised beds are the exception: they need
+    # their own field because the height changes every shadow polygon, and they
+    # are rare enough that computing one extra grid per distinct height is
+    # cheaper than the alternative of one field per point.
+    grid = compute_grid(garden, everything)
+    if grid is not None:
+        save_grid(conn, garden_id, grid, signature_of(garden))
+
     updated = 0
     for bed in garden.beds:
-        # A bed is not shaded by what grows in it — see _planted_obstacles.
-        from_others = [o for owner, o in planted if owner != bed.bed_id]
-        light = bed_light_value(
-            location,
-            Point(*_polygon_centroid(bed.polygon)),
-            obstacles + from_others,
-            height_above_ground=bed.height_above_ground,
-        )
+        raised = bed.height_above_ground > 0
+        mean = None if raised or grid is None else grid.mean_over(bed.polygon)
+        if mean is None:
+            # A raised bed, a bed narrower than a cell, or a garden with nothing
+            # drawn. The point answer is still the honest fallback, and it is
+            # what this whole model did until now.
+            mean = bed_light_value(
+                location,
+                Point(*_polygon_centroid(bed.polygon)),
+                everything,
+                height_above_ground=bed.height_above_ground,
+            ).sun_hours
         conn.execute(
             "UPDATE element SET ellenberg_l = ?, sun_hours = ?,"
             " light_computed_at = ? WHERE element_id = ?",
-            (light.ellenberg_l, light.sun_hours, _now(), bed.bed_id),
+            (ellenberg_from_sun_hours(mean), round(mean, 2), _now(), bed.bed_id),
         )
         updated += 1
     conn.commit()

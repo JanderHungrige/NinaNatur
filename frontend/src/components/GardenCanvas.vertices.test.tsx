@@ -9,7 +9,7 @@ function element(overrides: Partial<GardenOut['obstacles'][number]> = {}) {
     obstacle_id: 7, kind: 'bed', x: 0, y: 0, shape: 'polygon',
     width: null, constraint_hint: 'rect' as string | null,
     points: [[-2, -2], [2, -2], [2, 2], [-2, 2]],
-    height: null, label: null, height_source: 'user',
+    height: null, label: null, roof: 'unknown', height_source: 'user',
     footprint: [[-2, -2], [2, -2], [2, 2], [-2, 2]],
     ...overrides,
   } as GardenOut['obstacles'][number];

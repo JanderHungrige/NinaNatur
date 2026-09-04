@@ -138,6 +138,7 @@ def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInp
         conn, garden_id, kind=obstacle.kind, shape=shape, x=obstacle.x,
         y=obstacle.y, width=width, constraint_hint=hint, height=obstacle.height,
         label=obstacle.label, height_source=obstacle.height_source, points=points,
+        roof=obstacle.roof, eaves_m=obstacle.eaves_m,
     )
     _touch(conn, garden_id)
     return element_id
@@ -166,6 +167,9 @@ _EDITABLE = frozenset(
         "kind", "x", "y", "label", "height", "height_source", "constraint_hint",
         # A bed may differ from its garden: bought soil, a watered corner.
         "soil_type", "moisture",
+        # What shape the roof is. One of the few things somebody can answer by
+        # looking out of the window.
+        "roof", "eaves_m",
     }
 )
 _GEOMETRY = frozenset({"shape", "width", "depth", "rotation", "points"})

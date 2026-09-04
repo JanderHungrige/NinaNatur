@@ -1203,6 +1203,8 @@ export interface components {
             obstacle_id: number;
             /** Points */
             points: number[][] | null;
+            /** Roof */
+            roof: string;
             /** Shape */
             shape: string;
             /** Width */
@@ -1232,6 +1234,7 @@ export interface components {
             moisture?: string | null;
             /** Points */
             points?: number[][] | null;
+            roof?: components["schemas"]["RoofShape"] | null;
             /** Rotation */
             rotation?: number | null;
             shape?: components["schemas"]["Shape"] | null;
@@ -1477,6 +1480,12 @@ export interface components {
             /** Username */
             username: string;
         };
+        /**
+         * RoofShape
+         * @description Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.
+         * @enum {string}
+         */
+        RoofShape: "flat" | "gable" | "hip" | "pent" | "unknown";
         /**
          * ScoreOut
          * @description The score with everything needed to argue about it — a score a user cannot
