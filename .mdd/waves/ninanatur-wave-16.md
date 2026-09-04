@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-15
 demo_state: "Ein Schalter legt eine Sonnenstunden- oder Schattenstundenkarte über den Plan, in Graustufen bzw. Transparenz. Der Play-Knopf lässt den Schatten über einen mittleren Tag des gewählten Monats wandern. Das Licht wird über ein Raster berechnet, nicht an einem Punkt je Beet — und eine Sonnenpflanze, die im Schatten steht, wird als solche benannt."
 created: 2026-09-04
-hash: a64196ae
+hash: 83f3e324
 ---
 
 # Wave 16: The shade switch
@@ -31,6 +31,8 @@ Schatten steht, wird als solche benannt.
 | 3 | a-day-of-shadow | — | planned | 2 |
 | 4 | sun-plant-in-a-shade-spot | — | planned | 1 |
 | 5 | morning-sun-is-not-afternoon-sun | — | planned | 1 |
+| 6 | a-tree-is-not-a-wall | — | planned | 1 |
+| 7 | what-shape-is-the-roof | — | planned | — |
 
 ## What each one is
 
@@ -66,6 +68,33 @@ and 2.7 s, which is too long to make somebody wait after moving a shed.
 bed's shading because a planting had no position and would sit exactly on the
 sample point. Wave 15 gave clusters real coordinates, so the reason is gone: a
 tree can now shade the part of its own bed that it actually stands over.
+
+**When it recomputes, and how much.** Asked while planning, and the measurement
+changed the answer.
+
+The obvious design is a diff: recompute only the cells one changed object can
+reach. Measured over a season, for an object three metres south of a 20 × 15 m
+garden:
+
+| | cells it ever touches |
+|---|---|
+| Shed, 2 m | 19 % |
+| Hedge, 6 m | 71 % |
+| House, 12 m | **100 %** |
+| Anything taller | 100 % |
+
+So a diff pays for sheds and for nothing else. It is not worth the second code
+path, and a second code path through geometry is exactly where the two answers
+drift apart.
+
+What is worth doing is cheaper and simpler:
+
+- **Recompute only when something that casts shade changes.** Drawing a bed,
+  planting a flower, renaming an object, moving a cluster — none of these change
+  the light at all, and today several of them trigger a full recomputation.
+  This is the whole saving and it costs nothing.
+- **Then recompute the lot**, at 0.44 s. Once per settled change, not per drag
+  frame — a drag already sends one request when the pointer is released.
 
 ### 2. the-shade-switch
 
@@ -119,6 +148,52 @@ The first is not answerable from this model at all — it needs canopy
 transparency, which OSM does not hold and the catalogue does not either. It is
 recorded here as a limit rather than approximated.
 
+### 6. a-tree-is-not-a-wall
+
+Asked directly: can shade through trees be diffuse, except for conifers?
+
+Yes — and the catalogue can nearly answer it. **GIFT trait 2.4.1
+`Deciduousness_1`** carries `deciduous | evergreen | variable`, from a source
+already ingested under CC-BY-4.0, so this becomes a trait with provenance rather
+than a hand-kept list of conifers. Coverage measured before planning: **452 of
+954 German woody species, 47 %**, and the ones that matter are right — Picea
+evergreen, Taxus evergreen, Ilex evergreen, Quercus and Fagus deciduous.
+
+Two things follow, and the second is larger than the first:
+
+- **A canopy transmits.** A broadleaf crown in leaf passes some light; a spruce
+  passes almost none. `is_shaded` stops being a boolean for plantings and
+  becomes a transmission factor, and sun hours stop being a count and become a
+  weighted sum. Buildings stay opaque, which they are.
+- **A deciduous tree is bare in March.** The season starts on 1 March and the
+  model currently shades a garden under a leafless oak exactly as hard as under
+  a wall. That is not a refinement — it is a large error in the two months when
+  a gardener is deciding what to plant.
+
+Leaf-out and leaf-fall dates are the open part. They are not in the catalogue,
+they vary by species and by year, and a single German average is probably the
+honest first answer — said as an assumption, the way assumed building heights
+already are.
+
+`variable` is a third state and must not be silently folded into either. 6
+species, and pretending is worse than saying so.
+
+### 7. what-shape-is-the-roof
+
+A building is a prism at one height, and OSM's `height` is usually the **ridge**
+— so a gabled house is modelled as though its gables were solid to the ridge. It
+shades too much, everywhere, all the time.
+
+**To do:** the user can say what shape a roof is — flat, gable, hip, pent — in
+the same right-click menu that already sets a kind and a height. It is one of
+the few things somebody can answer by looking out of the window, which is the
+test this project applies to every question it asks.
+
+The eaves height is the open part. `building:levels × 3 m` is the obvious
+estimate and OSM sometimes carries `roof:height` outright; where neither exists
+the answer is an assumption and must be labelled as one, beside the assumed
+heights already there.
+
 ## What the model does not know
 
 Asked while planning, and answered by measurement rather than by argument. The
@@ -136,12 +211,12 @@ own shadow covers everything it does and more.
 What is genuinely missing, and none of it is fixed by this wave:
 
 - **Flat ground.** There is no terrain anywhere in the code. A garden below a
-  slope, or a neighbour uphill, is wrong and silently so.
-- **Flat roofs.** A building is a prism at one height, and OSM's `height` is
-  usually the ridge — so a gabled house is modelled as though its gable ends
-  were solid to the ridge, overstating its shade.
-- **Opaque canopies.** A tree blocks the sun completely. This is the same limit
-  that stops feature 5 from telling dappled light from broken sun.
+  slope, or a neighbour uphill, is wrong and silently so. **Wave 17** takes it
+  on with public elevation data.
+- ~~Flat roofs.~~ Feature 7 asks the user.
+- ~~Opaque canopies.~~ Feature 6, as far as the data reaches. What stays out of
+  reach is *how much* a particular crown transmits: `deciduous` is not a density,
+  and an old beech is not a young birch.
 - **No diffuse or reflected light.** A white south wall throws light back and
   the model does not know it.
 
