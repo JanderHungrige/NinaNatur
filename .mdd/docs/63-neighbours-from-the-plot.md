@@ -27,8 +27,7 @@ path: Map/Surroundings
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues:
-  - "A building is still drawn as a square of equal footprint area rather than its real outline, though the outline is now fetched and could be used."
+known_issues: []
 ---
 
 # The neighbours a garden actually has
@@ -104,3 +103,35 @@ was reversed rather than deleted. It was a reasonable belief and it was wrong.
 The reach filter still bounds the result: a 2 m shed at 60 m is still dropped,
 and the margin still ends at 50 m from the boundary. Widening a box without
 that would put every shed in the village on the plan.
+
+## The follow-up: they came back the wrong size
+
+Fetching the outlines fixed the count and broke the picture. Reported with a
+screenshot: huge boxes overlapping each other and the plot, at angles that
+matched nothing.
+
+`_radius_of` returned **half the bounding box's diagonal**, and the plan drew a
+square of side `radius × 1.77` around that. For a 30 × 8 m barn the diagonal
+gives 15.5 m — a circle of 755 m² standing in for 240. Measured across the
+sample: every drawn building was **2.1 to 2.8 times** its real footprint, and
+every one axis-aligned regardless of how the building actually lies.
+
+Two changes, and the second only became possible because of the first fix:
+
+- **The radius is the circle of equal area.** The shading model is cylinders, so
+  a footprint does still have to become one number — just not that one.
+- **The plan draws the outline.** `Surrounding` carries the footprint as offsets
+  from the building's own position, because `footprint_of` adds the element's
+  x and y to every point and absolute ones would place it twice as far out.
+
+A relation now yields its **outer ring only**. Concatenating every member gave a
+shape spanning the outer ring and its holes together, which is one more way a
+courtyard building came out enormous.
+
+A building Overpass answers without geometry still gets a square, sized from the
+equal-area radius. That is the one place a made-up number is still in use, and
+it says so.
+
+The count fell from 31 to 26 with the correct radius, which is right: those five
+were passing the reach filter only because an inflated radius put their walls
+closer than they are.

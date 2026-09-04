@@ -116,14 +116,21 @@ def _outline_of(element: dict[str, Any]) -> list[LatLon]:
             for p in geometry
             if isinstance(p, dict) and "lat" in p and "lon" in p
         ]
-    points: list[LatLon] = []
+    # Outer rings only. A multipolygon's members are outer rings *and* holes,
+    # and concatenating them gives a shape spanning both — which is how a
+    # courtyard building came out enormous. One outer ring is enough for a
+    # shadow; the second is rare and the hole is not a wall.
     for member in element.get("members") or []:
-        if not isinstance(member, dict):
+        if not isinstance(member, dict) or member.get("role") != "outer":
             continue
-        for point in member.get("geometry") or []:
-            if isinstance(point, dict) and "lat" in point and "lon" in point:
-                points.append(LatLon(lat=float(point["lat"]), lon=float(point["lon"])))
-    return points
+        ring = [
+            LatLon(lat=float(p["lat"]), lon=float(p["lon"]))
+            for p in member.get("geometry") or []
+            if isinstance(p, dict) and "lat" in p and "lon" in p
+        ]
+        if len(ring) >= 3:
+            return ring
+    return []
 
 
 def _centre_of(element: dict[str, Any], outline: list[LatLon]) -> LatLon | None:

@@ -133,26 +133,39 @@ def garden_from_map(
         ),
     )
     for obj in around.objects:
-        add_obstacle(
-            conn,
-            garden_id,
-            ObstacleInput(
+        # The shape OSM drew, when it drew one. The square this replaces was
+        # sized from half the bounding box's diagonal and came out 2.1 to 2.8
+        # times the real footprint on live data — every one axis-aligned, so a
+        # farmyard arrived as a pile of overlapping boxes at the wrong angles.
+        #
+        # A square is still the answer when Overpass sent no geometry, and then
+        # it is sized from the equal-area radius rather than the diagonal.
+        if len(obj.outline) >= 3:
+            drawn = ObstacleInput(
                 kind="house",
                 x=obj.x,
                 y=obj.y,
-                # A square of the same footprint area. OSM's outline is not
-                # fetched yet (`out tags center`), so this is the honest shape
-                # for what we actually know — and it is a rectangle rather than
-                # a circle, which is already closer to a building.
+                shape="polygon",
+                points=[[corner[0], corner[1]] for corner in obj.outline],
+                height=obj.height_m,
+                label=obj.label,
+                height_source=obj.height_source.value,
+            )
+        else:
+            side = obj.radius_m * 1.77
+            drawn = ObstacleInput(
+                kind="house",
+                x=obj.x,
+                y=obj.y,
                 shape="rect",
-                width=obj.radius_m * 1.77,
-                depth=obj.radius_m * 1.77,
+                width=side,
+                depth=side,
                 rotation=0.0,
                 height=obj.height_m,
                 label=obj.label,
                 height_source=obj.height_source.value,
-            ),
-        )
+            )
+        add_obstacle(conn, garden_id, drawn)
     recompute_light(conn, garden_id)
 
     return MapGardenOut(

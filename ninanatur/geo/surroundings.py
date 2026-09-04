@@ -80,6 +80,11 @@ class Surrounding:
     height_m: float
     height_source: HeightSource
     label: str | None = None
+    #: The footprint OSM drew, as offsets from this building's own x and y.
+    #: Empty when Overpass answered without geometry. Relative rather than
+    #: absolute because `footprint_of` adds the element's position to every
+    #: point — absolute points would place the building twice as far out.
+    outline: list[tuple[float, float]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -133,20 +138,28 @@ def _height_of(
     return neighbourhood.height_m, HeightSource.NEIGHBOURHOOD
 
 
+def _polygon_area(points: list[Metres]) -> float:
+    """Shoelace, in square metres."""
+    total = 0.0
+    for index, a in enumerate(points):
+        b = points[(index + 1) % len(points)]
+        total += a.x * b.y - b.x * a.y
+    return abs(total) / 2
+
+
 def _radius_of(building: OsmBuilding, anchor: LatLon) -> float:
     """The circle that stands in for the footprint.
 
-    Obstacles are cylinders in the shading model, so a footprint has to become a
-    radius. Half the outline's diagonal, or a default when the outline was not
-    fetched — it overstates a long building's shade at the ends, which is
-    recorded as a known issue rather than pretended away.
+    Obstacles are cylinders in the shading model, so a footprint still has to
+    become one number. The circle of **equal area**, not half the bounding box's
+    diagonal: for a 30 x 8 m barn the diagonal gives 15.5 m, a circle of 755 m²
+    standing in for 240. On live data that made every drawn building 2.1 to 2.8
+    times its real size, which is what set them overlapping.
     """
     if len(building.outline) < 3:
         return 5.0
-    points = [to_metres(p, anchor) for p in building.outline]
-    xs = [p.x for p in points]
-    ys = [p.y for p in points]
-    return max(2.0, math.hypot(max(xs) - min(xs), max(ys) - min(ys)) / 2)
+    area = _polygon_area([to_metres(p, anchor) for p in building.outline])
+    return max(2.0, math.sqrt(area / math.pi)) if area > 0 else 5.0
 
 
 def _distance_to_plot(here: Metres, plot: list[Metres]) -> float:
@@ -218,6 +231,10 @@ def surroundings_from(
                 height_m=height,
                 height_source=source,
                 label=building.tags.get("name"),
+                outline=[
+                    (round(p.x - here.x, 2), round(p.y - here.y, 2))
+                    for p in (to_metres(c, anchor) for c in building.outline)
+                ],
             )
         )
 
