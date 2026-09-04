@@ -367,6 +367,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/light": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Light Map
+         * @description The stored map, or null when nothing has been drawn yet.
+         */
+        get: operations["light_map_api_v1_gardens__token__light_get"];
+        put?: never;
+        /**
+         * Rebuild Light Map
+         * @description Recompute the whole map, now, because somebody asked.
+         *
+         *     Belt as well as braces. The signature should catch every change that moves a
+         *     shadow, and if it ever does not, this is how somebody fixes their own map
+         *     without knowing why it was wrong.
+         */
+        post: operations["rebuild_light_map_api_v1_gardens__token__light_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/obstacles": {
         parameters: {
             query?: never;
@@ -479,6 +507,30 @@ export interface paths {
          * @description What this planting is worth to insects, with its components.
          */
         get: operations["score_api_v1_gardens__token__score_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/shadows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shadows Through A Day
+         * @description Where the shadows fall through one middling day of a month.
+         *
+         *     The 15th, because a month's first and last days differ by a fortnight of sun
+         *     and the middle is the one that represents it. Computed rather than stored:
+         *     it is one day rather than a season, and nobody watches it twice in a row.
+         */
+        get: operations["shadows_through_a_day_api_v1_gardens__token__shadows_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1124,6 +1176,35 @@ export interface components {
             lon: number;
         };
         /**
+         * LightMap
+         * @description Mean daily sun hours per cell, row-major from the south-west corner.
+         *
+         *     `stale` is the honest half. The map is expensive enough to store, so it can
+         *     be out of date — and a map that is quietly out of date is worse than one
+         *     that says so. It is computed by comparing a signature of the shading inputs,
+         *     not by remembering which actions ought to have invalidated it.
+         */
+        LightMap: {
+            /** Cell M */
+            cell_m: number;
+            /** Cols */
+            cols: number;
+            /** Computed At */
+            computed_at: string;
+            /** Hours */
+            hours: number[];
+            /** Max Hours */
+            max_hours: number;
+            /** Min X */
+            min_x: number;
+            /** Min Y */
+            min_y: number;
+            /** Rows */
+            rows: number;
+            /** Stale */
+            stale: boolean;
+        };
+        /**
          * MapGardenOut
          * @description A garden created from the map, and what the map could and could not say.
          */
@@ -1510,6 +1591,29 @@ export interface components {
             plantings_without_interaction_data: number;
             /** Score */
             score: number;
+        };
+        /** ShadowDay */
+        ShadowDay: {
+            /** Day */
+            day: number;
+            /** Frames */
+            frames: components["schemas"]["ShadowFrame"][];
+            /** Month */
+            month: number;
+        };
+        /**
+         * ShadowFrame
+         * @description Every shadow in the garden at one moment of one day.
+         */
+        ShadowFrame: {
+            /** Altitude */
+            altitude: number;
+            /** Azimuth */
+            azimuth: number;
+            /** Minute */
+            minute: number;
+            /** Polygons */
+            polygons: number[][][];
         };
         /**
          * Shape
@@ -2192,6 +2296,68 @@ export interface operations {
             };
         };
     };
+    light_map_api_v1_gardens__token__light_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightMap"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rebuild_light_map_api_v1_gardens__token__light_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LightMap"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_obstacle_api_v1_gardens__token__obstacles_post: {
         parameters: {
             query?: never;
@@ -2412,6 +2578,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScoreOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shadows_through_a_day_api_v1_gardens__token__shadows_get: {
+        parameters: {
+            query?: {
+                month?: number;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShadowDay"];
                 };
             };
             /** @description Validation Error */

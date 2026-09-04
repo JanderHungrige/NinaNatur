@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { GardenOut } from '../api/client';
+import type { GardenOut, LightMap } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
+import type { MapMode } from './SunMap';
 import { elementById } from '../canvas/elements';
 import { type Box, boxOf } from '../canvas/handles';
 import { useClusterDrag } from '../canvas/useClusterDrag';
@@ -47,6 +48,8 @@ interface Props {
   onMoveCluster?: ((plantingId: number, to: { x: number; y: number }) => void) | undefined;
   /** The same panel the suggestion list opens. */
   onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
+  sunMap?: { map: LightMap; mode: MapMode } | undefined;
+  shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
   /** Placing one: a second thing a click on the plan can mean, so it is a mode. */
@@ -97,6 +100,8 @@ export function GardenCanvas({
   onSelectCluster,
   onMoveCluster,
   onShowClusterInfo,
+  sunMap,
+  shadows,
   viewpoint = null,
   onPlaceViewpoint,
   selectedObstacleId = null,
@@ -312,6 +317,8 @@ export function GardenCanvas({
           onSelectCluster={onSelectCluster}
           onGrabCluster={clusterDrag.grab}
           onShowClusterInfo={onShowClusterInfo}
+          sunMap={sunMap}
+          shadows={shadows}
           armed={tool !== null}
           onAskWhatItIs={onAskWhatItIs}
           onGrabElement={onMoveObstacle === undefined ? undefined : elementDrag.grab}

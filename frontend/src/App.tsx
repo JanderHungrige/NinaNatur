@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
   BedSuggestions,
+  LightMap,
+  ShadowDay,
   ChangeOut,
   BloomPalette,
   FeedbackQuestions,
@@ -25,6 +27,8 @@ import { LivingBackground } from './components/LivingBackground';
 import { MyGardens } from './components/MyGardens';
 import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
+import { ShadeSwitch } from './components/ShadeSwitch';
+import type { MapMode } from './components/SunMap';
 import { BloomTimeline } from './components/BloomTimeline';
 import { GardenCanvas } from './components/GardenCanvas';
 import { ColourNote } from './components/ColourNote';
@@ -107,6 +111,17 @@ export function App() {
   /** What Ctrl+C put aside: a species and how many of it, not a row id. */
   const [copied, setCopied] = useState<{ taxonId: number | null; rawName: string | null; quantity: number; name: string } | null>(null);
 
+  /** The sun map, and whether it is being shown. Fetched with the garden so the
+   *  switch can say straight away whether there is anything to show. */
+  const [lightMap, setLightMap] = useState<LightMap | null>(null);
+  const [shadeOn, setShadeOn] = useState(false);
+  const [mapMode, setMapMode] = useState<MapMode>('sun');
+  /** A day's shadows, and which frame is showing. Fetched only when the day is
+   *  actually being watched — it is a request nobody asks for by opening a
+   *  garden. */
+  const [day, setDay] = useState<ShadowDay | null>(null);
+  const [frame, setFrame] = useState(0);
+
   const { remember, undo, forget } = useUndoStack();
 
   const load = useCallback(async (token: string, weighted = true) => {
@@ -127,7 +142,12 @@ export function App() {
     setImprovements(await client.improvements(token));
     // Also here, not only in refresh: a garden opened from its link never goes
     // through refresh, so the plan had no colours until something was edited.
+    //
+    // The same trap caught the sun map on the day it was written — the switch
+    // said "nothing drawn yet" for a garden that plainly had a map. Anything
+    // fetched in `refresh` and not here is invisible until the first edit.
     setPalette(await client.bloom(token));
+    setLightMap(await client.lightMap(token));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -277,6 +297,37 @@ export function App() {
     forget();
   }, [garden?.share_token, forget]);
 
+  /**
+   * The day's shadows, fetched when somebody actually wants to watch them.
+   *
+   * Not with the garden: it is a request for a thing nobody has asked for by
+   * opening a plan. The month follows the filter, so switching months while
+   * watching moves the shadows rather than needing a second control.
+   */
+  useEffect(() => {
+    if (garden === null || !shadeOn) {
+      setDay(null);
+      return;
+    }
+    const month = filters.floweringMonth ?? 6;
+    let dropped = false;
+    void client
+      .shadowDay(garden.share_token, month)
+      .then((fetched) => {
+        if (dropped) return;
+        setDay(fetched);
+        setFrame(0);
+      })
+      .catch(() => {
+        if (!dropped) setDay(null);
+      });
+    return () => {
+      // A month switched twice in a second must not have the first answer
+      // arrive last and win.
+      dropped = true;
+    };
+  }, [garden?.share_token, shadeOn, filters.floweringMonth, garden]);
+
   useUndoShortcut(() => {
     void run('Rückgängig', async () => {
       const entry = await undo();
@@ -289,6 +340,7 @@ export function App() {
   }, garden !== null);
 
   const refresh = useCallback(async (token: string, weighted: boolean) => {
+    setLightMap(await client.lightMap(token));
     setTimeline(await client.timeline(token, weighted));
     setScore(await client.score(token));
     setImprovements(await client.improvements(token));
@@ -1071,6 +1123,25 @@ export function App() {
                 selectedBedId={selectedBedId}
                 onSelectBed={selectBed}
               />
+              <ShadeSwitch
+                map={lightMap}
+                on={shadeOn}
+                mode={mapMode}
+                onToggle={(next) => {
+                  setShadeOn(next);
+                  // Leaving the map also leaves the day: the two are one
+                  // question, and a day playing behind a hidden map is a timer
+                  // nobody can see.
+                  if (!next) setDay(null);
+                }}
+                onMode={setMapMode}
+                onRebuild={() =>
+                  void run('Schatten neu berechnen', async () => {
+                    setLightMap(await client.rebuildLightMap(garden.share_token));
+                  })
+                }
+                busy={busy}
+              />
               <ElementList
                 garden={garden}
                 onDelete={deleteElement}
@@ -1199,6 +1270,12 @@ export function App() {
                 selectedPlantingId={selectedPlantingId}
                 onSelectCluster={setSelectedPlantingId}
                 onMoveCluster={moveCluster}
+                sunMap={
+                  shadeOn && lightMap !== null
+                    ? { map: lightMap, mode: mapMode }
+                    : undefined
+                }
+                shadows={day?.frames[frame]?.polygons ?? undefined}
                 onShowClusterInfo={(taxonId, name) =>
                   setInfoFor({
                     taxonId,
@@ -1260,6 +1337,15 @@ export function App() {
               {timeline !== null ? (
                 <>
                 <BloomPlayer
+                  shadowDay={
+                    shadeOn && day !== null
+                      ? {
+                          frames: day.frames.length,
+                          frame,
+                          onFrame: setFrame,
+                        }
+                      : undefined
+                  }
                   month={filters.floweringMonth ?? null}
                   onSelectMonth={(m) => changeFilters({ ...filters, floweringMonth: m })}
                 />

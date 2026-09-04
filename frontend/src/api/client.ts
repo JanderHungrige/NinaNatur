@@ -29,6 +29,8 @@ export type OwnedGardens = components['schemas']['OwnedGardens'];
 export type FeedbackQuestions = components['schemas']['QuestionsOut'];
 export type FeedbackQuestion = components['schemas']['QuestionOut'];
 export type FeedbackSent = components['schemas']['FeedbackOut'];
+export type LightMap = components['schemas']['LightMap'];
+export type ShadowDay = components['schemas']['ShadowDay'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -224,6 +226,28 @@ export class NinaNaturClient {
     return this.request<GardenOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/colours/${taxonId}`,
       { method: 'PUT', body: JSON.stringify({ colour }) },
+    );
+  }
+
+  /** The stored sun map, or null when nothing has been drawn yet. */
+  async lightMap(token: string): Promise<LightMap | null> {
+    return this.request<LightMap | null>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/light`,
+    );
+  }
+
+  /** Recompute the whole map now, because somebody asked. */
+  async rebuildLightMap(token: string): Promise<LightMap | null> {
+    return this.request<LightMap | null>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/light`,
+      { method: 'POST' },
+    );
+  }
+
+  /** Where the shadows fall through one middling day of a month. */
+  async shadowDay(token: string, month: number): Promise<ShadowDay> {
+    return this.request<ShadowDay>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/shadows?month=${month}`,
     );
   }
 

@@ -1101,6 +1101,63 @@
         "title": "LatLonIn",
         "type": "object"
       },
+      "LightMap": {
+        "description": "Mean daily sun hours per cell, row-major from the south-west corner.\n\n`stale` is the honest half. The map is expensive enough to store, so it can\nbe out of date \u2014 and a map that is quietly out of date is worse than one\nthat says so. It is computed by comparing a signature of the shading inputs,\nnot by remembering which actions ought to have invalidated it.",
+        "properties": {
+          "cell_m": {
+            "title": "Cell M",
+            "type": "number"
+          },
+          "cols": {
+            "title": "Cols",
+            "type": "integer"
+          },
+          "computed_at": {
+            "title": "Computed At",
+            "type": "string"
+          },
+          "hours": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Hours",
+            "type": "array"
+          },
+          "max_hours": {
+            "title": "Max Hours",
+            "type": "number"
+          },
+          "min_x": {
+            "title": "Min X",
+            "type": "number"
+          },
+          "min_y": {
+            "title": "Min Y",
+            "type": "number"
+          },
+          "rows": {
+            "title": "Rows",
+            "type": "integer"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cell_m",
+          "min_x",
+          "min_y",
+          "cols",
+          "rows",
+          "hours",
+          "max_hours",
+          "computed_at",
+          "stale"
+        ],
+        "title": "LightMap",
+        "type": "object"
+      },
       "MapGardenOut": {
         "description": "A garden created from the map, and what the map could and could not say.",
         "properties": {
@@ -2390,6 +2447,70 @@
         "title": "ScoreOut",
         "type": "object"
       },
+      "ShadowDay": {
+        "properties": {
+          "day": {
+            "title": "Day",
+            "type": "integer"
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/ShadowFrame"
+            },
+            "title": "Frames",
+            "type": "array"
+          },
+          "month": {
+            "title": "Month",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "day",
+          "frames"
+        ],
+        "title": "ShadowDay",
+        "type": "object"
+      },
+      "ShadowFrame": {
+        "description": "Every shadow in the garden at one moment of one day.",
+        "properties": {
+          "altitude": {
+            "title": "Altitude",
+            "type": "number"
+          },
+          "azimuth": {
+            "title": "Azimuth",
+            "type": "number"
+          },
+          "minute": {
+            "title": "Minute",
+            "type": "integer"
+          },
+          "polygons": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Polygons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "minute",
+          "altitude",
+          "azimuth",
+          "polygons"
+        ],
+        "title": "ShadowFrame",
+        "type": "object"
+      },
       "Shape": {
         "enum": [
           "circle",
@@ -3622,6 +3743,106 @@
         ]
       }
     },
+    "/api/v1/gardens/{token}/light": {
+      "get": {
+        "description": "The stored map, or null when nothing has been drawn yet.",
+        "operationId": "light_map_api_v1_gardens__token__light_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/LightMap"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Light Map Api V1 Gardens  Token  Light Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Light Map",
+        "tags": [
+          "light"
+        ]
+      },
+      "post": {
+        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.",
+        "operationId": "rebuild_light_map_api_v1_gardens__token__light_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/LightMap"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Rebuild Light Map Api V1 Gardens  Token  Light Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rebuild Light Map",
+        "tags": [
+          "light"
+        ]
+      }
+    },
     "/api/v1/gardens/{token}/obstacles": {
       "post": {
         "description": "Add an obstacle and recompute in the same call.\n\nRequiring a second request would leave the plan showing light values that no\nlonger match its own obstacles \u2014 and nothing would make that visible.",
@@ -3981,6 +4202,61 @@
         "summary": "Score",
         "tags": [
           "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/shadows": {
+      "get": {
+        "description": "Where the shadows fall through one middling day of a month.\n\nThe 15th, because a month's first and last days differ by a fortnight of sun\nand the middle is the one that represents it. Computed rather than stored:\nit is one day rather than a season, and nobody watches it twice in a row.",
+        "operationId": "shadows_through_a_day_api_v1_gardens__token__shadows_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "default": 6,
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShadowDay"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Shadows Through A Day",
+        "tags": [
+          "light"
         ]
       }
     },
