@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
   BedSuggestions,
@@ -16,6 +16,7 @@ import type {
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { AccountBar } from './components/AccountBar';
+import { clustersFor } from './canvas/clusters';
 import { elementById } from './canvas/elements';
 import { useUndoShortcut, useUndoStack } from './useUndoStack';
 import { isGround } from './kinds';
@@ -98,6 +99,13 @@ export function App() {
   );
 
 
+
+  /** Which patch of plants is selected, if any. Separate from the bed and the
+   *  shape: three things can be picked on this plan and they are not the same
+   *  question. */
+  const [selectedPlantingId, setSelectedPlantingId] = useState<number | null>(null);
+  /** What Ctrl+C put aside: a species and how many of it, not a row id. */
+  const [copied, setCopied] = useState<{ taxonId: number | null; rawName: string | null; quantity: number; name: string } | null>(null);
 
   const { remember, undo, forget } = useUndoStack();
 
@@ -436,15 +444,26 @@ export function App() {
    * Keyed off the same `floweringMonth` the filter and the timeline use — one
    * selected month, not a separate playback one that could drift from it.
    */
-  const monthColours =
-    filters.floweringMonth === undefined || palette === null
-      ? undefined
-      : Object.fromEntries(
-          palette.beds.map((b) => {
-            const m = b.months.find((x) => x.month === filters.floweringMonth);
-            return [b.bed_id, { colours: m?.colours ?? [], unknown: m?.unknown ?? 0 }];
-          }),
-        );
+  /**
+   * Every planting in the garden, as a patch ready to draw.
+   *
+   * Built here rather than in the canvas because it needs two things the canvas
+   * does not have: the palette, and which month is being shown. Grey when no
+   * month is selected, which is the honest reading of "what is in this bed"
+   * outside the bloom year.
+   */
+  const clusters = useMemo(() => {
+    if (garden === null) return [];
+    const byBed = new Map((palette?.beds ?? []).map((b) => [b.bed_id, b.plantings]));
+    return garden.beds.flatMap((bed) =>
+      clustersFor(
+        bed.polygon,
+        bed.plantings,
+        byBed.get(bed.bed_id) ?? [],
+        filters.floweringMonth ?? null,
+      ),
+    );
+  }, [garden, palette, filters.floweringMonth]);
 
   /**
    * Standing somewhere and asking what is visible.
@@ -587,6 +606,92 @@ export function App() {
    * was points all along — so only the promise ends.
    */
   /** Remove one element, from wherever it was asked for. */
+  /**
+   * Copying a patch, and pasting it into whichever bed is selected.
+   *
+   * The clipboard holds a species and a count, not a planting id: pasting is
+   * planting the same thing again, and a row id would be a reference to
+   * somebody else's row. Into the same bed it raises the count rather than
+   * starting a second patch a metre away — the table says one row per species
+   * per bed, and that is what a gardener means by planting more of something.
+   */
+  const copyCluster = useCallback(() => {
+    if (garden === null || selectedPlantingId === null) return;
+    for (const bed of garden.beds) {
+      const found = bed.plantings.find((p) => p.planting_id === selectedPlantingId);
+      if (found === undefined) continue;
+      setCopied({
+        taxonId: found.taxon_id,
+        rawName: found.raw_name,
+        quantity: found.quantity,
+        name: found.canonical_name ?? found.raw_name ?? 'Pflanzung',
+      });
+      setStatus(`${found.canonical_name ?? found.raw_name} kopiert.`);
+      return;
+    }
+  }, [garden, selectedPlantingId]);
+
+  const pasteCluster = useCallback(() => {
+    if (garden === null || copied === null) return;
+    if (selectedBedId === null) {
+      setStatus('Wähle erst ein Beet, in das gepflanzt werden soll.');
+      return;
+    }
+    const target = selectedBedId;
+    void run('Einfügen', async () => {
+      const updated =
+        copied.taxonId !== null
+          ? await client.plant(garden.share_token, target, copied.taxonId, copied.quantity)
+          : await client.plantByName(garden.share_token, target, {
+              raw_name: copied.rawName ?? copied.name,
+              quantity: copied.quantity,
+            });
+      setGarden(updated);
+      await refresh(garden.share_token, forage);
+      setSuggestions(
+        await client.bedSuggestions(garden.share_token, target, filters),
+      );
+      setStatus(`${copied.name} eingefügt.`);
+    });
+  }, [garden, copied, selectedBedId, forage, filters, refresh, run]);
+
+  // Ctrl+C and Ctrl+V on the plan. Not while typing: a name being written in a
+  // label field is what those keys mean there.
+  useEffect(() => {
+    if (garden === null) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === 'c' && selectedPlantingId !== null) {
+        event.preventDefault();
+        copyCluster();
+      } else if (key === 'v' && copied !== null) {
+        event.preventDefault();
+        pasteCluster();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [garden, selectedPlantingId, copied, copyCluster, pasteCluster]);
+
+  const moveCluster = useCallback(
+    (plantingId: number, to: { x: number; y: number }) => {
+      if (garden === null) return;
+      void run('Verschieben', async () => {
+        setGarden(await client.placePlanting(garden.share_token, plantingId, to));
+      });
+    },
+    [garden, run],
+  );
+
   const removePlanting = useCallback(
     (plantingId: number) => {
       if (garden === null) return;
@@ -1074,7 +1179,18 @@ export function App() {
                 onSelectBed={selectBed}
                 onDrawBed={drawBed}
                 onSelectObstacle={editObstacleById}
-                palette={monthColours}
+                clusters={clusters}
+                selectedPlantingId={selectedPlantingId}
+                onSelectCluster={setSelectedPlantingId}
+                onMoveCluster={moveCluster}
+                onShowClusterInfo={(taxonId, name) =>
+                  setInfoFor({
+                    taxonId,
+                    name,
+                    recorded: null,
+                    noted: garden.observed_colours[taxonId] ?? null,
+                  })
+                }
                 viewpoint={viewpoint}
                 onPlaceViewpoint={lookFrom}
                 tool={tool}

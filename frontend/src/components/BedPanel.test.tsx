@@ -77,7 +77,7 @@ describe('BedPanel', () => {
   it('reports how many species are planted', () => {
     const g = garden({
       plantings: [
-        { planting_id: 1, taxon_id: 7, canonical_name: 'Salvia pratensis', raw_name: null, quantity: 3, added_at: '' },
+        { planting_id: 1, taxon_id: 7, canonical_name: 'Salvia pratensis', raw_name: null, quantity: 3, added_at: '', x: null, y: null },
       ],
     });
     render(<BedPanel garden={g} selectedBedId={null} {...noop} />);
@@ -89,8 +89,8 @@ describe('BedPanel', () => {
   it('uses the plural for more than one species', () => {
     const g = garden({
       plantings: [
-        { planting_id: 1, taxon_id: 7, canonical_name: 'Salvia pratensis', raw_name: null, quantity: 3, added_at: '' },
-        { planting_id: 2, taxon_id: 8, canonical_name: 'Salix caprea', raw_name: null, quantity: 1, added_at: '' },
+        { planting_id: 1, taxon_id: 7, canonical_name: 'Salvia pratensis', raw_name: null, quantity: 3, added_at: '', x: null, y: null },
+        { planting_id: 2, taxon_id: 8, canonical_name: 'Salix caprea', raw_name: null, quantity: 1, added_at: '', x: null, y: null },
       ],
     });
     render(<BedPanel garden={g} selectedBedId={null} {...noop} />);

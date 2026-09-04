@@ -333,6 +333,35 @@ class PlantingOut(BaseModel):
     raw_name: str | None
     quantity: int
     added_at: str
+    #: Where this cluster sits, in metres from the bed's origin. Null until
+    #: somebody moves it; the plan derives a position from the id until then.
+    x: float | None
+    y: float | None
+
+
+class PlantingPlacement(BaseModel):
+    """Where a cluster was dragged to."""
+
+    x: float
+    y: float
+
+
+class PlantingColours(BaseModel):
+    """One cluster's colour and season.
+
+    The per-bed palette answers "which colours are in this bed this month",
+    which is everything a colour band needed and not enough for a dot per
+    cluster: that has to know which cluster is which.
+    """
+
+    planting_id: int
+    taxon_id: int | None
+    #: Null where the catalogue records no flower colour, which is most of it.
+    colour: str | None
+    months: list[int]
+    #: Ground one plant wants, in m², estimated from height. Null for most of
+    #: the catalogue — the plan sizes a cluster from it and never prints it.
+    space_m2: float | None
 
 
 class BedOut(BaseModel):
@@ -406,6 +435,7 @@ class BedMonthColours(BaseModel):
 class BedPalette(BaseModel):
     bed_id: int
     months: list[BedMonthColours]
+    plantings: list[PlantingColours]
 
 
 class BloomPalette(BaseModel):

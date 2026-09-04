@@ -37,6 +37,13 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # asked yet, and the question is what the feature adds.
     ("garden", "soil_type", "TEXT"),
     ("garden", "moisture", "TEXT"),
+    # Wave 15. Where the gardener put this cluster, in metres relative to the
+    # bed's own origin. Null means "nobody has moved it": the position is then
+    # derived from the planting id, which puts it somewhere sensible inside the
+    # bed and puts it in the same place on every render. Defaulting to 0,0
+    # instead would stack every existing planting on one corner.
+    ("planting", "x", "REAL"),
+    ("planting", "y", "REAL"),
 )
 
 

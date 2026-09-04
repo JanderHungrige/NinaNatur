@@ -26,6 +26,7 @@ from ninanatur.api.schemas import (
     ImprovementsOut,
     MonthOut,
     PlantingCreate,
+    PlantingPlacement,
     PlantingVisibility,
     PlantSummary,
     ScoreOut,
@@ -53,7 +54,7 @@ from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.observations import observed_colours, record_colour
-from ninanatur.garden.plantings import add_planting, remove_planting
+from ninanatur.garden.plantings import add_planting, place_planting, remove_planting
 from ninanatur.garden.sightlines import Blocker, Target, Viewpoint, visibility
 from ninanatur.garden.store import load_garden
 
@@ -142,6 +143,28 @@ def create_planting(
     return to_out(load_garden(conn, garden.garden_id))
 
 
+@router.patch("/{token}/plantings/{planting_id}", response_model=GardenOut)
+def place_cluster(
+    token: str,
+    planting_id: int,
+    payload: PlantingPlacement,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> GardenOut:
+    """Put a cluster somewhere in its bed. Reached through its garden, never by
+    a bare id: a planting id is enumerable and the token is the whole of a
+    garden's access control.
+
+    A position outside the bed is accepted. The plan clamps a drag to the
+    outline, but a bed can be reshaped afterwards and a position that was inside
+    can end up outside — refusing it here would mean a bed could not be made
+    smaller without first moving everything in it.
+    """
+    garden = require_garden(conn, token)
+    _owned_planting(conn, planting_id, garden.garden_id)
+    place_planting(conn, planting_id, payload.x, payload.y)
+    return to_out(load_garden(conn, garden.garden_id))
+
+
 @router.delete("/{token}/plantings/{planting_id}", response_model=GardenOut)
 def delete_planting(
     token: str,
@@ -150,15 +173,7 @@ def delete_planting(
 ) -> GardenOut:
     """Remove a planting. Reached through its garden, never by a bare id."""
     garden = require_garden(conn, token)
-    owned = conn.execute(
-        """
-        SELECT 1 FROM planting p JOIN element e ON e.element_id = p.element_id
-        WHERE p.planting_id = ? AND e.garden_id = ?
-        """,
-        (planting_id, garden.garden_id),
-    ).fetchone()
-    if owned is None:
-        raise HTTPException(status_code=404, detail=f"no such planting: {planting_id}")
+    _owned_planting(conn, planting_id, garden.garden_id)
     remove_planting(conn, planting_id)
     return to_out(load_garden(conn, garden.garden_id))
 
@@ -432,3 +447,20 @@ def _plant_height(conn: sqlite3.Connection, taxon_id: int | None) -> float | Non
         return None
     trait = resolve_trait(conn, taxon_id, "height_max_m")
     return None if trait is None else trait.value_num
+
+
+def _owned_planting(conn: sqlite3.Connection, planting_id: int, garden_id: int) -> None:
+    """404 unless this planting is in this garden.
+
+    404 rather than 403: telling a caller that a planting exists but belongs to
+    someone else is the one thing a capability URL must not do.
+    """
+    owned = conn.execute(
+        """
+        SELECT 1 FROM planting p JOIN element e ON e.element_id = p.element_id
+        WHERE p.planting_id = ? AND e.garden_id = ?
+        """,
+        (planting_id, garden_id),
+    ).fetchone()
+    if owned is None:
+        raise HTTPException(status_code=404, detail=f"no such planting: {planting_id}")

@@ -93,6 +93,7 @@ def to_out(garden: Garden) -> GardenOut:
                         planting_id=p.planting_id, taxon_id=p.taxon_id,
                         canonical_name=p.canonical_name, raw_name=p.raw_name,
                         quantity=p.quantity, added_at=p.added_at,
+                        x=p.x, y=p.y,
                     )
                     for p in b.plantings
                 ],

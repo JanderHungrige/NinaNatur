@@ -1,8 +1,9 @@
-import { bloomDots } from '../canvas/blooms';
 import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
 import type { GardenOut } from '../api/client';
+import type { Cluster } from '../canvas/clusters';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
+import { ClusterLayer } from './ClusterLayer';
 import { GardenSymbols } from './GardenSymbols';
 
 interface Props {
@@ -32,7 +33,13 @@ interface Props {
   /** Where the element being dragged is shown while the pointer holds it. */
   dragOffset?: { id: number; dx: number; dy: number } | null;
   /** Colours in flower per bed for the month being shown, if any. */
-  palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
+  /** Every planting in the garden as a patch, already positioned and coloured
+   *  for the month being shown. */
+  clusters?: Cluster[] | undefined;
+  selectedPlantingId?: number | null;
+  onSelectCluster?: ((plantingId: number) => void) | undefined;
+  onGrabCluster?: ((plantingId: number, event: React.PointerEvent) => void) | undefined;
+  onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
 }
 
 const BY_KIND = new Map(KINDS.map((k) => [k.kind, k]));
@@ -115,39 +122,6 @@ function obstacleLabel(o: GardenOut['obstacles'][number]): string {
 // the shape. `objectBoundingBox` says what is actually meant — split this bed
 // into one band per colour, whatever size the bed is.
 
-const SWATCH: Record<string, string> = {
-  yellow: '#e8c33a',
-  white: '#f4f2ea',
-  pink: '#e59ab8',
-  violet: '#8f6fc4',
-  blue: '#5b8ed6',
-  red: '#cf5b4e',
-  green: '#6a9a4e',
-  orange: '#e08a3c',
-  brown: '#9a7b52',
-  black: '#3a3a3a',
-};
-
-/**
- * The fill for a bed in the month being shown.
- *
- * `null` means "render as usual" — a bed with nothing in flower is empty, not
- * black. An unrecorded colour keeps the hatch and never becomes a fill: colour
- * is recorded for 6.6% of the catalogue, and green, grey or beige all read as
- * an answer the data does not support.
- *
- * Known colours are no longer a fill at all. They were bands across the bed,
- * which says it is half yellow and half blue; what is true is that some of the
- * flowers are yellow. Those are drawn as dots on top instead.
- */
-function bloomFill(
-  entry: { colours: string[]; unknown: number } | undefined,
-): string | null {
-  if (entry === undefined) return null;
-  return entry.colours.length === 0 && entry.unknown > 0
-    ? 'url(#bloom-unknown)'
-    : null;
-}
 
 /** Garden metres to the SVG's own coordinates, which run y-down. */
 function d(points: Point[]): string {
@@ -169,7 +143,11 @@ export function CanvasScene({
   viewpoint = null,
   onSelectBed,
   onSelectObstacle,
-  palette,
+  clusters = [],
+  selectedPlantingId = null,
+  onSelectCluster,
+  onGrabCluster,
+  onShowClusterInfo,
   armed = false,
   onAskWhatItIs,
   onGrabElement,
@@ -185,19 +163,6 @@ export function CanvasScene({
     <>
         <defs>
         <GardenSymbols />
-        {/* "We never recorded it" is its own mark, not a colour. A fill here
-            would be the most confident thing this UI draws, about the trait it
-            knows least. */}
-        <pattern
-          id="bloom-unknown"
-          width="0.14"
-          height="0.14"
-          patternUnits="objectBoundingBox"
-          patternContentUnits="objectBoundingBox"
-        >
-          <rect width="0.14" height="0.14" className="bloom-hatch__ground" />
-          <rect width="0.07" height="0.14" className="bloom-hatch__line" />
-        </pattern>
           <pattern
             id="grid"
             width={spacing}
@@ -239,10 +204,6 @@ export function CanvasScene({
               // page scrolls, and a click coordinate cannot.
               data-element-id={item.bed_id}
               className={item.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
-              style={(() => {
-                const fill = bloomFill(palette?.[item.bed_id]);
-                return fill === null ? undefined : { fill };
-              })()}
               points={d(item.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
               tabIndex={armed ? undefined : 0}
               role={armed ? undefined : 'button'}
@@ -348,25 +309,14 @@ export function CanvasScene({
         )}
         </g>
 
-        {/* Flowers, on top of the beds and outside the wobble filter: a dot
-            the size of a blossom disappears under a displacement map meant for
-            outlines. */}
-        <g className="blooms" aria-hidden="true" pointerEvents="none">
-          {garden.beds.flatMap((bed) =>
-            bloomDots(bed.bed_id, bed.polygon, palette?.[bed.bed_id]?.colours ?? []).map(
-              (dot, i) => (
-                <circle
-                  key={`${bed.bed_id}-${i}`}
-                  className="bloom-dot"
-                  cx={dot.x}
-                  cy={-dot.y}
-                  r={dot.r}
-                  fill={SWATCH[dot.colour] ?? 'var(--ink-muted)'}
-                />
-              ),
-            ),
-          )}
-        </g>
+        <ClusterLayer
+          clusters={clusters}
+          selectedPlantingId={selectedPlantingId}
+          onSelectCluster={onSelectCluster}
+          onGrabCluster={onGrabCluster}
+          spacing={spacing}
+          onShowInfo={onShowClusterInfo}
+        />
 
         {viewpoint !== null && (
         <g className="viewpoint" data-testid="viewpoint">

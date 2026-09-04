@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut } from '../api/client';
+import type { Cluster } from '../canvas/clusters';
 import { elementById } from '../canvas/elements';
 import { type Box, boxOf } from '../canvas/handles';
+import { useClusterDrag } from '../canvas/useClusterDrag';
 import { useElementDrag } from '../canvas/useElementDrag';
 import { useHandleDrag } from '../canvas/useHandleDrag';
 import { useVertexDrag } from '../canvas/useVertexDrag';
@@ -12,6 +14,7 @@ import { useCanvasGestures } from '../canvas/useCanvasGestures';
 import { useFreehandStroke } from '../canvas/useFreehandStroke';
 import { useShapeBand } from '../canvas/useShapeBand';
 import type { DrawnShape, Tool } from '../canvas/shapes';
+import type { Point } from '../canvas/viewport';
 import { gridSpacing, viewBox } from '../canvas/viewport';
 import { beds as bedCount, obstacles as obstacleCount } from '../plural';
 import { CanvasControls } from './CanvasControls';
@@ -36,7 +39,14 @@ interface Props {
   size?: { widthPx: number; heightPx: number } | undefined;
   onDrawBed?: ((polygon: number[][]) => void) | undefined;
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
-  palette?: Record<number, { colours: string[]; unknown: number }> | undefined;
+  /** Every planting as a patch, ready to draw. */
+  clusters?: Cluster[] | undefined;
+  selectedPlantingId?: number | null;
+  onSelectCluster?: ((plantingId: number) => void) | undefined;
+  /** Dragging a patch to another spot in its bed. */
+  onMoveCluster?: ((plantingId: number, to: { x: number; y: number }) => void) | undefined;
+  /** The same panel the suggestion list opens. */
+  onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
   /** Placing one: a second thing a click on the plan can mean, so it is a mode. */
@@ -82,7 +92,11 @@ export function GardenCanvas({
   size,
   onDrawBed,
   onSelectObstacle,
-  palette,
+  clusters,
+  selectedPlantingId = null,
+  onSelectCluster,
+  onMoveCluster,
+  onShowClusterInfo,
   viewpoint = null,
   onPlaceViewpoint,
   selectedObstacleId = null,
@@ -108,6 +122,37 @@ export function GardenCanvas({
   // Both arrays. A bed is an element of kind `bed`, and looking only in
   // `obstacles` is what took a bed's handles away the moment it was labelled.
   const selected = elementById(garden, selectedObstacleId);
+
+  // Which bed a patch is in, so a drag can be clamped to that outline. Looked
+  // up rather than carried on the cluster: the outline is the bed's, and two
+  // copies of it drift the moment the bed is reshaped.
+  const bedOf = (plantingId: number): Point[] | null => {
+    const bed = garden.beds.find((b) =>
+      b.plantings.some((p) => p.planting_id === plantingId),
+    );
+    return bed === undefined
+      ? null
+      : bed.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 }));
+  };
+  const clusterDrag = useClusterDrag({
+    view,
+    surface,
+    clusters: clusters ?? [],
+    bedOf,
+    onFinish: (plantingId, to) => onMoveCluster?.(plantingId, to),
+  });
+  // While a patch is being dragged it is drawn where the pointer has it, not
+  // where the server last saw it — otherwise it snaps back on every frame.
+  const shown = (clusters ?? []).map((cluster) =>
+    clusterDrag.dragging?.id === cluster.plantingId
+      ? { ...cluster, centre: clusterDrag.dragging.at,
+          dots: cluster.dots.map((dot) => ({
+            ...dot,
+            x: dot.x + clusterDrag.dragging!.at.x - cluster.centre.x,
+            y: dot.y + clusterDrag.dragging!.at.y - cluster.centre.y,
+          })) }
+      : cluster,
+  );
   // Derived rather than stored: Wave 11 keeps points, and the box the handles
   // work in is read back off them.
   const selectedBox: Box | null = selected === null ? null : boxOf(selected);
@@ -262,7 +307,11 @@ export function GardenCanvas({
           viewpoint={viewpoint}
           onSelectBed={onSelectBed}
           onSelectObstacle={onSelectObstacle}
-          palette={palette}
+          clusters={shown}
+          selectedPlantingId={selectedPlantingId}
+          onSelectCluster={onSelectCluster}
+          onGrabCluster={clusterDrag.grab}
+          onShowClusterInfo={onShowClusterInfo}
           armed={tool !== null}
           onAskWhatItIs={onAskWhatItIs}
           onGrabElement={onMoveObstacle === undefined ? undefined : elementDrag.grab}

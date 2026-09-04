@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { GardenOut } from '../api/client';
 import { KINDS } from '../kinds';
+import { clustersFor } from '../canvas/clusters';
 import { GardenCanvas } from './GardenCanvas';
 
 function obstacle(
@@ -239,55 +240,71 @@ describe('CanvasScene — big things behind, small things in front', () => {
   });
 });
 
-describe('CanvasScene — flowers as dots', () => {
-  const plantedBed: GardenOut['beds'][number] = {
-    bed_id: 4, name: 'Staudenbeet',
-    // Wave 15: a bed carries the same geometry an obstacle does.
-    kind: 'bed',
-    shape: 'polygon',
-    x: 0,
-    y: 0,
-    points: null,
-    width: null,
-    constraint_hint: null,
-    polygon: [[0, 0], [8, 0], [8, 6], [0, 6]],
-    soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
-    ellenberg_n: null, ellenberg_r: null, sun_hours: null,
-    light_computed_at: null, height_above_ground: 0, label: null, plantings: [],
-  };
+describe('CanvasScene — plantings as patches', () => {
+  const outline = [[0, 0], [8, 0], [8, 6], [0, 6]];
 
-  function bloom(palette: Record<number, { colours: string[]; unknown: number }>) {
+  function patches(clusters: Parameters<typeof clustersFor>[1], month: number | null) {
+    const colours = clusters.map((c) => ({
+      planting_id: c.planting_id,
+      colour: 'yellow',
+      months: [6],
+      space_m2: null,
+    }));
     return render(
       <GardenCanvas
-        garden={{ ...garden([]), beds: [plantedBed] }}
+        garden={garden([])}
         selectedBedId={null}
         onSelectBed={vi.fn()}
         size={{ widthPx: 800, heightPx: 600 }}
-        palette={palette}
+        clusters={clustersFor(outline, clusters, colours, month)}
       />,
     ).container;
   }
 
-  it('draws a dot per flower rather than a bar across the bed', () => {
-    const container = bloom({ 4: { colours: ['yellow', 'blue'], unknown: 0 } });
+  function planting(id: number, quantity = 6) {
+    return {
+      planting_id: id, taxon_id: 7, canonical_name: 'Salvia pratensis',
+      raw_name: null, quantity, x: null, y: null,
+    };
+  }
+
+  it('draws a patch of dots per planting rather than a bar across the bed', () => {
+    const container = patches([planting(1)], 6);
     expect(container.querySelectorAll('.bloom-dot').length).toBeGreaterThan(4);
-    // The bed itself keeps its own fill: the colours are on top now.
-    const bed = container.querySelector('.bed') as SVGElement;
-    expect(bed.style.fill).toBe('');
+    // The bed keeps its own fill: the plants are drawn on top of it.
+    const bed = container.querySelector('.bed') as SVGElement | null;
+    expect(bed?.style.fill ?? '').toBe('');
   });
 
-  it('keeps the hatch for a colour nobody recorded', () => {
-    // Not a grey dot among coloured ones: "we never recorded it" is its own
-    // mark, and a dot would put it in the same sentence as a known colour.
-    const container = bloom({ 4: { colours: [], unknown: 3 } });
-    expect(container.querySelectorAll('.bloom-dot')).toHaveLength(0);
-    expect((container.querySelector('.bed') as SVGElement).style.fill).toContain(
-      'bloom-unknown',
-    );
+  it('draws a planting that is not in flower, in grey', () => {
+    // The reported bug, and the reason the hatch had to go. A bed whose
+    // colours were all unrecorded used to be filled with a striped pattern —
+    // "Farbstreifen", exactly as described — and a bed out of season showed
+    // nothing at all, so an empty bed and a bed full of leaves looked alike.
+    const container = patches([planting(1)], 1);
+
+    const dots = container.querySelectorAll('.bloom-dot');
+    expect(dots.length).toBeGreaterThan(0);
+    expect(dots[0]!.getAttribute('fill')).toBe('var(--ink-muted)');
   });
 
-  it('draws nothing for a bed with nothing in flower', () => {
-    const container = bloom({});
+  it('never paints a band or a hatch across a bed again', () => {
+    const container = patches([planting(1)], 1);
+    expect(container.querySelector('#bloom-unknown')).toBeNull();
+    for (const bed of container.querySelectorAll('.bed')) {
+      expect((bed as SVGElement).style.fill).not.toContain('url(');
+    }
+  });
+
+  it('keeps each species in its own patch', () => {
+    // Nobody plants one salvia here and one over there. Scattering a species
+    // evenly across the bed says something untrue about the garden.
+    const container = patches([planting(1), planting(2)], 6);
+    expect(container.querySelectorAll('.cluster')).toHaveLength(2);
+  });
+
+  it('draws nothing for a bed with nothing in it', () => {
+    const container = patches([], 6);
     expect(container.querySelectorAll('.bloom-dot')).toHaveLength(0);
   });
 });
