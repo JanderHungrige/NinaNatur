@@ -136,10 +136,30 @@ body {
 .hint { margin: 0 0 0.75rem; color: var(--ink-muted); font-size: 0.85rem; }
 
 label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.8rem; color: var(--ink-muted); }
-input, select, textarea {
+/* Everything you type in, at the panel's width — but not a tick box. A
+   checkbox took `width: 100%` too and came out 908 pixels wide, pushing its own
+   label onto the next line; from outside that reads as "the checkbox is not
+   aligned with the text". */
+input:not([type='checkbox']):not([type='radio']), select, textarea {
   width: 100%; padding: 0.45rem 0.6rem;
   border: 1px solid var(--line); border-radius: 8px;
   background: var(--bg); color: var(--ink); font: inherit; font-size: 0.9rem;
+}
+
+/* A tick box and its words on one line, sharing a baseline. `align-items:
+   center` rather than `baseline`: a checkbox has no text baseline of its own,
+   so browsers place it by its box and it ends up sitting low. */
+label:has(> input[type='checkbox']),
+label:has(> input[type='radio']) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+label > input[type='checkbox'],
+label > input[type='radio'] {
+  flex: none;
+  margin: 0;
 }
 .row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .row > div { flex: 1 1 5rem; min-width: 0; }
@@ -489,27 +509,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   fill: var(--leaf);
 }
 
-/* --- Wave 7: the object editor ---------------------------------------- */
-
-.object-editor label {
-  display: block;
-  margin-top: 0.6rem;
-  font-size: 0.85rem;
-  color: var(--ink-muted);
-}
-
-.object-editor input,
-.object-editor select {
-  width: 100%;
-}
-
-.object-editor__actions {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-  margin-top: 0.9rem;
-}
-
 /* An obstacle you can click should look like one. */
 .obstacle[role='button'] {
   cursor: pointer;
@@ -531,7 +530,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
 }
 
-.existing-planting input {
+.existing-planting input:not([type='checkbox']):not([type='radio']) {
   width: 100%;
 }
 
@@ -629,7 +628,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
 }
 
-.landing__way input {
+/* Text fields only, here as everywhere: a tick box that takes a full width
+   pushes its own label onto the next line. */
+.landing__way input:not([type='checkbox']):not([type='radio']) {
   width: 100%;
 }
 
@@ -678,7 +679,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
 }
 
-.map-picker input,
+.map-picker input:not([type='checkbox']):not([type='radio']),
 .map-picker select {
   width: 100%;
 }
@@ -762,7 +763,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
 }
 
-.account input {
+.account input:not([type='checkbox']):not([type='radio']) {
   width: 100%;
 }
 
@@ -1024,13 +1025,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 }
 
 .vertex:hover { fill: var(--leaf); }
-
-/* A loss the user is about to cause, said before it happens. */
-.object-editor__warning {
-  border-left: 3px solid var(--leaf);
-  padding-left: 0.6rem;
-  color: var(--ink);
-}
 
 /* --- The garden's soil, asked once (Wave 12, feature 48) ------------------ */
 
