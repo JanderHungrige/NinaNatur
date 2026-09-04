@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-15
 demo_state: "Ein Schalter legt eine Sonnenstunden- oder Schattenstundenkarte über den Plan, in Graustufen bzw. Transparenz. Der Play-Knopf lässt den Schatten über einen mittleren Tag des gewählten Monats wandern. Das Licht wird über ein Raster berechnet, nicht an einem Punkt je Beet — und eine Sonnenpflanze, die im Schatten steht, wird als solche benannt."
 created: 2026-09-04
-hash: de87308d
+hash: a64196ae
 ---
 
 # Wave 16: The shade switch
@@ -118,6 +118,32 @@ plan something to say that a single number cannot.
 The first is not answerable from this model at all — it needs canopy
 transparency, which OSM does not hold and the catalogue does not either. It is
 recorded here as a limit rather than approximated.
+
+## What the model does not know
+
+Asked while planning, and answered by measurement rather than by argument. The
+ground projection was checked against marching the ray to the sun in three
+dimensions across 263 random scenes of overlapping buildings: **no
+disagreements**, raised beds included. `tests/test_shading_is_ray_tracing.py`
+keeps it that way, which matters because feature 1 rewrites this exact path.
+
+Overlap and interception need no special case. The model never asks where a
+shadow lands; it asks, per obstacle, whether that obstacle stands between the
+point and the sun — and what else is in the way cannot change the answer. A
+tree's shadow does run straight through a taller house on paper, and the house's
+own shadow covers everything it does and more.
+
+What is genuinely missing, and none of it is fixed by this wave:
+
+- **Flat ground.** There is no terrain anywhere in the code. A garden below a
+  slope, or a neighbour uphill, is wrong and silently so.
+- **Flat roofs.** A building is a prism at one height, and OSM's `height` is
+  usually the ridge — so a gabled house is modelled as though its gable ends
+  were solid to the ridge, overstating its shade.
+- **Opaque canopies.** A tree blocks the sun completely. This is the same limit
+  that stops feature 5 from telling dappled light from broken sun.
+- **No diffuse or reflected light.** A white south wall throws light back and
+  the model does not know it.
 
 ## Open Research
 
