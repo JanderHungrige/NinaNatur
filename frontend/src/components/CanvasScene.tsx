@@ -286,16 +286,31 @@ export function CanvasScene({
               key={`obstacle-${item.obstacle_id}`}
               data-element-id={item.obstacle_id}
               className={`obstacle obstacle--${item.kind}`}
+              /* The ground is drawn and nothing else. It is where the plan is
+                 measured from and what the server sums over; for the gardener
+                 it is the paper, not a thing on it. Every handler below is left
+                 off rather than covered over, and the CSS takes it out of
+                 hit-testing entirely, so a click inside the garden reaches
+                 whatever is actually there — or the empty canvas. */
               fill={`url(#symbol-${symbolOf(item.kind)})`}
               /* The footprint the server computed. Re-deriving it here would be
                  a third answer to "what ground does this cover", and the two
                  that already existed agreed only by accident. */
               points={item.footprint.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-              tabIndex={onSelectObstacle === undefined || armed ? undefined : 0}
-              role={onSelectObstacle === undefined || armed ? undefined : 'button'}
+              tabIndex={
+                onSelectObstacle === undefined || armed || isGround(item.kind)
+                  ? undefined
+                  : 0
+              }
+              role={
+                onSelectObstacle === undefined || armed || isGround(item.kind)
+                  ? undefined
+                  : 'button'
+              }
               aria-label={obstacleLabel(item)}
+              aria-hidden={isGround(item.kind) ? true : undefined}
               onClick={
-                onSelectObstacle === undefined || armed
+                onSelectObstacle === undefined || armed || isGround(item.kind)
                   ? undefined
                   : () => onSelectObstacle(item.obstacle_id)
               }
@@ -306,7 +321,7 @@ export function CanvasScene({
                   : (event) => onGrabElement(item.obstacle_id, event)
               }
               onContextMenu={
-                onAskWhatItIs === undefined || armed
+                onAskWhatItIs === undefined || armed || isGround(item.kind)
                   ? undefined
                   : (event) => {
                       event.preventDefault();
@@ -314,7 +329,7 @@ export function CanvasScene({
                     }
               }
               onKeyDown={(event) => {
-                if (onSelectObstacle === undefined || armed) return;
+                if (onSelectObstacle === undefined || armed || isGround(item.kind)) return;
                 if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
                   event.preventDefault();
                   const box = event.currentTarget.getBoundingClientRect();

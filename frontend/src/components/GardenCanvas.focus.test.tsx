@@ -102,4 +102,37 @@ describe('GardenCanvas — an armed tool takes the click', () => {
     );
     expect(screen.queryByRole('button', { name: 'Fertig' })).toBeNull();
   });
+
+  it('does not offer the ground as anything to click', () => {
+    // The garden outline is the paper, not a thing on it. The gardener asked
+    // for this outright: visible, and otherwise not there as far as the pointer
+    // and the keyboard are concerned. It stays an element on the server, which
+    // is what sums over it.
+    const onSelectObstacle = vi.fn();
+    const ground = {
+      obstacle_id: 3, kind: 'garden', x: 0, y: 0, shape: 'polygon',
+      width: null, constraint_hint: null, points: [[-10, -10], [10, -10], [10, 10], [-10, 10]],
+      height: null, label: 'Mein Garten', height_source: 'user',
+      footprint: [[-10, -10], [10, -10], [10, 10], [-10, 10]],
+    } as GardenOut['obstacles'][number];
+
+    render(
+      <GardenCanvas
+        garden={{ ...garden(), beds: [], obstacles: [ground] }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        onSelectObstacle={onSelectObstacle}
+        onAskWhatItIs={vi.fn()}
+        size={SIZE}
+        tool={null}
+      />,
+    );
+
+    const shape = document.querySelector('[data-element-id="3"]')!;
+    expect(shape.getAttribute('role')).toBeNull();
+    expect(shape.getAttribute('tabindex')).toBeNull();
+
+    fireEvent.click(shape);
+    expect(onSelectObstacle).not.toHaveBeenCalled();
+  });
 });

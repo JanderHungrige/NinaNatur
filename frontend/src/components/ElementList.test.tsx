@@ -136,4 +136,28 @@ describe('ElementList — removing something', () => {
     fireEvent.click(screen.getByRole('button', { name: /Teich löschen/ }));
     expect(screen.getAllByRole('button', { name: 'Endgültig löschen' })).toHaveLength(1);
   });
+
+  it('still lists the ground, which the plan no longer lets you touch', () => {
+    // The one way back. The garden outline is not clickable on the plan any
+    // more, so if this row went too, anything mislabelled "Garten" by
+    // right-click would be beyond reach for good.
+    const ground = {
+      obstacle_id: 3, kind: 'garden', x: 0, y: 0, shape: 'polygon',
+      width: null, constraint_hint: null, points: null,
+      height: null, label: 'Mein Garten', height_source: 'user',
+      footprint: [[0, 0], [10, 0], [10, 10], [0, 10]],
+    } as GardenOut['obstacles'][number];
+    const onSelect = vi.fn();
+
+    render(
+      <ElementList
+        garden={{ ...garden(), obstacles: [ground] }}
+        selectedId={null}
+        onSelect={onSelect}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Mein Garten/ }));
+    expect(onSelect).toHaveBeenCalledWith(3);
+  });
 });
