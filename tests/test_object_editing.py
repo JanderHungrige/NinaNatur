@@ -323,3 +323,39 @@ def test_a_kind_that_stands_still_gets_its_usual_height(client: TestClient) -> N
     ).json()["obstacles"][0]
     assert made["height"] is not None
     assert made["height"] > 0
+
+
+def test_a_bed_carries_the_geometry_it_can_be_reshaped_by(client: TestClient) -> None:
+    """Wave 15, feature 2. `BedOut` used to carry only `polygon` — the outline in
+    absolute metres, with no origin, no points and no shape.
+
+    The canvas draws beds and obstacles from one array, but handles are built
+    from `x`/`y`/`points`, so a bed had nothing to hang them on. Labelling a
+    shape "Blumenbeet" moved it into the other array and it silently stopped
+    being reshapeable.
+    """
+    token, _bed_id = _garden(client)
+    bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+
+    for field in ("kind", "shape", "x", "y", "points", "width", "constraint_hint"):
+        assert field in bed, f"a bed cannot be reshaped without {field}"
+    assert bed["kind"] == "bed"
+    assert bed["shape"] == "polygon"
+
+
+def test_a_bed_can_actually_be_reshaped(client: TestClient) -> None:
+    """The fields are only worth having if the edit goes through. `element` is
+    one table and `update_obstacle` never looked at the kind, so this half
+    always worked — nothing in the client could reach it."""
+    token, bed_id = _garden(client)
+
+    triangle = [[0.0, 0.0], [4.0, 0.0], [2.0, 3.0]]
+    response = client.patch(
+        f"/api/v1/gardens/{token}/obstacles/{bed_id}",
+        json={"points": triangle, "constraint_hint": None},
+    )
+
+    assert response.status_code == 200
+    after = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    assert after["points"] == triangle
+    assert len(after["polygon"]) == 3, "the outline follows the points"

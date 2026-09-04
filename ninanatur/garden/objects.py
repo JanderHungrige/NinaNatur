@@ -28,6 +28,11 @@ class ObjectKind(StrEnum):
     TREE = "tree"
     SHRUB = "shrub"
     # Surfaces: drawn underneath, and they shade nothing
+    #: The ground everything else sits on — the outline the map import draws.
+    #: Its own kind since Wave 15: it used to arrive as a BED, which made the
+    #: whole plot one flower bed and left no line between "my garden" and "a
+    #: place I am planting".
+    GARDEN = "garden"
     BED = "bed"
     LAWN = "lawn"
     PAVING = "paving"
@@ -78,6 +83,7 @@ TRAITS: dict[ObjectKind, KindTraits] = {
     ObjectKind.HEDGE:  KindTraits(Shape.RECT, 6.0, 0.6, 2.0, True, False, "foliage"),
     ObjectKind.TREE:   KindTraits(Shape.CIRCLE, 6.0, None, 8.0, True, False, "crown"),
     ObjectKind.SHRUB:  KindTraits(Shape.CIRCLE, 2.0, None, 1.5, True, False, "crown"),
+    ObjectKind.GARDEN: KindTraits(Shape.RECT, 20.0, 20.0, None, False, True, "plain"),
     ObjectKind.BED:    KindTraits(Shape.RECT, 3.0, 1.5, None, False, True, "planting"),
     ObjectKind.LAWN:   KindTraits(Shape.RECT, 8.0, 6.0, None, False, True, "grass"),
     ObjectKind.PAVING: KindTraits(Shape.RECT, 4.0, 3.0, None, False, True, "slabs"),

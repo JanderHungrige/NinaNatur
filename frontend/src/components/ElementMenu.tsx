@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { useAnchoredMenu } from '../canvas/useAnchoredMenu';
 import { KINDS, PLANTING_KIND, labelOf } from '../kinds';
 
 interface Props {
-  /** Where the menu opens, in page pixels. */
+  /** Which element this is about. The menu anchors to its box, so it follows
+   *  the shape when the page scrolls instead of drifting away from it. */
+  elementId: number;
+  /** Where the pointer was, used only when the shape is not in the document. */
   at: { x: number; y: number };
   kind: string;
   label: string | null;
@@ -34,6 +38,7 @@ interface Props {
  * keyboard.
  */
 export function ElementMenu({
+  elementId,
   at,
   kind,
   label,
@@ -60,7 +65,7 @@ export function ElementMenu({
   const [soil, setSoil] = useState(soilType ?? '');
   const [wet, setWet] = useState(moisture ?? '');
   const [raised, setRaised] = useState(String(heightAboveGround));
-  const box = useRef<HTMLDivElement | null>(null);
+  const { ref: box, placement } = useAnchoredMenu(elementId, at);
   /** Deleting asks first. An element cannot be got back, and this menu is one
    *  right-click away from every shape on the plan. */
   const [confirming, setConfirming] = useState(false);
@@ -99,7 +104,7 @@ export function ElementMenu({
       className="element-menu"
       role="dialog"
       aria-label="Was ist das?"
-      style={{ left: at.x, top: at.y }}
+      style={{ left: placement.left, top: placement.top }}
     >
       {/* Which element this is about. Two shapes on top of each other take the
           same right-click, and without this the user names one and watches the

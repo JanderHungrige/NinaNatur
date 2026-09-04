@@ -26,9 +26,8 @@ from ninanatur.api.schemas import (
 )
 from ninanatur.auth.sessions import Account
 from ninanatur.garden.lighting import recompute_light
-from ninanatur.garden.models import BedInput, ObstacleInput
+from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import (
-    add_bed,
     add_obstacle,
     create_garden,
     load_garden,
@@ -111,10 +110,21 @@ def garden_from_map(
     _add_streets(conn, garden_id, anchor, south, west, north, east)
 
     polygon = [[round(m.x, 2), round(m.y, 2)] for m in (to_metres(p, anchor) for p in outline)]
-    add_bed(
+    # The ground, not a bed. It used to arrive as one large flower bed, which
+    # made the whole plot a planting site — the beds are what the gardener draws
+    # inside it, and a garden that arrives with none is the honest starting
+    # state.
+    add_obstacle(
         conn,
         garden_id,
-        BedInput(name="Gesamtfläche", polygon=polygon, soil_type="loam", moisture="fresh"),
+        ObstacleInput(
+            kind="garden",
+            x=0.0,
+            y=0.0,
+            shape="polygon",
+            points=polygon,
+            label=payload.name,
+        ),
     )
     for obj in around.objects:
         add_obstacle(

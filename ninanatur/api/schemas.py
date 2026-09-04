@@ -339,6 +339,19 @@ class BedOut(BaseModel):
     bed_id: int
     name: str
     polygon: list[list[float]]
+    # The geometry, same as an obstacle carries it. `polygon` is the outline in
+    # absolute metres and cannot be edited — handles are built from an origin
+    # and the points around it, so a bed without these silently stopped being
+    # reshapeable the moment somebody labelled a shape "Blumenbeet".
+    kind: str
+    shape: str
+    x: float
+    y: float
+    points: list[list[float]] | None
+    #: A circle's diameter or a band's width. A circle has no points at all, so
+    #: without this a round bed has nothing to size its handles from.
+    width: float | None
+    constraint_hint: str | None
     soil_type: str | None
     moisture: str | None
     ellenberg_l: float | None

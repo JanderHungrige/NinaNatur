@@ -196,4 +196,5 @@ data would be convenient.
 | Wave 12 | waves/ninanatur-wave-12.md | The plan gets out of its own way — tools on top, drawing that works on the first click, and every element findable | complete |
 | Wave 13 | waves/ninanatur-wave-13.md | A front door that looks like one — sign-in top right, one way in, and a page that breathes | complete |
 | Wave 14 | waves/ninanatur-wave-14.md | A plan that looks painted, not plotted — bloom as dots, deletable elements, and the street outside | complete |
+| Wave 15 | waves/ninanatur-wave-15.md | What is in the bed, and getting it out again | planned |
 | Wave 20 | waves/ninanatur-wave-20.md | A finished plan split across as few nurseries as possible | planned |

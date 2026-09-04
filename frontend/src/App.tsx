@@ -16,6 +16,9 @@ import type {
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
 import { AccountBar } from './components/AccountBar';
+import { elementById } from './canvas/elements';
+import { useUndoShortcut, useUndoStack } from './useUndoStack';
+import { isGround } from './kinds';
 import { FeedbackBox } from './components/FeedbackBox';
 import { LivingBackground } from './components/LivingBackground';
 import { MyGardens } from './components/MyGardens';
@@ -94,6 +97,8 @@ export function App() {
   );
 
 
+
+  const { remember, undo, forget } = useUndoStack();
 
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
@@ -224,6 +229,10 @@ export function App() {
   const selectBed = useCallback(
     (bedId: number) => {
       setSelectedBedId(bedId);
+      // And as a shape, so the handles appear. Clicking a bed used to set only
+      // the planting selection, which is the other half of why a bed could not
+      // be reshaped: the lookup was wrong *and* nothing ever selected it.
+      setSelectedObstacleId(bedId);
       if (garden === null) return;
       void run('Vorschläge laden', async () => {
         setSuggestions(await client.bedSuggestions(garden.share_token, bedId, filters));
@@ -253,6 +262,23 @@ export function App() {
   );
 
   /** Everything the server derives, re-read together after any change. */
+  // The inverses are calls against one garden. Replayed against another they
+  // would edit an element that is not there — or, worse, one that is.
+  useEffect(() => {
+    forget();
+  }, [garden?.share_token, forget]);
+
+  useUndoShortcut(() => {
+    void run('Rückgängig', async () => {
+      const entry = await undo();
+      setStatus(
+        entry === null
+          ? 'Nichts mehr zurückzunehmen.'
+          : `${entry.label} zurückgenommen.`,
+      );
+    });
+  }, garden !== null);
+
   const refresh = useCallback(async (token: string, weighted: boolean) => {
     setTimeline(await client.timeline(token, weighted));
     setScore(await client.score(token));
@@ -482,8 +508,9 @@ export function App() {
 
   const editObstacleById = useCallback(
     (obstacleId: number) => {
-      const found = garden?.obstacles.find((o) => o.obstacle_id === obstacleId);
-      if (found === undefined) return;
+      // Beds too. They are elements of kind `bed`, and refusing to select one
+      // here is the other half of why a bed could not be reshaped.
+      if (garden === null || elementById(garden, obstacleId) === null) return;
       setSelectedObstacleId(obstacleId);
     },
     [garden],
@@ -509,7 +536,16 @@ export function App() {
         // palette promises "then drag the handles"; without this the user has
         // to find and click the thing they are looking straight at.
         const fresh = updated.obstacles.find((o) => !before.has(o.obstacle_id));
-        if (fresh !== undefined) setSelectedObstacleId(fresh.obstacle_id);
+        if (fresh !== undefined) {
+          setSelectedObstacleId(fresh.obstacle_id);
+          const id = fresh.obstacle_id;
+          remember({
+            label: 'Zeichnen',
+            undo: async () => {
+              setGarden(await client.deleteObstacle(garden.share_token, id));
+            },
+          });
+        }
         const lit = updated.beds
           .map((b) => (b.sun_hours === null ? '?' : b.sun_hours.toFixed(1)))
           .join(', ');
@@ -603,8 +639,13 @@ export function App() {
   const moveObstacle = useCallback(
     async (obstacleId: number, by: { x: number; y: number }) => {
       if (garden === null) return;
-      const element = garden.obstacles.find((o) => o.obstacle_id === obstacleId);
-      if (element === undefined) return;
+      const element = elementById(garden, obstacleId);
+      // The ground is where everything else is measured from. Moving it would
+      // shift the garden out from under the plan rather than move anything in
+      // it — and not being able to drag it is behaviour the gardener asked to
+      // keep.
+      if (element === null || isGround(element.kind)) return;
+      const from = { x: element.x, y: element.y };
       await run('Verschieben', async () => {
         setGarden(
           await client.editObstacle(garden.share_token, obstacleId, {
@@ -612,6 +653,14 @@ export function App() {
             y: Math.round((element.y + by.y) * 100) / 100,
           }),
         );
+        remember({
+          label: 'Verschieben',
+          undo: async () => {
+            setGarden(
+              await client.editObstacle(garden.share_token, obstacleId, from),
+            );
+          },
+        });
       });
     },
     [garden, run],
@@ -620,6 +669,7 @@ export function App() {
   const reshapeObstacle = useCallback(
     async (obstacleId: number, points: number[][]) => {
       if (garden === null) return;
+      const was = elementById(garden, obstacleId);
       await run('Form ändern', async () => {
         setGarden(
           await client.editObstacle(garden.share_token, obstacleId, {
@@ -627,6 +677,20 @@ export function App() {
             constraint_hint: null,
           }),
         );
+        if (was !== null && was.points !== null) {
+          const { points: had, constraint_hint: hint } = was;
+          remember({
+            label: 'Form ändern',
+            undo: async () => {
+              setGarden(
+                await client.editObstacle(garden.share_token, obstacleId, {
+                  points: had,
+                  constraint_hint: hint,
+                }),
+              );
+            },
+          });
+        }
       });
     },
     [garden, run],
@@ -671,8 +735,9 @@ export function App() {
   const resizeObstacle = useCallback(
     async (obstacleId: number, box: Box) => {
       if (garden === null) return;
-      const element = garden.obstacles.find((o) => o.obstacle_id === obstacleId);
-      if (element === undefined) return;
+      const element = elementById(garden, obstacleId);
+      // Same rule as moving: the ground is not dragged about by its handles.
+      if (element === null || isGround(element.kind)) return;
       const at = {
         x: Math.round(box.x * 100) / 100,
         y: Math.round(box.y * 100) / 100,
@@ -987,6 +1052,7 @@ export function App() {
               />
               {asking !== null && garden !== null ? (
                 <ElementMenu
+                  elementId={asking.id}
                   at={asking.at}
                   kind={asking.kind}
                   label={asking.label}

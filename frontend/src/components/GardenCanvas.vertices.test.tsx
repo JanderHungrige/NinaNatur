@@ -102,4 +102,37 @@ describe('GardenCanvas — editing an outline', () => {
     expect(screen.getAllByTestId(/^vertex-\d+$/)).toHaveLength(3);
     expect(screen.getAllByTestId(/^vertex-add-\d+$/)).toHaveLength(2);
   });
+
+  it('gives a bed the same handles, though the API lists it separately', () => {
+    // Wave 15. The server has had one `element` table since Wave 11, but the
+    // API still answers with `beds` and `obstacles` apart, and selection looked
+    // only in `obstacles`. So the moment somebody labelled a shape
+    // "Blumenbeet" it moved across and stopped being reshapeable — the plan
+    // still drew it, which is what made this look like a rendering quirk
+    // rather than a lost capability.
+    const bed = {
+      bed_id: 7, kind: 'bed', name: 'Staudenbeet', shape: 'polygon',
+      x: 0, y: 0, points: [[-2, -2], [2, -2], [2, 2], [-2, 2]],
+      width: null, constraint_hint: null,
+      polygon: [[-2, -2], [2, -2], [2, 2], [-2, 2]],
+      soil_type: null, moisture: null, ellenberg_l: null, ellenberg_m: null,
+      ellenberg_n: null, ellenberg_r: null, sun_hours: null,
+      light_computed_at: null, height_above_ground: 0, label: null,
+      plantings: [],
+    } as unknown as GardenOut['beds'][number];
+
+    render(
+      <GardenCanvas
+        garden={{ ...garden([]), beds: [bed] }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 800, heightPx: 600 }}
+        selectedObstacleId={7}
+        onReshapeObstacle={vi.fn()}
+        onResizeObstacle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByTestId(/^vertex-\d+$/)).toHaveLength(4);
+  });
 });

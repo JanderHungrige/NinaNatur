@@ -81,6 +81,8 @@ def to_out(garden: Garden) -> GardenOut:
         beds=[
             BedOut(
                 bed_id=b.bed_id, name=b.name or "", polygon=b.polygon,
+                kind=b.kind, shape=b.shape, x=b.x, y=b.y, points=b.points,
+                width=b.width, constraint_hint=b.constraint_hint,
                 soil_type=b.soil_type, moisture=b.moisture,
                 ellenberg_l=b.ellenberg_l, ellenberg_m=b.ellenberg_m,
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,

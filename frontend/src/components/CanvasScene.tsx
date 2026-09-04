@@ -1,5 +1,5 @@
 import { bloomDots } from '../canvas/blooms';
-import { KINDS, PLANTING_KIND, labelOf } from '../kinds';
+import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
 import type { GardenOut } from '../api/client';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
@@ -235,6 +235,9 @@ export function CanvasScene({
           'bed_id' in item ? (
             <polygon
               key={`bed-${item.bed_id}`}
+              // The menu anchors to this: it has to follow the shape when the
+              // page scrolls, and a click coordinate cannot.
+              data-element-id={item.bed_id}
               className={item.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
               style={(() => {
                 const fill = bloomFill(palette?.[item.bed_id]);
@@ -281,6 +284,7 @@ export function CanvasScene({
           ) : (
             <polygon
               key={`obstacle-${item.obstacle_id}`}
+              data-element-id={item.obstacle_id}
               className={`obstacle obstacle--${item.kind}`}
               fill={`url(#symbol-${symbolOf(item.kind)})`}
               /* The footprint the server computed. Re-deriving it here would be
@@ -297,7 +301,7 @@ export function CanvasScene({
               }
               transform={shift(item.obstacle_id)}
               onPointerDown={
-                onGrabElement === undefined || armed
+                onGrabElement === undefined || armed || isGround(item.kind)
                   ? undefined
                   : (event) => onGrabElement(item.obstacle_id, event)
               }
