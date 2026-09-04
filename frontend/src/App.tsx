@@ -533,6 +533,7 @@ export function App() {
         area: number;
         plantings: number;
         shape: string;
+        roof: string;
         height: number | null;
         width: number | null;
         soilType: string | null;
@@ -753,6 +754,7 @@ export function App() {
         area: areaOf(outline),
         plantings: 'plantings' in found ? found.plantings.length : 0,
         shape: 'shape' in found ? found.shape : 'polygon',
+        roof: 'roof' in found ? found.roof : 'unknown',
         height: 'height' in found ? found.height : null,
         width: 'width' in found ? found.width : null,
         soilType: 'soil_type' in found ? found.soil_type : null,
@@ -1230,6 +1232,7 @@ export function App() {
                   area={asking.area}
                   plantings={asking.plantings}
                   shape={asking.shape}
+                  roof={asking.roof}
                   height={asking.height}
                   width={asking.width}
                   soilType={asking.soilType}

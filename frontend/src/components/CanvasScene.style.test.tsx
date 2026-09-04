@@ -21,6 +21,7 @@ function obstacle(
     constraint_hint: null,
     height: 2,
     label: null,
+    roof: 'unknown',
     height_source: 'user',
     footprint: [[-2, 1.5], [2, 1.5], [2, -1.5], [-2, -1.5]],
   };

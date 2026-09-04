@@ -61,6 +61,15 @@ CREATE TABLE IF NOT EXISTS element (
     height      REAL,
     -- 'user' | 'osm_height' | 'osm_levels' | 'neighbourhood'.
     height_source TEXT NOT NULL DEFAULT 'user',
+    -- What shape the roof is, if anybody has said. OSM's `height` is the ridge,
+    -- so a building without this is modelled as solid to the ridge — which is
+    -- what every building was before Wave 16, and stays the default: one that
+    -- quietly shortened them would move every existing garden's light without
+    -- anybody asking for it.
+    roof          TEXT NOT NULL DEFAULT 'unknown',
+    -- Eaves height, where OSM carried `building:levels`. The one measured input
+    -- in the roof model; everything else about a roof here is a shape ratio.
+    eaves_m       REAL,
     label       TEXT,
     -- Below here: what a planting site needs. All null on a paving slab, and
     -- that is the point — one table, and being a bed is a property.
@@ -105,6 +114,30 @@ CREATE TABLE IF NOT EXISTS planting (
 );
 
 CREATE INDEX IF NOT EXISTS idx_planting_element ON planting(element_id);
+
+-- Sun hours across the garden, cell by cell.
+--
+-- Derived, and stored anyway: it costs about half a second to produce and every
+-- page that draws the map would otherwise produce it again. `signature` is a
+-- hash of everything that moves a shadow — where the garden is, every
+-- obstacle's outline and height, every planting's species and position — so
+-- "is this stale" is a comparison rather than a judgement about which actions
+-- ought to have invalidated it.
+--
+-- `hours` is a JSON array, row-major from the south-west corner. A table of
+-- cells would be tidier and would also be six hundred rows per garden to write
+-- on every recomputation.
+CREATE TABLE IF NOT EXISTS light_grid (
+    garden_id   INTEGER PRIMARY KEY REFERENCES garden(garden_id) ON DELETE CASCADE,
+    cell_m      REAL    NOT NULL,
+    min_x       REAL    NOT NULL,
+    min_y       REAL    NOT NULL,
+    cols        INTEGER NOT NULL,
+    rows        INTEGER NOT NULL,
+    hours       TEXT    NOT NULL,
+    signature   TEXT    NOT NULL,
+    computed_at TEXT    NOT NULL
+);
 
 -- What the gardener saw, as opposed to what the catalogue says.
 --

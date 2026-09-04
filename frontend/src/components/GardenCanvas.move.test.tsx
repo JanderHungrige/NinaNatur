@@ -9,7 +9,7 @@ function element(): GardenOut['obstacles'][number] {
     obstacle_id: 7, kind: 'other', x: 0, y: 0, shape: 'polygon',
     width: null, constraint_hint: null,
     points: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
-    height: null, label: null, height_source: 'user',
+    height: null, label: null, roof: 'unknown', height_source: 'user',
     footprint: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
   };
 }

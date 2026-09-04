@@ -14,7 +14,8 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
       label={null}
       area={24}
       plantings={0}
-      shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+      shape="polygon"
+      roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
       onDelete={vi.fn()}
       onSave={onSave}
       onClose={onClose}
@@ -96,7 +97,7 @@ describe('ElementMenu — which element is this?', () => {
       <ElementMenu
         elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label="Der alte Teich" area={12.5}
-        plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={vi.fn()} busy={false}
       />,
     );
@@ -117,7 +118,7 @@ describe('ElementMenu — getting out of the way', () => {
         <ElementMenu
           elementId={7}
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+          plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
@@ -134,7 +135,7 @@ describe('ElementMenu — getting out of the way', () => {
       <ElementMenu
         elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-        plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
       />,
     );
@@ -160,7 +161,7 @@ describe('ElementMenu — a click that stops propagating', () => {
         <ElementMenu
           elementId={7}
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+          plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
@@ -177,7 +178,7 @@ describe('ElementMenu — deleting', () => {
     render(
       <ElementMenu
         elementId={7}
-        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0} shape="polygon" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={onDelete} onClose={onClose} busy={false}
         {...props}
       />,

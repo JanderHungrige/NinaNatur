@@ -1378,6 +1378,10 @@
             ],
             "title": "Points"
           },
+          "roof": {
+            "title": "Roof",
+            "type": "string"
+          },
           "shape": {
             "title": "Shape",
             "type": "string"
@@ -1405,6 +1409,7 @@
         "required": [
           "obstacle_id",
           "kind",
+          "roof",
           "label",
           "height_source",
           "x",
@@ -1520,6 +1525,16 @@
               }
             ],
             "title": "Points"
+          },
+          "roof": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoofShape"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rotation": {
             "anyOf": [
@@ -2310,6 +2325,18 @@
         "title": "Registration",
         "type": "object"
       },
+      "RoofShape": {
+        "description": "Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.",
+        "enum": [
+          "flat",
+          "gable",
+          "hip",
+          "pent",
+          "unknown"
+        ],
+        "title": "RoofShape",
+        "type": "string"
+      },
       "ScoreOut": {
         "description": "The score with everything needed to argue about it \u2014 a score a user cannot\ninterrogate is decoration, and this one will be trusted more than it deserves.",
         "properties": {
@@ -2729,7 +2756,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.15.48"
+    "version": "V0.15.50"
   },
   "openapi": "3.1.0",
   "paths": {

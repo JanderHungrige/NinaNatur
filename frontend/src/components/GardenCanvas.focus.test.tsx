@@ -112,7 +112,7 @@ describe('GardenCanvas — an armed tool takes the click', () => {
     const ground = {
       obstacle_id: 3, kind: 'garden', x: 0, y: 0, shape: 'polygon',
       width: null, constraint_hint: null, points: [[-10, -10], [10, -10], [10, 10], [-10, 10]],
-      height: null, label: 'Mein Garten', height_source: 'user',
+      height: null, label: 'Mein Garten', roof: 'unknown', height_source: 'user',
       footprint: [[-10, -10], [10, -10], [10, 10], [-10, 10]],
     } as GardenOut['obstacles'][number];
 

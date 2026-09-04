@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useAnchoredMenu } from '../canvas/useAnchoredMenu';
 import { KINDS, PLANTING_KIND, labelOf } from '../kinds';
+import { ROOFED, ROOFS } from '../roofs';
 
 interface Props {
   /** Which element this is about. The menu anchors to its box, so it follows
@@ -19,6 +20,7 @@ interface Props {
   /** 'polygon' | 'circle' | 'line'. Only a line has a width to set. */
   shape: string;
   height: number | null;
+  roof: string;
   width: number | null;
   soilType: string | null;
   moisture: string | null;
@@ -46,6 +48,7 @@ export function ElementMenu({
   plantings,
   shape,
   height,
+  roof,
   width,
   soilType,
   moisture,
@@ -61,6 +64,7 @@ export function ElementMenu({
   // showing whatever happened to be selected, and it is gone: this menu is
   // already at the element, and two places to edit one thing is one too many.
   const [tall, setTall] = useState(height === null ? '' : String(height));
+  const [roofShape, setRoofShape] = useState(roof);
   const [band, setBand] = useState(width === null ? '' : String(width));
   const [soil, setSoil] = useState(soilType ?? '');
   const [wet, setWet] = useState(moisture ?? '');
@@ -131,6 +135,25 @@ export function ElementMenu({
           <label htmlFor="menu-height">Höhe (m)</label>
           <input id="menu-height" type="number" min="0" step="0.1" value={tall}
                  disabled={busy} onChange={(e) => setTall(e.target.value)} />
+        </>
+      )}
+
+      {ROOFED.has(chosen) && (
+        <>
+          <label htmlFor="menu-roof">Dachform</label>
+          <select id="menu-roof" value={roofShape} disabled={busy}
+                  onChange={(e) => setRoofShape(e.target.value)}>
+            {ROOFS.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          {/* Said where the choice is made: the height came from the map and
+              means the ridge, so a house without a shape shades as though its
+              gables were solid. */}
+          <p className="hint">
+            Die Höhe aus der Karte ist der First. Ohne Dachform rechnen wir das
+            Haus bis dahin als massiv — es verschattet dann zu viel.
+          </p>
         </>
       )}
 
@@ -225,6 +248,7 @@ export function ElementMenu({
                 } else if (tall !== '') {
                   changes.height = Number(tall);
                 }
+                if (ROOFED.has(chosen)) changes.roof = roofShape;
                 if (shape === 'line' && band !== '') changes.width = Number(band);
                 onSave(changes);
               }}

@@ -148,6 +148,8 @@ def garden_from_map(
                 shape="polygon",
                 points=[[corner[0], corner[1]] for corner in obj.outline],
                 height=obj.height_m,
+                roof=obj.roof,
+                eaves_m=obj.eaves_m,
                 label=obj.label,
                 height_source=obj.height_source.value,
             )
@@ -162,6 +164,8 @@ def garden_from_map(
                 depth=side,
                 rotation=0.0,
                 height=obj.height_m,
+                roof=obj.roof,
+                eaves_m=obj.eaves_m,
                 label=obj.label,
                 height_source=obj.height_source.value,
             )
