@@ -17,18 +17,27 @@ describe('ColourNote', () => {
     expect(onNote).toHaveBeenCalledWith('violet');
   });
 
-  it('says an entry is the gardener’s own and local', () => {
-    // It never reaches the catalogue, and saying so is the difference between
-    // a note and a claim about the species.
+  it('says a hand entry answers for every garden here', () => {
+    // The wording was "gilt nur für diesen Garten" and it is now the opposite.
+    // Somebody typing a colour is contributing to the shared catalogue, and
+    // that is worth knowing while they decide what to type.
     render(<ColourNote recorded={null} noted="violet" onNote={vi.fn()} busy={false} />);
-    expect(screen.getByText(/nur für diesen Garten/)).toBeDefined();
+    expect(screen.getByText(/für alle Gärten/)).toBeDefined();
     expect((screen.getByLabelText('Blütenfarbe') as HTMLSelectElement).value).toBe('violet');
   });
 
-  it('offers to override what the catalogue says, for a cultivar', () => {
+  it('says a source outranks a hand entry', () => {
     render(<ColourNote recorded="pink" noted={null} onNote={vi.fn()} busy={false} />);
-    expect(screen.getByText(/Sorte/)).toBeDefined();
+    expect(screen.getByText(/zurückstehen/)).toBeDefined();
     expect((screen.getByLabelText('Blütenfarbe') as HTMLSelectElement).value).toBe('pink');
+  });
+
+  it('says so when a source has since overruled the hand entry', () => {
+    // The one state that needs explaining: the gardener typed violet, it is
+    // still stored, and the plan is drawing blue. Silence here reads as the
+    // entry having been lost.
+    render(<ColourNote recorded="blue" noted="violet" onNote={vi.fn()} busy={false} />);
+    expect(screen.getByText(/inzwischen/)).toBeDefined();
   });
 
   it('can be taken back', () => {

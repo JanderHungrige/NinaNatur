@@ -452,6 +452,23 @@ export function App() {
    * month is selected, which is the honest reading of "what is in this bed"
    * outside the bloom year.
    */
+  /**
+   * The colour that actually applies to each species, hand entry included.
+   *
+   * The info panel needs it to tell the two states apart: "you entered violet"
+   * and "you entered violet and a source has since said blue". Read from the
+   * palette, which is where colour is resolved.
+   */
+  const resolvedColours = useMemo(() => {
+    const map: Record<number, string | null> = {};
+    for (const bed of palette?.beds ?? []) {
+      for (const entry of bed.plantings) {
+        if (entry.taxon_id !== null) map[entry.taxon_id] = entry.colour;
+      }
+    }
+    return map;
+  }, [palette]);
+
   const clusters = useMemo(() => {
     if (garden === null) return [];
     const byBed = new Map((palette?.beds ?? []).map((b) => [b.bed_id, b.plantings]));
@@ -1089,10 +1106,7 @@ export function App() {
                           setInfoFor({
                             taxonId,
                             name,
-                            // The catalogue's colour is not carried on a
-                            // planting, so the panel asks for it as unknown and
-                            // the note the gardener made still shows.
-                            recorded: null,
+                            recorded: resolvedColours[taxonId] ?? null,
                             noted: garden.observed_colours[taxonId] ?? null,
                           })
                         }
@@ -1187,7 +1201,7 @@ export function App() {
                   setInfoFor({
                     taxonId,
                     name,
-                    recorded: null,
+                    recorded: resolvedColours[taxonId] ?? null,
                     noted: garden.observed_colours[taxonId] ?? null,
                   })
                 }

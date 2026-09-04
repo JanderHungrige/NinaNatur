@@ -15,7 +15,6 @@ from typing import Any
 from ninanatur.bloom.timeline import flowering_months
 from ninanatur.data.traits import resolve_trait
 from ninanatur.garden.canopy import canopy_of
-from ninanatur.garden.observations import observed_colours
 from ninanatur.garden.store import load_garden
 
 MONTHS = tuple(range(1, 13))
@@ -53,18 +52,14 @@ def _room(conn: sqlite3.Connection, taxon_id: int) -> float | None:
     return None if canopy is None else canopy.area_m2
 
 
-def _colour(
-    conn: sqlite3.Connection, taxon_id: int, observed: dict[int, str]
-) -> str | None:
-    """What this garden should draw for this species.
+def _colour(conn: sqlite3.Connection, taxon_id: int) -> str | None:
+    """What to draw for this species.
 
-    The gardener's own answer wins. They are standing in front of the plant, and
-    for a cultivar they are a better witness than a continental average — while
-    the catalogue stays untouched for everybody else.
+    Nothing special here any more. A colour somebody entered by hand is a `trait`
+    row like any other, marked `manual`, and `resolve_trait` already knows it
+    ranks behind every published source. The per-garden override this used to
+    carry is gone with the table it read from.
     """
-    seen = observed.get(taxon_id)
-    if seen is not None:
-        return seen
     trait = resolve_trait(conn, taxon_id, "flower_colour")
     return None if trait is None else trait.value_text
 
@@ -78,7 +73,6 @@ def garden_palette(conn: sqlite3.Connection, garden_id: int) -> dict[str, Any]:
     confident thing a UI can draw.
     """
     garden = load_garden(conn, garden_id)
-    seen = observed_colours(conn, garden_id)
     windows: dict[int, frozenset[int]] = {}
     colours: dict[int, str | None] = {}
     room: dict[int, float | None] = {}
@@ -111,7 +105,7 @@ def garden_palette(conn: sqlite3.Connection, garden_id: int) -> dict[str, Any]:
             tid = planting.taxon_id
             if tid not in windows:
                 windows[tid] = _window(conn, tid)
-                colours[tid] = _colour(conn, tid, seen)
+                colours[tid] = _colour(conn, tid)
             if tid not in room:
                 room[tid] = _room(conn, tid)
             per_planting.append(

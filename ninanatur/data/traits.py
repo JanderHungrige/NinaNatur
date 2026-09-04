@@ -18,6 +18,15 @@ from ninanatur.fit.score import AXES
 # whatever row SQLite happened to return first.
 SOURCE_PRIORITY: tuple[str, ...] = ("EIVE-1.0", "GIFT")
 
+#: What a gardener typed in, as opposed to what a dataset published.
+#:
+#: Deliberately *not* a member of SOURCE_PRIORITY. Appending it there would give
+#: it rank 2 while the next source somebody adds would land at 3 — a hand entry
+#: would then outrank a real dataset simply because it was named earlier. It is
+#: ranked last explicitly instead, so every official source beats it, including
+#: ones that do not exist yet.
+MANUAL_SOURCE = "manual"
+
 KNOWN_TRAIT_KEYS: frozenset[str] = frozenset(
     {*AXES, *(f"{a}_nw" for a in AXES),
      "height_max_m", "flowering_start_month", "flowering_end_month", "woodiness",
@@ -55,12 +64,16 @@ class ResolvedTrait(TraitValue):
     alternatives: tuple[TraitValue, ...] = ()
 
 
-def _rank(source: str) -> tuple[int, str]:
-    """Known sources in declared order; unknown ones after, alphabetically.
+def source_rank(source: str) -> tuple[int, str]:
+    """Known sources in declared order, then unknown ones, then hand entries.
 
     A newly added source must not outrank the curated ones just because of how it
-    sorts.
+    sorts — and a value somebody typed in must not outrank any of them. That is
+    the rule the gardener asked for: a hand entry fills a gap until real data
+    arrives, and then gets out of the way.
     """
+    if source == MANUAL_SOURCE:
+        return (len(SOURCE_PRIORITY) + 1, "")
     if source in SOURCE_PRIORITY:
         return (SOURCE_PRIORITY.index(source), "")
     return (len(SOURCE_PRIORITY), source)
@@ -79,7 +92,7 @@ def _to_value(row: sqlite3.Row) -> TraitValue:
 
 
 def _resolve_group(rows: list[sqlite3.Row]) -> ResolvedTrait:
-    ordered = sorted((_to_value(r) for r in rows), key=lambda v: _rank(v.source))
+    ordered = sorted((_to_value(r) for r in rows), key=lambda v: source_rank(v.source))
     winner, *losers = ordered
     return ResolvedTrait(
         trait_key=winner.trait_key,

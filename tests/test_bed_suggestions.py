@@ -221,9 +221,9 @@ def _item(client: TestClient, token: str, bed_id: int, name: str,
 
 
 def test_a_noted_colour_reaches_the_list_it_was_noted_from(client: TestClient) -> None:
-    """Entering a colour and closing the panel left the row saying "Farbe
-    unbekannt": the suggestion list reads the catalogue, and the observation is
-    deliberately not in the catalogue. It has to be laid over the candidates.
+    """Entering a colour and closing the panel used to leave the row saying
+    "Farbe unbekannt". It reaches the list because it is now a catalogue trait,
+    not because anything is laid over the candidates.
     """
     token, bed_id = _sunny_bed(client)
     assert _item(client, token, bed_id, "Sonnenkraut")["observed_colour"] is None
@@ -233,9 +233,9 @@ def test_a_noted_colour_reaches_the_list_it_was_noted_from(client: TestClient) -
     row = _item(client, token, bed_id, "Sonnenkraut")
     assert row["observed_colour"] == "yellow"
     assert row["colour_known"] is True
-    # Beside the catalogue's answer, not over it: the panel still has to be able
-    # to say the catalogue holds nothing for this species.
-    assert row["flower_colour"] is None
+    # And it *is* the colour now, not a value beside it. `observed_colour` still
+    # says where it came from, so the panel can mark it as a hand entry.
+    assert row["flower_colour"] == "yellow"
 
 
 def test_a_noted_colour_answers_the_colour_filter(client: TestClient) -> None:
@@ -251,13 +251,20 @@ def test_a_noted_colour_answers_the_colour_filter(client: TestClient) -> None:
     assert _item(client, token, bed_id, "Sonnenkraut", colour="yellow")["fit"] is not None
 
 
-def test_one_gardeners_colour_does_not_reach_another_garden(client: TestClient) -> None:
-    """The candidate set is the catalogue, shared by every garden on the server
-    and reloaded per request. Writing the observation into those rows rather
-    than replacing them would put it in a stranger's list."""
+def test_a_colour_one_gardener_entered_answers_for_everybody(
+    client: TestClient,
+) -> None:
+    """Reversed deliberately, and this test was reversed with it.
+
+    It used to assert the opposite — that an observation stayed in the garden
+    that made it — because these were per-garden rows on the volume. They are
+    catalogue traits now, marked `manual`: one general database, as asked for.
+    The cost is here in plain sight, which is why the test says it rather than
+    being deleted.
+    """
     mine, my_bed = _sunny_bed(client)
     theirs, their_bed = _sunny_bed(client)
     client.put(f"/api/v1/gardens/{mine}/colours/1", json={"colour": "yellow"})
 
     assert _item(client, mine, my_bed, "Sonnenkraut")["observed_colour"] == "yellow"
-    assert _item(client, theirs, their_bed, "Sonnenkraut")["observed_colour"] is None
+    assert _item(client, theirs, their_bed, "Sonnenkraut")["observed_colour"] == "yellow"

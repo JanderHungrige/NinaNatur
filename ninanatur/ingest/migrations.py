@@ -239,3 +239,57 @@ def wave_11_reset(conn: sqlite3.Connection) -> str | None:
     return "bed and obstacle folded into element; gardens cleared"
 
 
+COLOURS_MOVED_KEY = "wave_15_colours_moved"
+
+
+def move_observed_colours(conn: sqlite3.Connection) -> str | None:
+    """Carry per-garden colour notes into the shared catalogue.
+
+    They used to live in `observed_colour` on the volume, one row per garden per
+    species, deliberately outside `trait`. The gardener asked for the opposite:
+    one general database, the entry marked manual, overridable by any published
+    source. These are the notes somebody already made, and dropping them would
+    be answering "where should this live" by throwing it away.
+
+    Two gardens that noted different colours for one species cannot both win —
+    the catalogue holds one manual value per species. The later note is kept,
+    which is the same rule a second answer from one gardener follows.
+
+    Marked in `catalogue_meta` so it runs once. Run twice it would resurrect a
+    note somebody has since taken back.
+    """
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS catalogue_meta"
+        " (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+    )
+    done = conn.execute(
+        "SELECT 1 FROM catalogue_meta WHERE key = ?", (COLOURS_MOVED_KEY,)
+    ).fetchone()
+    if done is not None:
+        return None
+
+    present = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='observed_colour'"
+    ).fetchone()
+    moved = 0
+    if present is not None:
+        rows = conn.execute(
+            "SELECT taxon_id, colour, noted_at FROM observed_colour ORDER BY noted_at"
+        ).fetchall()
+        for row in rows:
+            conn.execute(
+                "INSERT INTO trait (taxon_id, trait_key, source, license,"
+                " value_text, confidence, retrieved_at)"
+                " VALUES (?, 'flower_colour', 'manual', 'user-contributed', ?, 0.4, ?)"
+                " ON CONFLICT (taxon_id, trait_key, source) DO UPDATE SET"
+                " value_text = excluded.value_text, retrieved_at = excluded.retrieved_at",
+                (int(row["taxon_id"]), str(row["colour"]), str(row["noted_at"])),
+            )
+            moved += 1
+
+    conn.execute(
+        "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
+        (COLOURS_MOVED_KEY, str(moved)),
+    )
+    conn.commit()
+    return None if moved == 0 else f"moved {moved} noted colour(s) into the catalogue"
