@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-15
 demo_state: "Ein Schalter legt eine Sonnenstunden- oder Schattenstundenkarte über den Plan, in Graustufen bzw. Transparenz. Der Play-Knopf lässt den Schatten über einen mittleren Tag des gewählten Monats wandern. Das Licht wird über ein Raster berechnet, nicht an einem Punkt je Beet — und eine Sonnenpflanze, die im Schatten steht, wird als solche benannt."
 created: 2026-09-04
-hash: 83f3e324
+hash: 413f1abc
 ---
 
 # Wave 16: The shade switch
@@ -87,14 +87,28 @@ So a diff pays for sheds and for nothing else. It is not worth the second code
 path, and a second code path through geometry is exactly where the two answers
 drift apart.
 
-What is worth doing is cheaper and simpler:
+**Not by classifying actions.** That was the first answer and it is the wrong
+shape: a list of which operations change the light is a thing somebody has to
+remember to extend, and forgetting is silent — a stale map that looks right. The
+objection came from the user and it is correct.
 
-- **Recompute only when something that casts shade changes.** Drawing a bed,
-  planting a flower, renaming an object, moving a cluster — none of these change
-  the light at all, and today several of them trigger a full recomputation.
-  This is the whole saving and it costs nothing.
-- **Then recompute the lot**, at 0.44 s. Once per settled change, not per drag
-  frame — a drag already sends one request when the pointer is released.
+A **signature over the shading inputs** instead: a hash of every obstacle's
+geometry, height and roof, plus every woody planting's position and species.
+Recompute when it differs from the one the stored grid was made with. That is
+not a judgement about an action, it is a fact about the inputs, so a new feature
+cannot forget to declare itself. Adding a bed changes no obstacle and the hash
+does not move; nudging a shed by 10 cm moves it and the map follows.
+
+Then three ways it actually runs:
+
+- **On a settled change**, at 0.44 s. Not per drag frame — a drag already sends
+  one request when the pointer is released.
+- **In the background when the garden is closed**, if the signature moved and
+  nothing has recomputed since. The next visit opens on a current map.
+- **A "Schatten neu berechnen" button.** Belt as well as braces: if the map ever
+  looks wrong, somebody can force the whole thing without knowing why. It also
+  makes the staleness visible — the button says when the map was last computed,
+  which is the honest thing for a number this expensive to produce.
 
 ### 2. the-shade-switch
 

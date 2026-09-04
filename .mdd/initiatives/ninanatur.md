@@ -199,4 +199,5 @@ data would be convenient.
 | Wave 15 | waves/ninanatur-wave-15.md | What is in the bed, and getting it out again | complete |
 | Wave 16 | waves/ninanatur-wave-16.md | The shade switch: sun and shade hours as a map over the garden | planned |
 | Wave 17 | waves/ninanatur-wave-17.md | The ground is not flat: a height profile from public elevation data | planned |
+| Wave 18 | waves/ninanatur-wave-18.md | A place to look before it is live: a real dev environment on its own port | planned |
 | Wave 20 | waves/ninanatur-wave-20.md | A finished plan split across as few nurseries as possible | planned |
