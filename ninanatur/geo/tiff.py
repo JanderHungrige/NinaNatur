@@ -19,9 +19,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ninanatur.geo.tiff_codec import lzw, undo_predictor
+
 #: Tags that matter here. Everything else in the directory is skipped.
 _WIDTH, _HEIGHT, _BITS, _COMPRESSION = 256, 257, 258, 259
 _STRIP_OFFSETS, _SAMPLES_PER_PIXEL, _STRIP_BYTES = 273, 277, 279
+_TILE_WIDTH, _TILE_LENGTH, _TILE_OFFSETS, _TILE_BYTES = 322, 323, 324, 325
 _PREDICTOR, _SAMPLE_FORMAT = 317, 339
 
 #: Byte width of each TIFF field type, indexed by its type code.
@@ -53,6 +56,7 @@ def read_raster(data: bytes) -> Raster:
     Raises rather than guesses. A service that starts returning tiles, or JPEG,
     or three bands, is a change worth being told about at the moment it happens.
     """
+    data = _unwrap(data)
     if data[:2] == b"II":
         end = "<"
     elif data[:2] == b"MM":
@@ -85,6 +89,28 @@ class _Field:
     #: The value itself when it fits in the four-byte field, otherwise the
     #: offset to where the values are.
     at: int
+
+
+def _unwrap(data: bytes) -> bytes:
+    """Pull the image out of a multipart WCS response, if that is what this is.
+
+    WCS 2.0 lets a server package the coverage as `multipart/related`: a GML
+    part describing the grid, then the pixels. Five of the six services in the
+    registry hand back a bare GeoTIFF for `FORMAT=image/tiff`; Sachsen-Anhalt
+    packages it, and is entitled to.
+
+    Found by the TIFF magic rather than by parsing MIME headers, because the
+    part boundary and the header casing vary between servers while `II*\0` and
+    `MM\0*` do not.
+    """
+    if data[:2] in (b"II", b"MM"):
+        return data
+    little = data.find(b"II*\x00")
+    big = data.find(b"MM\x00*")
+    starts = [i for i in (little, big) if i > 0]
+    if not starts:
+        return data
+    return data[min(starts) :]
 
 
 def _directory(data: bytes, end: str) -> dict[int, _Field]:
@@ -136,6 +162,8 @@ def _array(data: bytes, end: str, fields: dict[int, _Field], tag: int) -> list[i
 def _strips(
     data: bytes, end: str, fields: dict[int, _Field], width: int, height: int, bits: int
 ) -> bytes:
+    if _TILE_OFFSETS in fields:
+        return _tiles(data, end, fields, width, height, bits)
     compression = _one(fields, _COMPRESSION, 1)
     if compression not in (1, 5):
         raise TiffError(f"compression {compression} is not supported")
@@ -145,12 +173,53 @@ def _strips(
     for offset, length in zip(offsets, counts, strict=True):
         chunk = data[offset : offset + length]
         if compression == 5:
-            chunk = _lzw(chunk)
-            chunk = _undo_predictor(
-                chunk, end, _one(fields, _PREDICTOR, 1), width, bits
-            )
+            chunk = lzw(chunk)
+            chunk = undo_predictor(chunk, end, width, _one(fields, _PREDICTOR, 1), bits)
         out += chunk
     return bytes(out)
+
+
+def _tiles(
+    data: bytes, end: str, fields: dict[int, _Field], width: int, height: int, bits: int
+) -> bytes:
+    """Reassemble a tiled image into rows.
+
+    A tiled TIFF stores square blocks rather than horizontal strips, and pads
+    each one out to a whole tile — so the last column and the last row carry
+    pixels that are not in the image and must be dropped rather than shifted in.
+    Sachsen-Anhalt returns 128×128 tiles for a 200×200 window: four tiles, of
+    which more than half is padding.
+
+    The same layout is what makes a Cloud-Optimised GeoTIFF, which the BKG's own
+    documentation says these products may be delivered as — so this is the
+    format to expect more of, not less.
+    """
+    compression = _one(fields, _COMPRESSION, 1)
+    if compression not in (1, 5):
+        raise TiffError(f"compression {compression} is not supported")
+    tile_w = _one(fields, _TILE_WIDTH)
+    tile_h = _one(fields, _TILE_LENGTH)
+    across = (width + tile_w - 1) // tile_w
+    per_sample = bits // 8
+
+    offsets = _array(data, end, fields, _TILE_OFFSETS)
+    counts = _array(data, end, fields, _TILE_BYTES)
+    rows: list[bytearray] = [bytearray(width * per_sample) for _ in range(height)]
+    for index, (offset, length) in enumerate(zip(offsets, counts, strict=True)):
+        chunk = data[offset : offset + length]
+        if compression == 5:
+            chunk = lzw(chunk)
+            chunk = undo_predictor(chunk, end, tile_w, _one(fields, _PREDICTOR, 1), bits)
+        left = (index % across) * tile_w
+        top = (index // across) * tile_h
+        for line in range(tile_h):
+            y = top + line
+            if y >= height:
+                break
+            keep = min(tile_w, width - left) * per_sample
+            start = line * tile_w * per_sample
+            rows[y][left * per_sample : left * per_sample + keep] = chunk[start : start + keep]
+    return b"".join(bytes(r) for r in rows)
 
 
 def _to_metres(raw: bytes, end: str, bits: int, sample_format: int) -> np.ndarray:
@@ -171,97 +240,6 @@ def _to_metres(raw: bytes, end: str, bits: int, sample_format: int) -> np.ndarra
     if sample_format == 2 and bits == 16:
         return np.frombuffer(raw, dtype=np.dtype(end + "i2"))
     raise TiffError(f"{bits}-bit sample format {sample_format} is not supported")
-
-
-def _lzw(data: bytes) -> bytes:
-    """TIFF's LZW variant: 9-bit codes growing to 12, with the early change.
-
-    "Early change" is the part everybody gets wrong: the width grows one code
-    *before* the table is actually full, so 511 and not 512 is where nine bits
-    become ten. Getting it wrong decodes the first strip and garbles the rest.
-    """
-    clear, end_of_information, first = 256, 257, 258
-    table: list[bytes] = [bytes([i]) for i in range(256)] + [b"", b""]
-    out = bytearray()
-    previous = b""
-    width, value, bits_held = 9, 0, 0
-
-    for byte in data:
-        value = (value << 8) | byte
-        bits_held += 8
-        while bits_held >= width:
-            code = (value >> (bits_held - width)) & ((1 << width) - 1)
-            bits_held -= width
-            if code == end_of_information:
-                return bytes(out)
-            if code == clear:
-                table = table[:first]
-                width, previous = 9, b""
-                continue
-            if code < len(table):
-                entry = table[code]
-            elif code == len(table) and previous:
-                entry = previous + previous[:1]
-            else:
-                raise TiffError(f"LZW code {code} outside the table")
-            out += entry
-            if previous:
-                table.append(previous + entry[:1])
-            previous = entry
-            if len(table) + 1 >= (1 << width) and width < 12:
-                width += 1
-    return bytes(out)
-
-
-def _undo_predictor(chunk: bytes, end: str, predictor: int, width: int, bits: int) -> bytes:
-    """Reverse whatever differencing the encoder applied before LZW.
-
-    There are two, they are not variations of each other, and using the wrong
-    one produces a raster rather than an error. Niedersachsen uses predictor 3
-    and Nordrhein-Westfalen none, on the same product from the same kind of
-    service.
-    """
-    if predictor == 1:
-        return chunk
-    if predictor == 2:
-        return _undo_horizontal(chunk, end, width, bits)
-    if predictor == 3:
-        return _undo_floating_point(chunk, end, width, bits)
-    raise TiffError(f"predictor {predictor} is not supported")
-
-
-def _undo_horizontal(chunk: bytes, end: str, width: int, bits: int) -> bytes:
-    """Predictor 2: each sample is stored as its difference from the one left of it."""
-    dtype = np.dtype(end + ("u2" if bits == 16 else "u4" if bits == 32 else "u1"))
-    flat = np.frombuffer(chunk, dtype=dtype)
-    usable = (flat.size // width) * width
-    grid = flat[:usable].reshape(-1, width).copy()
-    np.cumsum(grid, axis=1, dtype=dtype, out=grid)
-    return bytes(grid.tobytes() + flat[usable:].tobytes())
-
-
-def _undo_floating_point(chunk: bytes, end: str, width: int, bits: int) -> bytes:
-    """Predictor 3: byte-plane separation, then differencing across the bytes.
-
-    A float's exponent barely changes between neighbouring ground heights while
-    its mantissa changes completely, so the encoder splits each row into byte
-    planes — every sample's most significant byte first, then the next — and
-    differences *those*. It compresses far better and it is a different
-    reconstruction: undo the byte-wise sum along the row, then reassemble each
-    sample from one byte out of each plane, in the file's own byte order.
-    """
-    per_sample = bits // 8
-    row_bytes = width * per_sample
-    flat = np.frombuffer(chunk, dtype=np.uint8)
-    rows = flat.size // row_bytes
-    grid = flat[: rows * row_bytes].reshape(rows, row_bytes).copy()
-    np.cumsum(grid, axis=1, dtype=np.uint8, out=grid)
-
-    planes = grid.reshape(rows, per_sample, width)
-    # Plane 0 holds the most significant byte. A little-endian file wants it
-    # last in each sample, a big-endian one first.
-    ordered = planes[:, ::-1, :] if end == "<" else planes
-    return bytes(np.ascontiguousarray(ordered.transpose(0, 2, 1)).tobytes())
 
 
 __all__ = ["NO_DATA", "Raster", "TiffError", "read_raster"]
