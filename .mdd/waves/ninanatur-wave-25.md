@@ -1,19 +1,22 @@
 ---
-id: ninanatur-wave-20
-title: "Wave 20: One plan, fewest possible parcels"
+id: ninanatur-wave-25
+title: "Wave 25: One plan, fewest possible parcels"
 initiative: ninanatur
 initiative_version: 2
 status: planned
 depends_on: ninanatur-wave-12
 demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
 created: 2026-08-27
-hash: c663fa57
+hash: 95abe82b
 ---
 
-# Wave 20 — One plan, fewest possible parcels
+# Wave 25 — One plan, fewest possible parcels
 
-*Moved from Wave 6, then to Wave 13 when the drawing rework took Wave 10
-and further waves were reserved between.*
+*Moved from Wave 6, then to Wave 13 when the drawing rework took Wave 10, then
+to Wave 20, and to Wave 25 on 2026-09-05 to leave room for waves that are not
+planned yet. Ordering is the last step of the loop and has moved every time the
+garden itself turned out to be worth more work — which is the right direction
+for it to move.*
 
 *Originally: Ordering plants is the last step of the loop, and four waves
 of making the garden itself worth planning come first.*

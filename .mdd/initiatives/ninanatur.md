@@ -200,4 +200,5 @@ data would be convenient.
 | Wave 16 | waves/ninanatur-wave-16.md | The shade switch: sun and shade hours as a map over the garden | complete |
 | Wave 17 | waves/ninanatur-wave-17.md | The ground is not flat: a height profile from public elevation data | planned |
 | Wave 18 | waves/ninanatur-wave-18.md | A place to look before it is live: a real dev environment on its own port | planned |
-| Wave 20 | waves/ninanatur-wave-20.md | A finished plan split across as few nurseries as possible | planned |
+| Wave 19 | waves/ninanatur-wave-19.md | Houses that measure themselves: heights and roof shapes from surveyed models | planned |
+| Wave 25 | waves/ninanatur-wave-25.md | A finished plan split across as few nurseries as possible | planned |
