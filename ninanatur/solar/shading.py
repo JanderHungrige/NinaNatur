@@ -39,6 +39,11 @@ class Obstacle:
 
     footprint: list[tuple[float, float]]
     height: float
+    #: The ground this thing stands on, in the same datum as the terrain. Zero
+    #: means the old flat world, and every shadow in this project was computed
+    #: on a plane at zero until Wave 17. A house whose base is three metres
+    #: above the garden casts as though it were three metres taller.
+    base: float = 0.0
     #: What fraction of the sun passes through. Zero for anything built — a wall
     #: is a wall. A crown is not: a broadleaf in leaf passes about a fifth, a
     #: spruce almost nothing, and bare winter branches most of it.
@@ -62,6 +67,11 @@ class Obstacle:
             return self.transmission
         in_leaf = FIRST_LEAF_MONTH <= month <= LAST_LEAF_MONTH
         return self.transmission if in_leaf else self.bare_transmission
+
+    @property
+    def top(self) -> float:
+        """How high the top of this thing is, absolutely."""
+        return self.base + self.height
 
     @property
     def centre(self) -> tuple[float, float]:

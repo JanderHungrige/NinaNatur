@@ -18,6 +18,7 @@ from ninanatur.garden.lightgrid import load_grid, signature_of
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.store import load_garden
+from ninanatur.garden.terrain_sync import ensure_terrain
 from ninanatur.solar.day import MONTHS, shadow_day
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["light"])
@@ -104,8 +105,15 @@ def rebuild_light_map(
     Belt as well as braces. The signature should catch every change that moves a
     shadow, and if it ever does not, this is how somebody fixes their own map
     without knowing why it was wrong.
+
+    It is also where a garden gets its ground for the first time. A state survey
+    takes seconds to answer, which is too long for a page load and perfectly
+    reasonable for a button — and afterwards every recompute reads it for free.
     """
     garden = require_garden(conn, token)
+    # The one place the ground is fetched. A survey answers in seconds, which is
+    # too long for a page load and fine for a button somebody pressed.
+    ensure_terrain(conn, load_garden(conn, garden.garden_id))
     recompute_light(conn, garden.garden_id)
     return _read(conn, garden.garden_id)
 

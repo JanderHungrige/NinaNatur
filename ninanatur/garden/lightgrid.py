@@ -16,8 +16,11 @@ import json
 import sqlite3
 from dataclasses import dataclass, field
 
+from ninanatur.garden.ground import height_at, lowest_ground, standing_on
 from ninanatur.garden.models import Garden
-from ninanatur.solar.field import ShadowField, shadow_field
+from ninanatur.garden.slopes import ring_for, slope_at
+from ninanatur.geo.terrain import TerrainWindow
+from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle
 
@@ -81,6 +84,35 @@ class LightGrid:
         return sum(inside) / len(inside) if inside else None
 
 
+def _at_cell(
+    field_of: ShadowField,
+    grid: LightGrid,
+    ground: TerrainWindow | None,
+    horizon: list[float] | None,
+    floor: float,
+    col: int,
+    row: int,
+    skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]],
+) -> tuple[float, float]:
+    """One cell's morning and afternoon, at its own height and under its own sky.
+
+    The ring is built per cell rather than per garden because the near field is
+    the slope and the slope is a property of the cell. Without terrain there is
+    no slope to add, so the garden's ring is used unchanged — and without a ring
+    either, the whole question disappears.
+    """
+    x, y = grid.centre_of(col, row)
+    z = height_at(ground, x, y, floor)
+    ring = (
+        tuple(horizon or ())
+        if ground is None
+        else ring_for(horizon, *slope_at(ground, x, y))
+    )
+    if ring not in skies:
+        skies[ring] = field_of.moments_under(ring or None)
+    return field_of.halves_at(x, y, z, under=skies[ring])
+
+
 def cell_size_for(width_m: float, depth_m: float) -> float:
     """The finest cell that keeps the grid under `MAX_CELLS`.
 
@@ -115,8 +147,22 @@ def compute_grid(
     obstacles: list[Obstacle],
     year: int = 2026,
     height_above_ground: float = 0.0,
+    ground: TerrainWindow | None = None,
+    horizon: list[float] | None = None,
 ) -> LightGrid | None:
-    """Sun hours for every cell of the garden. None when nothing is drawn yet."""
+    """Sun hours for every cell of the garden. None when nothing is drawn yet.
+
+    `ground` is the terrain under the garden, or None for the flat world every
+    shadow in this project was computed in until Wave 17. With it, each cell is
+    asked about at its own height and each obstacle stands on the ground beneath
+    its footprint — so a neighbour's house uphill shades more than one on the
+    level, and one downhill shades less.
+
+    `horizon` is the ring from `geo/horizon.py`: what the land does beyond the
+    plot. In flat country it changes nothing, because the ring sits below the
+    5° altitude the model already stops counting at. In a valley it decides
+    whether the garden sees December at all.
+    """
     box = extent_of(garden)
     if box is None:
         return None
@@ -127,17 +173,22 @@ def compute_grid(
     cols = max(1, int(width / cell) + 1)
     rows = max(1, int(depth / cell) + 1)
 
+    standing = standing_on(obstacles, ground)
+    floor = lowest_ground(ground, min_x, min_y, cell, cols, rows)
     field_of: ShadowField = shadow_field(
         Location(latitude=garden.latitude, longitude=garden.longitude),
-        obstacles,
+        standing,
         year=year,
         height_above_ground=height_above_ground,
+        ground_floor=floor,
+        horizon=horizon,
     )
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
+    skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]] = {}
     halves = [
-        field_of.halves_at(*grid.centre_of(col, row))
+        _at_cell(field_of, grid, ground, horizon, floor, col, row, skies)
         for row in range(rows)
         for col in range(cols)
     ]
