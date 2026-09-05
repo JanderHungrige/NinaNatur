@@ -142,6 +142,19 @@ def _ground_under(conn: sqlite3.Connection, garden: Garden) -> TerrainWindow | N
     return load_window(conn, cache_key(anchor))
 
 
+def _horizon_around(conn: sqlite3.Connection, garden: Garden) -> list[float] | None:
+    """The stored horizon ring for this location, or None.
+
+    Read rather than fetched, for the same reason the window is. None and a flat
+    ring are different things and only the ring is stored — a place nobody has
+    measured is not the same as a place that turned out to be flat.
+    """
+    from ninanatur.geo.terrain_store import cache_key, load_horizon
+
+    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
+    return load_horizon(conn, cache_key(anchor))
+
+
 def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     # Imported here rather than at module level: `store` imports this module, so
     # the other direction can only be a deferred one.
@@ -168,6 +181,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     planted = _planted_obstacles(conn, garden)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
     ground = _ground_under(conn, garden)
+    horizon = _horizon_around(conn, garden)
 
     # Everything that casts a shadow, including what grows in the beds. The
     # exclusion of a bed from its own plantings is gone — see
@@ -178,7 +192,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     # their own field because the height changes every shadow polygon, and they
     # are rare enough that computing one extra grid per distinct height is
     # cheaper than the alternative of one field per point.
-    grid = compute_grid(garden, everything, ground=ground)
+    grid = compute_grid(garden, everything, ground=ground, horizon=horizon)
     if grid is not None:
         save_grid(conn, garden_id, grid, signature_of(garden))
 

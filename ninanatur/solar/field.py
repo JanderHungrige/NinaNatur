@@ -18,12 +18,13 @@ ground; after that a point costs a run of rectangle comparisons.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from ninanatur.garden.footprint import covers
 from ninanatur.solar.light import MINUTE_STEP, _season_days
 from ninanatur.solar.position import Location, SunPosition, sun_position
+from ninanatur.solar.reach import near_edge
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_polygon
 
 
@@ -98,7 +99,7 @@ class ShadowAt:
         """
         ax = x * self.cos_azimuth - y * self.sin_azimuth
         ay = x * self.sin_azimuth + y * self.cos_azimuth
-        near = _near_edge(self.aligned, ax, ay)
+        near = near_edge(self.aligned, ax, ay)
         if near is None:
             return False
         return (self.top - z) / self.tan_altitude >= near
@@ -116,13 +117,52 @@ class ShadowField:
     #: Days sampled, for turning lit samples into a daily mean.
     days: int
     year: int
+    #: Each moment's sun azimuth and altitude, in step with `moments`. Kept so a
+    #: horizon can be consulted without the sun being recomputed — the whole
+    #: reason this field exists is that sun positions are expensive.
+    sun: list[tuple[float, float]] = field(default_factory=list)
+    #: How high the land stands in each degree of azimuth, for the garden as a
+    #: whole. Five kilometres of terrain does not change across twenty metres of
+    #: plot, so this is measured once — but it is *combined* with each cell's own
+    #: slope before being consulted, which is why the query takes a ring rather
+    #: than reading this one.
+    horizon: list[float] = field(default_factory=list)
 
-    def sun_hours_at(self, x: float, y: float, z: float = 0.0) -> float:
+    def sun_hours_at(
+        self, x: float, y: float, z: float = 0.0, ring: list[float] | None = None
+    ) -> float:
         """Mean daily hours of direct sun at this point."""
-        morning, afternoon = self.halves_at(x, y, z)
+        morning, afternoon = self.halves_at(x, y, z, ring)
         return morning + afternoon
 
-    def halves_at(self, x: float, y: float, z: float = 0.0) -> tuple[float, float]:
+    def moments_under(
+        self, ring: tuple[float, ...] | None
+    ) -> list[tuple[list[ShadowAt], bool]]:
+        """The moments the sun actually clears the land in, for one sky.
+
+        Dropping them here rather than testing per point is what keeps the ring
+        from costing anything: a garden in a valley ends up iterating *fewer*
+        moments than a flat one, so the feature with the largest effect in hill
+        country is also the only one in this model that makes it faster.
+        """
+        pairs = list(zip(self.moments, self.halves, strict=True))
+        if not ring:
+            return pairs
+        return [
+            pair
+            for index, pair in enumerate(pairs)
+            if index >= len(self.sun)
+            or self.sun[index][1] >= ring[int(round(self.sun[index][0])) % len(ring)]
+        ]
+
+    def halves_at(
+        self,
+        x: float,
+        y: float,
+        z: float = 0.0,
+        ring: list[float] | None = None,
+        under: list[tuple[list[ShadowAt], bool]] | None = None,
+    ) -> tuple[float, float]:
         """Mean daily sun hours before and after the sun crosses due south.
 
         Due south rather than a computed solar noon: in the northern hemisphere
@@ -133,12 +173,20 @@ class ShadowField:
         `z` is the ground this point stands on. Zero is the flat world every
         shadow in this project was computed in until Wave 17: a point uphill of
         a house sees over it, and a point below it does not.
+
+        `ring` is how high the land stands in each degree of azimuth as seen
+        from **this** point — the hills beyond the plot and the slope underfoot,
+        whichever blocks the sun first. `under` is the same thing already
+        applied, for a caller with many points sharing one sky; on a uniform
+        hillside that is every cell in the garden.
         """
         if self.days == 0:
             return (0.0, 0.0)
         before = 0.0
         after = 0.0
-        for moment, morning in zip(self.moments, self.halves, strict=True):
+        if under is None:
+            under = self.moments_under(tuple(ring) if ring else None)
+        for moment, morning in under:
             # Multiplied, not counted: two crowns over one spot each take their
             # share, and a wall takes all of it whatever else is in the way.
             through = 1.0
@@ -157,32 +205,6 @@ class ShadowField:
         return (before * hours, after * hours)
 
 
-def _near_edge(
-    aligned: tuple[tuple[float, float], ...], x: float, y: float
-) -> float | None:
-    """How far the shadow must reach from the footprint to arrive at (x, y).
-
-    Both coordinates are in the aligned frame, where the shadow runs along -y,
-    so the footprint's near edge above the point is the distance the shadow has
-    to cover. Returns None when the line through the point misses the footprint
-    entirely, or when the point is beyond its far edge — sunward of the thing
-    casting, where no shadow of it ever falls.
-    """
-    lo: float | None = None
-    hi: float | None = None
-    n = len(aligned)
-    for i in range(n):
-        ax, ay = aligned[i]
-        bx, by = aligned[(i + 1) % n]
-        if (ax > x) == (bx > x):
-            continue
-        cut = ay + (by - ay) * (x - ax) / (bx - ax)
-        lo = cut if lo is None or cut < lo else lo
-        hi = cut if hi is None or cut > hi else hi
-    if lo is None or hi is None or y > hi:
-        return None
-    return lo - y
-
 
 def shadow_field(
     location: Location,
@@ -190,6 +212,7 @@ def shadow_field(
     year: int = 2026,
     height_above_ground: float = 0.0,
     ground_floor: float = 0.0,
+    horizon: list[float] | None = None,
 ) -> ShadowField:
     """Build the season's shadows for one garden.
 
@@ -221,6 +244,7 @@ def shadow_field(
 
     moments: list[list[ShadowAt]] = []
     halves: list[bool] = []
+    suns: list[tuple[float, float]] = []
     for day in days:
         moment = day
         end_of_day = day + timedelta(days=1)
@@ -234,8 +258,16 @@ def shadow_field(
                 continue
             moments.append([_shadow_at(o, sun, day.month) for o in lifted])
             halves.append(sun.azimuth < 180.0)
+            suns.append((sun.azimuth, sun.altitude))
 
-    return ShadowField(moments=moments, halves=halves, days=len(days), year=year)
+    return ShadowField(
+        moments=moments,
+        halves=halves,
+        days=len(days),
+        year=year,
+        sun=suns,
+        horizon=list(horizon or []),
+    )
 
 
 def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:
