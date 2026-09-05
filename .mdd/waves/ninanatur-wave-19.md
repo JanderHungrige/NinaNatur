@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-18
 demo_state: "Ein Haus in der Nachbarschaft trägt seine gemessene Höhe und seine wirkliche Dachform, aus dem amtlichen Gebäudemodell statt aus drei Metern pro Geschoss — und der Plan sagt bei jedem Objekt, ob die Höhe gemessen, geschätzt oder von Hand eingetragen ist. Wer es besser weiß, überschreibt es, und das bleibt so."
 created: 2026-09-05
-hash: 85126275
+hash: 03a63472
 ---
 
 # Wave 19: Houses that measure themselves
@@ -60,16 +60,36 @@ The roof shapes in that tile:
 |---|---|---|---|
 | 1000 | Flachdach | 35.1 % | `flat` |
 | 3100 | Satteldach | 22.4 % | `gable` |
-| 5000 | Mischform | 19.9 % | **`unknown`** |
+| 5000 | Mischform | 19.9 % | **`mix`** — new |
 | 2100 | Pultdach | 17.3 % | `pent` |
-| 9999 | Sonstiges | 4.5 % | **`unknown`** |
+| 9999 | Sonstiges | 4.5 % | **`other`** — new |
 | 3200 | Walmdach | 0.8 % | `hip` |
 | 3500 | Zeltdach | 1 building | `hip` |
 
-**75.6 % land on one of the four shapes Wave 16 already models; 24.4 % become
-`unknown`.** That is not a defect. `unknown` keeps the whole height in
-`RISE_KEPT`, which is the conservative direction — a garden told it has more sun
-than it has is the error that kills a plant.
+**The quarter that is not one of the four shapes does not become `unknown`.**
+`unknown` means nobody has said. Mischform and Sonstiges are the opposite: a
+surveyor looked, and this is the answer. Folding a measurement into the word for
+an absence would throw away the one thing that distinguishes them, in a project
+that carries provenance on every trait value it holds.
+
+So the enum gains two members:
+
+| | Rise kept | Why |
+|---|---|---|
+| `mix` | **0.8** | A mixed roof's shadow is cast by its tallest section, so more of the rise survives than on a pure gable — but it is not a flat block either |
+| `other` | **1.0** | The AdV bucket holds Sheddach, Bogendach, Kuppeldach, Turmdach: shapes whose bulk sits high. Full rise is both conservative and roughly right for them |
+| `unknown` | 1.0 | unchanged — and now genuinely means *unknown* |
+
+`other` and `unknown` share a number and not a meaning. The number may diverge
+later; the label already differs on the page, which is the point. These are
+ratios of a shape rather than measurements of a building, and they belong beside
+the existing four in `roofs.py` where somebody who disagrees has one place to
+argue.
+
+**Both also join the manual picker.** A user looking at a building the survey
+calls Mischform and wanting to correct it needs the word to correct it *to* —
+and somebody with a genuinely mixed roof of their own has had to lie to the
+picker until now.
 
 Heights in the same tile: median 14.2 m, 10th percentile 3.3 m, 90th 20.4 m.
 Stated accuracy **± 1 m**, with "grobe Abweichungen" possible on complicated
@@ -171,8 +191,9 @@ behaviour and remains correct for states with no model.
 
 ### 2. the-roof-it-actually-has
 
-The AdV code list onto `Roof`, per the table above, with `Mischform` and
-`Sonstiges` going to `unknown` rather than to a guess.
+The AdV code list onto `Roof`, per the table above — including the two new
+members, `mix` and `other`, which is a change to `roofs.py`, to the stored enum,
+and to the manual picker rather than a mapping decision alone.
 
 **And the eaves, if the geometry gives them cheaply.** `eaves_m` is currently a
 default fraction of the height. In LoD2 the eaves are where the wall surfaces
@@ -221,8 +242,10 @@ in Wave 16.
 - **The model is derived from flights of 2019–2025.** A house built in 2026 is
   not in it, a demolished one lingers until the next derivation, and
   `Grundrissaktualitaet` per building is the honest thing to show.
-- **Mischform is a fifth of the buildings** — known to be complicated, unknown in
-  shape, and treated as full height.
+- **Mischform is a fifth of the buildings.** Known to be complicated, and 0.8 of
+  its rise is a guess about an average of shapes rather than a shape. It is the
+  weakest number in the roof model and the one most worth revisiting once there
+  is anything to check it against.
 - **LoD2 is buildings, not garden structures.** A pergola, a polytunnel or a big
   shed may or may not be in the model, depending on whether it is in ALKIS.
 - **A detected tree has no species**, and species is what the canopy model wants.
