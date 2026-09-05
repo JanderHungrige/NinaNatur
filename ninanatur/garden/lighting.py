@@ -126,7 +126,7 @@ def _woody_heights(
     return {tid: canopy_of(heights.get(tid), forms.get(tid)) for tid in unique}
 
 
-def _ground_under(conn: sqlite3.Connection, garden: object) -> TerrainWindow | None:
+def _ground_under(conn: sqlite3.Connection, garden: Garden) -> TerrainWindow | None:
     """The stored terrain for this garden's location, or None.
 
     Read, never fetched. A recompute happens while somebody is waiting for the
