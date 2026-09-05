@@ -147,13 +147,44 @@ def _centre_of(element: dict[str, Any], outline: list[LatLon]) -> LatLon | None:
     )
 
 
+#: ISO 3166-2 codes for the sixteen Bundesländer.
+#:
+#: Needed because Nominatim reports a `state` for thirteen of them and **not for
+#: the three city-states**: a point in Berlin comes back with `city: Berlin` and
+#: `ISO3166-2-lvl4: DE-BE`, and no `state` at all. That blind spot has been here
+#: since Wave 8 and only showed up when Berlin got a terrain service — Wave 8's
+#: registry happens to have no entry for any city-state, so nothing failed
+#: visibly.
+#:
+#: The code is the better key anyway: it is unambiguous, and it does not depend
+#: on which spelling Nominatim returns this year.
+ISO_STATES: dict[str, str] = {
+    "DE-BW": "Baden-Württemberg",
+    "DE-BY": "Bayern",
+    "DE-BE": "Berlin",
+    "DE-BB": "Brandenburg",
+    "DE-HB": "Bremen",
+    "DE-HH": "Hamburg",
+    "DE-HE": "Hessen",
+    "DE-MV": "Mecklenburg-Vorpommern",
+    "DE-NI": "Niedersachsen",
+    "DE-NW": "Nordrhein-Westfalen",
+    "DE-RP": "Rheinland-Pfalz",
+    "DE-SL": "Saarland",
+    "DE-SN": "Sachsen",
+    "DE-ST": "Sachsen-Anhalt",
+    "DE-SH": "Schleswig-Holstein",
+    "DE-TH": "Thüringen",
+}
+
+
 def state_at(lat: float, lon: float, *, fetch: Fetch = get_json) -> str | None:
     """Which Bundesland a point is in, or None.
 
-    Needed because orthophoto services are per state, each with its own licence
-    and required credit. A point whose state cannot be determined gets no
-    imagery rather than a neighbour's — using one state's imagery over another's
-    ground is using it outside its licence area.
+    Needed because orthophoto and terrain services are per state, each with its
+    own licence and required credit. A point whose state cannot be determined
+    gets neither rather than a neighbour's — using one state's data over
+    another's ground is using it outside its licence area.
     """
     raw = fetch(
         NOMINATIM_REVERSE,
@@ -166,7 +197,11 @@ def state_at(lat: float, lon: float, *, fetch: Fetch = get_json) -> str | None:
     if not isinstance(address, dict):
         return None
     state = address.get("state")
-    return str(state) if state else None
+    if state:
+        return str(state)
+    # A city-state. The ISO code is the only field that names it.
+    iso = address.get("ISO3166-2-lvl4")
+    return ISO_STATES.get(str(iso)) if iso else None
 
 
 #: Rough carriageway widths in metres, by `highway` value.
