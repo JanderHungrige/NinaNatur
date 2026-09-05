@@ -10,6 +10,7 @@ storage, and far fewer requests against services nobody is paying us to use.
 """
 from __future__ import annotations
 
+import json
 import math
 import sqlite3
 import zlib
@@ -110,4 +111,39 @@ def load_window(conn: sqlite3.Connection, key: str) -> TerrainWindow | None:
     )
 
 
-__all__ = ["KEY_GRID_M", "NO_HEIGHT", "cache_key", "load_window", "save_window"]
+def save_horizon(
+    conn: sqlite3.Connection, key: str, angles: list[float], source: str
+) -> None:
+    """Keep the ring. Two kilobytes for five kilometres of terrain."""
+    conn.execute(
+        "INSERT INTO terrain_horizon (place_key, angles, source, fetched_at)"
+        " VALUES (?, ?, ?, ?)"
+        " ON CONFLICT (place_key) DO UPDATE SET angles = excluded.angles,"
+        " source = excluded.source, fetched_at = excluded.fetched_at",
+        (key, json.dumps([round(a, 2) for a in angles]), source, now()),
+    )
+    conn.commit()
+
+
+def load_horizon(conn: sqlite3.Connection, key: str) -> list[float] | None:
+    """The stored ring, or None where the far field was never asked about.
+
+    None rather than a flat ring: a place whose horizon is genuinely flat and a
+    place nobody has measured are different states, and only one of them is
+    worth fetching again.
+    """
+    row = conn.execute(
+        "SELECT angles FROM terrain_horizon WHERE place_key = ?", (key,)
+    ).fetchone()
+    return None if row is None else [float(a) for a in json.loads(row["angles"])]
+
+
+__all__ = [
+    "KEY_GRID_M",
+    "NO_HEIGHT",
+    "cache_key",
+    "load_horizon",
+    "load_window",
+    "save_horizon",
+    "save_window",
+]

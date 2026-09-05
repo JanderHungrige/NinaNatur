@@ -173,6 +173,21 @@ CREATE TABLE IF NOT EXISTS terrain_window (
     fetched_at      TEXT    NOT NULL
 );
 
+-- How high the land stands around a place, one entry per degree of azimuth.
+--
+-- Its own table rather than a column on terrain_window: the two are fetched
+-- separately, at different scales, and either can exist without the other. A
+-- shared row would mean saving one silently wiping the other.
+--
+-- 360 numbers, about two kilobytes, from five kilometres of terrain that is
+-- measured and thrown away.
+CREATE TABLE IF NOT EXISTS terrain_horizon (
+    place_key  TEXT PRIMARY KEY,
+    angles     TEXT NOT NULL,
+    source     TEXT NOT NULL,
+    fetched_at TEXT NOT NULL
+);
+
 -- What the gardener saw, as opposed to what the catalogue says.
 --
 -- Superseded in Wave 15 and kept empty rather than dropped.

@@ -143,7 +143,7 @@ def _into_garden_frame(
     half = int(WINDOW_M / cell)
     corner_e, corner_n = east - FETCH_M, north + FETCH_M
 
-    origin, per_x, per_y = _frame_map(anchor, zone)
+    origin, per_x, per_y = frame_map(anchor, zone)
     cols = rows = 2 * half
     heights: list[float] = []
     for row in range(rows):
@@ -173,7 +173,7 @@ def _into_garden_frame(
     )
 
 
-def _frame_map(
+def frame_map(
     anchor: LatLon, zone: int
 ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
     """Where the garden's origin and its two axes land in UTM.
@@ -196,4 +196,12 @@ def _frame_map(
     )
 
 
-__all__ = ["FETCH_M", "WINDOW_M", "Fetch", "TerrainWindow", "fetch_window", "terrain_for"]
+__all__ = [
+    "FETCH_M",
+    "WINDOW_M",
+    "Fetch",
+    "TerrainWindow",
+    "fetch_window",
+    "frame_map",
+    "terrain_for",
+]
