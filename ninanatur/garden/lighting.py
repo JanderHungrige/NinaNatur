@@ -8,6 +8,11 @@ from __future__ import annotations
 
 import sqlite3
 
+from ninanatur.garden.canopies import (
+    FIRST_LEAF_MONTH,
+    deciduousness_of,
+    transmission,
+)
 from ninanatur.garden.canopy import Canopy, canopy_of, shades
 from ninanatur.garden.elements import now as _now
 from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
@@ -66,6 +71,10 @@ def _planted_obstacles(
                 if planting.x is not None and planting.y is not None
                 else centroid
             )
+            # A crown, not a wall. What it passes depends on its leaves and on
+            # the month — see `canopies.py` for where the numbers come from and
+            # what is assumed where the catalogue says nothing.
+            leaves = deciduousness_of(conn, planting.taxon_id)
             obstacles.append(
                 (
                     bed.bed_id,
@@ -76,6 +85,12 @@ def _planted_obstacles(
                             rotation=0.0, points=None,
                         ),
                         height=canopy.height_m,
+                        transmission=transmission(leaves, FIRST_LEAF_MONTH),
+                        bare_transmission=(
+                            None
+                            if leaves in ("evergreen", "variable")
+                            else transmission(leaves, 1)
+                        ),
                     ),
                 )
             )

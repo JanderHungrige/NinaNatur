@@ -1135,6 +1135,20 @@
             "title": "Min Y",
             "type": "number"
           },
+          "misplaced": {
+            "items": {
+              "$ref": "#/components/schemas/MisplacedOut"
+            },
+            "title": "Misplaced",
+            "type": "array"
+          },
+          "morning": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Morning",
+            "type": "array"
+          },
           "rows": {
             "title": "Rows",
             "type": "integer"
@@ -1153,7 +1167,9 @@
           "hours",
           "max_hours",
           "computed_at",
-          "stale"
+          "stale",
+          "morning",
+          "misplaced"
         ],
         "title": "LightMap",
         "type": "object"
@@ -1202,6 +1218,55 @@
           "outline"
         ],
         "title": "MapSelection",
+        "type": "object"
+      },
+      "MisplacedOut": {
+        "description": "A planting standing in light it did not ask for.\n\nA warning, never a refusal: a gardener may know something the model does\nnot \u2014 a cultivar bred for shade, a wall that throws light back, or simply\nthat they want it there.",
+        "properties": {
+          "bed_id": {
+            "title": "Bed Id",
+            "type": "integer"
+          },
+          "gets": {
+            "title": "Gets",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planting_id": {
+            "title": "Planting Id",
+            "type": "integer"
+          },
+          "problem": {
+            "title": "Problem",
+            "type": "string"
+          },
+          "sun_hours": {
+            "title": "Sun Hours",
+            "type": "number"
+          },
+          "taxon_id": {
+            "title": "Taxon Id",
+            "type": "integer"
+          },
+          "wants": {
+            "title": "Wants",
+            "type": "number"
+          }
+        },
+        "required": [
+          "planting_id",
+          "bed_id",
+          "taxon_id",
+          "name",
+          "wants",
+          "gets",
+          "sun_hours",
+          "problem"
+        ],
+        "title": "MisplacedOut",
         "type": "object"
       },
       "MonthOut": {

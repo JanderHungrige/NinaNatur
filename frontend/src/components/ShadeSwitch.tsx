@@ -11,6 +11,14 @@ interface Props {
   busy: boolean;
 }
 
+/** What share of the garden's sun falls before the sun crosses due south. */
+function morningShare(map: LightMap): number {
+  const total = map.hours.reduce((sum, h) => sum + h, 0);
+  if (total <= 0) return 0;
+  const morning = map.morning.reduce((sum, h) => sum + h, 0);
+  return Math.round((morning / total) * 100);
+}
+
 /** German short date from an ISO timestamp, or the raw string if it is not one. */
 function whenText(iso: string): string {
   const at = new Date(iso);
@@ -97,6 +105,39 @@ export function ShadeSwitch({
             Hellster Punkt im Garten: {map.max_hours.toFixed(1)} h am Tag —{' '}
             {bandFor(map.max_hours)}. Gemittelt über März bis Oktober.
           </p>
+
+          {/* Not a footnote. Afternoon sun is hotter and harsher, and a great
+              many species sold as Halbschatten want the morning specifically —
+              a total cannot say which four hours a spot gets. */}
+          {map.morning.length > 0 && (
+            <p className="hint">
+              Davon vormittags: {morningShare(map)} %. Vormittagssonne ist
+              milder — viele Halbschatten-Arten meinen genau die.
+            </p>
+          )}
+
+          {map.misplaced.length > 0 && (
+            <div className="shade-switch__warnings">
+              <h3>Steht im falschen Licht</h3>
+              <ul>
+                {map.misplaced.map((m) => (
+                  <li key={m.planting_id}>
+                    <strong>{m.name}</strong>{' '}
+                    {m.problem === 'too_dark'
+                      ? `steht zu dunkel: ${m.sun_hours} h dort, die Art will mehr.`
+                      : `steht zu hell: ${m.sun_hours} h dort, die Art will weniger.`}
+                  </li>
+                ))}
+              </ul>
+              {/* A warning, never a refusal. The gardener may know something
+                  the model does not — a cultivar bred for shade, a wall that
+                  throws light back, or simply that they want it there. */}
+              <p className="hint">
+                Ein Hinweis, kein Einwand. Wenn du es besser weißt, lass es
+                stehen.
+              </p>
+            </div>
+          )}
 
           <div className="shade-switch__actions">
             <span className="hint">

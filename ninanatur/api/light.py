@@ -16,6 +16,7 @@ from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.garden.lightgrid import load_grid, signature_of
 from ninanatur.garden.lighting import recompute_light
+from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.store import load_garden
 from ninanatur.solar.day import MONTHS, shadow_day
 
@@ -41,6 +42,30 @@ class LightMap(BaseModel):
     max_hours: float
     computed_at: str
     stale: bool
+    #: Of those hours, the ones before the sun crosses due south. Empty on a
+    #: grid computed before the split existed; the next rebuild fills it.
+    morning: list[float]
+    #: Plantings standing in light they did not ask for.
+    misplaced: list[MisplacedOut]
+
+
+class MisplacedOut(BaseModel):
+    """A planting standing in light it did not ask for.
+
+    A warning, never a refusal: a gardener may know something the model does
+    not — a cultivar bred for shade, a wall that throws light back, or simply
+    that they want it there.
+    """
+
+    planting_id: int
+    bed_id: int
+    taxon_id: int
+    name: str
+    wants: float
+    gets: float
+    sun_hours: float
+    #: 'too_dark' | 'too_bright'. Both happen; the second is the forgotten one.
+    problem: str
 
 
 class ShadowFrame(BaseModel):
@@ -119,6 +144,7 @@ def _read(conn: sqlite3.Connection, garden_id: int) -> LightMap | None:
     if stored is None:
         return None
     grid, signature, computed_at = stored
+    garden = load_garden(conn, garden_id)
     return LightMap(
         cell_m=grid.cell_m,
         min_x=grid.min_x,
@@ -127,8 +153,12 @@ def _read(conn: sqlite3.Connection, garden_id: int) -> LightMap | None:
         rows=grid.rows,
         hours=grid.hours,
         max_hours=max(grid.hours) if grid.hours else 0.0,
+        morning=grid.morning,
+        misplaced=[
+            MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)
+        ],
         computed_at=computed_at,
-        stale=signature != signature_of(load_garden(conn, garden_id)),
+        stale=signature != signature_of(garden),
     )
 
 

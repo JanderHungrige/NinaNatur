@@ -39,6 +39,29 @@ class Obstacle:
 
     footprint: list[tuple[float, float]]
     height: float
+    #: What fraction of the sun passes through. Zero for anything built — a wall
+    #: is a wall. A crown is not: a broadleaf in leaf passes about a fifth, a
+    #: spruce almost nothing, and bare winter branches most of it.
+    #:
+    #: In leaf, for a crown that has a season. `bare` is what it passes outside
+    #: one — None for anything that does not change, which is every built thing
+    #: and every conifer.
+    transmission: float = 0.0
+    bare_transmission: float | None = None
+
+    def transmission_in(self, month: int) -> float:
+        """What passes through in this month.
+
+        The one thing about a tree that changes with the calendar, and the
+        largest error the old model made: the light season starts on 1 March,
+        and a leafless oak was shading a garden exactly as hard as a wall.
+        """
+        from ninanatur.garden.canopies import FIRST_LEAF_MONTH, LAST_LEAF_MONTH
+
+        if self.bare_transmission is None:
+            return self.transmission
+        in_leaf = FIRST_LEAF_MONTH <= month <= LAST_LEAF_MONTH
+        return self.transmission if in_leaf else self.bare_transmission
 
     @property
     def centre(self) -> tuple[float, float]:

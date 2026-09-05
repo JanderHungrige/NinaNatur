@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ninanatur.garden.models import Garden
 from ninanatur.solar.field import ShadowField, shadow_field
@@ -42,6 +42,11 @@ class LightGrid:
     cols: int
     rows: int
     hours: list[float]
+    #: Of those hours, the ones before the sun crosses due south. Kept because
+    #: afternoon sun is hotter and harsher, and a great many species sold as
+    #: *Halbschatten* want the morning specifically — a total cannot say which
+    #: four hours a spot gets.
+    morning: list[float] = field(default_factory=list)
 
     def at(self, x: float, y: float) -> float | None:
         """The cell containing this point, or None outside the grid."""
@@ -122,7 +127,7 @@ def compute_grid(
     cols = max(1, int(width / cell) + 1)
     rows = max(1, int(depth / cell) + 1)
 
-    field: ShadowField = shadow_field(
+    field_of: ShadowField = shadow_field(
         Location(latitude=garden.latitude, longitude=garden.longitude),
         obstacles,
         year=year,
@@ -131,13 +136,15 @@ def compute_grid(
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
-    hours = [
-        round(field.sun_hours_at(*grid.centre_of(col, row)), 2)
+    halves = [
+        field_of.halves_at(*grid.centre_of(col, row))
         for row in range(rows)
         for col in range(cols)
     ]
     return LightGrid(
-        min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=hours
+        min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows,
+        hours=[round(a + b, 2) for a, b in halves],
+        morning=[round(a, 2) for a, _b in halves],
     )
 
 
@@ -180,13 +187,15 @@ def save_grid(
 
     conn.execute(
         "INSERT INTO light_grid (garden_id, cell_m, min_x, min_y, cols, rows,"
-        " hours, signature, computed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        " hours, morning, signature, computed_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         " ON CONFLICT (garden_id) DO UPDATE SET cell_m = excluded.cell_m,"
         " min_x = excluded.min_x, min_y = excluded.min_y, cols = excluded.cols,"
         " rows = excluded.rows, hours = excluded.hours,"
+        " morning = excluded.morning,"
         " signature = excluded.signature, computed_at = excluded.computed_at",
         (garden_id, grid.cell_m, grid.min_x, grid.min_y, grid.cols, grid.rows,
-         json.dumps(grid.hours), signature, now()),
+         json.dumps(grid.hours), json.dumps(grid.morning), signature, now()),
     )
     conn.commit()
 
@@ -196,7 +205,8 @@ def load_grid(
 ) -> tuple[LightGrid, str, str] | None:
     """The stored grid, its signature and when it was computed."""
     row = conn.execute(
-        "SELECT cell_m, min_x, min_y, cols, rows, hours, signature, computed_at"
+        "SELECT cell_m, min_x, min_y, cols, rows, hours, morning, signature,"
+        " computed_at"
         " FROM light_grid WHERE garden_id = ?",
         (garden_id,),
     ).fetchone()
@@ -206,5 +216,6 @@ def load_grid(
         min_x=float(row["min_x"]), min_y=float(row["min_y"]),
         cell_m=float(row["cell_m"]), cols=int(row["cols"]), rows=int(row["rows"]),
         hours=[float(v) for v in json.loads(row["hours"])],
+        morning=[float(v) for v in json.loads(row["morning"] or "[]")],
     )
     return grid, str(row["signature"]), str(row["computed_at"])

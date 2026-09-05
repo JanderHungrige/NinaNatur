@@ -48,6 +48,9 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # have always been treated: solid to the recorded height.
     ("element", "roof", "TEXT NOT NULL DEFAULT 'unknown'"),
     ("element", "eaves_m", "REAL"),
+    # Wave 16. Empty on an existing grid, which the reader treats as "not split
+    # yet" — the next recomputation fills it.
+    ("light_grid", "morning", "TEXT NOT NULL DEFAULT '[]'"),
 )
 
 

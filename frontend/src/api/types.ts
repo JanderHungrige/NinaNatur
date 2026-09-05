@@ -1199,6 +1199,10 @@ export interface components {
             min_x: number;
             /** Min Y */
             min_y: number;
+            /** Misplaced */
+            misplaced: components["schemas"]["MisplacedOut"][];
+            /** Morning */
+            morning: number[];
             /** Rows */
             rows: number;
             /** Stale */
@@ -1223,6 +1227,32 @@ export interface components {
             neighbourhood: string;
             /** Outline */
             outline: components["schemas"]["LatLonIn"][];
+        };
+        /**
+         * MisplacedOut
+         * @description A planting standing in light it did not ask for.
+         *
+         *     A warning, never a refusal: a gardener may know something the model does
+         *     not — a cultivar bred for shade, a wall that throws light back, or simply
+         *     that they want it there.
+         */
+        MisplacedOut: {
+            /** Bed Id */
+            bed_id: number;
+            /** Gets */
+            gets: number;
+            /** Name */
+            name: string;
+            /** Planting Id */
+            planting_id: number;
+            /** Problem */
+            problem: string;
+            /** Sun Hours */
+            sun_hours: number;
+            /** Taxon Id */
+            taxon_id: number;
+            /** Wants */
+            wants: number;
         };
         /** MonthOut */
         MonthOut: {
