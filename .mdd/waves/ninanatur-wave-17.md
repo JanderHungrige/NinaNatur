@@ -218,7 +218,7 @@ NaturaDB is.
 |---|---------|-----|--------|------------|
 | 0 | which-ground-and-whose | docs/68-which-ground-and-whose.md | complete | — |
 | 1 | a-window-of-ground | docs/69-a-window-of-ground.md | complete | 0 |
-| 2 | the-horizon-ring | — | planned | 0 |
+| 2 | the-horizon-ring | docs/70-the-horizon-ring.md | complete | 0 |
 | 3 | buildings-stand-on-the-ground | — | planned | 1 |
 | 4 | the-hill-that-eats-the-morning | — | planned | 2, 3 |
 | 5 | which-way-does-it-fall | — | planned | 1 |
