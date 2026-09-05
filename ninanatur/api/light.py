@@ -14,11 +14,14 @@ from pydantic import BaseModel
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
-from ninanatur.garden.lightgrid import load_grid, signature_of
+from ninanatur.garden.lightgrid import extent_of, load_grid, signature_of
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.misplaced import misplaced_plantings
+from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
 from ninanatur.garden.terrain_sync import ensure_terrain
+from ninanatur.geo.projection import LatLon
+from ninanatur.geo.terrain_store import cache_key, load_window
 from ninanatur.solar.day import MONTHS, shadow_day
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["light"])
@@ -69,6 +72,36 @@ class MisplacedOut(BaseModel):
     problem: str
 
 
+class TerrainOut(BaseModel):
+    """The ground under a garden, and how far it is to be trusted.
+
+    Every field after `relief` is there so the page can answer "says who, and
+    how good is it" without the reader having to know what a DGM1 is. A height
+    shown without its credit is a height used outside its licence, and a height
+    shown without its accuracy invites more confidence than it earns.
+    """
+
+    cell_m: float
+    min_x: float
+    min_y: float
+    cols: int
+    rows: int
+    #: Relief shading, 0 (in shadow) to 1 (lit), row-major from the south-west.
+    #: Sent already computed: it is one pass over the grid on a server that has
+    #: the heights anyway, against shipping 40,000 metre values to a browser
+    #: that would then do the same arithmetic.
+    relief: list[float]
+    #: Metres, lowest and highest, so the page can say what it is drawing.
+    lowest: float
+    highest: float
+    source: str
+    licence: str
+    attribution: str
+    #: 0.01 m for a DGM1. 1.0 for Baden-Württemberg's INSPIRE coverage, which
+    #: cannot see a 20 m garden's own fall at all.
+    vertical_step_m: float
+
+
 class ShadowFrame(BaseModel):
     """Every shadow in the garden at one moment of one day."""
 
@@ -116,6 +149,44 @@ def rebuild_light_map(
     ensure_terrain(conn, load_garden(conn, garden.garden_id))
     recompute_light(conn, garden.garden_id)
     return _read(conn, garden.garden_id)
+
+
+@router.get("/{token}/terrain", response_model=TerrainOut | None)
+def terrain(
+    token: str,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> TerrainOut | None:
+    """The ground under this garden, or null where nobody publishes it.
+
+    Null is an answer and the page says so in words. Nine Bundesländer have no
+    service in the registry, and a garden there keeps the flat assumption it
+    always had — which is fine, and being quiet about it is not.
+    """
+    garden = require_garden(conn, token)
+    stored = load_window(conn, cache_key(LatLon(lat=garden.latitude, lon=garden.longitude)))
+    if stored is None:
+        return None
+    # The window reaches 100 m out because the shading needs the neighbours.
+    # The picture is the garden, and sending the rest meant forty thousand
+    # rectangles for a drawing of about nine hundred.
+    box = extent_of(load_garden(conn, garden.garden_id))
+    shown = stored if box is None else crop_to(stored, box)
+    lit = relief_of(shown)
+    heights = [h for h in shown.heights if h == h]
+    return TerrainOut(
+        cell_m=shown.cell_m,
+        min_x=shown.min_x,
+        min_y=shown.min_y,
+        cols=shown.cols,
+        rows=shown.rows,
+        relief=lit,
+        lowest=round(min(heights), 2) if heights else 0.0,
+        highest=round(max(heights), 2) if heights else 0.0,
+        source=shown.source,
+        licence=shown.licence,
+        attribution=shown.attribution,
+        vertical_step_m=shown.vertical_step_m,
+    )
 
 
 @router.get("/{token}/shadows", response_model=ShadowDay)

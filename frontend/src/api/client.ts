@@ -31,6 +31,7 @@ export type FeedbackQuestion = components['schemas']['QuestionOut'];
 export type FeedbackSent = components['schemas']['FeedbackOut'];
 export type LightMap = components['schemas']['LightMap'];
 export type ShadowDay = components['schemas']['ShadowDay'];
+export type Terrain = components['schemas']['TerrainOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -241,6 +242,13 @@ export class NinaNaturClient {
     return this.request<LightMap | null>(
       `/api/v1/gardens/${encodeURIComponent(token)}/light`,
       { method: 'POST' },
+    );
+  }
+
+  /** The ground under this garden, or null where nobody publishes it. */
+  async terrain(token: string): Promise<Terrain | null> {
+    return this.request<Terrain | null>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/terrain`,
     );
   }
 

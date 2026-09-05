@@ -21,6 +21,7 @@ from ninanatur.garden.lightgrid import compute_grid, save_grid, signature_of
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.roofs import Roof, shading_height
+from ninanatur.garden.slopes import slope_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.light import bed_light_value, ellenberg_from_sun_hours
@@ -142,6 +143,32 @@ def _ground_under(conn: sqlite3.Connection, garden: Garden) -> TerrainWindow | N
     return load_window(conn, cache_key(anchor))
 
 
+def _fall_of(
+    ground: TerrainWindow | None, bed: object
+) -> tuple[float | None, float | None]:
+    """How the ground under a bed falls, rounded to what can be defended.
+
+    None without terrain, and None rather than zero: a stored zero would tell a
+    gardener on a hillside that their garden is flat, which is exactly the claim
+    this wave exists to stop making.
+
+    A whole degree of slope and five of direction. The DGM1 states ± 0.3 m, and
+    a tenth of a degree of aspect from that would be arithmetic rather than
+    information.
+    """
+    if ground is None:
+        return (None, None)
+    outline = getattr(bed, "polygon", None) or []
+    if not outline:
+        return (None, None)
+    x = sum(p[0] for p in outline) / len(outline)
+    y = sum(p[1] for p in outline) / len(outline)
+    slope, aspect = slope_at(ground, x, y)
+    if slope <= 0.0:
+        return (0.0, None)
+    return (round(slope), round(aspect / 5.0) * 5.0)
+
+
 def _horizon_around(conn: sqlite3.Connection, garden: Garden) -> list[float] | None:
     """The stored horizon ring for this location, or None.
 
@@ -211,9 +238,16 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
                 height_above_ground=bed.height_above_ground,
             ).sun_hours
         conn.execute(
-            "UPDATE element SET ellenberg_l = ?, sun_hours = ?,"
+            "UPDATE element SET ellenberg_l = ?, sun_hours = ?, slope_deg = ?,"
+            " aspect_deg = ?,"
             " light_computed_at = ? WHERE element_id = ?",
-            (ellenberg_from_sun_hours(mean), round(mean, 2), _now(), bed.bed_id),
+            (
+                ellenberg_from_sun_hours(mean),
+                round(mean, 2),
+                *_fall_of(ground, bed),
+                _now(),
+                bed.bed_id,
+            ),
         )
         updated += 1
     conn.commit()

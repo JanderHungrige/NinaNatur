@@ -51,6 +51,11 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # Wave 16. Empty on an existing grid, which the reader treats as "not split
     # yet" — the next recomputation fills it.
     ("light_grid", "morning", "TEXT NOT NULL DEFAULT '[]'"),
+    # Wave 17. Null on every existing bed and null is the honest value: nobody
+    # has fetched the ground yet, and a zero would say "flat" about a garden on
+    # a hillside.
+    ("element", "slope_deg", "REAL"),
+    ("element", "aspect_deg", "REAL"),
 )
 
 

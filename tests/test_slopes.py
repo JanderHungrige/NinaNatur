@@ -195,3 +195,59 @@ def test_a_slope_changes_the_hours_far_less_than_it_changes_a_garden() -> None:
     assert flat is not None and sunny is not None and shady is not None
     assert abs(_mean(sunny) - _mean(flat)) < 0.5
     assert abs(_mean(shady) - _mean(flat)) < 0.5
+
+
+# --- what reaches the bed ---------------------------------------------------
+
+def test_a_bed_carries_how_its_ground_falls() -> None:
+    """Stored beside the light figure, computed at the same moment."""
+    import sqlite3
+
+    from ninanatur.garden.elements import insert_element
+    from ninanatur.garden.lighting import recompute_light
+    from ninanatur.garden.models import PLANTING_KIND
+    from ninanatur.garden.store import create_garden, load_garden
+    from ninanatur.geo.projection import LatLon
+    from ninanatur.geo.terrain_store import cache_key, save_window
+    from ninanatur.ingest.db import connect, init_schema
+
+    conn: sqlite3.Connection = connect(":memory:")
+    init_schema(conn)
+    garden_id = create_garden(conn, name="G", latitude=51.0, longitude=6.0)
+    insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
+                   name="Beet", points=[[0.0, 0.0], [10.0, 0.0], [10.0, 8.0], [0.0, 8.0]])
+    conn.commit()
+    # Ground climbing towards the south, under the whole garden.
+    save_window(conn, cache_key(LatLon(lat=51.0, lon=6.0)),
+                _plane(rise_north=-0.20, size=120))
+
+    recompute_light(conn, garden_id)
+
+    bed = load_garden(conn, garden_id).beds[0]
+    assert bed.slope_deg is not None and bed.slope_deg >= 10
+    assert bed.aspect_deg == pytest.approx(180.0, abs=5.0)
+
+
+def test_a_bed_with_no_ground_fetched_says_nothing_rather_than_flat() -> None:
+    """None, not zero. A garden nobody has looked at is not a flat garden — that
+    is the false confidence this whole wave exists to end."""
+    import sqlite3
+
+    from ninanatur.garden.elements import insert_element
+    from ninanatur.garden.lighting import recompute_light
+    from ninanatur.garden.models import PLANTING_KIND
+    from ninanatur.garden.store import create_garden, load_garden
+    from ninanatur.ingest.db import connect, init_schema
+
+    conn: sqlite3.Connection = connect(":memory:")
+    init_schema(conn)
+    garden_id = create_garden(conn, name="G", latitude=51.0, longitude=6.0)
+    insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
+                   name="Beet", points=[[0.0, 0.0], [10.0, 0.0], [10.0, 8.0], [0.0, 8.0]])
+    conn.commit()
+
+    recompute_light(conn, garden_id)
+
+    bed = load_garden(conn, garden_id).beds[0]
+    assert bed.slope_deg is None
+    assert bed.aspect_deg is None

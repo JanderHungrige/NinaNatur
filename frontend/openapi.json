@@ -152,6 +152,17 @@
       },
       "BedOut": {
         "properties": {
+          "aspect_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspect Deg"
+          },
           "bed_id": {
             "title": "Bed Id",
             "type": "integer"
@@ -294,6 +305,17 @@
             "title": "Shape",
             "type": "string"
           },
+          "slope_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slope Deg"
+          },
           "soil_type": {
             "anyOf": [
               {
@@ -354,6 +376,8 @@
           "ellenberg_n",
           "ellenberg_r",
           "sun_hours",
+          "slope_deg",
+          "aspect_deg",
           "light_computed_at",
           "height_above_ground",
           "label",
@@ -2771,6 +2795,78 @@
         "title": "StatsOut",
         "type": "object"
       },
+      "TerrainOut": {
+        "description": "The ground under a garden, and how far it is to be trusted.\n\nEvery field after `relief` is there so the page can answer \"says who, and\nhow good is it\" without the reader having to know what a DGM1 is. A height\nshown without its credit is a height used outside its licence, and a height\nshown without its accuracy invites more confidence than it earns.",
+        "properties": {
+          "attribution": {
+            "title": "Attribution",
+            "type": "string"
+          },
+          "cell_m": {
+            "title": "Cell M",
+            "type": "number"
+          },
+          "cols": {
+            "title": "Cols",
+            "type": "integer"
+          },
+          "highest": {
+            "title": "Highest",
+            "type": "number"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "lowest": {
+            "title": "Lowest",
+            "type": "number"
+          },
+          "min_x": {
+            "title": "Min X",
+            "type": "number"
+          },
+          "min_y": {
+            "title": "Min Y",
+            "type": "number"
+          },
+          "relief": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Relief",
+            "type": "array"
+          },
+          "rows": {
+            "title": "Rows",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "vertical_step_m": {
+            "title": "Vertical Step M",
+            "type": "number"
+          }
+        },
+        "required": [
+          "cell_m",
+          "min_x",
+          "min_y",
+          "cols",
+          "rows",
+          "relief",
+          "lowest",
+          "highest",
+          "source",
+          "licence",
+          "attribution",
+          "vertical_step_m"
+        ],
+        "title": "TerrainOut",
+        "type": "object"
+      },
       "TimelineOut": {
         "description": "The bloom year. `plantings_without_interaction_data` is reported so a\ntimeline built mostly on unknowns is visible rather than merely optimistic.",
         "properties": {
@@ -2942,7 +3038,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.15.50"
+    "version": "V0.16.56"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3859,7 +3955,7 @@
         ]
       },
       "post": {
-        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.",
+        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.\n\nIt is also where a garden gets its ground for the first time. A state survey\ntakes seconds to answer, which is too long for a page load and perfectly\nreasonable for a button \u2014 and afterwards every recompute reads it for free.",
         "operationId": "rebuild_light_map_api_v1_gardens__token__light_post",
         "parameters": [
           {
@@ -4428,6 +4524,57 @@
         "summary": "Set Soil",
         "tags": [
           "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/terrain": {
+      "get": {
+        "description": "The ground under this garden, or null where nobody publishes it.\n\nNull is an answer and the page says so in words. Nine Bundesl\u00e4nder have no\nservice in the registry, and a garden there keeps the flat assumption it\nalways had \u2014 which is fine, and being quiet about it is not.",
+        "operationId": "terrain_api_v1_gardens__token__terrain_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TerrainOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Terrain Api V1 Gardens  Token  Terrain Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Terrain",
+        "tags": [
+          "light"
         ]
       }
     },

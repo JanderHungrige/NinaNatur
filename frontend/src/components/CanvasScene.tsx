@@ -1,9 +1,10 @@
 import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
-import type { GardenOut, LightMap } from '../api/client';
+import type { GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
 import { ClusterLayer } from './ClusterLayer';
+import { ReliefMap } from './ReliefMap';
 import { type MapMode, SunMap } from './SunMap';
 import { GardenSymbols } from './GardenSymbols';
 
@@ -44,6 +45,8 @@ interface Props {
   /** The sun map, when the switch is on. Drawn under the plantings and over the
    *  ground: it is about the ground, and it must not hide what grows on it. */
   sunMap?: { map: LightMap; mode: MapMode } | undefined;
+  /** The ground itself, when it has been fetched. Drawn beneath the plan. */
+  terrain?: Terrain | null | undefined;
   /** One frame of a day's shadows, while the day is being played. */
   shadows?: number[][][] | undefined;
 }
@@ -155,6 +158,7 @@ export function CanvasScene({
   onGrabCluster,
   onShowClusterInfo,
   sunMap,
+  terrain,
   shadows,
   armed = false,
   onAskWhatItIs,
@@ -187,6 +191,11 @@ export function CanvasScene({
           height={view.spanM * 2}
           fill="url(#grid)"
         />
+
+        {/* Under everything, because it is what everything stands on. Faint
+            enough to be invisible while somebody places a bed, and there when
+            they look for it. */}
+        {terrain !== undefined && terrain !== null && <ReliefMap terrain={terrain} />}
 
         {/* North marker — the whole light calculation hinges on which way is up. */}
         <text

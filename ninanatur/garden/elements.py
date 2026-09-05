@@ -37,7 +37,8 @@ _COLUMNS = (
     "element_id, kind, shape, x, y, points, width, constraint_hint, height,"
     " height_source, roof, eaves_m, label, name, soil_type, moisture,"
     " ellenberg_l, ellenberg_m,"
-    " ellenberg_n, ellenberg_r, sun_hours, light_computed_at, height_above_ground"
+    " ellenberg_n, ellenberg_r, sun_hours, slope_deg, aspect_deg,"
+    " light_computed_at, height_above_ground"
 )
 
 
@@ -109,6 +110,8 @@ def _row_to_element(row: sqlite3.Row, plantings: list[Planting] | None = None) -
         ellenberg_n=row["ellenberg_n"],
         ellenberg_r=row["ellenberg_r"],
         sun_hours=row["sun_hours"],
+        slope_deg=row["slope_deg"],
+        aspect_deg=row["aspect_deg"],
         light_computed_at=row["light_computed_at"],
         height_above_ground=float(row["height_above_ground"] or 0.0),
         plantings=plantings or [],

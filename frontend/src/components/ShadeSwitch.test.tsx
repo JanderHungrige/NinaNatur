@@ -203,3 +203,47 @@ describe('bandFor', () => {
     expect(bandFor(0.4)).toBe('tiefer Schatten');
   });
 });
+
+describe('ShadeSwitch — where the ground came from', () => {
+  const ground = {
+    cell_m: 1, min_x: 0, min_y: 0, cols: 2, rows: 2, relief: [0.5, 0.5, 0.5, 0.5],
+    lowest: 252.8, highest: 278.6, source: 'Nordrhein-Westfalen',
+    licence: 'dl-de/zero-2-0', attribution: '© Geobasis NRW', vertical_step_m: 0.01,
+  };
+
+  it('names the source, because a height without its credit is used outside its licence', () => {
+    show({ terrain: ground });
+    expect(screen.getByText(/© Geobasis NRW/)).toBeDefined();
+  });
+
+  it('says what the ground does, in metres', () => {
+    show({ terrain: ground });
+    expect(screen.getByText(/253–279 m ü\. NHN/)).toBeDefined();
+    expect(screen.getByText(/25\.8 m Unterschied/)).toBeDefined();
+  });
+
+  it('states the accuracy rather than implying there is none to state', () => {
+    show({ terrain: ground });
+    expect(screen.getByText(/± 0,3 m/)).toBeDefined();
+  });
+
+  it('warns when the service only measures whole metres', () => {
+    // Baden-Württemberg's INSPIRE coverage. A 20 m garden on a 3 % slope rises
+    // 0.6 m, which whole metres cannot see at all.
+    show({ terrain: { ...ground, vertical_step_m: 1.0, source: 'Baden-Württemberg' } });
+    expect(screen.getByText(/ganzen Metern/)).toBeDefined();
+  });
+
+  it('says plainly when there is no ground to be had', () => {
+    // Nine Bundesländer. Flat is what every garden was before Wave 17, and
+    // being quiet about it is what this whole wave exists to stop.
+    show({ terrain: null });
+    expect(screen.getByText(/keine Höhendaten vor/)).toBeDefined();
+    expect(screen.getByText(/ebenem Gelände/)).toBeDefined();
+  });
+
+  it('says nothing at all when the ground was never asked about', () => {
+    show();
+    expect(screen.queryByText(/Höhendaten|ü\. NHN/)).toBeNull();
+  });
+});

@@ -153,3 +153,47 @@ def test_a_garden_with_nothing_standing_has_frames_and_no_shadows(
 
     assert frames
     assert all(f["polygons"] == [] for f in frames)
+
+
+# --- the ground ------------------------------------------------------------
+
+def test_a_garden_with_no_ground_fetched_has_no_terrain(client: TestClient) -> None:
+    """Null, and the page says so in words. Nine Bundesländer have no service,
+    and a garden there keeps the flat assumption it always had — which is fine,
+    and being quiet about it is not."""
+    token = _garden(client)
+
+    assert client.get(f"/api/v1/gardens/{token}/terrain").json() is None
+
+
+def test_terrain_comes_back_with_its_relief_and_its_credit(client: TestClient) -> None:
+    from ninanatur.geo.projection import LatLon
+    from ninanatur.geo.terrain import TerrainWindow
+    from ninanatur.geo.terrain_store import cache_key, save_window
+
+    token = _garden(client)
+    conn = app.dependency_overrides[get_connection]()
+    size = 30
+    save_window(
+        conn,
+        cache_key(LatLon(lat=52.5, lon=13.4)),
+        TerrainWindow(
+            min_x=-15.0, min_y=-15.0, cell_m=1.0, cols=size, rows=size,
+            heights=[100.0 + row * 0.2 for row in range(size) for _ in range(size)],
+            source="Brandenburg", licence="dl-de/by-2-0",
+            attribution="© GeoBasis-DE/LGB", vertical_step_m=0.01,
+        ),
+    )
+
+    body = client.get(f"/api/v1/gardens/{token}/terrain").json()
+
+    assert body["cols"] * body["rows"] == len(body["relief"])
+    assert all(0.0 <= v <= 1.0 for v in body["relief"])
+    assert body["attribution"] == "© GeoBasis-DE/LGB"
+    assert body["licence"] == "dl-de/by-2-0"
+    assert body["vertical_step_m"] == 0.01
+    assert body["highest"] > body["lowest"]
+
+
+def test_an_unknown_garden_has_no_terrain_either(client: TestClient) -> None:
+    assert client.get("/api/v1/gardens/gibtesnicht/terrain").status_code == 404

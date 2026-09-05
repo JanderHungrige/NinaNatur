@@ -3,11 +3,11 @@ id: ninanatur-wave-17
 title: "Wave 17: The ground is not flat"
 initiative: ninanatur
 initiative_version: 20
-status: planned
+status: complete
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: 8d5f8e6e
+hash: 65ea97d2
 ---
 
 # Wave 17: The ground is not flat
@@ -221,8 +221,8 @@ NaturaDB is.
 | 2 | the-horizon-ring | docs/70-the-horizon-ring.md | complete | 0 |
 | 3 | buildings-stand-on-the-ground | docs/71-buildings-stand-on-the-ground.md | complete | 1 |
 | 4 | the-hill-that-eats-the-morning | docs/72-the-hill-that-eats-the-morning.md | complete | 2, 3 |
-| 5 | which-way-does-it-fall | — | planned | 1 |
-| 6 | say-how-good-it-is | — | planned | 1 |
+| 5 | which-way-does-it-fall | docs/73-which-way-does-it-fall.md | complete | 1 |
+| 6 | say-how-good-it-is | docs/74-say-how-good-it-is.md | complete | 1 |
 
 Delivered in three stages, each merged and deployed on its own:
 

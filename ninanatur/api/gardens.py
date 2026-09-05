@@ -86,7 +86,8 @@ def to_out(garden: Garden) -> GardenOut:
                 soil_type=b.soil_type, moisture=b.moisture,
                 ellenberg_l=b.ellenberg_l, ellenberg_m=b.ellenberg_m,
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,
-                sun_hours=b.sun_hours, light_computed_at=b.light_computed_at,
+                sun_hours=b.sun_hours, slope_deg=b.slope_deg,
+                aspect_deg=b.aspect_deg, light_computed_at=b.light_computed_at,
                 height_above_ground=b.height_above_ground, label=b.label,
                 plantings=[
                     PlantingOut(

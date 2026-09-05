@@ -81,6 +81,13 @@ CREATE TABLE IF NOT EXISTS element (
     ellenberg_n REAL,
     ellenberg_r REAL,
     sun_hours   REAL,
+    -- How the ground under this bed falls, in degrees, and the compass
+    -- direction it climbs. Named on the page rather than folded into the light
+    -- score: a 17° slope at 52°N moves the sun *hours* by a fifth of an hour
+    -- while changing the energy per square metre a great deal, and this model
+    -- counts hours. Scoring it would be a claim the model cannot support.
+    slope_deg   REAL,
+    aspect_deg  REAL,
     light_computed_at TEXT,
     -- A raised bed stands above the low things around it; Wave 9's sightlines
     -- need the same number, which is why it is stored rather than derived.

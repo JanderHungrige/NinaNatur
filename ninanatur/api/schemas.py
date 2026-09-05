@@ -402,6 +402,10 @@ class BedOut(BaseModel):
     ellenberg_n: float | None
     ellenberg_r: float | None
     sun_hours: float | None
+    #: Named, never scored. See `slopes.py` for why: at this latitude a slope
+    #: barely moves the hours and moves the energy a great deal.
+    slope_deg: float | None
+    aspect_deg: float | None
     light_computed_at: str | None
     # Required, not defaulted: the response always carries both, and a default
     # here makes them optional in the generated client for no reason.

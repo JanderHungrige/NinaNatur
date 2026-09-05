@@ -24,6 +24,8 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
     ellenberg_n: 5.5,
     ellenberg_r: 6.5,
     sun_hours: 6.4,
+    slope_deg: null,
+    aspect_deg: null,
     light_computed_at: '2026-08-28T10:00:00+00:00',
     height_above_ground: 0,
     label: null,
