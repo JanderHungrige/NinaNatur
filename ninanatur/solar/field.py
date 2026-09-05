@@ -40,6 +40,12 @@ class ShadowAt:
     max_x: float
     max_y: float
     polygon: list[tuple[float, float]]
+    #: What passes through this shadow. Zero for anything built.
+    transmission: float = 0.0
+    #: True while the sun is east of due south. The two halves of a day are not
+    #: interchangeable: afternoon sun is hotter and harsher, and a great many
+    #: species sold as *Halbschatten* want the morning specifically.
+    morning: bool = True
 
     def covers_point(self, x: float, y: float) -> bool:
         if not (self.min_x <= x <= self.max_x and self.min_y <= y <= self.max_y):
@@ -54,19 +60,46 @@ class ShadowField:
     #: One entry per sun sample above the horizon; each is every obstacle's
     #: shadow at that moment.
     moments: list[list[ShadowAt]]
+    #: Whether each moment is a morning one, in step with `moments`.
+    halves: list[bool]
     #: Days sampled, for turning lit samples into a daily mean.
     days: int
     year: int
 
     def sun_hours_at(self, x: float, y: float) -> float:
         """Mean daily hours of direct sun at this point."""
+        morning, afternoon = self.halves_at(x, y)
+        return morning + afternoon
+
+    def halves_at(self, x: float, y: float) -> tuple[float, float]:
+        """Mean daily sun hours before and after the sun crosses due south.
+
+        Due south rather than a computed solar noon: in the northern hemisphere
+        the sun is east of south all morning and west of it all afternoon, so
+        the azimuth already says which half a sample is in — exactly, and
+        without a second calculation per day.
+        """
         if self.days == 0:
-            return 0.0
-        lit = 0
-        for shadows in self.moments:
-            if not any(s.covers_point(x, y) for s in shadows):
-                lit += 1
-        return (lit * MINUTE_STEP / 60) / self.days
+            return (0.0, 0.0)
+        before = 0.0
+        after = 0.0
+        for moment, morning in zip(self.moments, self.halves, strict=True):
+            # Multiplied, not counted: two crowns over one spot each take their
+            # share, and a wall takes all of it whatever else is in the way.
+            through = 1.0
+            for shadow in moment:
+                if shadow.covers_point(x, y):
+                    through *= shadow.transmission
+                    if through == 0.0:
+                        break
+            if through == 0.0:
+                continue
+            if morning:
+                before += through
+            else:
+                after += through
+        hours = MINUTE_STEP / 60 / self.days
+        return (before * hours, after * hours)
 
 
 def shadow_field(
@@ -85,12 +118,18 @@ def shadow_field(
     days = _season_days(year)
     step = timedelta(minutes=MINUTE_STEP)
     lifted = [
-        Obstacle(footprint=o.footprint, height=o.height - height_above_ground)
+        Obstacle(
+            footprint=o.footprint,
+            height=o.height - height_above_ground,
+            transmission=o.transmission,
+            bare_transmission=o.bare_transmission,
+        )
         for o in obstacles
         if o.height - height_above_ground > 0
     ]
 
     moments: list[list[ShadowAt]] = []
+    halves: list[bool] = []
     for day in days:
         moment = day
         end_of_day = day + timedelta(days=1)
@@ -102,17 +141,19 @@ def shadow_field(
             # than `len(moments)` divides at the end.
             if sun.altitude <= MIN_ALTITUDE:
                 continue
-            moments.append([_shadow_at(o, sun) for o in lifted])
+            moments.append([_shadow_at(o, sun, day.month) for o in lifted])
+            halves.append(sun.azimuth < 180.0)
 
-    return ShadowField(moments=moments, days=len(days), year=year)
+    return ShadowField(moments=moments, halves=halves, days=len(days), year=year)
 
 
-def _shadow_at(obstacle: Obstacle, sun: SunPosition) -> ShadowAt:
+def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:
     polygon = shadow_polygon(obstacle, sun)
     xs = [p[0] for p in polygon]
     ys = [p[1] for p in polygon]
     return ShadowAt(
-        min_x=min(xs), min_y=min(ys), max_x=max(xs), max_y=max(ys), polygon=polygon
+        min_x=min(xs), min_y=min(ys), max_x=max(xs), max_y=max(ys), polygon=polygon,
+        transmission=obstacle.transmission_in(month),
     )
 
 

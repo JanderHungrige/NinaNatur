@@ -135,6 +135,10 @@ CREATE TABLE IF NOT EXISTS light_grid (
     cols        INTEGER NOT NULL,
     rows        INTEGER NOT NULL,
     hours       TEXT    NOT NULL,
+    -- Of those hours, the ones before the sun crosses due south. Afternoon sun
+    -- is hotter and harsher, and a total cannot say which four hours a spot
+    -- gets — which is the difference between a morning-sun bed and a baking one.
+    morning     TEXT    NOT NULL DEFAULT '[]',
     signature   TEXT    NOT NULL,
     computed_at TEXT    NOT NULL
 );

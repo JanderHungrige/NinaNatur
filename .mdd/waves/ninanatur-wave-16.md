@@ -3,7 +3,7 @@ id: ninanatur-wave-16
 title: "Wave 16: The shade switch"
 initiative: ninanatur
 initiative_version: 20
-status: planned
+status: complete
 depends_on: ninanatur-wave-15
 demo_state: "Ein Schalter legt eine Sonnenstunden- oder Schattenstundenkarte über den Plan, in Graustufen bzw. Transparenz. Der Play-Knopf lässt den Schatten über einen mittleren Tag des gewählten Monats wandern. Das Licht wird über ein Raster berechnet, nicht an einem Punkt je Beet — und eine Sonnenpflanze, die im Schatten steht, wird als solche benannt."
 created: 2026-09-04
@@ -26,13 +26,13 @@ Schatten steht, wird als solche benannt.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | light-across-the-bed | — | planned | — |
-| 2 | the-shade-switch | — | planned | 1 |
-| 3 | a-day-of-shadow | — | planned | 2 |
-| 4 | sun-plant-in-a-shade-spot | — | planned | 1 |
-| 5 | morning-sun-is-not-afternoon-sun | — | planned | 1 |
-| 6 | a-tree-is-not-a-wall | — | planned | 1 |
-| 7 | what-shape-is-the-roof | — | planned | — |
+| 1 | light-across-the-bed | docs/64-light-across-the-bed.md | complete | — |
+| 2 | the-shade-switch | docs/65-the-shade-switch.md | complete | 1 |
+| 3 | a-day-of-shadow | docs/65-the-shade-switch.md | complete | 2 |
+| 4 | sun-plant-in-a-shade-spot | docs/67-sun-plant-in-a-shade-spot.md | complete | 1 |
+| 5 | morning-sun-is-not-afternoon-sun | docs/67-sun-plant-in-a-shade-spot.md | complete | 1 |
+| 6 | a-tree-is-not-a-wall | docs/66-a-tree-is-not-a-wall.md | complete | 1 |
+| 7 | what-shape-is-the-roof | docs/64-light-across-the-bed.md | complete | — |
 
 ## What each one is
 

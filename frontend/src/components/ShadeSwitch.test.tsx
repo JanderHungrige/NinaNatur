@@ -17,6 +17,8 @@ function map(overrides: Partial<LightMap> = {}): LightMap {
     max_hours: 7.0,
     computed_at: '2026-09-04T10:00:00+00:00',
     stale: false,
+    morning: [0.5, 0.5, 3.5, 3.5],
+    misplaced: [],
     ...overrides,
   } as LightMap;
 }
@@ -45,7 +47,10 @@ describe('ShadeSwitch', () => {
     // "Darker means less sun" is not a reading. Somebody buying a plant labelled
     // Halbschatten needs the figure they can compare against the label.
     show();
-    expect(screen.getByText(/Halbschatten/)).toBeDefined();
+    // In the legend specifically: the word now appears in the morning-sun note
+    // as well, which is the sentence that explains why the split matters.
+    const legend = screen.getByRole('list');
+    expect(legend.textContent).toContain('Halbschatten');
     expect(screen.getByText(/2\.5–4 h/)).toBeDefined();
   });
 
@@ -127,6 +132,67 @@ describe('SunMap', () => {
     const cells = [...container.querySelectorAll('.sun-map__cell')];
     expect(cells.length).toBeGreaterThan(0);
     expect(Number(cells[0]!.getAttribute('opacity'))).toBeGreaterThan(0.4);
+  });
+});
+
+describe('ShadeSwitch — what is standing wrong', () => {
+  it('names a plant that is too dark and says how dark', () => {
+    show({
+      map: map({
+        misplaced: [{
+          planting_id: 1, bed_id: 2, taxon_id: 3, name: 'Sonnenkraut',
+          wants: 8, gets: 3, sun_hours: 1.2, problem: 'too_dark',
+        }],
+      }),
+    });
+
+    expect(screen.getByText('Sonnenkraut')).toBeDefined();
+    expect(screen.getByText(/zu dunkel: 1.2 h/)).toBeDefined();
+  });
+
+  it('names the forgotten direction too', () => {
+    // A fern in the open is as misplaced as a sedum under a hedge, and only
+    // one of the two ever gets talked about.
+    show({
+      map: map({
+        misplaced: [{
+          planting_id: 1, bed_id: 2, taxon_id: 3, name: 'Wurmfarn',
+          wants: 3, gets: 8, sun_hours: 11.4, problem: 'too_bright',
+        }],
+      }),
+    });
+
+    expect(screen.getByText(/zu hell: 11.4 h/)).toBeDefined();
+  });
+
+  it('says it is a hint rather than an objection', () => {
+    show({
+      map: map({
+        misplaced: [{
+          planting_id: 1, bed_id: 2, taxon_id: 3, name: 'X',
+          wants: 8, gets: 3, sun_hours: 1.0, problem: 'too_dark',
+        }],
+      }),
+    });
+
+    expect(screen.getByText(/kein Einwand/)).toBeDefined();
+  });
+
+  it('says nothing at all when nothing is misplaced', () => {
+    show();
+    expect(screen.queryByText(/falschen Licht/)).toBeNull();
+  });
+
+  it('says how much of the sun comes before noon', () => {
+    // Afternoon sun is hotter and harsher, and a total cannot say which four
+    // hours a spot gets.
+    show();
+    expect(screen.getByText(/Davon vormittags: 50 %/)).toBeDefined();
+  });
+
+  it('leaves the split out on a grid computed before it existed', () => {
+    show({ map: map({ morning: [] }) });
+    expect(screen.queryByText(/Davon vormittags/)).toBeNull();
   });
 });
 

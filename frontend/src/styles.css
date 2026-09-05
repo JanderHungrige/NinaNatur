@@ -1285,6 +1285,22 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 }
 .shade-switch__actions button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
 
+/* A warning, not an error: bordered rather than shouted, because the gardener
+   may well know something the model does not. */
+.shade-switch__warnings {
+  border-left: 3px solid var(--warn);
+  padding-left: 0.7rem;
+}
+.shade-switch__warnings h3 { margin: 0 0 0.3rem; font-size: 0.92rem; }
+.shade-switch__warnings ul {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+}
+
 /* --- Rückmeldung --------------------------------------------------------- */
 
 /* Quiet on purpose. It sits in the header beside the account actions, and a

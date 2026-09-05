@@ -210,3 +210,61 @@ def test_storing_twice_replaces_rather_than_accumulates(
     assert rows == 1
     read = load_grid(conn, garden_id)
     assert read is not None and read[1] == "two"
+
+
+# --- morning and afternoon -------------------------------------------------
+
+def test_the_grid_says_how_much_of_the_sun_is_morning(conn: sqlite3.Connection) -> None:
+    """A total cannot say which four hours a spot gets, and the two halves are
+    not interchangeable — afternoon sun is hotter and harsher."""
+    garden_id = _garden(conn)
+    grid = compute_grid(load_garden(conn, garden_id), [])
+
+    assert grid is not None
+    assert len(grid.morning) == len(grid.hours)
+    assert all(m <= h + 0.01 for m, h in zip(grid.morning, grid.hours, strict=True))
+
+
+def test_an_open_garden_gets_about_half_its_sun_before_noon(
+    conn: sqlite3.Connection,
+) -> None:
+    """Nothing in the way, so the split is the sun's own — near enough even,
+    and a long way from either extreme."""
+    garden_id = _garden(conn)
+    grid = compute_grid(load_garden(conn, garden_id), [])
+
+    assert grid is not None
+    share = grid.morning[0] / grid.hours[0]
+    assert 0.4 < share < 0.6, f"morning share {share:.2f}"
+
+
+def test_a_wall_to_the_east_takes_the_morning(conn: sqlite3.Connection) -> None:
+    """The whole point of splitting. A bed behind an eastern wall gets its sun
+    in the afternoon, which is a different bed from one that gets it early."""
+    garden_id = _garden(conn)
+    east = Obstacle(footprint=[(10.5, 0.0), (11.0, 0.0), (11.0, 8.0), (10.5, 8.0)],
+                    height=6.0)
+
+    grid = compute_grid(load_garden(conn, garden_id), [east])
+
+    assert grid is not None
+    # A cell right against the wall's western face.
+    index = next(
+        row * grid.cols + col
+        for row in range(grid.rows)
+        for col in range(grid.cols)
+        if grid.centre_of(col, row)[0] > 9.0 and 3.0 < grid.centre_of(col, row)[1] < 5.0
+    )
+    share = grid.morning[index] / max(grid.hours[index], 0.01)
+    assert share < 0.4, f"an eastern wall should cost the morning, share {share:.2f}"
+
+
+def test_the_split_survives_being_stored(conn: sqlite3.Connection) -> None:
+    garden_id = _garden(conn)
+    grid = compute_grid(load_garden(conn, garden_id), [])
+    assert grid is not None
+
+    save_grid(conn, garden_id, grid, "sig")
+    read = load_grid(conn, garden_id)
+
+    assert read is not None and read[0].morning == grid.morning

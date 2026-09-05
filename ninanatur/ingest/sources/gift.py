@@ -33,6 +33,11 @@ GIFT_TRAITS: dict[str, tuple[str, bool, str | None]] = {
     "2.3.1": ("life_form", False, None),
     "2.1.1": ("lifecycle", False, None),
     "3.6.2": ("pollination_syndrome", False, None),
+    # Wave 16. deciduous | evergreen | variable. A tree was modelled as a solid
+    # wall, and a bare oak in March shaded a garden exactly as hard as one in
+    # full leaf. Covers 452 of 954 German woody species — measured before the
+    # feature was planned, not hoped for afterwards.
+    "2.4.1": ("deciduousness", False, None),
 }
 
 MONTH_NAMES = {
