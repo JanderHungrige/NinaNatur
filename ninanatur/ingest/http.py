@@ -53,6 +53,24 @@ def get_text(url: str, params: dict[str, Any] | None = None, *, use_cache: bool 
     return text
 
 
+def get_bytes(url: str, params: dict[str, Any] | None = None, *, use_cache: bool = True) -> bytes:
+    """GET a binary document, served from disk cache when available.
+
+    The coverage services answer a request for one garden's ground with a
+    quarter of a megabyte of GeoTIFF. Terrain does not change, so the second
+    garden in the same street should cost nothing — and the state surveying
+    offices are public infrastructure nobody is paying us to hammer.
+    """
+    path = _cache_path(url, params).with_suffix(".bin")
+    if use_cache and path.exists():
+        return path.read_bytes()
+    payload = _get(url, params).content
+    if use_cache:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    return payload
+
+
 def _get(url: str, params: dict[str, Any] | None) -> requests.Response:
     last: Exception | None = None
     for attempt in range(MAX_RETRIES):

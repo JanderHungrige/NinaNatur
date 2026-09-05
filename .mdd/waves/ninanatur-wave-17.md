@@ -216,7 +216,7 @@ NaturaDB is.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | which-ground-and-whose | — | planned | — |
+| 0 | which-ground-and-whose | docs/68-which-ground-and-whose.md | complete | — |
 | 1 | a-window-of-ground | — | planned | 0 |
 | 2 | the-horizon-ring | — | planned | 0 |
 | 3 | buildings-stand-on-the-ground | — | planned | 1 |

@@ -2,7 +2,7 @@
 name = "ninanatur"
 version = "0.1.0"
 description = "Open-data plant trait database for insect-friendly garden planning"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "requests>=2.31",
     "pandas>=2.0",
@@ -34,7 +34,12 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
-python_version = "3.11"
+# 3.12, not the 3.11 floor this once claimed. numpy's own type stubs use PEP 695
+# `type` statements, which mypy refuses to parse when told to target 3.11 — so
+# the first module here to import numpy turned the whole strict check red. The
+# image runs 3.13 and CI runs 3.13; checking against a floor nothing deploys on
+# was buying nothing and has now cost something.
+python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 
