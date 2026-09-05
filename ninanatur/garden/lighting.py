@@ -21,6 +21,8 @@ from ninanatur.garden.lightgrid import compute_grid, save_grid, signature_of
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.roofs import Roof, shading_height
+from ninanatur.geo.projection import LatLon
+from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.light import bed_light_value, ellenberg_from_sun_hours
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle as ShadingObstacle
@@ -124,6 +126,22 @@ def _woody_heights(
     return {tid: canopy_of(heights.get(tid), forms.get(tid)) for tid in unique}
 
 
+def _ground_under(conn: sqlite3.Connection, garden: object) -> TerrainWindow | None:
+    """The stored terrain for this garden's location, or None.
+
+    Read, never fetched. A recompute happens while somebody is waiting for the
+    page, and a state survey answering in eight seconds is not something to do
+    in that moment — the window is fetched when the garden is created and lives
+    on the volume from then on. No window means the flat world, which is what
+    every garden had until Wave 17 and what a garden in one of the nine states
+    without a service keeps.
+    """
+    from ninanatur.geo.terrain_store import cache_key, load_window
+
+    anchor = LatLon(lat=float(garden.latitude), lon=float(garden.longitude))
+    return load_window(conn, cache_key(anchor))
+
+
 def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     # Imported here rather than at module level: `store` imports this module, so
     # the other direction can only be a deferred one.
@@ -149,6 +167,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     ]
     planted = _planted_obstacles(conn, garden)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
+    ground = _ground_under(conn, garden)
 
     # Everything that casts a shadow, including what grows in the beds. The
     # exclusion of a bed from its own plantings is gone — see
@@ -159,7 +178,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     # their own field because the height changes every shadow polygon, and they
     # are rare enough that computing one extra grid per distinct height is
     # cheaper than the alternative of one field per point.
-    grid = compute_grid(garden, everything)
+    grid = compute_grid(garden, everything, ground=ground)
     if grid is not None:
         save_grid(conn, garden_id, grid, signature_of(garden))
 

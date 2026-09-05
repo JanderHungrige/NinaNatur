@@ -16,7 +16,9 @@ import json
 import sqlite3
 from dataclasses import dataclass, field
 
+from ninanatur.garden.ground import height_at, lowest_ground, standing_on
 from ninanatur.garden.models import Garden
+from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.field import ShadowField, shadow_field
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle
@@ -115,8 +117,16 @@ def compute_grid(
     obstacles: list[Obstacle],
     year: int = 2026,
     height_above_ground: float = 0.0,
+    ground: TerrainWindow | None = None,
 ) -> LightGrid | None:
-    """Sun hours for every cell of the garden. None when nothing is drawn yet."""
+    """Sun hours for every cell of the garden. None when nothing is drawn yet.
+
+    `ground` is the terrain under the garden, or None for the flat world every
+    shadow in this project was computed in until Wave 17. With it, each cell is
+    asked about at its own height and each obstacle stands on the ground beneath
+    its footprint — so a neighbour's house uphill shades more than one on the
+    level, and one downhill shades less.
+    """
     box = extent_of(garden)
     if box is None:
         return None
@@ -127,17 +137,22 @@ def compute_grid(
     cols = max(1, int(width / cell) + 1)
     rows = max(1, int(depth / cell) + 1)
 
+    standing = standing_on(obstacles, ground)
+    floor = lowest_ground(ground, min_x, min_y, cell, cols, rows)
     field_of: ShadowField = shadow_field(
         Location(latitude=garden.latitude, longitude=garden.longitude),
-        obstacles,
+        standing,
         year=year,
         height_above_ground=height_above_ground,
+        ground_floor=floor,
     )
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
     halves = [
-        field_of.halves_at(*grid.centre_of(col, row))
+        field_of.halves_at(
+            *grid.centre_of(col, row), height_at(ground, *grid.centre_of(col, row), floor)
+        )
         for row in range(rows)
         for col in range(cols)
     ]
