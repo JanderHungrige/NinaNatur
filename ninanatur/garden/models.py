@@ -118,6 +118,11 @@ class Element:
     ellenberg_n: float | None = None
     ellenberg_r: float | None = None
     sun_hours: float | None = None
+    #: How the ground under this bed falls, and which way it climbs. None until
+    #: the ground has been fetched — and None rather than zero, because zero
+    #: would tell a gardener on a hillside that their garden is flat.
+    slope_deg: float | None = None
+    aspect_deg: float | None = None
     light_computed_at: str | None = None
     #: A raised bed stands above the low things around it, and its light is
     #: computed from up there.

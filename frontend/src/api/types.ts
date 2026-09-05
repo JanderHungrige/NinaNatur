@@ -387,6 +387,10 @@ export interface paths {
          *     Belt as well as braces. The signature should catch every change that moves a
          *     shadow, and if it ever does not, this is how somebody fixes their own map
          *     without knowing why it was wrong.
+         *
+         *     It is also where a garden gets its ground for the first time. A state survey
+         *     takes seconds to answer, which is too long for a page load and perfectly
+         *     reasonable for a button — and afterwards every recompute reads it for free.
          */
         post: operations["rebuild_light_map_api_v1_gardens__token__light_post"];
         delete?: never;
@@ -841,6 +845,8 @@ export interface components {
         };
         /** BedOut */
         BedOut: {
+            /** Aspect Deg */
+            aspect_deg: number | null;
             /** Bed Id */
             bed_id: number;
             /** Constraint Hint */
@@ -873,6 +879,8 @@ export interface components {
             polygon: number[][];
             /** Shape */
             shape: string;
+            /** Slope Deg */
+            slope_deg: number | null;
             /** Soil Type */
             soil_type: string | null;
             /** Sun Hours */

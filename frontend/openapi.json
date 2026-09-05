@@ -152,6 +152,17 @@
       },
       "BedOut": {
         "properties": {
+          "aspect_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspect Deg"
+          },
           "bed_id": {
             "title": "Bed Id",
             "type": "integer"
@@ -294,6 +305,17 @@
             "title": "Shape",
             "type": "string"
           },
+          "slope_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slope Deg"
+          },
           "soil_type": {
             "anyOf": [
               {
@@ -354,6 +376,8 @@
           "ellenberg_n",
           "ellenberg_r",
           "sun_hours",
+          "slope_deg",
+          "aspect_deg",
           "light_computed_at",
           "height_above_ground",
           "label",
@@ -2942,7 +2966,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.15.50"
+    "version": "V0.16.56"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3859,7 +3883,7 @@
         ]
       },
       "post": {
-        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.",
+        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.\n\nIt is also where a garden gets its ground for the first time. A state survey\ntakes seconds to answer, which is too long for a page load and perfectly\nreasonable for a button \u2014 and afterwards every recompute reads it for free.",
         "operationId": "rebuild_light_map_api_v1_gardens__token__light_post",
         "parameters": [
           {

@@ -37,9 +37,11 @@ function garden(bedOverrides: Partial<GardenOut['beds'][number]> = {}): GardenOu
         ellenberg_n: 5.5,
         ellenberg_r: 6.5,
         sun_hours: 6.4,
+        slope_deg: null,
+        aspect_deg: null,
         light_computed_at: '2026-08-28T10:00:00+00:00',
-    height_above_ground: 0,
-    label: null,
+        height_above_ground: 0,
+        label: null,
         plantings: [],
         ...bedOverrides,
       },
@@ -120,5 +122,46 @@ describe('BedPanel — after the forms went', () => {
     render(<BedPanel garden={garden()} selectedBedId={null} onSelectBed={vi.fn()} />);
     expect(screen.queryByText('Beet hinzufügen')).toBeNull();
     expect(screen.queryByText('Hindernis hinzufügen')).toBeNull();
+  });
+});
+
+describe('BedPanel — how the ground falls', () => {
+  it('says the slope beside the light, not inside it', () => {
+    render(
+      <BedPanel
+        garden={garden({ sun_hours: 5.2, ellenberg_l: 6, slope_deg: 9, aspect_deg: 180 })}
+        selectedBedId={null}
+        onSelectBed={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/5\.2 h\/Tag/)).toBeDefined();
+    expect(screen.getByText(/Südhang, 16 %/)).toBeDefined();
+  });
+
+  it('leaves level ground unmentioned', () => {
+    render(
+      <BedPanel
+        garden={garden({ sun_hours: 5.2, ellenberg_l: 6, slope_deg: 0, aspect_deg: null })}
+        selectedBedId={null}
+        onSelectBed={() => {}}
+      />,
+    );
+
+    expect(screen.queryByText(/hang/)).toBeNull();
+    expect(screen.queryByText(/eben/)).toBeNull();
+  });
+
+  it('says nothing at all about ground nobody has fetched', () => {
+    render(
+      <BedPanel
+        garden={garden({ sun_hours: 5.2, ellenberg_l: 6 })}
+        selectedBedId={null}
+        onSelectBed={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/5\.2 h\/Tag/)).toBeDefined();
+    expect(screen.queryByText(/hang|eben|%/)).toBeNull();
   });
 });

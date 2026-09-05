@@ -1,5 +1,6 @@
 import type { GardenOut } from '../api/client';
 import { bedName, beds as bedCount, obstacles as obstacleCount, species } from '../plural';
+import { slopeSentence } from '../slopes';
 
 interface Props {
   garden: GardenOut;
@@ -14,7 +15,12 @@ function lightText(bed: GardenOut['beds'][number]): string {
   if (bed.sun_hours === null || bed.ellenberg_l === null) {
     return 'noch nicht berechnet';
   }
-  return `${bed.sun_hours.toFixed(1)} h/Tag · L ${bed.ellenberg_l}`;
+  const light = `${bed.sun_hours.toFixed(1)} h/Tag · L ${bed.ellenberg_l}`;
+  // The slope is said, never scored. At this latitude it barely moves the
+  // hours; what it moves is the energy per square metre, which this model does
+  // not compute — so it belongs beside the figure rather than inside it.
+  const fall = slopeSentence(bed.slope_deg, bed.aspect_deg);
+  return fall === null || fall === 'eben' ? light : `${light} · ${fall}`;
 }
 
 /**

@@ -139,7 +139,7 @@ describe('CanvasScene — what lies on top of what', () => {
               polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
               soil_type: 'loam', moisture: 'fresh',
               ellenberg_l: null, ellenberg_m: null, ellenberg_n: null,
-              ellenberg_r: null, sun_hours: null, light_computed_at: null,
+              ellenberg_r: null, sun_hours: null, slope_deg: null, aspect_deg: null, light_computed_at: null,
               height_above_ground: 0, label: null, plantings: [],
             },
           ],
@@ -200,7 +200,7 @@ describe('CanvasScene — big things behind, small things in front', () => {
     constraint_hint: null,
     polygon: [[-20, -20], [20, -20], [20, 20], [-20, 20]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: null, ellenberg_m: null,
-    ellenberg_n: null, ellenberg_r: null, sun_hours: null,
+    ellenberg_n: null, ellenberg_r: null, sun_hours: null, slope_deg: null, aspect_deg: null,
     light_computed_at: null, height_above_ground: 0, label: null, plantings: [],
   };
 
