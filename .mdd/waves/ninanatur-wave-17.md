@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: 6e4f558a
+hash: 06eae8a6
 ---
 
 # Wave 17: The ground is not flat
@@ -149,6 +149,68 @@ A "Feinmodus" from LAZ point clouds stays in the backlog: 100–500 MB per km²,
 `laspy` or PDAL as a dependency, per-state classification schemes that are
 explicitly not standardised — a wave of its own, if ever, and not the one that
 makes gardens on slopes work.
+
+### Terrain or surface — and why nothing is counted twice
+
+The question that has to be settled before any of this is built: does the height
+data already contain the buildings? If it did, every house would be counted
+twice — once as the ground, once as the obstacle the user drew.
+
+**It does not, and this is the evidence rather than the assurance.** Geobasis
+NRW's user information for the 3D-Messdaten (Stand 02/2020) sorts the laser
+returns into nine classes and marks each one DGM-relevant or DOM-relevant:
+
+| Class | What it is | Counts as |
+|---|---|---|
+| 2 | Geländepunkte / Bodenpunkte — the natural relief, with building, vegetation and other points excluded | **DGM** |
+| 26 | aufgefüllte Bodenpunkte (synthetisch) — interpolated ground under bridges and in dense forest | **DGM** |
+| 20 | Last Return nicht Boden — points on buildings, cars and the like | DOM |
+| 21 | aufgefüllte Gebäudepunkte (synthetisch), kept until 2019 — interpolated under large buildings | DOM |
+| 17 | Brückenpunkte | DOM |
+| 9 | aufgefüllte Gewässerpunkte (synthetisch) | DOM |
+| 1 | unklassifiziert, e.g. medium returns inside vegetation | DOM |
+| 24 | Kellerpunkte — below the natural ground, in a Kellerabgang or Lichtschacht | neither |
+| 18 | Hochpunkte — birds, fog, cloud, steam | noise |
+
+The DGM is computed from the DGM-relevant classes only. A DGM1 request therefore
+returns bare earth, and a building's base is the ground it stands on. Nothing is
+counted twice — **provided the registry only ever holds terrain products**, which
+is why feature 0 records the product type per entry and why a DOM endpoint in the
+terrain registry is a bug rather than a fallback.
+
+**Two consequences, and both belong in the model:**
+
+1. **The point cloud is not filtered — it is labelled.** The 3D-Messdaten
+   "enthalten sämtliche Reflexionen des ALS in einer klassifizierten Punktwolke".
+   Anyone reading LAZ directly gets roofs and treetops alongside the ground and
+   has to select class 2 themselves. One more reason the Feinmodus is not the
+   cheap upgrade it looks like.
+
+2. **Under a building the ground is interpolated, not measured.** A laser does
+   not see through a roof; class 26 exists for exactly that gap. A house's base
+   height is therefore a smoothed guess from the ground around it — which is the
+   right thing to stand it on, but it means a house on a steep slope gets one
+   averaged base rather than an uphill and a downhill corner. Said out loud, not
+   hidden.
+
+**And one defensive check.** Ground filtering is not perfect: a large flat-roofed
+hall can survive into the terrain, and then the model really would put a building
+on a building. Feature 1 compares the terrain under each footprint against the
+ring of ground around it, and where it stands proud by more than roughly a
+storey, marks the window suspect instead of quietly building on a roof.
+
+### Radar is a different animal
+
+The global fallbacks are radar, and radar is where *Gebäude auf Gebäude* would
+genuinely happen. The Copernicus DEM (GLO-30, TanDEM-X, flown 2011–2015) is
+explicitly a **surface** model — buildings, infrastructure and vegetation are in
+the numbers. It is not a terrain model and must never be used as one here, least
+of all as a base height for an obstacle.
+
+FABDEM removes forests and buildings from that very dataset by machine learning,
+which would solve it, and is licensed **CC BY-NC-SA 4.0** — non-commercial. That
+is outside this project's licence rule, in the same way and for the same reason
+NaturaDB is.
 
 ## Features
 
@@ -313,10 +375,10 @@ ships in the image, and it is 10 MB because somebody keeps it that way.
 
 Written down before it is built, in the same spirit as Wave 16's list:
 
-- **DGM is bare earth. DOM is not.** Mixing them counts a house twice — once as
-  terrain, once as an obstacle. Only the terrain model is fetched, and the
-  registry records which product each entry serves so this cannot be got wrong
-  by accident.
+- **The ground under a building is interpolated**, because a laser does not see
+  through a roof. Correct as a base to stand the house on, smoothed on a slope.
+  See *Terrain or surface* above for why nothing is counted twice, and for the
+  check that catches it when the filtering fails.
 - **Bridges are not in the DGM** (the BKG documentation says so outright), and
   water surfaces can have height jumps between acquisition flights.
 - **The data is 2000–2022.** A garden on a plot that was levelled in 2024 has
@@ -333,10 +395,13 @@ Written down before it is built, in the same spirit as Wave 16's list:
 ## Open Research
 
 - **Does the ring want the surface model instead?** A DOM/bDOM would include the
-  forest and the neighbouring rooftops that actually cut the low sun, at the cost
-  of a second product with patchier coverage and the double-counting trap above
-  (the ring is far-field only, so buildings in it are not the same buildings the
-  obstacle model already has — but the boundary needs a rule).
+  forest that genuinely cuts the low sun, at the cost of a second product with
+  patchier coverage — and of the double-counting trap, because a DOM contains
+  buildings too. If it is ever done, the rule has to be written first and it can
+  only be one rule: **the ring starts beyond the obstacle model's reach.** The
+  obstacle model knows buildings out to 50 m from the plot boundary; a ring built
+  from a surface model must ignore everything inside that radius, or the
+  neighbour's house is a shadow twice over.
 - **Projection: `pyproj` or fifty lines.** Decide with a control-point test.
 - **Which states subset by bbox at all.** Fourteen unprobed. The registry may
   come back thinner than `hoehendaten.de` suggests, because "open data" and "has
