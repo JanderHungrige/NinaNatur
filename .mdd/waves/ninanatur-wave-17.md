@@ -221,7 +221,7 @@ NaturaDB is.
 | 2 | the-horizon-ring | docs/70-the-horizon-ring.md | complete | 0 |
 | 3 | buildings-stand-on-the-ground | docs/71-buildings-stand-on-the-ground.md | complete | 1 |
 | 4 | the-hill-that-eats-the-morning | docs/72-the-hill-that-eats-the-morning.md | complete | 2, 3 |
-| 5 | which-way-does-it-fall | — | planned | 1 |
+| 5 | which-way-does-it-fall | docs/73-which-way-does-it-fall.md | complete | 1 |
 | 6 | say-how-good-it-is | — | planned | 1 |
 
 Delivered in three stages, each merged and deployed on its own:
