@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: e9b16266
+hash: 8d5f8e6e
 ---
 
 # Wave 17: The ground is not flat
@@ -445,17 +445,11 @@ Written down before it is built, in the same spirit as Wave 16's list:
   ridge, eaves, or median are three different questions.
 
   And there is a better source than doing it ourselves: **LoD2 building models**,
-  statewide and open in most Bundesländer, carry a measured height *and a roof
+  statewide and open in most Bundesländer, carrying a measured height *and a roof
   shape per building* — the very enum Wave 16 feature 7 has the user pick by
-  hand. The open question there is delivery: CityGML per Gemeinde is a download,
-  not a bbox request, which is the same trap this wave's data strategy exists to
-  avoid.
+  hand. NRW ships them as addressable 1 km² CityGML tiles, and a Cologne tile
+  holds 2,189 buildings with a height and a roof shape on every one of them.
+  **This is now Wave 19**, planned in full.
 
-  For trees the answer is thinner. **They are not labelled.** NRW's nine classes
-  have no vegetation class at all — a tree is a `Last Return nicht Boden` like a
-  car or a roof. A crown is therefore "tall nDOM outside a footprint", which is
-  detection work rather than a lookup, and it still cannot say what species —
-  and species is what Wave 16 needs, because the transmission of a crown depends
-  on whether it drops its leaves. Municipal Baumkataster carry species and
-  height, but only for street and park trees, and only in the cities that publish
-  one.
+  For trees the answer is thinner — they are not labelled at all — and that is
+  Wave 19's second stage, kept separable for exactly that reason.
