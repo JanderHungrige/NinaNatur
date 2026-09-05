@@ -39,9 +39,14 @@ def _window() -> TerrainWindow:
 
 
 def _patch(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> None:
-    monkeypatch.setattr(terrain_sync, "state_at", kwargs.get("state_at", lambda *_: "Nordrhein-Westfalen"))
-    monkeypatch.setattr(terrain_sync, "fetch_window", kwargs.get("fetch_window", lambda *_a, **_k: _window()))
-    monkeypatch.setattr(terrain_sync, "horizon_ring", kwargs.get("horizon_ring", lambda *_a, **_k: [1.5] * 360))
+    """Replace the three things that would otherwise reach the network."""
+    defaults = {
+        "state_at": lambda *_: "Nordrhein-Westfalen",
+        "fetch_window": lambda *_a, **_k: _window(),
+        "horizon_ring": lambda *_a, **_k: [1.5] * 360,
+    }
+    for name, fallback in defaults.items():
+        monkeypatch.setattr(terrain_sync, name, kwargs.get(name, fallback))
 
 
 def test_a_garden_gets_its_ground_and_its_horizon(
