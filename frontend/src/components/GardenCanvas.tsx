@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { GardenOut, LightMap } from '../api/client';
+import type { GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { MapMode } from './SunMap';
 import { elementById } from '../canvas/elements';
@@ -49,6 +49,8 @@ interface Props {
   /** The same panel the suggestion list opens. */
   onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
   sunMap?: { map: LightMap; mode: MapMode } | undefined;
+  /** The ground the garden stands on, drawn beneath the plan. */
+  terrain?: Terrain | null | undefined;
   shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
@@ -101,6 +103,7 @@ export function GardenCanvas({
   onMoveCluster,
   onShowClusterInfo,
   sunMap,
+  terrain,
   shadows,
   viewpoint = null,
   onPlaceViewpoint,
@@ -318,6 +321,7 @@ export function GardenCanvas({
           onGrabCluster={clusterDrag.grab}
           onShowClusterInfo={onShowClusterInfo}
           sunMap={sunMap}
+          terrain={terrain}
           shadows={shadows}
           armed={tool !== null}
           onAskWhatItIs={onAskWhatItIs}

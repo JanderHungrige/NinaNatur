@@ -592,6 +592,30 @@ export interface paths {
         patch: operations["set_soil_api_v1_gardens__token__soil_patch"];
         trace?: never;
     };
+    "/api/v1/gardens/{token}/terrain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Terrain
+         * @description The ground under this garden, or null where nobody publishes it.
+         *
+         *     Null is an answer and the page says so in words. Nine Bundesländer have no
+         *     service in the registry, and a garden there keeps the flat assumption it
+         *     always had — which is fine, and being quiet about it is not.
+         */
+        get: operations["terrain_api_v1_gardens__token__terrain_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/timeline": {
         parameters: {
             query?: never;
@@ -1733,6 +1757,41 @@ export interface components {
             species_with_full_site_profile: number;
         };
         /**
+         * TerrainOut
+         * @description The ground under a garden, and how far it is to be trusted.
+         *
+         *     Every field after `relief` is there so the page can answer "says who, and
+         *     how good is it" without the reader having to know what a DGM1 is. A height
+         *     shown without its credit is a height used outside its licence, and a height
+         *     shown without its accuracy invites more confidence than it earns.
+         */
+        TerrainOut: {
+            /** Attribution */
+            attribution: string;
+            /** Cell M */
+            cell_m: number;
+            /** Cols */
+            cols: number;
+            /** Highest */
+            highest: number;
+            /** Licence */
+            licence: string;
+            /** Lowest */
+            lowest: number;
+            /** Min X */
+            min_x: number;
+            /** Min Y */
+            min_y: number;
+            /** Relief */
+            relief: number[];
+            /** Rows */
+            rows: number;
+            /** Source */
+            source: string;
+            /** Vertical Step M */
+            vertical_step_m: number;
+        };
+        /**
          * TimelineOut
          * @description The bloom year. `plantings_without_interaction_data` is reported so a
          *     timeline built mostly on unknowns is visible rather than merely optimistic.
@@ -2719,6 +2778,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    terrain_api_v1_gardens__token__terrain_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TerrainOut"] | null;
                 };
             };
             /** @description Validation Error */

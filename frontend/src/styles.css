@@ -13,6 +13,12 @@
   /* The sun map's two inks. See `.sun-map__cell`. */
   --wash-shade: #2b2f28;
   --wash-sun: #e8c33a;
+  /* The relief's two inks. Not the shade wash: the sun map and the ground are
+     two different statements over the same plan, and drawing them in one colour
+     would make a north slope look like a shadow. Brown-grey, because that is
+     what ground is. */
+  --relief-dark: #6b5f4c;
+  --relief-light: #fffdf6;
   --radius: 12px;
 
   /* The garden plan's own washes. Named after what they draw rather than
@@ -56,6 +62,10 @@
        the legend is what says the wash means shade rather than light. */
     --wash-shade: #5b6c80;
     --wash-sun: #f0d264;
+    /* The same lesson as the shade wash: on #12160f nothing reads as darker.
+       The lit side does the work here and the shadowed side is barely there. */
+    --relief-dark: #0b0d08;
+    --relief-light: #c9bda4;
 
     /* Dark mode is not the light plan inverted: a wash that works on paper
        glows on a dark ground. These are the same colours desaturated and

@@ -4,6 +4,7 @@ import type {
   BedSuggestions,
   LightMap,
   ShadowDay,
+  Terrain,
   ChangeOut,
   BloomPalette,
   FeedbackQuestions,
@@ -114,6 +115,7 @@ export function App() {
   /** The sun map, and whether it is being shown. Fetched with the garden so the
    *  switch can say straight away whether there is anything to show. */
   const [lightMap, setLightMap] = useState<LightMap | null>(null);
+  const [terrain, setTerrain] = useState<Terrain | null>(null);
   const [shadeOn, setShadeOn] = useState(false);
   const [mapMode, setMapMode] = useState<MapMode>('sun');
   /** A day's shadows, and which frame is showing. Fetched only when the day is
@@ -148,6 +150,7 @@ export function App() {
     // fetched in `refresh` and not here is invisible until the first edit.
     setPalette(await client.bloom(token));
     setLightMap(await client.lightMap(token));
+    setTerrain(await client.terrain(token));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -341,6 +344,12 @@ export function App() {
 
   const refresh = useCallback(async (token: string, weighted: boolean) => {
     setLightMap(await client.lightMap(token));
+    // The ground changes only when it is first fetched, which happens on the
+    // recompute button — so this is nearly always the same answer. It is here
+    // anyway, because the alternative is the map being right and the relief
+    // being a version behind, which is exactly the bug the comment on `load`
+    // was written about.
+    setTerrain(await client.terrain(token));
     setTimeline(await client.timeline(token, weighted));
     setScore(await client.score(token));
     setImprovements(await client.improvements(token));
@@ -1125,6 +1134,7 @@ export function App() {
               />
               <ShadeSwitch
                 map={lightMap}
+                terrain={terrain}
                 on={shadeOn}
                 mode={mapMode}
                 onToggle={(next) => {
@@ -1270,6 +1280,7 @@ export function App() {
                 selectedPlantingId={selectedPlantingId}
                 onSelectCluster={setSelectedPlantingId}
                 onMoveCluster={moveCluster}
+                terrain={shadeOn ? terrain : null}
                 sunMap={
                   shadeOn && lightMap !== null
                     ? { map: lightMap, mode: mapMode }

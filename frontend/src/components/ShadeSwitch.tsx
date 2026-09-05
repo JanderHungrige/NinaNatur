@@ -1,7 +1,9 @@
-import type { LightMap } from '../api/client';
+import type { LightMap, Terrain } from '../api/client';
 import { BANDS, type MapMode, bandFor } from './SunMap';
 
 interface Props {
+  /** The ground under the garden, or null where nobody publishes it. */
+  terrain?: Terrain | null | undefined;
   map: LightMap | null;
   on: boolean;
   mode: MapMode;
@@ -41,7 +43,7 @@ function whenText(iso: string): string {
  * that admits it.
  */
 export function ShadeSwitch({
-  map, on, mode, onToggle, onMode, onRebuild, busy,
+  map, terrain, on, mode, onToggle, onMode, onRebuild, busy,
 }: Props) {
   return (
     <section className="panel shade-switch" aria-labelledby="shade-heading">
@@ -116,6 +118,8 @@ export function ShadeSwitch({
             </p>
           )}
 
+          <TerrainNote terrain={terrain} />
+
           {map.misplaced.length > 0 && (
             <div className="shade-switch__warnings">
               <h3>Steht im falschen Licht</h3>
@@ -152,5 +156,42 @@ export function ShadeSwitch({
         </>
       )}
     </section>
+  );
+}
+
+
+/**
+ * Where the ground came from, and how far to trust it.
+ *
+ * Not a footnote. Every height in this model is somebody else's measurement
+ * under somebody else's licence, and a number shown without either invites more
+ * confidence than it has earned — as well as being, for dl-de/by-2-0 and
+ * CC-BY-4.0, a use outside the licence.
+ *
+ * The silent case is the one worth having: a garden in a Bundesland with no
+ * open service is computed on flat ground, exactly as every garden was before
+ * Wave 17, and the page says so rather than letting the reader assume the
+ * hillside was taken into account.
+ */
+function TerrainNote({ terrain }: { terrain?: Terrain | null | undefined }) {
+  if (terrain === undefined) return null;
+  if (terrain === null) {
+    return (
+      <p className="hint">
+        Für diese Adresse liegen keine Höhendaten vor — der Plan rechnet mit
+        ebenem Gelände.
+      </p>
+    );
+  }
+  const fall = Math.round((terrain.highest - terrain.lowest) * 10) / 10;
+  const coarse = terrain.vertical_step_m >= 1;
+  return (
+    <p className="hint">
+      Gelände {terrain.lowest.toFixed(0)}–{terrain.highest.toFixed(0)} m ü. NHN,{' '}
+      {fall} m Unterschied · {terrain.attribution}
+      {coarse
+        ? ' · Höhen nur in ganzen Metern — feinere Neigungen sieht dieser Dienst nicht.'
+        : ' · Gitterweite 1 m, Höhengenauigkeit etwa ± 0,3 m.'}
+    </p>
   );
 }
