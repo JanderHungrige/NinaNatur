@@ -24,7 +24,8 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues:
-  - "Nine Bundesländer have no entry: no anonymous bbox coverage service was reached for Bayern, Berlin, Bremen, Hamburg, Rheinland-Pfalz, Sachsen, Sachsen-Anhalt, Schleswig-Holstein, Thüringen."
+  - "Eight Bundesländer have no entry, each for a stated reason. Bayern's data is open but its coverage service needs credentials; Thüringen, Sachsen, Schleswig-Holstein, Hamburg, Bremen and Rheinland-Pfalz have no anonymous coverage service found; Saarland's licence forbids this use."
+  - "About 64 % of the population is covered. 'Not found' is not 'does not exist' — the four smallest gaps were probed less thoroughly than the rest."
   - "Baden-Württemberg's INSPIRE coverage quantises height to whole metres, not the 0.01 m the DGM1 specification states."
 ---
 
@@ -45,18 +46,32 @@ Finding the endpoints by guessing was going nowhere, so they came from the
 **GDI-DE catalogue** (`gdk.gdi-de.org`, CSW GetRecords over 417 service records)
 rather than from URL patterns.
 
-## Six states answer
+## Eight states answer
 
 | State | Coverage | EPSG | Axes | Licence |
 |---|---|---|---|---|
 | Nordrhein-Westfalen | `nw_dgm` | 25832 | x/y | dl-de/zero-2-0 |
-| Brandenburg (+ Berlin data) | `bb_dgm` | 25833 | x/y | dl-de/by-2-0 |
+| Brandenburg | `bb_dgm` | 25833 | x/y | dl-de/by-2-0 |
+| **Berlin** | `bb_dgm` (Brandenburg's) | 25833 | x/y | dl-de/by-2-0 |
+| **Sachsen-Anhalt** | `Coverage1` | 25832 | x/y | dl-de/by-2-0 |
 | Niedersachsen | `ni_dgm1` | 25832 | x/y | CC-BY-4.0 |
 | Mecklenburg-Vorpommern | `mv_dgm` | 25833 | x/y | keine Bedingungen, Quellenvermerk Pflicht |
 | Hessen | `he_dgm1` | 25832 | E/N | dl-de/zero-2-0 |
 | Baden-Württemberg | `EL.ElevationGridCoverage` | 25832 | E/N | dl-de/by-2-0 |
 
-All six return a 200 × 200 m window at 1 m in a single request, 72–156 KB.
+All eight return a 200 × 200 m window at 1 m in a single request, and every one
+was checked against a place whose height is known: Köln 51.2 m, Potsdam 32.6,
+Tempelhofer Feld 48.4, Magdeburg 52.1, Hannover 53.1, Schwerin 41.4, Kassel
+175.5, Stuttgart 243.0.
+
+**Berlin is its neighbour's service**, which Brandenburg's own licence text says
+outright — and which was checked rather than taken on trust. It is the one case
+where using another state's endpoint is not borrowing somebody else's ground.
+
+**Sachsen-Anhalt was found on the second pass.** The first search read the
+catalogue's Dublin Core view, whose `dc:URI` points at landing pages; the ISO
+view has `gmd:linkage`, which is the endpoint. It also needed two format
+capabilities nothing else had asked for — see below.
 
 ## Saarland is why this is a registry and not a URL
 
@@ -88,18 +103,49 @@ page can say so instead of implying precision it does not have.
 Brandenburg, M-V and Hessen return uncompressed. Feature 1 needs a decoder for
 both, and the registry is where that is known before the request is made.
 
-## Nine states have no entry
+## Two more formats, both from one state
 
-Bayern, Berlin, Bremen, Hamburg, Rheinland-Pfalz, Sachsen, Sachsen-Anhalt,
-Schleswig-Holstein and Thüringen. Several publish DGM1 as open data by download
-or as a WMS; Thüringen's `.../services/DGM` answers a WCS request with WMS
-capabilities, and Sachsen and Sachsen-Anhalt return 403 to anonymous requests.
-The federal `sgx.geodatenzentrum.de/wcs_dgm1` also returns 403 — exactly as the
-BKG orthophoto endpoint did in Wave 8.
+Sachsen-Anhalt answers `multipart/related` rather than a bare GeoTIFF — legal
+WCS 2.0 that no other service in the registry uses — and packages the image as
+**tiles** rather than strips. Both had to be implemented:
+
+- Multipart is unwrapped by finding the TIFF magic rather than by parsing MIME
+  headers, because boundaries and header casing vary between servers while
+  `II*\0` and `MM\0*` do not.
+- A tile grid pads its last column and row out to whole tiles. Dropping that
+  padding rather than shifting it in is the whole of the work, and getting it
+  wrong skews every row after the first tile boundary — which looks entirely
+  plausible on a hillside.
+
+Tiling is also what makes a Cloud-Optimised GeoTIFF, which the BKG's own
+documentation says these products may be delivered as. This is the format to
+expect more of, not less.
+
+## The eight that are not here, each for its own reason
+
+"Not found" and "does not exist" are different claims, and only the first is
+being made.
+
+| State | Status |
+|---|---|
+| **Bayern** | DGM1 is open (CC-BY-4.0) and downloadable; the coverage service answers **401** — credentials from the LDBV's customer service |
+| **Saarland** | Works, and forbids this use: embedding it in another application is *kostenpflichtig*. Its coverage is 5 m, not 1 |
+| **Thüringen** | The geoproxy answers *"No service with identifier 'WCS_DGM' available"*; its WMS serves DGM2 and DGM5 — pictures, not heights |
+| **Sachsen** | 403 on every path tried, and no terrain WCS record in the GDI-DE catalogue |
+| **Schleswig-Holstein** | Download portal and a WMS; no coverage service found |
+| **Hamburg** | `HH_WMS_DGM1` exists; no coverage service found |
+| **Bremen**, **Rheinland-Pfalz** | No coverage service found, in the catalogue or by probing |
+
+The federal `sgx.geodatenzentrum.de/wcs_dgm1` answers `NOACCESS_SERVICE` from a
+security gate — exactly as the BKG orthophoto endpoint did in Wave 8.
 
 **A gap stays a gap.** `by_state` returns `None`, the garden keeps the flat
 assumption, and feature 6 says so on the page. No neighbour's ground, no coarser
 federal substitute quietly swapped in.
+
+Eight states is roughly **64 % of the population**. Worth being precise about
+rather than rounding up — and the four smallest gaps were probed less thoroughly
+than the rest, so this is a floor rather than a finding.
 
 ## Tests
 

@@ -191,3 +191,95 @@ def test_nodata_becomes_nan_rather_than_minus_nine_thousand() -> None:
 def test_an_unreadable_file_says_so_rather_than_guessing() -> None:
     with pytest.raises(TiffError):
         read_raster(b"this is not a tiff at all")
+
+
+# --- packaging and layout --------------------------------------------------
+
+def _tiled(values: np.ndarray, tile: int = 128, big_endian: bool = False) -> bytes:
+    """A tiled TIFF, padded out to whole tiles the way the format requires."""
+    end = ">" if big_endian else "<"
+    height, width = values.shape
+    bits = values.dtype.itemsize * 8
+    across = (width + tile - 1) // tile
+    down = (height + tile - 1) // tile
+
+    blocks: list[bytes] = []
+    for ty in range(down):
+        for tx in range(across):
+            block = np.zeros((tile, tile), dtype=values.dtype)
+            rows = min(tile, height - ty * tile)
+            cols = min(tile, width - tx * tile)
+            block[:rows, :cols] = values[
+                ty * tile : ty * tile + rows, tx * tile : tx * tile + cols
+            ]
+            blocks.append(block.astype(end + values.dtype.str[1:]).tobytes())
+
+    entries = [
+        (256, 3, 1, width), (257, 3, 1, height), (258, 3, 1, bits),
+        (259, 3, 1, 1), (277, 3, 1, 1), (322, 3, 1, tile), (323, 3, 1, tile),
+        (339, 3, 1, 3 if values.dtype.kind == "f" else 1),
+    ]
+    header = 8
+    dir_at = header + sum(len(b) for b in blocks)
+    n = len(entries) + 2
+    arrays_at = dir_at + 2 + n * 12 + 4
+
+    offsets, at = [], header
+    for b in blocks:
+        offsets.append(at)
+        at += len(b)
+    counts = [len(b) for b in blocks]
+
+    out = bytearray(b"MM\x00\x2a" if big_endian else b"II\x2a\x00")
+    out += struct.pack(end + "I", dir_at)
+    for b in blocks:
+        out += b
+
+    all_entries = [*entries,
+                   (324, 4, len(blocks), arrays_at),
+                   (325, 4, len(blocks), arrays_at + 4 * len(blocks))]
+    all_entries.sort()
+    out += struct.pack(end + "H", len(all_entries))
+    for tag, kind, count, value in all_entries:
+        code = {1: "B", 3: "H", 4: "I"}[kind]
+        raw = struct.pack(end + code, value)
+        out += struct.pack(end + "HHI", tag, kind, count) + raw + b"\x00" * (4 - len(raw))
+    out += struct.pack(end + "I", 0)
+    out += struct.pack(end + f"{len(blocks)}I", *offsets)
+    out += struct.pack(end + f"{len(blocks)}I", *counts)
+    return bytes(out)
+
+
+def test_a_tiled_raster_is_reassembled_in_the_right_order() -> None:
+    """Sachsen-Anhalt's shape, and the shape of every Cloud-Optimised GeoTIFF —
+    which the BKG's own documentation says these products may be delivered as.
+
+    A tile grid pads the last column and the last row out to a whole tile, so
+    the padding must be dropped rather than shifted in. Getting that wrong
+    skews every row after the first tile boundary by a few metres, which looks
+    entirely plausible on a hillside.
+    """
+    grid = np.arange(200 * 200, dtype="<f4").reshape(200, 200)
+    raster = read_raster(_tiled(grid, tile=128))
+
+    assert (raster.width, raster.height) == (200, 200)
+    assert raster.values[0][0] == pytest.approx(0.0)
+    assert raster.values[0][199] == pytest.approx(199.0), "the padded column"
+    assert raster.values[199][0] == pytest.approx(199 * 200.0), "the padded row"
+    assert raster.values[150][150] == pytest.approx(150 * 200 + 150.0)
+
+
+def test_a_multipart_response_is_unwrapped() -> None:
+    """WCS 2.0 lets a server package the coverage as multipart/related: a GML
+    part describing the grid, then the pixels. Five of the eight services hand
+    back a bare GeoTIFF; Sachsen-Anhalt packages it, and is entitled to."""
+    inner = _tiff(HEIGHTS)
+    wrapped = (
+        b"--wcs\r\nContent-Type: text/xml\r\nContent-ID: GML-Part\r\n\r\n"
+        b"<gmlcov:RectifiedGridCoverage/>\r\n--wcs\r\n"
+        b"Content-Type: image/tiff\r\n\r\n" + inner + b"\r\n--wcs--\r\n"
+    )
+
+    raster = read_raster(wrapped)
+
+    assert raster.values[1][2] == pytest.approx(13.0)

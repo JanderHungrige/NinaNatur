@@ -15,14 +15,30 @@ is listed as open by every aggregator — and its own `AccessConstraints` say
 using it here is not. It is therefore not here. The coverage it serves is also
 5 m rather than the DGM1 its title claims.
 
-Not found, and so not included — a bbox coverage service could not be reached
-for: Bayern, Berlin, Bremen, Hamburg, Rheinland-Pfalz, Sachsen, Sachsen-Anhalt,
-Schleswig-Holstein, Thüringen. Several publish DGM1 as open data by download or
-as a WMS; Thüringen's `.../services/DGM` answers a WCS request with WMS
-capabilities, and Sachsen and Sachsen-Anhalt return 403 to anonymous requests.
-The federal `sgx.geodatenzentrum.de/wcs_dgm1` also returns 403, exactly as the
-BKG orthophoto endpoint did in Wave 8. A gap here is a gap, and the model says
-so rather than borrowing a neighbour's ground.
+**The eight that are not here, each with its own reason.** "Not found" and
+"does not exist" are different claims and only the first is being made:
+
+- **Bayern** — the DGM1 *is* open (CC-BY-4.0) and downloadable, but its coverage
+  service at `geoservices.bayern.de/pro/wcs/dgm/v1/wcs_inspire_dgm1` answers
+  401: access needs credentials from the LDBV's customer service. Tiles are the
+  only anonymous route, which is the wave plan's "secondary" and not built.
+- **Saarland** — works, and says in its own `AccessConstraints` that embedding it
+  in another application is kostenpflichtig. Its coverage is also 5 m.
+- **Thüringen** — the geoproxy answers "No service with identifier 'WCS_DGM'
+  available"; its WMS serves DGM2 and DGM5, which are pictures rather than
+  heights.
+- **Sachsen** — 403 on every path tried, and no WCS record for a terrain model in
+  the GDI-DE catalogue.
+- **Schleswig-Holstein, Hamburg, Bremen, Rheinland-Pfalz** — no coverage service
+  found, in the catalogue or by probing. SH and Hamburg publish DGM1 by download
+  and as a WMS.
+
+And the federal `sgx.geodatenzentrum.de/wcs_dgm1` answers `NOACCESS_SERVICE`
+from a security gate, exactly as the BKG orthophoto endpoint did in Wave 8.
+
+A gap here is a gap, and the model says so rather than borrowing a neighbour's
+ground. Eight states is about 64 % of the population — worth being precise about
+rather than rounding up.
 """
 from __future__ import annotations
 
@@ -87,6 +103,36 @@ TERRAIN_SOURCES: tuple[TerrainSource, ...] = (
         # second credit as well, so it is given unconditionally rather than
         # worked out per request.
         attribution="© GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal Berlin, dl-de/by-2-0",
+    ),
+    TerrainSource(
+        # Brandenburg's coverage carries Berlin, which its own licence text says
+        # outright and which was checked rather than taken on trust: 48.4 m at
+        # the Tempelhofer Feld and 35.5 m in Kreuzberg, both right. So Berlin is
+        # an entry pointing at its neighbour's service — the one case where that
+        # is not borrowing somebody else's ground.
+        state="Berlin",
+        url="https://isk.geobasis-bb.de/ows/dgm_wcs",
+        coverage="bb_dgm",
+        epsg=25833,
+        axes=AXES_XY,
+        cell_m=1.0,
+        vertical_step_m=0.01,
+        licence="dl-de/by-2-0",
+        attribution="© Geoportal Berlin, dl-de/by-2-0; © GeoBasis-DE/LGB, dl-de/by-2-0",
+    ),
+    TerrainSource(
+        state="Sachsen-Anhalt",
+        url=(
+            "https://geodatenportal.sachsen-anhalt.de/"
+            "ows_INSPIRE_LVermGeo_ATKIS_EL_DGM_WCS"
+        ),
+        coverage="Coverage1",
+        epsg=25832,
+        axes=AXES_XY,
+        cell_m=1.0,
+        vertical_step_m=0.01,
+        licence="dl-de/by-2-0",
+        attribution="© GeoBasis-DE / LVermGeo LSA, dl-de/by-2-0",
     ),
     TerrainSource(
         state="Niedersachsen",
