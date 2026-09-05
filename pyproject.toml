@@ -5,6 +5,11 @@ description = "Open-data plant trait database for insect-friendly garden plannin
 requires-python = ">=3.12"
 dependencies = [
     "requests>=2.31",
+    # Explicit since Wave 17: the terrain reader imports it directly. It arrived
+    # as pandas' transitive dependency before that, which is a working import
+    # for the wrong reason — and the reason could stop being true in a release
+    # nobody here would be watching.
+    "numpy>=2.0",
     "pandas>=2.0",
     "openpyxl>=3.1",
     "fastapi>=0.115",
