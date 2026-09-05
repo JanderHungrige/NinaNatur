@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: aa1832c2
+hash: 6e4f558a
 ---
 
 # Wave 17: The ground is not flat
@@ -193,8 +193,9 @@ a coarser federal substitute quietly swapped in.
 
 `geo/terrain.py`: given a location, return a height window.
 
-- 200 m box around the anchor — enough for the garden and for the neighbours
-  that shade it, which is the same radius `surroundings_from` already uses.
+- 200 m box around the anchor. The obstacle model reaches 50 m beyond the plot
+  boundary (`surroundings.MARGIN_M`), so 200 m covers every building the shading
+  already knows about, with enough ground around it to measure a slope against.
 - Fetched through `ingest/http.py`, so a rerun costs zero requests.
 - Stored on the volume in a `terrain_window` table: cell size, origin in the
   garden's local metres, cols, rows, heights as **int16 centimetres above the
