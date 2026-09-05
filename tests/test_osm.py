@@ -151,3 +151,52 @@ def test_a_building_without_geometry_still_arrives_if_it_has_a_centre() -> None:
 
     assert [b.osm_id for b in found] == [2]
     assert found[0].outline == []
+
+
+# --- which Bundesland ------------------------------------------------------
+
+def test_a_city_state_is_found_by_its_iso_code() -> None:
+    """Nominatim reports a `state` for thirteen Bundesländer and not for the
+    three city-states: Berlin comes back as `city: Berlin` with
+    `ISO3166-2-lvl4: DE-BE` and no state at all.
+
+    The blind spot has been here since Wave 8 and only showed up when Berlin got
+    a terrain service — Wave 8's own registry has no entry for any city-state,
+    so nothing ever failed visibly.
+    """
+    from ninanatur.geo.osm import state_at
+
+    def berlin(_url: str, _params: object = None) -> dict[str, object]:
+        return {"address": {"city": "Berlin", "ISO3166-2-lvl4": "DE-BE",
+                            "country_code": "de"}}
+
+    assert state_at(52.475, 13.403, fetch=berlin) == "Berlin"
+
+
+def test_a_named_state_still_wins() -> None:
+    """The code is the fallback, not the primary: thirteen states answer with a
+    name and that name is what every other registry here is keyed on."""
+    from ninanatur.geo.osm import state_at
+
+    def saxony(_url: str, _params: object = None) -> dict[str, object]:
+        return {"address": {"state": "Sachsen-Anhalt", "ISO3166-2-lvl4": "DE-ST"}}
+
+    assert state_at(52.1, 11.6, fetch=saxony) == "Sachsen-Anhalt"
+
+
+def test_a_point_outside_germany_is_still_nothing() -> None:
+    """Neither field, no guess. Using one state's data over another country's
+    ground is using it outside its licence area."""
+    from ninanatur.geo.osm import state_at
+
+    def abroad(_url: str, _params: object = None) -> dict[str, object]:
+        return {"address": {"country": "Österreich", "ISO3166-2-lvl4": "AT-9"}}
+
+    assert state_at(48.2, 16.4, fetch=abroad) is None
+
+
+def test_every_bundesland_has_an_iso_code_and_they_are_all_different() -> None:
+    from ninanatur.geo.osm import ISO_STATES
+
+    assert len(ISO_STATES) == 16
+    assert len(set(ISO_STATES.values())) == 16
