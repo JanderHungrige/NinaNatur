@@ -222,7 +222,7 @@ NaturaDB is.
 | 3 | buildings-stand-on-the-ground | docs/71-buildings-stand-on-the-ground.md | complete | 1 |
 | 4 | the-hill-that-eats-the-morning | docs/72-the-hill-that-eats-the-morning.md | complete | 2, 3 |
 | 5 | which-way-does-it-fall | docs/73-which-way-does-it-fall.md | complete | 1 |
-| 6 | say-how-good-it-is | — | planned | 1 |
+| 6 | say-how-good-it-is | docs/74-say-how-good-it-is.md | complete | 1 |
 
 Delivered in three stages, each merged and deployed on its own:
 
