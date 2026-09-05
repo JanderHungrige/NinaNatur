@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: 06eae8a6
+hash: e9b16266
 ---
 
 # Wave 17: The ground is not flat
@@ -272,16 +272,22 @@ a coarser federal substitute quietly swapped in.
   there.
 
 The reprojection is the one piece of real work: the services speak
-ETRS89/UTM (EPSG:25832 or 25833), the app speaks metres from an anchor. A
-transverse-Mercator forward/inverse is fifty lines and no dependency; `pyproj`
-is a wheel per platform for the same two formulas. **Decide in feature 0, with a
-test against known control points either way** — this is exactly the kind of
-thing that is quietly wrong by 30 m and only shows up as a garden whose hill is
-in the wrong direction.
+ETRS89/UTM (EPSG:25832 or 25833), the app speaks metres from an anchor.
+**Settled while planning: fifty lines, no dependency.** A Krüger-series forward
+transform on GRS80 was written and checked against control points — longitude 9°
+(zone 32's central meridian) returns easting 500000.000 exactly, and Köln Dom
+lands on 356560 / 5645282, which is where it is. `pyproj` is a wheel per platform
+for the same formulas. The control-point test ships with the code either way:
+this is exactly the kind of thing that is quietly wrong by 30 m and shows up only
+as a garden whose hill is in the wrong direction.
 
-A plain uncompressed GeoTIFF is readable with `struct` and numpy in about forty
-lines; that was verified while planning this. LZW or DEFLATE tiles are not, and
-the registry has to record which a service returns.
+**The format is not uniform, and that was measured, not assumed.** Brandenburg
+returns an uncompressed float32 GeoTIFF, which `struct` plus numpy reads in about
+forty lines. NRW returns the same coverage **LZW-compressed** (`Compression = 5`)
+for the DGM while its nDOM comes back uncompressed. So feature 1 needs a TIFF
+LZW decoder — another forty lines, and a well-specified one — or it has to
+negotiate the format per service. The registry records which, because finding out
+at request time means finding out in production.
 
 ### 2. the-horizon-ring
 
@@ -402,7 +408,6 @@ Written down before it is built, in the same spirit as Wave 16's list:
   obstacle model knows buildings out to 50 m from the plot boundary; a ring built
   from a surface model must ignore everything inside that radius, or the
   neighbour's house is a shadow twice over.
-- **Projection: `pyproj` or fifty lines.** Decide with a control-point test.
 - **Which states subset by bbox at all.** Fourteen unprobed. The registry may
   come back thinner than `hoehendaten.de` suggests, because "open data" and "has
   a WCS" are different claims.
@@ -417,3 +422,40 @@ Written down before it is built, in the same spirit as Wave 16's list:
   a real gardening answer; they are also a model of their own.
 - Water: where the rain runs and where it stands. Same reasoning.
 - Sub-metre relief from LAZ point clouds. See *Why not 20 cm*.
+- **Measuring the buildings and trees themselves.** Explored while planning this
+  wave and deliberately left out of it, because it is a second source doing a
+  second job and would double the wave.
+
+  The surface models are on the same hosts, under the same licences, with the
+  same bbox subsetting: NRW serves `nw_dom` and — already differenced against
+  the terrain — `nw_ndom`, object heights above ground, at **0.5 m**. A 200 m
+  window is 640 KB and one request. Over a Cologne suburb it reads exactly as it
+  should: a third of the window at ground level, then hedges, then garages, then
+  roofs and crowns.
+
+  Crossed with the OSM footprints this app already fetches, it measures what is
+  currently assumed. A university building tagged `building:levels=5` — 15 m
+  under the storey assumption — measures 20.0 m with a tight spread. That is the
+  case for doing it.
+
+  It also measures the failure modes. A 30 m² outbuilding came back at 17 m
+  because a tree hangs over it, and a 60 m² kindergarten at 6.5 m median against
+  a 12.8 m 95th percentile for the same reason. Footprints have to be eroded
+  before they are sampled, and the statistic has to be chosen deliberately —
+  ridge, eaves, or median are three different questions.
+
+  And there is a better source than doing it ourselves: **LoD2 building models**,
+  statewide and open in most Bundesländer, carry a measured height *and a roof
+  shape per building* — the very enum Wave 16 feature 7 has the user pick by
+  hand. The open question there is delivery: CityGML per Gemeinde is a download,
+  not a bbox request, which is the same trap this wave's data strategy exists to
+  avoid.
+
+  For trees the answer is thinner. **They are not labelled.** NRW's nine classes
+  have no vegetation class at all — a tree is a `Last Return nicht Boden` like a
+  car or a roof. A crown is therefore "tall nDOM outside a footprint", which is
+  detection work rather than a lookup, and it still cannot say what species —
+  and species is what Wave 16 needs, because the transmission of a crown depends
+  on whether it drops its leaves. Municipal Baumkataster carry species and
+  height, but only for street and park trees, and only in the cities that publish
+  one.
