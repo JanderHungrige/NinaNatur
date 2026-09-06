@@ -61,6 +61,11 @@ CREATE TABLE IF NOT EXISTS element (
     height      REAL,
     -- 'user' | 'osm_height' | 'osm_levels' | 'neighbourhood'.
     height_source TEXT NOT NULL DEFAULT 'user',
+    -- Where the roof shape came from, kept apart from where the height came
+    -- from. They arrive together from a 3D building model and separately from
+    -- everywhere else: somebody can look out of the window and know the shape
+    -- without knowing the height, and a later refresh must not overwrite that.
+    roof_source   TEXT NOT NULL DEFAULT 'user',
     -- What shape the roof is, if anybody has said. OSM's `height` is the ridge,
     -- so a building without this is modelled as solid to the ridge — which is
     -- what every building was before Wave 16, and stays the default: one that

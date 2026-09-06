@@ -1311,6 +1311,12 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* A warning, not an error: bordered rather than shouted, because the gardener
    may well know something the model does not. */
+.element-list__source {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
 .shade-switch__warnings {
   border-left: 3px solid var(--warn);
   padding-left: 0.7rem;

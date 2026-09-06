@@ -2478,6 +2478,8 @@
           "gable",
           "hip",
           "pent",
+          "mix",
+          "other",
           "unknown"
         ],
         "title": "RoofShape",
@@ -3038,7 +3040,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.16.56"
+    "version": "V0.17.66"
   },
   "openapi": "3.1.0",
   "paths": {

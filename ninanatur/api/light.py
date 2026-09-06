@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
+from ninanatur.garden.building_sync import measure_buildings
 from ninanatur.garden.lightgrid import extent_of, load_grid, signature_of
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.misplaced import misplaced_plantings
@@ -146,7 +147,11 @@ def rebuild_light_map(
     garden = require_garden(conn, token)
     # The one place the ground is fetched. A survey answers in seconds, which is
     # too long for a page load and fine for a button somebody pressed.
-    ensure_terrain(conn, load_garden(conn, garden.garden_id))
+    standing = load_garden(conn, garden.garden_id)
+    ensure_terrain(conn, standing)
+    # After the ground, because a raw surface model is only object heights once
+    # the terrain has been taken off it.
+    measure_buildings(conn, load_garden(conn, garden.garden_id))
     recompute_light(conn, garden.garden_id)
     return _read(conn, garden.garden_id)
 

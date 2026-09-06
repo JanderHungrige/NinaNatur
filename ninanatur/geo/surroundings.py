@@ -40,6 +40,13 @@ class HeightSource(StrEnum):
     what it dropped."""
 
     USER = "user"
+    #: The state's own 3D building model. A surveyor measured this building and
+    #: published the number, stated to ± 1 m.
+    SURVEYED = "surveyed"
+    #: This model measured it, from a laser surface raster over the building's
+    #: own footprint. A real measurement of this roof, with more of our own
+    #: assumptions in it than the survey's own figure has.
+    MEASURED = "measured"
     OSM_HEIGHT = "osm_height"
     OSM_LEVELS = "osm_levels"
     NEIGHBOURHOOD = "neighbourhood"

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import type { GardenOut } from '../api/client';
+import { heightNote } from '../heights';
 import { labelOf } from '../kinds';
 
 interface Props {
@@ -19,6 +20,10 @@ interface Row {
   label: string | null;
   /** What it covers, so two identical-sounding rows can still be told apart. */
   area: number;
+  /** Metres, for the things that have one. Beds do not. */
+  height?: number | null;
+  /** Where that height came from, in words — null when there is nothing to say. */
+  note?: string | null;
 }
 
 /** Shoelace, on the footprint the server already computed. */
@@ -59,6 +64,10 @@ export function ElementList({ garden, selectedId, onSelect, onDelete }: Props) {
       kind: o.kind,
       label: o.label,
       area: areaOf(o.footprint),
+      // Where its height came from. A shading map resting on an assumption
+      // must not look like one resting on a measurement.
+      height: o.height,
+      note: heightNote(o.height_source),
     })),
   ];
 
@@ -85,7 +94,16 @@ export function ElementList({ garden, selectedId, onSelect, onDelete }: Props) {
                 )}
                 <span className="element-list__area">
                   {row.area.toFixed(1).replace('.', ',')} m²
+                  {row.height !== null && row.height !== undefined && (
+                    <> · {row.height.toFixed(1).replace('.', ',')} m hoch</>
+                  )}
                 </span>
+                {/* Where that height came from. Not decoration: a shading map
+                    resting on an assumption must not look like one resting on a
+                    measurement, and the words are the only thing that says so. */}
+                {row.note !== null && row.note !== undefined && (
+                  <span className="element-list__source">{row.note}</span>
+                )}
               </button>
 
               {onDelete !== undefined &&

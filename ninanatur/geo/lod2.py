@@ -22,6 +22,8 @@ from io import BytesIO
 from xml.etree import ElementTree
 
 from ninanatur.garden.roofs import Roof
+from ninanatur.geo.projection import LatLon, to_metres
+from ninanatur.geo.utm import to_latlon
 
 #: AdV's Dachform key onto the shapes the shading model has a ratio for.
 #:
@@ -204,4 +206,39 @@ def _rings(face: ElementTree.Element) -> list[tuple[float, float, float]]:
     return points
 
 
-__all__ = ["ADV_ROOFS", "Lod2Building", "buildings_from", "tile_name"]
+def in_garden_frame(
+    buildings: list[Lod2Building], anchor: LatLon, zone: int
+) -> list[Lod2Building]:
+    """Move surveyed buildings onto the garden's own axes.
+
+    The tile speaks UTM; the garden speaks metres from its anchor, on true north.
+    Converting once here rather than inside the matcher keeps the comparison a
+    subtraction — and keeps the projection in the one module that already owns
+    it.
+    """
+    moved: list[Lod2Building] = []
+    for building in buildings:
+        outline: list[tuple[float, float]] = []
+        for east, north in building.outline:
+            lat, lon = to_latlon(east, north, zone)
+            here = to_metres(LatLon(lat=lat, lon=lon), anchor)
+            outline.append((here.x, here.y))
+        moved.append(
+            Lod2Building(
+                building_id=building.building_id,
+                roof=building.roof,
+                height_m=building.height_m,
+                outline=outline,
+                eaves_m=building.eaves_m,
+            )
+        )
+    return moved
+
+
+__all__ = [
+    "ADV_ROOFS",
+    "Lod2Building",
+    "buildings_from",
+    "in_garden_frame",
+    "tile_name",
+]

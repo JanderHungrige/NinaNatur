@@ -1628,7 +1628,7 @@ export interface components {
          * @description Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.
          * @enum {string}
          */
-        RoofShape: "flat" | "gable" | "hip" | "pent" | "unknown";
+        RoofShape: "flat" | "gable" | "hip" | "pent" | "mix" | "other" | "unknown";
         /**
          * ScoreOut
          * @description The score with everything needed to argue about it — a score a user cannot
