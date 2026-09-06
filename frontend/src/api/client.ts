@@ -136,6 +136,19 @@ export class NinaNaturClient {
     return typeof body.version === 'string' ? body.version : 'dev';
   }
 
+  /**
+   * Which deployment answered, from the same place and for the same reason.
+   *
+   * Falls back to `prod` when the server does not say — an older image, or a
+   * proxy serving a cached response. Defaulting the other way would put a
+   * "preview" band across the live site the first time anything went odd,
+   * which is a worse failure than a missing one on the preview.
+   */
+  async environment(): Promise<string> {
+    const body = await this.request<{ environment?: string }>('/healthz');
+    return typeof body.environment === 'string' ? body.environment : 'prod';
+  }
+
   async createGarden(input: {
     name: string;
     latitude: number;

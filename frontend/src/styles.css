@@ -21,7 +21,21 @@
   --relief-light: #fffdf6;
   --radius: 12px;
 
-  /* The garden plan's own washes. Named after what they draw rather than
+  /* The preview band. Warm rather than red: this is a signpost, not a failure —
+   the preview working correctly is the normal case. It sits above the header
+   and pushes the page down rather than floating over it, because a bar that
+   overlaps content is a bar people close and then forget. */
+.preview-band {
+  background: var(--warn);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-align: center;
+}
+.preview-band a { color: #fff; }
+
+/* The garden plan's own washes. Named after what they draw rather than
      after their hue, so a change of palette is a change of colour and not a
      hunt for which grey was the paving. */
   --wash-building: #d9d2c4;
