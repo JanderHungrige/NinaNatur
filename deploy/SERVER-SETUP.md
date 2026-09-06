@@ -61,13 +61,34 @@ private — set it back under
 the host in once. A private package with no login makes the cron fail **silently
 every minute** while the site simply never updates.
 
+## 2b. Which branch feeds which stack
+
+| Branch | Image tag | Env file | Port | Reached at |
+|---|---|---|---|---|
+| `dev-deployment` | `:dev` | `deploy/.env.dev` | 4001 | `ninanatur-dev.w3rth.de` |
+| `main` | `:main` | `deploy/.env.prod` | 4000 | `ninanatur.w3rth.de` |
+
+Work goes to `dev-deployment` first and is looked at on the preview; `main` is
+merged from `dev-deployment` rather than from the feature branch, so what goes
+live is what was actually looked at. Nothing on the host distinguishes the two
+stacks except the env file — same image name, same compose file, different tag,
+port and project name.
+
 ## 3. First start
 
 ```bash
 cd /opt/ninanatur
 docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml up -d
 curl -i --max-time 5 http://localhost:4000/healthz
+
+docker compose --env-file deploy/.env.dev -f deploy/compose.app.yml up -d
+curl -i --max-time 5 http://localhost:4001/healthz
 ```
+
+The two stacks share nothing. `COMPOSE_PROJECT_NAME` scopes the named volume, so
+`ninanatur-prod_ninanatur-data` and `ninanatur-dev_ninanatur-data` are two
+databases — check with `docker volume ls` before trusting it, because a shared
+volume would mean testing a migration against real gardens.
 
 ## 4. Cron
 
