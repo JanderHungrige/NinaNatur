@@ -95,7 +95,7 @@ down instead of being discovered.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | the-branch-that-goes-first | — | planned | — |
+| 0 | the-branch-that-goes-first | docs/75-the-branch-that-goes-first.md | complete | — |
 | 1 | a-second-stack | — | planned | 0 |
 | 2 | one-cron-two-environments | — | planned | 1 |
 | 3 | an-address-of-its-own | — | planned | 1 |
