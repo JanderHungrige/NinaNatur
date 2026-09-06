@@ -61,12 +61,54 @@ private — set it back under
 the host in once. A private package with no login makes the cron fail **silently
 every minute** while the site simply never updates.
 
+## 2b. Which branch feeds which stack
+
+| Branch | Image tag | Env file | Port | Reached at |
+|---|---|---|---|---|
+| `dev-deployment` | `:dev` | `deploy/.env.dev` | 4001 | `ninanatur-dev.w3rth.de` |
+| `main` | `:main` | `deploy/.env.prod` | 4000 | `ninanatur.w3rth.de` |
+
+Work goes to `dev-deployment` first and is looked at on the preview; `main` is
+merged from `dev-deployment` rather than from the feature branch, so what goes
+live is what was actually looked at. Nothing on the host distinguishes the two
+stacks except the env file — same image name, same compose file, different tag,
+port and project name.
+
 ## 3. First start
 
 ```bash
 cd /opt/ninanatur
 docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml up -d
 curl -i --max-time 5 http://localhost:4000/healthz
+
+docker compose --env-file deploy/.env.dev -f deploy/compose.app.yml up -d
+curl -i --max-time 5 http://localhost:4001/healthz
+```
+
+The two stacks share nothing. `COMPOSE_PROJECT_NAME` scopes the named volume, so
+`ninanatur-prod_ninanatur-data` and `ninanatur-dev_ninanatur-data` are two
+databases. **Verified rather than assumed** — locally on 2026-09-06, both stacks
+from the same image: a garden created on one answered 200 there and **404** on
+the other, and `docker volume ls` showed two volumes. Worth repeating on the
+host once, because a shared volume means testing a migration against real
+gardens:
+
+```bash
+docker volume ls | grep ninanatur     # two entries, prod_ and dev_
+T=$(curl -s -X POST localhost:4001/api/v1/gardens \
+      -H 'content-type: application/json' \
+      -d '{"name":"nur dev","latitude":52.5,"longitude":13.4}' \
+      | python3 -c 'import sys,json;print(json.load(sys.stdin)["share_token"])')
+curl -s -o /dev/null -w "dev  %{http_code}\n" localhost:4001/api/v1/gardens/$T
+curl -s -o /dev/null -w "prod %{http_code}\n" localhost:4000/api/v1/gardens/$T   # must be 404
+```
+
+The dev stack comes up against a **fresh empty volume** and seeds itself, which
+is the state CLAUDE.md asks to be checked by hand and the one a test double never
+reproduces. Its log says so:
+
+```
+catalogue synced: {'taxon': 8939, 'trait': 84217, 'partner_summary': 6382, ...}
 ```
 
 ## 4. Cron
@@ -75,8 +117,15 @@ The other deploys on this host (battlefuel, funding-tender-tracker, 3dmap2) all
 live in **root's** crontab. Match them:
 
 ```bash
-sudo crontab -e     # paste the two lines from deploy/crontab.example
+sudo deploy/install-cron.sh          # or paste the one line from deploy/crontab.example
 ```
+
+**One line, not one per environment.** Two lines both carrying `sleep 15` fire in
+the same second and race NinaNatur's own global lock; `flock -n` makes the loser
+exit rather than wait, so every minute is a coin flip and dev can stay unrolled
+indefinitely while looking configured. `deploy/roll-all.sh` does production
+first, then dev, in one process — and it skips an environment whose env file is
+absent, so adding `.env.dev` later needs no reinstall.
 
 Because cron runs as root, the tree's ownership does not matter for the deploy —
 root reads it either way. Step 0's docker group membership is still worth having
@@ -85,6 +134,11 @@ for working on the host by hand.
 Note the `sleep 15`: every project's `auto-deploy.sh` holds its own lock, which
 only guards against itself. The staggered offsets are what stop four deploys
 pulling from GHCR simultaneously. `:00`, `:30` and `:45` are taken.
+
+The global lock inside `auto-deploy.sh` stays as it is and stays global — two
+overlapping runs racing the same image pull corrupt the containerd content
+store. What was wrong was asking two cron processes to share one lock when one
+process can do both jobs in order.
 
 Check that it is actually running:
 

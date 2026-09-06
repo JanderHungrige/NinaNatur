@@ -95,9 +95,9 @@ down instead of being discovered.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | the-branch-that-goes-first | — | planned | — |
-| 1 | a-second-stack | — | planned | 0 |
-| 2 | one-cron-two-environments | — | planned | 1 |
+| 0 | the-branch-that-goes-first | docs/75-the-branch-that-goes-first.md | complete | — |
+| 1 | a-second-stack | docs/76-a-second-stack.md | complete | 0 |
+| 2 | one-cron-two-environments | docs/77-one-cron-two-environments.md | complete | 1 |
 | 3 | an-address-of-its-own | — | planned | 1 |
 | 4 | you-are-looking-at-the-preview | — | planned | 1 |
 | 5 | feedback-knows-where-it-came-from | — | planned | 4 |
