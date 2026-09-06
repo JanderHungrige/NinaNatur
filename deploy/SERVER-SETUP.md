@@ -117,8 +117,15 @@ The other deploys on this host (battlefuel, funding-tender-tracker, 3dmap2) all
 live in **root's** crontab. Match them:
 
 ```bash
-sudo crontab -e     # paste the two lines from deploy/crontab.example
+sudo deploy/install-cron.sh          # or paste the one line from deploy/crontab.example
 ```
+
+**One line, not one per environment.** Two lines both carrying `sleep 15` fire in
+the same second and race NinaNatur's own global lock; `flock -n` makes the loser
+exit rather than wait, so every minute is a coin flip and dev can stay unrolled
+indefinitely while looking configured. `deploy/roll-all.sh` does production
+first, then dev, in one process — and it skips an environment whose env file is
+absent, so adding `.env.dev` later needs no reinstall.
 
 Because cron runs as root, the tree's ownership does not matter for the deploy —
 root reads it either way. Step 0's docker group membership is still worth having
@@ -127,6 +134,11 @@ for working on the host by hand.
 Note the `sleep 15`: every project's `auto-deploy.sh` holds its own lock, which
 only guards against itself. The staggered offsets are what stop four deploys
 pulling from GHCR simultaneously. `:00`, `:30` and `:45` are taken.
+
+The global lock inside `auto-deploy.sh` stays as it is and stays global — two
+overlapping runs racing the same image pull corrupt the containerd content
+store. What was wrong was asking two cron processes to share one lock when one
+process can do both jobs in order.
 
 Check that it is actually running:
 
