@@ -141,3 +141,26 @@ def test_nothing_is_fetched_while_the_location_is_rounded(
 
     assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
     assert calls["n"] == 0
+
+
+def test_a_window_stored_before_the_hold_is_not_served_either(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Holding the fetch was not enough.
+
+    Windows fetched before the hold are still in the database, keyed by the
+    rounded location — so every garden near Wuppertal was still being served the
+    same wrong hillside. Readers go through `ground_for`, which is where the hold
+    lives.
+    """
+    from ninanatur.geo.terrain_store import save_window
+
+    anchor = LatLon(lat=51.0, lon=6.0)
+    save_window(conn, cache_key(anchor), _window())
+
+    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
+    assert terrain_sync.ground_for(conn, anchor) is not None
+
+    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", False)
+    assert terrain_sync.ground_for(conn, anchor) is None
+    assert terrain_sync.horizon_for(conn, anchor) is None
