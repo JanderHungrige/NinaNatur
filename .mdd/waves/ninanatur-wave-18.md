@@ -3,11 +3,11 @@ id: ninanatur-wave-18
 title: "Wave 18: A place to look before it is live"
 initiative: ninanatur
 initiative_version: 20
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-17
 demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter einer eigenen Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Erst was dort in Ordnung ist, geht auf main — und main deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert."
 created: 2026-09-04
-hash: 6b0fd786
+hash: 34f3214a
 ---
 
 # Wave 18: A place to look before it is live
@@ -98,7 +98,7 @@ down instead of being discovered.
 | 0 | the-branch-that-goes-first | docs/75-the-branch-that-goes-first.md | complete | — |
 | 1 | a-second-stack | docs/76-a-second-stack.md | complete | 0 |
 | 2 | one-cron-two-environments | docs/77-one-cron-two-environments.md | complete | 1 |
-| 3 | an-address-of-its-own | — | planned | 1 |
+| 3 | an-address-of-its-own | — | **blocked** | 1 |
 | 4 | you-are-looking-at-the-preview | docs/78-you-are-looking-at-the-preview.md | complete | 1 |
 | 5 | feedback-knows-where-it-came-from | docs/79-feedback-knows-where-it-came-from.md | complete | 4 |
 
@@ -107,6 +107,24 @@ Two stages:
 - **Stage 1 — it runs:** 0, 1, 2. Provable by pushing to `dev-deployment` and
   watching 4001 change.
 - **Stage 2 — it is honest about itself:** 3, 4, 5.
+
+**Feature 3 is blocked, and only feature 3.** It is an entry in Nginx Proxy
+Manager plus the host steps in §1–4 of `SERVER-SETUP.md`, and on 2026-09-06 no
+SSH key on the development machine was accepted by the server — both keys with
+a private half were refused for `jan`. Everything that is code was finished
+anyway rather than left waiting behind an unrelated blocker.
+
+What is waiting on the host, in order:
+
+```bash
+cd /opt/ninanatur && git pull          # auto-deploy.sh never pulls git
+cp -n deploy/.env.dev.example deploy/.env.dev
+docker compose --env-file deploy/.env.dev -f deploy/compose.app.yml up -d
+sudo deploy/install-cron.sh
+docker volume ls | grep ninanatur      # must show two
+```
+
+then `ninanatur-dev.w3rth.de` → `172.17.0.1:4001` in Nginx Proxy Manager.
 
 ## What each one is
 
