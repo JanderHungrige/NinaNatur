@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: 65ea97d2
+hash: 22085684
 ---
 
 # Wave 17: The ground is not flat
@@ -411,6 +411,12 @@ Written down before it is built, in the same spirit as Wave 16's list:
 - **Which states subset by bbox at all.** Fourteen unprobed. The registry may
   come back thinner than `hoehendaten.de` suggests, because "open data" and "has
   a WCS" are different claims.
+- **Whether the missing states are worth a download tier.** Settled negatively
+  for *coarser* data — see `docs/68` for the measurement that killed DGM200 —
+  and left open for *the same* data delivered differently. Rheinland-Pfalz,
+  Schleswig-Holstein, Hamburg, Bremen and Bayern all publish DGM1 as open data
+  behind a download. That is Wave 19's tile machinery, pointed at a different
+  product.
 - **What a fetch costs the state.** One request per location per garden, cached
   forever, is polite. It should still be measured and stated, and the delay in
   `ingest/http.py` should be set generously for these hosts.
