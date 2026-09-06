@@ -166,8 +166,16 @@ def test_a_garden_with_no_ground_fetched_has_no_terrain(client: TestClient) -> N
     assert client.get(f"/api/v1/gardens/{token}/terrain").json() is None
 
 
-def test_terrain_comes_back_with_its_relief_and_its_credit(client: TestClient) -> None:
+def test_terrain_comes_back_with_its_relief_and_its_credit(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ninanatur.garden import terrain_sync
     from ninanatur.geo.projection import LatLon
+
+    # The hold is lifted here. In production nothing is served, because every
+    # stored window was fetched at a rounded location — see
+    # tests/test_anchor_precision.py.
+    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
     from ninanatur.geo.terrain import TerrainWindow
     from ninanatur.geo.terrain_store import cache_key, save_window
 

@@ -27,7 +27,7 @@ from ninanatur.garden.models import Garden
 from ninanatur.geo.horizon import horizon_ring
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.terrain import fetch_window
+from ninanatur.geo.terrain import TerrainWindow, fetch_window
 from ninanatur.geo.terrain_sources import by_state
 from ninanatur.geo.terrain_store import (
     cache_key,
@@ -111,4 +111,24 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
     return have_window
 
 
-__all__ = ["ensure_terrain"]
+def ground_for(conn: sqlite3.Connection, anchor: LatLon) -> TerrainWindow | None:
+    """The stored ground for a location — and nothing at all while the hold is on.
+
+    Holding the *fetch* was not enough. Windows fetched before the hold are still
+    in the database, keyed by the rounded location, so every garden near
+    Wuppertal was still being served the same wrong hillside. Readers go through
+    here rather than through the store, so the hold has one place to be.
+    """
+    if not LOCATION_IS_PRECISE:
+        return None
+    return load_window(conn, cache_key(anchor))
+
+
+def horizon_for(conn: sqlite3.Connection, anchor: LatLon) -> list[float] | None:
+    """The stored ring, under the same hold and for the same reason."""
+    if not LOCATION_IS_PRECISE:
+        return None
+    return load_horizon(conn, cache_key(anchor))
+
+
+__all__ = ["LOCATION_IS_PRECISE", "ensure_terrain", "ground_for", "horizon_for"]

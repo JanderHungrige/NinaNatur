@@ -17,14 +17,13 @@ import sqlite3
 from ninanatur.garden.canopies_found import remember
 from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
-from ninanatur.garden.terrain_sync import LOCATION_IS_PRECISE
+from ninanatur.garden.terrain_sync import LOCATION_IS_PRECISE, ground_for
 from ninanatur.geo.canopy import canopies_in
 from ninanatur.geo.lod2 import Lod2Building, buildings_from, in_garden_frame, tile_name
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import SurfaceWindow, fetch_surface
 from ninanatur.geo.surface_sources import by_state, measures_buildings
-from ninanatur.geo.terrain_store import cache_key, load_window
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
@@ -88,7 +87,7 @@ def _surface(
     source = by_state(state)
     if source is None or not measures_buildings(source):
         return None
-    ground = load_window(conn, cache_key(anchor))
+    ground = ground_for(conn, anchor)
     try:
         return fetch_surface(anchor, source, ground)
     except Exception:
