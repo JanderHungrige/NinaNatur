@@ -99,8 +99,8 @@ down instead of being discovered.
 | 1 | a-second-stack | docs/76-a-second-stack.md | complete | 0 |
 | 2 | one-cron-two-environments | docs/77-one-cron-two-environments.md | complete | 1 |
 | 3 | an-address-of-its-own | — | planned | 1 |
-| 4 | you-are-looking-at-the-preview | — | planned | 1 |
-| 5 | feedback-knows-where-it-came-from | — | planned | 4 |
+| 4 | you-are-looking-at-the-preview | docs/78-you-are-looking-at-the-preview.md | complete | 1 |
+| 5 | feedback-knows-where-it-came-from | docs/79-feedback-knows-where-it-came-from.md | complete | 4 |
 
 Two stages:
 
