@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-17
 demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter einer eigenen Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Erst was dort in Ordnung ist, geht auf main — und main deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert."
 created: 2026-09-04
-hash: 250d7ea2
+hash: 6b0fd786
 ---
 
 # Wave 18: A place to look before it is live
@@ -50,7 +50,7 @@ being precise about it changes the size of the job. Read on 2026-09-05:
 | `dev-deployment` branch | missing |
 | `deploy/.env.dev` on the host | missing |
 | The second stack actually running | missing |
-| A subdomain | missing |
+| `ninanatur-dev.w3rth.de` | **created** — the stack behind it is missing |
 | `NINANATUR_ENV` doing anything | **missing — it is passed in and read by nothing** |
 
 So this is not a build. It is a switch-on, plus one banner, plus two decisions
@@ -151,13 +151,14 @@ that slot deliberately.
 
 ### 3. an-address-of-its-own
 
-A subdomain through Nginx Proxy Manager to `172.17.0.1:4001`, the same route
-production already takes. Certificate as for production.
-
-The name should not be guessable as a typo of the live one — `dev.` in front of
-the production host is exactly the kind of thing somebody's browser autocompletes
-into at the wrong moment. Decide the name in this feature and write it in
+`ninanatur-dev.w3rth.de` through Nginx Proxy Manager to `172.17.0.1:4001`, the
+same route production already takes. Certificate as for production. **The
+subdomain already exists**; this feature is the stack behind it and the note in
 `SERVER-SETUP.md`.
+
+The name is a sibling rather than a prefix — `ninanatur-dev.` rather than
+`dev.ninanatur.` — so a browser autocompleting the live host cannot land on the
+preview by accident.
 
 ### 4. you-are-looking-at-the-preview
 
