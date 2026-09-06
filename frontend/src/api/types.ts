@@ -292,6 +292,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/canopies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Canopies
+         * @description Trees found near this garden that nobody has answered for yet.
+         */
+        get: operations["canopies_api_v1_gardens__token__canopies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/canopies/{suggestion_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Canopy
+         * @description Turn a suggestion into a tree on the plan.
+         *
+         *     Its height is marked `measured`, which is what it is — and its species is
+         *     nobody's guess, so the canopy model treats it as a broadleaf in leaf, the
+         *     same default every unidentified woody planting already gets.
+         */
+        post: operations["accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post"];
+        /**
+         * Dismiss Canopy
+         * @description Refuse one, for good.
+         *
+         *     Remembered rather than deleted: the next recomputation finds the same tree
+         *     again, and re-proposing something somebody rejected is how a suggestion
+         *     becomes a nuisance.
+         */
+        delete: operations["dismiss_canopy_api_v1_gardens__token__canopies__suggestion_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/claim": {
         parameters: {
             query?: never;
@@ -979,6 +1031,26 @@ export interface components {
             /** Beds */
             beds: components["schemas"]["BedPalette"][];
         };
+        /**
+         * CanopyOut
+         * @description A tree the surface model found and nobody has drawn.
+         *
+         *     A suggestion, never an object. A crown, a hedge, a marquee and a
+         *     badly-mapped building all read as "tall, and not ground" to a laser — so the
+         *     gardener decides, with the same standing as Wave 16's misplacement warning.
+         */
+        CanopyOut: {
+            /** Height M */
+            height_m: number;
+            /** Radius M */
+            radius_m: number;
+            /** Suggestion Id */
+            suggestion_id: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
         /** ChangeOut */
         ChangeOut: {
             /** Bed Id */
@@ -1628,7 +1700,7 @@ export interface components {
          * @description Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.
          * @enum {string}
          */
-        RoofShape: "flat" | "gable" | "hip" | "pent" | "unknown";
+        RoofShape: "flat" | "gable" | "hip" | "pent" | "mix" | "other" | "unknown";
         /**
          * ScoreOut
          * @description The score with everything needed to argue about it — a score a user cannot
@@ -2283,6 +2355,99 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BloomPalette"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    canopies_api_v1_gardens__token__canopies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanopyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                suggestion_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_canopy_api_v1_gardens__token__canopies__suggestion_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                suggestion_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

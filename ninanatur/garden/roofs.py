@@ -26,6 +26,15 @@ class Roof(StrEnum):
     PENT = "pent"
     #: Nobody has said. The model then treats the recorded height as solid,
     #: which is what it did for every building before this existed.
+    #: Surveyed, and more than one shape on one building — a wing with a
+    #: different pitch, a flat section behind a gable. Not the same statement as
+    #: `unknown` and a fifth of Germany's buildings by AdV's own count, which is
+    #: why it is its own member rather than folded in.
+    MIX = "mix"
+    #: Surveyed, and none of the standard shapes: shed, barrel, dome, tower.
+    OTHER = "other"
+    #: Nobody has said. The model then treats the recorded height as solid,
+    #: which is what it did for every building before this existed.
     UNKNOWN = "unknown"
 
 
@@ -44,6 +53,17 @@ RISE_KEPT: dict[Roof, float] = {
     Roof.GABLE: 0.5,
     Roof.HIP: 0.4,
     Roof.PENT: 0.6,
+    #: A mixed roof casts from its tallest section, so more of the rise survives
+    #: than on a pure gable — and it is not a flat block either. The weakest
+    #: number here: a guess about an average of shapes rather than about a
+    #: shape, and the first to revisit once there is anything to check it
+    #: against.
+    Roof.MIX: 0.8,
+    #: Shed, barrel, dome and tower roofs all carry their bulk high. Full rise
+    #: is both conservative and roughly right for them. It shares a number with
+    #: `unknown` and not a meaning — the two may diverge, and the page already
+    #: says different words for them.
+    Roof.OTHER: 1.0,
     Roof.UNKNOWN: 1.0,
 }
 
@@ -64,7 +84,7 @@ def shading_height(
     Never above the recorded height and never below the eaves: a roof takes
     something off the top and cannot take off the building.
     """
-    if roof is Roof.UNKNOWN or roof is Roof.FLAT:
+    if roof in (Roof.UNKNOWN, Roof.OTHER, Roof.FLAT):
         return height_m
     eaves = DEFAULT_EAVES_FRACTION * height_m if eaves_m is None else eaves_m
     eaves = max(0.0, min(eaves, height_m))

@@ -1311,6 +1311,39 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* A warning, not an error: bordered rather than shouted, because the gardener
    may well know something the model does not. */
+.canopy-box__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.canopy-box__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+/* Refusing is exactly as easy as accepting. A list where the "no" is the harder
+   click is a list that gets accepted by exhaustion. */
+.canopy-box__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.canopy-box__actions button {
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.element-list__source {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
 .shade-switch__warnings {
   border-left: 3px solid var(--warn);
   padding-left: 0.7rem;

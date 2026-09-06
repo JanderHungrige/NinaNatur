@@ -56,6 +56,10 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # a hillside.
     ("element", "slope_deg", "REAL"),
     ("element", "aspect_deg", "REAL"),
+    # Wave 19. 'user' on every existing element, which is what they are: every
+    # roof in the database today was either picked by somebody or left at the
+    # default, and neither should be overwritten by a survey arriving later.
+    ("element", "roof_source", "TEXT NOT NULL DEFAULT 'user'"),
 )
 
 

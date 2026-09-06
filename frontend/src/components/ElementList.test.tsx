@@ -161,3 +161,43 @@ describe('ElementList — removing something', () => {
     expect(onSelect).toHaveBeenCalledWith(3);
   });
 });
+
+describe('ElementList — where a height came from', () => {
+  it('says when a height was surveyed rather than assumed', () => {
+    render(
+      <ElementList
+        garden={garden([{ ...obstacle(1, 'house'), height: 12.4, height_source: 'surveyed' }])}
+        selectedId={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/12,4 m hoch/)).toBeDefined();
+    expect(screen.getByText('amtlich vermessen')).toBeDefined();
+  });
+
+  it('says when it was only assumed', () => {
+    render(
+      <ElementList
+        garden={garden([{ ...obstacle(1, 'house'), height: 9, height_source: 'neighbourhood' }])}
+        selectedId={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    expect(screen.getByText('für die Gegend angenommen')).toBeDefined();
+  });
+
+  it('says nothing about a height the user typed', () => {
+    render(
+      <ElementList
+        garden={garden([{ ...obstacle(1, 'house'), height: 9, height_source: 'user' }])}
+        selectedId={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/9,0 m hoch/)).toBeDefined();
+    expect(screen.queryByText(/angenommen|vermessen|gemessen|geschätzt/)).toBeNull();
+  });
+});

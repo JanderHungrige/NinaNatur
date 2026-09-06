@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
   BedSuggestions,
+  CanopySuggestion,
   LightMap,
   ShadowDay,
   Terrain,
@@ -18,6 +19,7 @@ import type {
 } from './api/client';
 import { NinaNaturClient } from './api/client';
 import { BedPanel } from './components/BedPanel';
+import { CanopyBox } from './components/CanopyBox';
 import { AccountBar } from './components/AccountBar';
 import { clustersFor } from './canvas/clusters';
 import { elementById } from './canvas/elements';
@@ -118,6 +120,7 @@ export function App() {
   const [lightMap, setLightMap] = useState<LightMap | null>(null);
   const [terrain, setTerrain] = useState<Terrain | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
+  const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
   const [shadeOn, setShadeOn] = useState(false);
   const [mapMode, setMapMode] = useState<MapMode>('sun');
   /** A day's shadows, and which frame is showing. Fetched only when the day is
@@ -153,6 +156,7 @@ export function App() {
     setPalette(await client.bloom(token));
     setLightMap(await client.lightMap(token));
     setTerrain(await client.terrain(token));
+    setCanopies(await client.canopies(token));
     setStatus(`${found.name} geladen.`);
   }, []);
 
@@ -1137,6 +1141,22 @@ export function App() {
                 garden={garden}
                 selectedBedId={selectedBedId}
                 onSelectBed={selectBed}
+              />
+              <CanopyBox
+                suggestions={canopies}
+                busy={busy}
+                onAccept={(id) =>
+                  void run('Baum eingetragen', async () => {
+                    setGarden(await client.acceptCanopy(garden.share_token, id));
+                    setCanopies(await client.canopies(garden.share_token));
+                  })
+                }
+                onDismiss={(id) =>
+                  void run('Vorschlag verworfen', async () => {
+                    await client.dismissCanopy(garden.share_token, id);
+                    setCanopies(await client.canopies(garden.share_token));
+                  })
+                }
               />
               <ShadeSwitch
                 map={lightMap}

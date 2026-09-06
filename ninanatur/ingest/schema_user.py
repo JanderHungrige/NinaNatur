@@ -61,6 +61,11 @@ CREATE TABLE IF NOT EXISTS element (
     height      REAL,
     -- 'user' | 'osm_height' | 'osm_levels' | 'neighbourhood'.
     height_source TEXT NOT NULL DEFAULT 'user',
+    -- Where the roof shape came from, kept apart from where the height came
+    -- from. They arrive together from a 3D building model and separately from
+    -- everywhere else: somebody can look out of the window and know the shape
+    -- without knowing the height, and a later refresh must not overwrite that.
+    roof_source   TEXT NOT NULL DEFAULT 'user',
     -- What shape the roof is, if anybody has said. OSM's `height` is the ridge,
     -- so a building without this is modelled as solid to the ridge — which is
     -- what every building was before Wave 16, and stays the default: one that
@@ -194,6 +199,29 @@ CREATE TABLE IF NOT EXISTS terrain_horizon (
     source     TEXT NOT NULL,
     fetched_at TEXT NOT NULL
 );
+
+-- Trees the surface model found and nobody has drawn.
+--
+-- Suggestions, never objects. A crown, a hedge, a marquee and a badly-mapped
+-- building all read as "tall, and not ground" to a laser, so this proposes and
+-- the gardener decides — the same standing as Wave 16's misplacement warning.
+--
+-- `dismissed` rather than a delete: a suggestion refused once must not come
+-- back on the next recomputation, and the only way to know that is to remember
+-- the refusal.
+CREATE TABLE IF NOT EXISTS canopy_suggestion (
+    suggestion_id INTEGER PRIMARY KEY,
+    garden_id     INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    x             REAL    NOT NULL,
+    y             REAL    NOT NULL,
+    radius_m      REAL    NOT NULL,
+    height_m      REAL    NOT NULL,
+    dismissed     INTEGER NOT NULL DEFAULT 0,
+    accepted_id   INTEGER,
+    found_at      TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_canopy_garden ON canopy_suggestion(garden_id);
 
 -- What the gardener saw, as opposed to what the catalogue says.
 --
