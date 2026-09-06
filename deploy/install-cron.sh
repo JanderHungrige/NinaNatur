@@ -24,15 +24,16 @@ LOG=/var/log/ninanatur-deploy.log
 BACKUP="/root/crontab.backup.$(date +%Y%m%d-%H%M%S)"
 crontab -l >"$BACKUP" 2>/dev/null || : >"$BACKUP"
 
+# One line, not one per environment. Two lines both carrying the same `sleep`
+# fired in the same second and raced auto-deploy.sh's single global lock, and
+# `flock -n` makes the loser exit rather than wait — so every minute was a coin
+# flip. roll-all.sh does both in order in one process instead.
+#
+# The line does not name the environments, so adding deploy/.env.dev later needs
+# no reinstall: roll-all.sh skips what is not configured.
 {
   grep -v "$ROOT" "$BACKUP" || true
-  for env in prod dev; do
-    if [ -f "$ROOT/deploy/.env.$env" ]; then
-      echo "* * * * * sleep $OFFSET; cd $ROOT && /usr/bin/env bash deploy/auto-deploy.sh deploy/.env.$env >> $LOG 2>&1"
-    else
-      echo "  ⚠ skipping $env — $ROOT/deploy/.env.$env not found" >&2
-    fi
-  done
+  echo "* * * * * sleep $OFFSET; cd $ROOT && /usr/bin/env bash deploy/roll-all.sh >> $LOG 2>&1"
 } | crontab -
 
 echo "Backup: $BACKUP"

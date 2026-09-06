@@ -10,5 +10,10 @@
 #   :00  battlefuel     :30  funding-tender-tracker     :45  3dmap2
 # NinaNatur takes :15.
 #
-# * * * * * sleep 15; cd /opt/ninanatur && /usr/bin/env bash deploy/auto-deploy.sh deploy/.env.prod >> /var/log/ninanatur-deploy.log 2>&1
-# * * * * * sleep 15; cd /opt/ninanatur && /usr/bin/env bash deploy/auto-deploy.sh deploy/.env.dev  >> /var/log/ninanatur-deploy.log 2>&1
+# ONE line for all environments, not one per environment. Two lines both carrying
+# `sleep 15` fired in the same second and raced NinaNatur's own global lock —
+# `flock -n` makes the loser exit rather than wait, so every minute was a coin
+# flip and dev could stay unrolled indefinitely while looking configured.
+# roll-all.sh does production first, then dev, in one process.
+#
+# * * * * * sleep 15; cd /opt/ninanatur && /usr/bin/env bash deploy/roll-all.sh >> /var/log/ninanatur-deploy.log 2>&1

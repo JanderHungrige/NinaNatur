@@ -129,3 +129,25 @@ one-line way to be sure.
 
 - MDD: `/mdd <feature>` — doc first, then tests, then code.
 - Branch per feature; never commit directly to `main`.
+
+### Which branch goes where
+
+Three branches, and the order is the point:
+
+```
+feat/<something>  →  dev-deployment  →  main
+                     :dev on 4001       :main on 4000
+                     preview            live
+```
+
+- A wave stage merges into **`dev-deployment`** first and is looked at on
+  `ninanatur-dev.w3rth.de`.
+- `main` is merged **from `dev-deployment`**, not from the feature branch — so
+  what goes live is what was actually looked at, rather than something that
+  merely passed the same tests.
+- After a release, `dev-deployment` is reset to `main`, so it never drifts into
+  a third history that nobody deploys.
+
+CI tags the image from the branch name and the compose stacks pull by tag; the
+three files that encode that must agree, and `tests/test_deploy_config.py` fails
+if they stop agreeing.
