@@ -137,10 +137,10 @@ def _ground_under(conn: sqlite3.Connection, garden: Garden) -> TerrainWindow | N
     every garden had until Wave 17 and what a garden in one of the nine states
     without a service keeps.
     """
-    from ninanatur.geo.terrain_store import cache_key, load_window
+    from ninanatur.garden.terrain_sync import ground_for
 
     anchor = LatLon(lat=float(garden.latitude), lon=float(garden.longitude))
-    return load_window(conn, cache_key(anchor))
+    return ground_for(conn, anchor)
 
 
 def _fall_of(
@@ -176,10 +176,10 @@ def _horizon_around(conn: sqlite3.Connection, garden: Garden) -> list[float] | N
     ring are different things and only the ring is stored — a place nobody has
     measured is not the same as a place that turned out to be flat.
     """
-    from ninanatur.geo.terrain_store import cache_key, load_horizon
+    from ninanatur.garden.terrain_sync import horizon_for
 
     anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
-    return load_horizon(conn, cache_key(anchor))
+    return horizon_for(conn, anchor)
 
 
 def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:

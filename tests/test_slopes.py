@@ -199,9 +199,18 @@ def test_a_slope_changes_the_hours_far_less_than_it_changes_a_garden() -> None:
 
 # --- what reaches the bed ---------------------------------------------------
 
-def test_a_bed_carries_how_its_ground_falls() -> None:
-    """Stored beside the light figure, computed at the same moment."""
+def test_a_bed_carries_how_its_ground_falls(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stored beside the light figure, computed at the same moment.
+
+    The hold is lifted here: `LOCATION_IS_PRECISE` is False in production because
+    a garden's coordinates are rounded, and this test is about what happens once
+    a window is trusted. See `tests/test_anchor_precision.py`.
+    """
     import sqlite3
+
+    from ninanatur.garden import terrain_sync
+
+    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
 
     from ninanatur.garden.elements import insert_element
     from ninanatur.garden.lighting import recompute_light

@@ -20,9 +20,8 @@ from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
-from ninanatur.garden.terrain_sync import ensure_terrain
+from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.terrain_store import cache_key, load_window
 from ninanatur.solar.day import MONTHS, shadow_day
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["light"])
@@ -168,7 +167,7 @@ def terrain(
     always had — which is fine, and being quiet about it is not.
     """
     garden = require_garden(conn, token)
-    stored = load_window(conn, cache_key(LatLon(lat=garden.latitude, lon=garden.longitude)))
+    stored = ground_for(conn, LatLon(lat=garden.latitude, lon=garden.longitude))
     if stored is None:
         return None
     # The window reaches 100 m out because the shading needs the neighbours.
