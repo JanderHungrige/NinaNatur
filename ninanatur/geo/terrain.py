@@ -119,15 +119,20 @@ def terrain_for(
     return fetch_window(anchor, source, fetch=fetch)
 
 
-def _into_garden_frame(
+def resample(
     raster: Raster,
     anchor: LatLon,
-    source: TerrainSource,
+    cell_m: float,
     east: float,
     north: float,
     zone: int,
-) -> TerrainWindow:
+    reach_m: float = FETCH_M,
+) -> tuple[float, int, list[float]]:
     """Resample a UTM raster onto the garden's own axes.
+
+    Returns the window's south-west origin, its side in cells, and the values
+    row-major from that corner. Shared by the terrain and the surface fetch,
+    which differ in what the numbers mean and not at all in where they go.
 
     **Not a translation.** UTM's grid north is up to about two degrees off true
     north in Germany — at 6°E it is 2.3° — so the raster is rotated with respect
@@ -139,32 +144,45 @@ def _into_garden_frame(
     scale and a shift to well under a millimetre, so it is measured from three
     points rather than computed per cell.
     """
-    cell = source.cell_m
-    half = int(WINDOW_M / cell)
-    corner_e, corner_n = east - FETCH_M, north + FETCH_M
-
+    half = int(WINDOW_M / cell_m)
+    corner_e, corner_n = east - reach_m, north + reach_m
     origin, per_x, per_y = frame_map(anchor, zone)
-    cols = rows = 2 * half
+    side = 2 * half
+
     heights: list[float] = []
-    for row in range(rows):
-        y = (row + 0.5 - half) * cell
-        for col in range(cols):
-            x = (col + 0.5 - half) * cell
+    for row in range(side):
+        y = (row + 0.5 - half) * cell_m
+        for col in range(side):
+            x = (col + 0.5 - half) * cell_m
             e = origin[0] + per_x[0] * x + per_y[0] * y
             n = origin[1] + per_x[1] * x + per_y[1] * y
-            c = int((e - corner_e) / cell)
-            r = int((corner_n - n) / cell)
+            c = int((e - corner_e) / cell_m)
+            r = int((corner_n - n) / cell_m)
             if 0 <= r < raster.height and 0 <= c < raster.width:
                 heights.append(float(raster.values[r][c]))
             else:
                 heights.append(float("nan"))
+    return (-half * cell_m, side, heights)
 
+
+def _into_garden_frame(
+    raster: Raster,
+    anchor: LatLon,
+    source: TerrainSource,
+    east: float,
+    north: float,
+    zone: int,
+) -> TerrainWindow:
+    """The terrain's own window, on the garden's axes."""
+    min_xy, side, heights = resample(
+        raster, anchor, source.cell_m, east, north, zone
+    )
     return TerrainWindow(
-        min_x=-half * cell,
-        min_y=-half * cell,
-        cell_m=cell,
-        cols=cols,
-        rows=rows,
+        min_x=min_xy,
+        min_y=min_xy,
+        cell_m=source.cell_m,
+        cols=side,
+        rows=side,
         heights=heights,
         source=source.state,
         licence=source.licence,
@@ -198,10 +216,12 @@ def frame_map(
 
 __all__ = [
     "FETCH_M",
+    "resample",
     "WINDOW_M",
     "Fetch",
     "TerrainWindow",
     "fetch_window",
     "frame_map",
+    "resample",
     "terrain_for",
 ]

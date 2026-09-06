@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ninanatur.api.accounts import router as accounts_router
+from ninanatur.api.canopies import router as canopies_router
 from ninanatur.api.feedback import router as feedback_router
 from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.geo import router as geo_router
@@ -77,6 +78,7 @@ app.include_router(geo_router)
 app.include_router(accounts_router)
 app.include_router(feedback_router)
 app.include_router(light_router)
+app.include_router(canopies_router)
 
 
 @app.exception_handler(ValueError)

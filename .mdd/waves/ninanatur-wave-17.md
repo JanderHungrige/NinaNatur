@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: 22085684
+hash: 8c35af2e
 ---
 
 # Wave 17: The ground is not flat
@@ -420,6 +420,47 @@ Written down before it is built, in the same spirit as Wave 16's list:
 - **What a fetch costs the state.** One request per location per garden, cached
   forever, is polite. It should still be measured and stated, and the delay in
   `ingest/http.py` should be set generously for these hosts.
+
+## Found afterwards: the anchor is too coarse for any of this
+
+**2026-09-06, while building Wave 19.** `create_garden` rounds a garden's
+latitude and longitude to one decimal place before storing them, and says why:
+"0.1° is about 11 km, which solar geometry cannot tell apart and which keeps a
+private garden's coordinates coarse."
+
+That was right when the coordinates fed sun angles and nothing else. This wave
+changed what they are for.
+
+| Place | Offset | Real terrain | At the rounded point |
+|---|---|---|---|
+| Wuppertal | 6.0 km | 147.3 m | **268.0 m** |
+| Kassel | 1.3 km | 184.5 m | 138.3 m |
+| Köln | 3.3 km | 49.8 m | 58.4 m |
+
+The absolute height hardly matters — a window is relative throughout. What is
+wrong is **which land**: another hillside's slope and aspect, another valley's
+horizon, another street's building bases, and a relief drawn under the plan that
+belongs to a different piece of ground. This wave's own live acceptance reported
+252–278 m for a Wuppertal garden whose ground is at 147.
+
+`tests/test_anchor_precision.py` asserts the defect so it cannot be forgotten,
+because everything built on it looks entirely plausible: a window six kilometres
+away is still a window, with sensible heights and a believable slope.
+
+Three ways out, and choosing between them reverses a documented decision, so it
+is not a change to make quietly:
+
+- **Store the precise location** and accept the change of privacy posture. Worth
+  weighing: the plot outline and the neighbouring buildings are already stored
+  at metre precision *relative* to the anchor, so the absolute position is
+  recoverable by matching them against OSM. The rounding may buy less than it
+  appears to.
+- **Fetch at garden creation**, while the map picker still holds the precise
+  location, and store only the windows — which are in garden metres and reveal
+  nothing the plan does not. Costs the several seconds this wave deliberately
+  kept out of a page load, and leaves gardens created without a map unable to
+  refetch.
+- **Keep the rounding and withdraw the elevation features.**
 
 ## Deliberately not in this wave
 

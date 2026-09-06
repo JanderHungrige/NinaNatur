@@ -3,11 +3,11 @@ id: ninanatur-wave-19
 title: "Wave 19: Houses that measure themselves"
 initiative: ninanatur
 initiative_version: 20
-status: planned
+status: complete
 depends_on: ninanatur-wave-18
 demo_state: "Ein Haus in der Nachbarschaft trägt seine gemessene Höhe und seine wirkliche Dachform, aus dem amtlichen Gebäudemodell statt aus drei Metern pro Geschoss — und der Plan sagt bei jedem Objekt, ob die Höhe gemessen, geschätzt oder von Hand eingetragen ist. Wer es besser weiß, überschreibt es, und das bleibt so."
 created: 2026-09-05
-hash: 03a63472
+hash: e7d7cc46
 ---
 
 # Wave 19: Houses that measure themselves
@@ -144,11 +144,11 @@ garden, never in the image.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | which-models-and-whose | — | planned | — |
-| 1 | a-house-with-a-measured-height | — | planned | 0 |
-| 2 | the-roof-it-actually-has | — | planned | 1 |
-| 3 | measured-surveyed-or-assumed | — | planned | 1 |
-| 4 | what-else-is-standing-there | — | planned | 0 |
+| 0 | which-models-and-whose | docs/80-which-models-and-whose.md | complete | — |
+| 1 | a-house-with-a-measured-height | docs/81-a-house-with-a-measured-height.md | complete | 0 |
+| 2 | the-roof-it-actually-has | docs/82-the-roof-it-actually-has.md | complete | 1 |
+| 3 | measured-surveyed-or-assumed | docs/83-measured-surveyed-or-assumed.md | complete | 1 |
+| 4 | what-else-is-standing-there | docs/84-what-else-is-standing-there.md | complete | 0 |
 
 Two stages:
 
@@ -251,6 +251,23 @@ in Wave 16.
 - **A detected tree has no species**, and species is what the canopy model wants.
 - **A tree that was 8 m in 2021 is not 8 m now.** Trees grow; buildings do not.
   The acquisition year matters more for feature 4 than for feature 1.
+
+## What changed against the plan
+
+Two things, both because feature 0 found something the plan could not know.
+
+**Height came from the surface model, not from LoD2.** The wave was written
+around downloading CityGML tiles. Feature 0 found eight states publishing a
+surface model as a bbox coverage service — the same eight that publish terrain —
+against LoD2 being a tile download verified for one. So LoD2 kept only the job
+it alone can do, which is the roof shape.
+
+**And the anchor turned out to be wrong for all of it.** A garden's coordinates
+are stored rounded to 0.1° — up to six kilometres — so every fetch in this wave
+and in Wave 17 asks about the wrong place. The code is correct; see
+`tests/test_anchor_precision.py`, which asserts the defect, and Wave 17's own
+doc for the three ways out. **Nothing in either wave can be trusted on a
+deployed garden until that is settled.**
 
 ## Open Research
 

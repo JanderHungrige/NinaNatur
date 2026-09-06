@@ -15,6 +15,11 @@ export const ROOFS: ReadonlyArray<readonly [string, string]> = [
   ['hip', 'Walmdach'],
   ['pent', 'Pultdach'],
   ['flat', 'Flachdach'],
+  // Surveyed answers, added in Wave 19 when the official models turned out to
+  // give them. A fifth of German buildings are Mischform, and until now
+  // somebody with one had to lie to this list.
+  ['mix', 'Mischform'],
+  ['other', 'andere Form'],
 ];
 
 /** Kinds a roof is a sensible question for. A pond has no roof. */

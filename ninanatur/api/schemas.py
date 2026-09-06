@@ -268,6 +268,8 @@ class RoofShape(StrEnum):
     GABLE = "gable"
     HIP = "hip"
     PENT = "pent"
+    MIX = "mix"
+    OTHER = "other"
     UNKNOWN = "unknown"
 
 

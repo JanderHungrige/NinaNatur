@@ -32,6 +32,7 @@ export type FeedbackSent = components['schemas']['FeedbackOut'];
 export type LightMap = components['schemas']['LightMap'];
 export type ShadowDay = components['schemas']['ShadowDay'];
 export type Terrain = components['schemas']['TerrainOut'];
+export type CanopySuggestion = components['schemas']['CanopyOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -255,6 +256,29 @@ export class NinaNaturClient {
     return this.request<LightMap | null>(
       `/api/v1/gardens/${encodeURIComponent(token)}/light`,
       { method: 'POST' },
+    );
+  }
+
+  /** Trees the surface model found that nobody has answered for yet. */
+  async canopies(token: string): Promise<CanopySuggestion[]> {
+    return this.request<CanopySuggestion[]>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/canopies`,
+    );
+  }
+
+  /** Put one on the plan. */
+  async acceptCanopy(token: string, suggestionId: number): Promise<GardenOut> {
+    return this.request<GardenOut>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/canopies/${suggestionId}`,
+      { method: 'POST' },
+    );
+  }
+
+  /** Refuse one, for good. */
+  async dismissCanopy(token: string, suggestionId: number): Promise<void> {
+    await this.request<unknown>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/canopies/${suggestionId}`,
+      { method: 'DELETE' },
     );
   }
 
