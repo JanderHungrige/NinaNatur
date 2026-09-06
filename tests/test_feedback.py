@@ -210,3 +210,76 @@ def test_nothing_the_client_sends_beyond_the_answers_reaches_the_issue(
     _kind, answers = filed[0]
     assert "SECRET-TOKEN-DO-NOT-PUBLISH" not in str(answers)
     assert set(answers) == {"doing", "happened", "steps"}
+
+
+# --- where it came from ----------------------------------------------------
+
+def test_a_preview_marks_what_it_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only reachable when somebody deliberately puts a token in .env.dev,
+    because the default arrangement is that a preview cannot file at all. When
+    they do, the issues must be tellable apart from real reports — a tracker
+    somebody has to sort by hand is a tracker that stops being sorted."""
+    from ninanatur.feedback.issues import PREVIEW_LABEL, _labels_for
+    from ninanatur.web.environment import ENV_VAR
+
+    monkeypatch.setenv(ENV_VAR, "dev")
+
+    assert PREVIEW_LABEL in _labels_for("bug")
+    assert "bug" in _labels_for("bug"), "the kind is still the first label"
+
+
+def test_production_files_exactly_what_it_always_did(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The live site's issues gain nothing. A label saying "this is real" on
+    every real report is noise."""
+    from ninanatur.feedback.issues import PREVIEW_LABEL, _labels_for
+    from ninanatur.web.environment import ENV_VAR
+
+    monkeypatch.delenv(ENV_VAR, raising=False)
+
+    assert _labels_for("idea") == ["enhancement"]
+    assert PREVIEW_LABEL not in _labels_for("idea")
+
+
+def test_the_body_says_it_too_not_only_the_label(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A label can be removed while triaging and the sentence stays. That
+    matters for the single thing this protects against: acting on a report about
+    a bug that only ever existed on a preview."""
+    from ninanatur.feedback.issues import body_for
+    from ninanatur.web.environment import ENV_VAR
+
+    monkeypatch.setenv(ENV_VAR, "dev")
+    text = body_for("bug", {"what": "kaputt"}, "V0.18.1", None)
+
+    assert "`dev`" in text
+
+
+def test_a_production_body_carries_no_environment_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ninanatur.feedback.issues import body_for
+    from ninanatur.web.environment import ENV_VAR
+
+    monkeypatch.delenv(ENV_VAR, raising=False)
+    text = body_for("bug", {"what": "kaputt"}, "V0.18.1", None)
+
+    assert "Umgebung" not in text
+
+
+def test_the_environment_name_is_defused_like_everything_else(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """It comes from an environment variable on the host rather than from a
+    user, so this is belt and braces — but every other string in this body goes
+    through `defused` and an exception would be the thing somebody copies."""
+    from ninanatur.feedback.issues import body_for
+    from ninanatur.web.environment import ENV_VAR
+
+    monkeypatch.setenv(ENV_VAR, "dev @someone #12")
+    text = body_for("bug", {"what": "x"}, None, None)
+
+    assert "@someone" not in text
+    assert "#12" not in text
