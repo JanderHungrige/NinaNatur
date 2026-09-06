@@ -148,7 +148,7 @@ garden, never in the image.
 | 1 | a-house-with-a-measured-height | docs/81-a-house-with-a-measured-height.md | complete | 0 |
 | 2 | the-roof-it-actually-has | docs/82-the-roof-it-actually-has.md | complete | 1 |
 | 3 | measured-surveyed-or-assumed | docs/83-measured-surveyed-or-assumed.md | complete | 1 |
-| 4 | what-else-is-standing-there | — | planned | 0 |
+| 4 | what-else-is-standing-there | docs/84-what-else-is-standing-there.md | complete | 0 |
 
 Two stages:
 
