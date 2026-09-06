@@ -26,6 +26,7 @@ import { isGround } from './kinds';
 import { FeedbackBox } from './components/FeedbackBox';
 import { LivingBackground } from './components/LivingBackground';
 import { MyGardens } from './components/MyGardens';
+import { PreviewBand } from './components/PreviewBand';
 import { AccountPanel, type AccountInfo } from './components/AccountPanel';
 import { BloomPlayer } from './components/BloomPlayer';
 import { ShadeSwitch } from './components/ShadeSwitch';
@@ -116,6 +117,7 @@ export function App() {
    *  switch can say straight away whether there is anything to show. */
   const [lightMap, setLightMap] = useState<LightMap | null>(null);
   const [terrain, setTerrain] = useState<Terrain | null>(null);
+  const [environment, setEnvironment] = useState<string | null>(null);
   const [shadeOn, setShadeOn] = useState(false);
   const [mapMode, setMapMode] = useState<MapMode>('sun');
   /** A day's shadows, and which frame is showing. Fetched only when the day is
@@ -161,6 +163,9 @@ export function App() {
     }
     // A failed version lookup must not stop the app from loading — it is a label.
     void client.version().then(setVersion).catch(() => setVersion(null));
+    // Nor a failed environment lookup. Null shows no band, which is right: the
+    // live site is the one that must never be labelled by accident.
+    void client.environment().then(setEnvironment).catch(() => setEnvironment(null));
   }, [load]);
 
   /** Wrap every mutation so a failed request always reaches the live region. */
@@ -982,6 +987,7 @@ export function App() {
     <div className={garden === null ? 'app app--front-door' : 'app'}>
       <a className="skip-link" href="#main">Zum Inhalt springen</a>
       {garden === null && <LivingBackground videoSrc="/meadow.mp4" />}
+      <PreviewBand environment={environment} />
       <header className="site-header">
         <button type="button" className="brand" onClick={goHome} aria-label="Zur Startseite">
           <svg className="brand__mark" viewBox="0 0 64 64" aria-hidden="true">

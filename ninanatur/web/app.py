@@ -24,6 +24,7 @@ from ninanatur.api.plants import router as plants_router
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, init_schema
 from ninanatur.version import app_version
+from ninanatur.web.environment import environment
 
 STATIC_DIR = Path(__file__).parent / "static"
 # The built frontend, present only in the container image. Vite serves it in
@@ -98,7 +99,14 @@ def healthz() -> JSONResponse:
     broken, or a failing deploy looks identical to a failing database.
     """
     return JSONResponse(
-        {"status": "ok", "service": "ninanatur", "version": app_version()}
+        {
+            "status": "ok",
+            "service": "ninanatur",
+            "version": app_version(),
+            # Which deployment this is. The frontend reads it from here rather
+            # than from its own build, because only the server knows.
+            "environment": environment(),
+        }
     )
 
 

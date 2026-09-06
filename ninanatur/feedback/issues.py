@@ -14,6 +14,8 @@ from dataclasses import dataclass
 
 import requests
 
+from ninanatur.web.environment import environment, is_production
+
 logger = logging.getLogger(__name__)
 
 TOKEN_ENV = "NINANATUR_GITHUB_TOKEN"
@@ -82,6 +84,21 @@ QUESTIONS = {"bug": BUG, "idea": IDEA}
 LABELS = {"bug": "bug", "idea": "enhancement"}
 TITLES = {"bug": "Fehlermeldung", "idea": "Wunsch"}
 
+#: Added to anything filed from somewhere that is not the live site.
+#:
+#: The default arrangement is that a preview cannot file at all — `.env.dev`
+#: leaves the token blank, and an unfiled report still lands on the volume with
+#: `issue_url IS NULL`. So the box can be exercised on the preview without
+#: touching the tracker, which is what somebody testing the button actually
+#: wants.
+#:
+#: This exists for the other case: when the filing path itself is what needs
+#: testing, a token can be put in `.env.dev` and every issue it creates is
+#: visibly from a preview. Without the label they are indistinguishable from
+#: real reports, and a tracker somebody has to sort by hand is a tracker that
+#: stops being sorted.
+PREVIEW_LABEL = "from-preview"
+
 
 class NotConfigured(RuntimeError):
     """No GitHub token in the environment, so nothing can be filed."""
@@ -110,7 +127,7 @@ def file_issue(
         json={
             "title": title_for(kind, answers),
             "body": body_for(kind, answers, version, agent),
-            "labels": [LABELS[kind]],
+            "labels": _labels_for(kind),
         },
         timeout=TIMEOUT_S,
     )
@@ -123,6 +140,14 @@ def file_issue(
         response.raise_for_status()
         raise RuntimeError(f"unexpected status {response.status_code}")
     return str(response.json()["html_url"])
+
+
+def _labels_for(kind: str) -> list[str]:
+    """The kind, plus where it came from when that is not the live site."""
+    labels = [LABELS[kind]]
+    if not is_production():
+        labels.append(PREVIEW_LABEL)
+    return labels
 
 
 def title_for(kind: str, answers: dict[str, str]) -> str:
@@ -141,15 +166,22 @@ def body_for(
 ) -> str:
     """The issue text: every question that was asked, with what was answered.
 
-    The footer carries the version and the browser and nothing else. Not the
-    share token, not the garden — a token is the entire access control for
-    somebody's plan, and this issue is public.
+    The footer carries the version, the browser, and — when this is not the live
+    site — which environment it came from. Nothing else. Not the share token, not
+    the garden: a token is the entire access control for somebody's plan, and
+    this issue is public.
     """
     parts = []
     for question in QUESTIONS[kind]:
         said = answers.get(question.key, "").strip()
         parts.append(f"### {question.label}\n\n{defused(said) if said else '_(leer)_'}")
     footer = ["Über den Rückmeldeknopf in der App gemeldet"]
+    if not is_production():
+        # In the body as well as in a label. A label can be removed while
+        # triaging and the sentence stays, which matters for the one thing this
+        # is protecting against: acting on a report about a bug that only ever
+        # existed on a preview.
+        footer.append(f"aus der Umgebung `{defused(environment())}`")
     if version:
         footer.append(f"Version {defused(version)}")
     if agent:
