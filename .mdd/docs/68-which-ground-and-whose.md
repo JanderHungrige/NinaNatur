@@ -143,6 +143,61 @@ security gate — exactly as the BKG orthophoto endpoint did in Wave 8.
 assumption, and feature 6 says so on the page. No neighbour's ground, no coarser
 federal substitute quietly swapped in.
 
+## Why there is no coarse fallback, measured
+
+The obvious next move is a second tier: where there is no 1 m service, use
+something coarser. It was tried and rejected, and the reason is worth keeping
+because it will be proposed again.
+
+**The question splits by scale.** Terrain does two jobs here and they do not
+want the same resolution:
+
+| Job | Needs | Can a coarse model do it? |
+|---|---|---|
+| Ground under each grid cell, the base under a building, a bed's slope | metres, across 200 m | **No.** A 25 m cell is wider than most gardens; a 200 m cell is four hectares |
+| The horizon ring | ~20 m, across 5 km | **In principle yes** — the ring downsamples to 20 m anyway |
+
+So a fallback could only ever serve the far field. That narrows it to one
+question: is a coarse horizon better than no horizon?
+
+**The federal DGM200 says no.** It is genuinely open — GeoNutzV, "es gelten
+keine Zugriffsbeschränkungen", anonymous, the whole country, and it answers.
+Measured against the same ring built from 20 m data:
+
+| | 20 m | 200 m |
+|---|---|---|
+| Wolfach, Schwarzwald — highest | 12.54° | **15.67°** |
+| Wolfach — southern sector | 12.54° | 14.26° |
+| Potsdam — highest | 4.80° | **7.00°** |
+| Mean difference | — | 1.37° to 2.64° |
+| Worst difference | — | 8.07° |
+
+It reads systematically **too high**, because a 200 m cell holds one value that
+the ray then meets at the cell's near edge as well as its far one. And the
+direction of the error is the damaging one: Potsdam's real 4.80° sits below the
+5° the model already stops counting at and therefore changes nothing, while
+7.00° does not. A coarse fallback would invent a horizon for exactly the flat
+country whose honest answer is that it has none.
+
+**And the gap is mostly a delivery gap, not a data gap.** Rheinland-Pfalz,
+Schleswig-Holstein, Hamburg, Bremen and Bayern all publish **DGM1** as open
+data — behind a download rather than a bbox service. Rheinland-Pfalz also
+publishes a DGM25 (dl-de/by-2-0), but at ± 1.25 m to 5 m of height accuracy and
+as a 1 GB ASCII download or an ATOM feed, so it is neither more accurate nor
+more convenient than the 1 m data next to it.
+
+So the second tier that would actually help is **a different delivery of the
+same resolution**, not a coarser model: fetch a 1 km tile, distil it, cache it,
+discard the rest — which is the machinery Wave 19 already plans for LoD2. Worth
+doing there, once, rather than twice.
+
+**Copernicus GLO-30** was checked too: reachable on AWS without authentication,
+range requests supported, and this project's TIFF reader now handles the tiled
+layout a COG uses. It is a *surface* model, which for a far-field horizon is
+arguably a feature — but the Copernicus 30 m view service became restricted to
+authorised user categories on 28 July 2026, so its licence position is no longer
+settled, and this project does not build on unsettled licences.
+
 Eight states is roughly **64 % of the population**. Worth being precise about
 rather than rounding up — and the four smallest gaps were probed less thoroughly
 than the rest, so this is a floor rather than a finding.
