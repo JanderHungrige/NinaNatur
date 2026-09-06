@@ -5,6 +5,7 @@ import pytest
 
 from ninanatur.garden.roofs import (
     DEFAULT_EAVES_FRACTION,
+    RISE_KEPT,
     Roof,
     eaves_from_levels,
     shading_height,
@@ -109,3 +110,40 @@ def test_a_roof_reaches_the_shading_model(tmp_path: object) -> None:
 
     assert sun_with("gable") > sun_with("flat"), "a wedge shades less than a box"
     assert sun_with("unknown") == sun_with("flat"), "silence changes nothing"
+
+
+# --- the two the surveys give ---------------------------------------------
+
+def test_a_surveyed_answer_is_not_the_same_as_no_answer() -> None:
+    """Mischform and Sonstiges mean a surveyor looked and this is what they
+    found. Unknown means nobody has said. Folding them together would throw away
+    the one thing that separates a measurement from an absence — in a project
+    that carries provenance on every trait value it stores."""
+    assert Roof.MIX is not Roof.UNKNOWN
+    assert Roof.OTHER is not Roof.UNKNOWN
+
+
+def test_a_mixed_roof_stands_between_a_gable_and_a_flat_block() -> None:
+    """It casts from its tallest section, so more of the rise survives than on a
+    pure gable — and it is not a flat block either."""
+    assert RISE_KEPT[Roof.GABLE] < RISE_KEPT[Roof.MIX] < RISE_KEPT[Roof.FLAT]
+
+
+def test_other_keeps_its_whole_rise() -> None:
+    """Shed, barrel, dome and tower all carry their bulk high, so full rise is
+    both conservative and roughly right."""
+    assert RISE_KEPT[Roof.OTHER] == 1.0
+
+
+def test_every_shape_has_a_fraction() -> None:
+    """A member without one would raise at the moment a garden used it, which is
+    after the survey has already put it in the database."""
+    for shape in Roof:
+        assert shape in RISE_KEPT, shape
+
+
+def test_a_mixed_roof_still_takes_something_off_the_top() -> None:
+    """0.8 rather than 1.0 has to actually do something, or the member is only a
+    label."""
+    assert shading_height(10.0, Roof.MIX, eaves_m=6.0) < 10.0
+    assert shading_height(10.0, Roof.OTHER, eaves_m=6.0) == 10.0
