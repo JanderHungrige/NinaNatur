@@ -39,7 +39,14 @@ def _window() -> TerrainWindow:
 
 
 def _patch(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> None:
-    """Replace the three things that would otherwise reach the network."""
+    """Replace the three things that would otherwise reach the network.
+
+    And lift the hold. `LOCATION_IS_PRECISE` is False in production because a
+    garden's stored coordinates are rounded to 0.1° — see
+    `tests/test_anchor_precision.py`. These tests are about what happens around
+    the fetch, so they assume the day it is allowed to happen.
+    """
+    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
     defaults = {
         "state_at": lambda *_: "Nordrhein-Westfalen",
         "fetch_window": lambda *_a, **_k: _window(),
@@ -115,3 +122,22 @@ def test_a_failed_horizon_does_not_throw_away_a_window_that_worked(
     key = cache_key(LatLon(lat=51.0, lon=6.0))
     assert load_window(conn, key) is not None
     assert load_horizon(conn, key) is None
+
+
+def test_nothing_is_fetched_while_the_location_is_rounded(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The hold itself. A window fetched six kilometres away is worse than no
+    window, because it is confidently wrong — so the garden keeps the flat
+    assumption it had before Wave 17, and the page says so."""
+    calls = {"n": 0}
+
+    def counted(*_a: object, **_k: object) -> None:
+        calls["n"] += 1
+        raise AssertionError("should not have been reached")
+
+    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", False)
+    monkeypatch.setattr(terrain_sync, "state_at", counted)
+
+    assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
+    assert calls["n"] == 0
