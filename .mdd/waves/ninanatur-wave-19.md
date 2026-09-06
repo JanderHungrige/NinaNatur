@@ -146,7 +146,7 @@ garden, never in the image.
 |---|---------|-----|--------|------------|
 | 0 | which-models-and-whose | docs/80-which-models-and-whose.md | complete | — |
 | 1 | a-house-with-a-measured-height | docs/81-a-house-with-a-measured-height.md | complete | 0 |
-| 2 | the-roof-it-actually-has | — | planned | 1 |
+| 2 | the-roof-it-actually-has | docs/82-the-roof-it-actually-has.md | complete | 1 |
 | 3 | measured-surveyed-or-assumed | — | planned | 1 |
 | 4 | what-else-is-standing-there | — | planned | 0 |
 
