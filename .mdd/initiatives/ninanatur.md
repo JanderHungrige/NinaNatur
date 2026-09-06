@@ -3,7 +3,7 @@ id: ninanatur
 title: NinaNatur
 status: active
 version: 20
-hash: fd4ed08f
+hash: 8a304ae8
 created: 2026-08-27
 ---
 
@@ -201,4 +201,5 @@ data would be convenient.
 | Wave 17 | waves/ninanatur-wave-17.md | The ground is not flat: a height profile from public elevation data | complete |
 | Wave 18 | waves/ninanatur-wave-18.md | A place to look before it is live: a real dev environment on its own port | planned |
 | Wave 19 | waves/ninanatur-wave-19.md | Houses that measure themselves: heights and roof shapes from surveyed models | planned |
+| Wave 20 | waves/ninanatur-wave-20.md | A place to look at it from: accounts, visits and progress, behind an SSH tunnel | planned |
 | Wave 25 | waves/ninanatur-wave-25.md | A finished plan split across as few nurseries as possible | planned |

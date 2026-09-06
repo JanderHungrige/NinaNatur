@@ -1,24 +1,23 @@
 ---
 id: ninanatur-wave-18
-title: "Wave 18: A place to look before it is live, and a place to look at it from"
+title: "Wave 18: A place to look before it is live"
 initiative: ninanatur
 initiative_version: 20
 status: planned
 depends_on: ninanatur-wave-17
-demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter ninanatur-dev.w3rth.de, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Und über einen SSH-Tunnel auf Port 4002 — von außen unerreichbar — steht eine Zentrale: wie viele Konten, wie oft besucht, was gebaut ist und was noch offen. Erst was auf dev in Ordnung ist, geht auf main."
+demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter einer eigenen Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Erst was dort in Ordnung ist, geht auf main — und main deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert."
 created: 2026-09-04
-hash: 2fffd486
+hash: 6b0fd786
 ---
 
-# Wave 18: A place to look before it is live, and a place to look at it from
+# Wave 18: A place to look before it is live
 
 ## Demo-State
 
-Ein Merge auf `dev-deployment` erscheint binnen einer Minute unter
-`ninanatur-dev.w3rth.de`, mit eigener Datenbank und einem Banner, das
-unübersehbar Vorschau sagt. Und über einen SSH-Tunnel auf Port 4002 — von außen
-unerreichbar — steht eine Zentrale: wie viele Konten, wie oft besucht, was
-gebaut ist und was noch offen. Erst was auf dev in Ordnung ist, geht auf `main`.
+Ein Merge auf `dev-deployment` erscheint binnen einer Minute unter einer eigenen
+Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar
+Vorschau sagt. Erst was dort in Ordnung ist, geht auf `main` — und `main`
+deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert.
 
 *(This wave is not complete until this can be manually demonstrated.)*
 
@@ -42,7 +41,7 @@ being precise about it changes the size of the job. Read on 2026-09-05:
 
 | Piece | State |
 |---|---|
-| `compose.app.yml` | **mostly** — parameterised for `APP_PORT`, `IMAGE_TAG`, `NINANATUR_ENV`; needs a bind host and a read-only prod mount for the Zentrale |
+| `compose.app.yml` | **done** — parameterised for both, `APP_PORT`, `IMAGE_TAG`, `NINANATUR_ENV` |
 | Volume isolation | **done by construction** — `ninanatur-data` is scoped by `COMPOSE_PROJECT_NAME`, so `ninanatur-prod_…` and `ninanatur-dev_…` are two volumes |
 | `.env.dev.example` | **done** — project name, port 4001, tag `dev`, token deliberately blank |
 | `.github/workflows/deploy.yml` | **done** — triggers on `dev-deployment`, tags the image `:dev` |
@@ -50,11 +49,8 @@ being precise about it changes the size of the job. Read on 2026-09-05:
 | `crontab.example` | **written, commented out**, and wrong in one way (below) |
 | `dev-deployment` branch | missing |
 | `deploy/.env.dev` on the host | missing |
-| The second and third stacks actually running | missing |
+| The second stack actually running | missing |
 | `ninanatur-dev.w3rth.de` | **created** — the stack behind it is missing |
-| `ninanatur-zentrale.w3rth.de` | **created, and must be deleted** — see feature 6 |
-| Anything counting visits | missing — there is no analytics of any kind |
-| Anything the Zentrale could show | missing |
 | `NINANATUR_ENV` doing anything | **missing — it is passed in and read by nothing** |
 
 So this is not a build. It is a switch-on, plus one banner, plus two decisions
@@ -101,20 +97,16 @@ down instead of being discovered.
 |---|---------|-----|--------|------------|
 | 0 | the-branch-that-goes-first | — | planned | — |
 | 1 | a-second-stack | — | planned | 0 |
-| 2 | one-cron-three-environments | — | planned | 1 |
+| 2 | one-cron-two-environments | — | planned | 1 |
 | 3 | an-address-of-its-own | — | planned | 1 |
 | 4 | you-are-looking-at-the-preview | — | planned | 1 |
 | 5 | feedback-knows-where-it-came-from | — | planned | 4 |
-| 6 | a-door-with-no-handle-outside | — | planned | 1 |
-| 7 | how-often-anybody-came | — | planned | 6 |
-| 8 | what-is-built-and-what-is-not | — | planned | 6 |
 
-Three stages:
+Two stages:
 
-- **Stage 1 — the stacks run:** 0, 1, 2. Provable by pushing to
-  `dev-deployment` and watching 4001 change.
-- **Stage 2 — the preview is honest about itself:** 3, 4, 5.
-- **Stage 3 — the Zentrale:** 6, 7, 8.
+- **Stage 1 — it runs:** 0, 1, 2. Provable by pushing to `dev-deployment` and
+  watching 4001 change.
+- **Stage 2 — it is honest about itself:** 3, 4, 5.
 
 ## What each one is
 
@@ -160,12 +152,12 @@ that slot deliberately.
 ### 3. an-address-of-its-own
 
 `ninanatur-dev.w3rth.de` through Nginx Proxy Manager to `172.17.0.1:4001`, the
-same route production already takes. Certificate as for production. **Already
-created**; this feature is the compose stack behind it and the note in
+same route production already takes. Certificate as for production. **The
+subdomain already exists**; this feature is the stack behind it and the note in
 `SERVER-SETUP.md`.
 
 The name is a sibling rather than a prefix — `ninanatur-dev.` rather than
-`dev.ninanatur.`, so a browser autocompleting the live host cannot land on the
+`dev.ninanatur.` — so a browser autocompleting the live host cannot land on the
 preview by accident.
 
 ### 4. you-are-looking-at-the-preview
@@ -196,102 +188,6 @@ The escape hatch, for when the filing path itself is what needs testing: an env
 var naming the label to apply, so an issue from a preview is visibly from one.
 Not a second repository — that is a second thing to keep in step.
 
-### 6. a-door-with-no-handle-outside
-
-The Zentrale: a third stack, on 4002, **bound to `127.0.0.1` and nowhere else**.
-
-This is the whole security design and it is one word in a compose file. Every
-other approach to an admin page — a subdomain with a certificate and a login,
-basic auth at the proxy, an allow-list of addresses — leaves something on the
-public internet that has to hold. Binding to the loopback interface leaves
-nothing there at all. It is reached the way the server is already administered:
-
-```bash
-ssh -L 4002:127.0.0.1:4002 <host> -N
-```
-
-and then `http://localhost:4002` in a browser. The boundary is the SSH key that
-already guards the machine, and anybody holding it could read the database
-directly in any case — so a login on top would be guarding a door inside a
-locked house.
-
-**`ninanatur-zentrale.w3rth.de` must therefore be deleted.** A subdomain
-pointing at 4002 removes the single property that makes this page acceptable,
-and the page shows every garden.
-
-Three things follow:
-
-- **`compose.app.yml` gains a bind host.** `"${BIND_HOST:-0.0.0.0}:${APP_PORT}:4000"`,
-  defaulting to what prod and dev already do, with `BIND_HOST=127.0.0.1` set only
-  in `.env.zentrale`. The default has to stay open or production stops answering
-  the proxy — a wrong default here is an outage, so the test is a real
-  `docker compose config` for all three env files rather than a reading.
-- **It reads production, and cannot write to it.** The Zentrale mounts
-  `ninanatur-prod_ninanatur-data` as an external volume, **read-only**, at a
-  second path. Checked: the database runs in `journal_mode = delete`, not WAL, so
-  a read-only open works — WAL would have needed to create a `-shm` file and
-  failed. The one edge is a hot journal left by a crash mid-write, which a
-  read-only opener cannot roll back; it resolves itself when production recovers.
-- **It is the same image.** A separate admin application would be a second thing
-  to build, deploy and keep in step. `NINANATUR_ENV=zentrale` turns the routes on,
-  and they are refused in every other environment — belt and braces, because the
-  routes existing in the production image is the price of one image.
-
-### 7. how-often-anybody-came
-
-There is no analytics of any kind today, and adding some is where a garden app
-quietly becomes a surveillance one. So the shape is decided before the code:
-
-**Counters, not records.** One row per day per kind of request, incremented.
-No IP addresses, no cookies, no user agents, no per-visitor identifier of any
-sort — not hashed, not truncated, not rotated. There is nothing to leak, nothing
-to subject-access-request, and nothing to explain in a privacy notice beyond one
-sentence.
-
-**Which means unique visitors cannot be reported, and the page says so** rather
-than showing a number that is really "requests divided by an assumption". What
-can be honestly counted:
-
-| | |
-|---|---|
-| Requests per day | by kind: landing page, a garden opened, API |
-| Gardens created | the number that actually means something |
-| Accounts created | per week |
-| Feedback | filed, and unfiled because the token was missing |
-
-Crawlers are a large share of any public site's traffic and would flatter every
-number here. The counter should separate what it can identify as a bot from what
-it cannot, and label the rest honestly as "requests, bots included".
-
-### 8. what-is-built-and-what-is-not
-
-The development overview, and the interesting half is where it comes from.
-
-**The container has neither git nor `.mdd`** — the same constraint that makes the
-version a build argument. So this is generated at build time by
-`scripts/generate_progress.py` into a JSON that ships in the image, exactly as
-`generate_openapi.py` already does for the schema.
-
-**And the to-do list is not a separate list.** It is the `known_issues` the
-feature docs already carry, plus the "Deliberately not in this wave" sections,
-plus every wave still marked `planned`. A hand-kept roadmap drifts the first time
-somebody forgets; this one cannot, because it is assembled from the documents
-that the work already updates.
-
-So the missing Bundesländer appear on that page without anybody adding them:
-they are in `docs/68-which-ground-and-whose.md` under `known_issues`, written
-there when the registry was built.
-
-What it shows:
-
-- **Waves**, complete and planned, each with its demo state — which is already a
-  sentence in German saying what the wave delivers.
-- **Features** per wave, with their doc.
-- **What is open**: every `known_issues` entry across all docs, with the feature
-  it belongs to. Currently around thirty, which is itself worth seeing.
-- **The seven files over 300 lines**, because that list has been carried in
-  conversation for three waves and belongs somewhere it cannot be forgotten.
-
 ## Open Research
 
 - **What the version badge says on dev.** The version is `V0.<wave>.<merges on
@@ -304,20 +200,9 @@ What it shows:
   rolled by hand. Automatic is more useful and one more thing to go wrong at
   three in the morning. The chained cron line makes the automatic version safe
   enough that this is now a preference rather than a risk.
-- **What counts as a bot.** User-agent matching is unreliable and the honest
-  fallback is to label the total rather than to guess. Worth an hour of looking
-  at real logs before choosing, because the number is useless if it silently
-  means something else.
-- **Whether the Zentrale should be able to act**, or only to look. It reads a
-  read-only mount, so acting would mean changing that — and the reason it is
-  read-only is that an admin page is the most dangerous thing in a deployment.
-  Looking is enough until it is not.
 
 ## Deliberately not in this wave
 
-- **Any login on the Zentrale.** The tunnel is the boundary. A password on a
-  page that only exists on the loopback interface of a machine you already hold
-  a key to is a door inside a locked house — see feature 6.
 - **A staging copy of production data.** Dev starts empty and stays empty —
   which is also the state a migration is least tested against, and exactly the
   case CLAUDE.md says to check by hand. That check stays manual.
