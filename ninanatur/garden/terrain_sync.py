@@ -39,6 +39,28 @@ from ninanatur.geo.terrain_store import (
 
 log = logging.getLogger(__name__)
 
+#: Whether a garden's stored location is precise enough to fetch its ground.
+#:
+#: **False, and this is a hold rather than a preference.** `create_garden` rounds
+#: latitude and longitude to 0.1° before storing them — deliberately, and rightly
+#: when they only fed sun angles. That puts a 200 m terrain window, a 5 km
+#: horizon ring and a 1 km² building tile up to **six kilometres** from the
+#: garden: measured at Wuppertal, where the real ground is 147 m and the rounded
+#: point's is 268.
+#:
+#: Absolute height hardly matters, since a window is relative throughout. What is
+#: wrong is *which land* — another hillside's slope, another valley's horizon,
+#: another street's building bases. On a slope that is worse than the flat
+#: assumption it replaced, because it is confidently wrong.
+#:
+#: So the elevation features fall back to what every garden had before Wave 17:
+#: flat ground, and a page that says so. Wave 17's own feature 6 already writes
+#: that sentence.
+#:
+#: Flip this to True when the location question is settled — see Wave 17's doc
+#: for the three ways out, and `tests/test_anchor_precision.py` for the defect.
+LOCATION_IS_PRECISE = False
+
 
 def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
     """Fetch and store this location's ground if it is not already there.
@@ -48,6 +70,10 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
     worked, because they are separate requests and the window is the one that
     every garden uses.
     """
+    if not LOCATION_IS_PRECISE:
+        log.info("not fetching ground: the garden's stored location is rounded")
+        return False
+
     anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
     key = cache_key(anchor)
     have_window = load_window(conn, key) is not None
