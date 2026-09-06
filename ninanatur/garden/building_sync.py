@@ -14,8 +14,10 @@ from __future__ import annotations
 import logging
 import sqlite3
 
+from ninanatur.garden.canopies_found import remember
 from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
+from ninanatur.geo.canopy import canopies_in
 from ninanatur.geo.lod2 import Lod2Building, buildings_from, in_garden_frame, tile_name
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
@@ -50,7 +52,14 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
     surface = _surface(conn, anchor, state)
     if surveyed is None and surface is None:
         return 0
-    return apply(conn, measure(garden, surveyed, surface))
+    changed = apply(conn, measure(garden, surveyed, surface))
+    if surface is not None:
+        # Trees are proposed, never applied — so this counts separately and does
+        # not touch the plan. See `canopy.py` for why a laser cannot tell a
+        # crown from a marquee.
+        remember(conn, garden.garden_id,
+                 canopies_in(surface, [list(o.footprint) for o in garden.obstacles]))
+    return changed
 
 
 def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:

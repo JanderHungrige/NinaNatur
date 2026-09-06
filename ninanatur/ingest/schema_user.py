@@ -200,6 +200,29 @@ CREATE TABLE IF NOT EXISTS terrain_horizon (
     fetched_at TEXT NOT NULL
 );
 
+-- Trees the surface model found and nobody has drawn.
+--
+-- Suggestions, never objects. A crown, a hedge, a marquee and a badly-mapped
+-- building all read as "tall, and not ground" to a laser, so this proposes and
+-- the gardener decides — the same standing as Wave 16's misplacement warning.
+--
+-- `dismissed` rather than a delete: a suggestion refused once must not come
+-- back on the next recomputation, and the only way to know that is to remember
+-- the refusal.
+CREATE TABLE IF NOT EXISTS canopy_suggestion (
+    suggestion_id INTEGER PRIMARY KEY,
+    garden_id     INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    x             REAL    NOT NULL,
+    y             REAL    NOT NULL,
+    radius_m      REAL    NOT NULL,
+    height_m      REAL    NOT NULL,
+    dismissed     INTEGER NOT NULL DEFAULT 0,
+    accepted_id   INTEGER,
+    found_at      TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_canopy_garden ON canopy_suggestion(garden_id);
+
 -- What the gardener saw, as opposed to what the catalogue says.
 --
 -- Superseded in Wave 15 and kept empty rather than dropped.

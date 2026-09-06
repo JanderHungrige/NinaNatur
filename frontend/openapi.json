@@ -558,6 +558,40 @@
         "title": "BloomPalette",
         "type": "object"
       },
+      "CanopyOut": {
+        "description": "A tree the surface model found and nobody has drawn.\n\nA suggestion, never an object. A crown, a hedge, a marquee and a\nbadly-mapped building all read as \"tall, and not ground\" to a laser \u2014 so the\ngardener decides, with the same standing as Wave 16's misplacement warning.",
+        "properties": {
+          "height_m": {
+            "title": "Height M",
+            "type": "number"
+          },
+          "radius_m": {
+            "title": "Radius M",
+            "type": "number"
+          },
+          "suggestion_id": {
+            "title": "Suggestion Id",
+            "type": "integer"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "suggestion_id",
+          "x",
+          "y",
+          "radius_m",
+          "height_m"
+        ],
+        "title": "CanopyOut",
+        "type": "object"
+      },
       "ChangeOut": {
         "properties": {
           "bed_id": {
@@ -3755,6 +3789,148 @@
         "summary": "Bloom",
         "tags": [
           "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/canopies": {
+      "get": {
+        "description": "Trees found near this garden that nobody has answered for yet.",
+        "operationId": "canopies_api_v1_gardens__token__canopies_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CanopyOut"
+                  },
+                  "title": "Response Canopies Api V1 Gardens  Token  Canopies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Canopies",
+        "tags": [
+          "canopies"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/canopies/{suggestion_id}": {
+      "delete": {
+        "description": "Refuse one, for good.\n\nRemembered rather than deleted: the next recomputation finds the same tree\nagain, and re-proposing something somebody rejected is how a suggestion\nbecomes a nuisance.",
+        "operationId": "dismiss_canopy_api_v1_gardens__token__canopies__suggestion_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "suggestion_id",
+            "required": true,
+            "schema": {
+              "title": "Suggestion Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dismiss Canopy",
+        "tags": [
+          "canopies"
+        ]
+      },
+      "post": {
+        "description": "Turn a suggestion into a tree on the plan.\n\nIts height is marked `measured`, which is what it is \u2014 and its species is\nnobody's guess, so the canopy model treats it as a broadleaf in leaf, the\nsame default every unidentified woody planting already gets.",
+        "operationId": "accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "suggestion_id",
+            "required": true,
+            "schema": {
+              "title": "Suggestion Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GardenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Canopy",
+        "tags": [
+          "canopies"
         ]
       }
     },
