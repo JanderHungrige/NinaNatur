@@ -87,8 +87,29 @@ curl -i --max-time 5 http://localhost:4001/healthz
 
 The two stacks share nothing. `COMPOSE_PROJECT_NAME` scopes the named volume, so
 `ninanatur-prod_ninanatur-data` and `ninanatur-dev_ninanatur-data` are two
-databases — check with `docker volume ls` before trusting it, because a shared
-volume would mean testing a migration against real gardens.
+databases. **Verified rather than assumed** — locally on 2026-09-06, both stacks
+from the same image: a garden created on one answered 200 there and **404** on
+the other, and `docker volume ls` showed two volumes. Worth repeating on the
+host once, because a shared volume means testing a migration against real
+gardens:
+
+```bash
+docker volume ls | grep ninanatur     # two entries, prod_ and dev_
+T=$(curl -s -X POST localhost:4001/api/v1/gardens \
+      -H 'content-type: application/json' \
+      -d '{"name":"nur dev","latitude":52.5,"longitude":13.4}' \
+      | python3 -c 'import sys,json;print(json.load(sys.stdin)["share_token"])')
+curl -s -o /dev/null -w "dev  %{http_code}\n" localhost:4001/api/v1/gardens/$T
+curl -s -o /dev/null -w "prod %{http_code}\n" localhost:4000/api/v1/gardens/$T   # must be 404
+```
+
+The dev stack comes up against a **fresh empty volume** and seeds itself, which
+is the state CLAUDE.md asks to be checked by hand and the one a test double never
+reproduces. Its log says so:
+
+```
+catalogue synced: {'taxon': 8939, 'trait': 84217, 'partner_summary': 6382, ...}
+```
 
 ## 4. Cron
 
