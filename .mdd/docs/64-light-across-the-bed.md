@@ -21,7 +21,7 @@ test_files:
   - tests/test_roofs.py
   - tests/test_light_api.py
 data_flow: mixed
-last_synced: 2026-09-05
+last_synced: 2026-09-07
 status: complete
 phase: all
 mdd_version: 11
@@ -96,9 +96,21 @@ has to be remembered at every new endpoint, and the first one somebody forgets
 is silent. Renaming a bed does not move a shadow, and the signature knows that
 without being told.
 
-`POST .../light` recomputes on demand — belt as well as braces. If the signature
-ever misses something, that is how somebody fixes their own map without having
-to know why it was wrong.
+`POST .../light` recomputes on demand. It began as belt as well as braces — a
+way for somebody to fix their own map without knowing why it was wrong — and is
+now the **only** path.
+
+Writes stopped relighting the garden on 2026-09-07. Every mutation used to do
+it, so the plan could never disagree with its own obstacles, and that was right
+while a garden was a handful of shapes. Wave 19 gave buildings measured heights
+and the gardens people draw got big: 40 houses across 150 m costs **2.5 s** a
+relight, against **3 ms** to store the bed. Drawing five beds meant thirteen
+seconds of waiting for an answer nobody had asked for yet.
+
+The signature is what makes that safe rather than sloppy. A map that is quietly
+out of date is worse than one that admits it — and this one admits it, without
+anybody having to remember which endpoints ought to have invalidated it. The
+flag was already built and merely decorative; it is now load-bearing.
 
 ## Why it is trusted
 

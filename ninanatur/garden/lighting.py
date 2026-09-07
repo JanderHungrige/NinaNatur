@@ -3,6 +3,21 @@
 Split out of `store.py` in Wave 11. It is the one part of the store that is
 about the sky rather than about rows, and `store.py` was over the file-length
 limit before the element merge added to it.
+
+**Nothing here runs on a write.** Every mutation used to relight the garden so
+the plan could never disagree with its own obstacles, and that was right while a
+garden was a handful of shapes. Wave 19 gave buildings real measured heights,
+and the gardens people actually draw got big: 40 houses across 150 m, measured
+here through the API on 2026-09-07, costs **2.5 s** per relight — against 3 ms
+to store the bed. Drawing five beds meant waiting thirteen seconds for an answer
+nobody had asked for yet.
+
+So the light is recomputed when somebody asks: `POST /{token}/recompute` and
+`POST /{token}/light`, both behind one button. The map already knew how to say
+it was out of date — `LightGrid.stale` compares a signature of the shading
+inputs rather than trusting anyone to remember what ought to have invalidated
+it — so the honest half of this was already built. This change makes that flag
+load-bearing instead of decorative.
 """
 from __future__ import annotations
 
@@ -254,25 +269,5 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     return updated
 
 
-
-
-def _relight_if_woody(conn: sqlite3.Connection, bed_id: int, taxon_id: int) -> None:
-    """Recompute the garden's light when what was planted casts a shadow.
-
-    Here rather than in the route, for the same reason the light computation
-    itself lives in this module: the invariant has to hold whatever the entry
-    point. Every unit test of planted shade called `recompute_light` itself and
-    passed, while the running app left a bed at 12.6 h and Ellenberg 8 with a
-    24 m oak standing in it.
-
-    Skipped for anything under 1.5 m — recomputing a whole garden for a
-    perennial is work that cannot change an answer.
-    """
-    canopy = _woody_heights(conn, [taxon_id]).get(taxon_id)
-    if not shades(canopy):
-        return
-    row = conn.execute("SELECT garden_id FROM element WHERE element_id = ?", (bed_id,)).fetchone()
-    if row is not None:
-        recompute_light(conn, int(row["garden_id"]))
 
 

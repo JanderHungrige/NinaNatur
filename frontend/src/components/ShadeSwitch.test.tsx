@@ -247,3 +247,44 @@ describe('ShadeSwitch — where the ground came from', () => {
     expect(screen.queryByText(/Höhendaten|ü\. NHN/)).toBeNull();
   });
 });
+
+describe('ShadeSwitch — recomputing is now something you ask for', () => {
+  it('puts the rebuild button at the top, where the panel starts', () => {
+    // Nothing recomputes on a write any more, so the button is not a footnote
+    // under the legend: it is the first thing in the panel.
+    show();
+    const panel = screen.getByRole('region', { name: 'Sonne und Schatten' });
+    const rebuild = screen.getByRole('button', { name: 'Schatten neu berechnen' });
+    const modes = screen.getByRole('button', { name: 'Sonnenstunden' });
+    const order = rebuild.compareDocumentPosition(modes);
+    expect(panel.contains(rebuild)).toBe(true);
+    // eslint-disable-next-line no-bitwise
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('says why somebody would press it', () => {
+    show();
+    expect(screen.getByText(/neue Beete|neu angelegt|Objekte/)).toBeDefined();
+  });
+
+  it('offers the button before anything has ever been computed', () => {
+    // The regression this whole change could have introduced: with no recompute
+    // on a write, a fresh garden has no map at all — and the old panel hid the
+    // only button that could make one.
+    show({ map: null });
+    expect(screen.getByRole('button', { name: 'Schatten neu berechnen' })).toBeDefined();
+  });
+});
+
+describe('ShadeSwitch — three things to draw, not two at once', () => {
+  it('offers the day as its own choice, beside the two heat maps', () => {
+    const { onMode } = show();
+    fireEvent.click(screen.getByRole('button', { name: 'Tagesverlauf' }));
+    expect(onMode).toHaveBeenCalledWith('day');
+  });
+
+  it('says what the day mode shows, because it is the only one with shadows', () => {
+    show({ mode: 'day' });
+    expect(screen.getByText(/Objektschatten|wandern/)).toBeDefined();
+  });
+});

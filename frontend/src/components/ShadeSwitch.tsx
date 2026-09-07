@@ -37,10 +37,12 @@ function whenText(iso: string): string {
  * "3 Stunden" is, and a gardener buying a plant labelled *Halbschatten* needs
  * the one they can compare against the label.
  *
- * It also says when the map was computed, and offers to rebuild it. That is not
- * decoration: the map is stored because it costs half a second to make, so it
- * can be out of date — and a map that is quietly out of date is worse than one
- * that admits it.
+ * The rebuild button is the **first** thing in the panel, not a footnote under
+ * the legend. Nothing recomputes the light on a write any more — a garden of
+ * forty obstacles cost 3.3 s per bed, which turned drawing a bed into a wait —
+ * so the button is the only thing that makes a map at all. A control that is
+ * the sole way to get the feature cannot sit below five paragraphs, and it has
+ * to be there before the first map exists.
  */
 export function ShadeSwitch({
   map, terrain, on, mode, onToggle, onMode, onRebuild, busy,
@@ -48,6 +50,26 @@ export function ShadeSwitch({
   return (
     <section className="panel shade-switch" aria-labelledby="shade-heading">
       <h2 id="shade-heading">Sonne und Schatten</h2>
+
+      {/* Outside the `map === null` branch on purpose: a garden that has never
+          been computed is exactly the garden that needs this button, and the
+          old panel hid it behind "nothing drawn yet". */}
+      <div className="shade-switch__rebuild">
+        <button type="button" disabled={busy} onClick={onRebuild}>
+          Schatten neu berechnen
+        </button>
+        <p className="hint">
+          Nach dem Anlegen neuer Objekte den Schatten einmal neu berechnen — das
+          passiert nicht mehr von selbst.
+        </p>
+        {map !== null && (
+          <span className="hint">
+            {map.stale
+              ? 'Seit der letzten Änderung nicht neu gerechnet.'
+              : `Berechnet am ${whenText(map.computed_at)}.`}
+          </span>
+        )}
+      </div>
 
       <label className="shade-switch__toggle">
         <input
@@ -61,8 +83,8 @@ export function ShadeSwitch({
 
       {map === null ? (
         <p className="hint">
-          Noch nichts gezeichnet. Sobald der Garten steht, rechnen wir aus, wie
-          viel Sonne wo ankommt.
+          Noch nichts gezeichnet. Sobald Beete oder Objekte stehen, sagt ein
+          Klick auf den Knopf oben, wie viel Sonne wo ankommt.
         </p>
       ) : (
         <>
@@ -71,6 +93,7 @@ export function ShadeSwitch({
               [
                 ['sun', 'Sonnenstunden'],
                 ['shade', 'Schattenstunden'],
+                ['day', 'Tagesverlauf'],
               ] as Array<[MapMode, string]>
             ).map(([value, label]) => (
               <button
@@ -85,6 +108,17 @@ export function ShadeSwitch({
               </button>
             ))}
           </div>
+
+          {/* Three choices rather than two drawn at once. The heat map answers
+              "how much sun does this corner get all summer"; the moving
+              shadows answer "where is the shade at four o'clock". Painting
+              both together made each harder to read than either alone. */}
+          {mode === 'day' && (
+            <p className="hint">
+              Zeigt die wandernden Objektschatten über der Sonnenkarte — gelb
+              ist viel Sonne. Abspielen unten beim Zeitstrahl.
+            </p>
+          )}
 
           <ul className="shade-switch__legend">
             {BANDS.map(([lower, label], index) => {
@@ -142,17 +176,6 @@ export function ShadeSwitch({
               </p>
             </div>
           )}
-
-          <div className="shade-switch__actions">
-            <span className="hint">
-              {map.stale
-                ? 'Seit der letzten Änderung nicht neu gerechnet.'
-                : `Berechnet am ${whenText(map.computed_at)}.`}
-            </span>
-            <button type="button" disabled={busy} onClick={onRebuild}>
-              Schatten neu berechnen
-            </button>
-          </div>
         </>
       )}
     </section>

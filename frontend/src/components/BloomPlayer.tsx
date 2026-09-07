@@ -38,6 +38,15 @@ export function BloomPlayer({ month, onSelectMonth, shadowDay }: Props) {
   current.current = month ?? current.current;
   const day = shadowDay;
 
+  // Switching between the day and the year stops the playback rather than
+  // handing it over: the play button means two different things, and one that
+  // silently starts animating the *year* because the map mode changed is a
+  // control that did something nobody asked for.
+  const watchingDay = shadowDay !== undefined;
+  useEffect(() => {
+    setPlaying(false);
+  }, [watchingDay]);
+
   useEffect(() => {
     if (!playing) return undefined;
     if (day !== undefined) {

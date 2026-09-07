@@ -34,6 +34,10 @@ def _garden(client: TestClient, with_wall: bool = False) -> str:
     client.post(f"/api/v1/gardens/{token}/beds", json=BED)
     if with_wall:
         client.post(f"/api/v1/gardens/{token}/obstacles", json=WALL)
+    # Since 2026-09-07 nothing recomputes on a write, so a garden has no map
+    # until somebody asks for one. Every test below is about the map, so they
+    # all ask first — which is what a gardener does too.
+    client.post(f"/api/v1/gardens/{token}/light")
     return token
 
 

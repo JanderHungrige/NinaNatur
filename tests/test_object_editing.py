@@ -43,18 +43,25 @@ def test_a_bed_can_be_raised_and_says_so(client: TestClient) -> None:
     assert bed["label"] == "Hochbeet an der Mauer"
 
 
-def test_raising_a_bed_recomputes_its_light(client: TestClient) -> None:
-    """Otherwise the number on screen describes a bed that no longer exists."""
+def test_raising_a_bed_changes_its_light_once_it_is_recomputed(client: TestClient) -> None:
+    """A raised bed stands over a low fence, so it gets its morning back.
+
+    Asked for rather than automatic since 2026-09-07 — the number on screen
+    describes the bed as it was when it was last computed, and the map says so.
+    """
     token, bed_id = _garden(client)
     client.post(
         f"/api/v1/gardens/{token}/obstacles",
         json={"kind": "fence", "x": 0.0, "y": -1.0, "radius": 0.3, "height": 1.4},
     )
+    client.post(f"/api/v1/gardens/{token}/recompute")
     before = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]["sun_hours"]
 
     client.patch(
         f"/api/v1/gardens/{token}/beds/{bed_id}", json={"height_above_ground": 1.6}
     )
+    client.post(f"/api/v1/gardens/{token}/recompute")
+
     after = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]["sun_hours"]
     assert after > before
 
@@ -89,18 +96,21 @@ def test_an_invented_kind_is_refused(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_editing_an_obstacle_recomputes_the_light(client: TestClient) -> None:
+def test_editing_an_obstacle_changes_the_light_once_it_is_recomputed(client: TestClient) -> None:
     token, _ = _garden(client)
     created = client.post(
         f"/api/v1/gardens/{token}/obstacles",
         json={"kind": "fence", "x": 0.0, "y": -1.0, "radius": 0.3, "height": 1.2},
     ).json()["obstacles"][0]
+    client.post(f"/api/v1/gardens/{token}/recompute")
     before = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]["sun_hours"]
 
     client.patch(
         f"/api/v1/gardens/{token}/obstacles/{created['obstacle_id']}",
         json={"height": 6.0},
     )
+    client.post(f"/api/v1/gardens/{token}/recompute")
+
     after = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]["sun_hours"]
     assert after < before, "a 6 m wall casts more shade than a 1.2 m fence"
 
