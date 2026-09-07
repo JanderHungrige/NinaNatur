@@ -25,7 +25,6 @@ from ninanatur.api.schemas import (
     PlaceSearchOut,
 )
 from ninanatur.auth.sessions import Account
-from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import (
     add_obstacle,
@@ -170,7 +169,9 @@ def garden_from_map(
                 height_source=obj.height_source.value,
             )
         add_obstacle(conn, garden_id, drawn)
-    recompute_light(conn, garden_id)
+    # Deliberately not computed here. A garden arrives from the map with two
+    # dozen buildings and no beds; the light is the slowest thing this app does
+    # and the first thing somebody does next is draw, not read a shade map.
 
     return MapGardenOut(
         garden=to_out(load_garden(conn, garden_id)),

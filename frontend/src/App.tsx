@@ -315,9 +315,14 @@ export function App() {
    * Not with the garden: it is a request for a thing nobody has asked for by
    * opening a plan. The month follows the filter, so switching months while
    * watching moves the shadows rather than needing a second control.
+   *
+   * `mapMode === 'day'` is the whole gate. The two heat maps are read, not
+   * watched, and drawing the obstacle shadows over them made both harder to
+   * read than either alone — so the day is a third choice, and asking the
+   * server for it only when it is chosen is the part that also costs less.
    */
   useEffect(() => {
-    if (garden === null || !shadeOn) {
+    if (garden === null || !shadeOn || mapMode !== 'day') {
       setDay(null);
       return;
     }
@@ -338,7 +343,7 @@ export function App() {
       // arrive last and win.
       dropped = true;
     };
-  }, [garden?.share_token, shadeOn, filters.floweringMonth, garden]);
+  }, [garden?.share_token, shadeOn, mapMode, filters.floweringMonth, garden]);
 
   useUndoShortcut(() => {
     void run('Rückgängig', async () => {
@@ -1312,6 +1317,8 @@ export function App() {
                     ? { map: lightMap, mode: mapMode }
                     : undefined
                 }
+                // Only in day mode: `day` is null in the other two, which is
+                // what keeps the heat maps free of obstacle shadows.
                 shadows={day?.frames[frame]?.polygons ?? undefined}
                 onShowClusterInfo={(taxonId, name) =>
                   setInfoFor({

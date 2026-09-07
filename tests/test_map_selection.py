@@ -125,6 +125,10 @@ def test_the_light_is_computed_from_the_surroundings(client: TestClient) -> None
         f"/api/v1/gardens/{token}/beds",
         json={"name": "Staudenbeet", "polygon": [[0, 0], [3, 0], [3, 2], [0, 2]]},
     )
+    # Asked for since 2026-09-07: a garden arrives from the map with two dozen
+    # buildings, and computing its light there was the slowest thing the app
+    # did — at the moment somebody wants to start drawing.
+    client.post(f"/api/v1/gardens/{token}/recompute")
     bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
 
     assert bed["sun_hours"] is not None

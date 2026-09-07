@@ -138,9 +138,19 @@ def test_a_bed_gets_its_light_from_the_store_not_only_from_the_api(
     It used to be the route's job, so a bed made through the store had none — and
     everything downstream then scored it on soil alone, silently, because a
     missing axis is skipped rather than flagged.
+
+    Since 2026-09-07 neither does it on a write: the light is recomputed on
+    request, because doing it on every write cost 3.3 s a shape in a garden out
+    of the map picker. What must still not depend on the entry point is that a
+    recomputation reaches a bed made through the store.
     """
     gid = _garden(conn)
     add_bed(conn, gid, BedInput(name="Direkt", polygon=SQUARE))
+
+    assert load_garden(conn, gid).beds[0].sun_hours is None, "not until asked"
+
+    recompute_light(conn, gid)
+
     bed = load_garden(conn, gid).beds[0]
     assert bed.ellenberg_l is not None
     assert bed.sun_hours is not None

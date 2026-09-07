@@ -1257,7 +1257,10 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   shape-rendering: crispEdges;
 }
 
-.sun-map--shade .sun-map__cell { fill: var(--wash-sun); }
+/* Shade and day share the warm ink: both are asking where the *sun* is, one
+   over the season and one at this minute. */
+.sun-map--shade .sun-map__cell,
+.sun-map--day .sun-map__cell { fill: var(--wash-sun); }
 
 /* One moment of one day, over everything: while it plays, where the shadow is
    *now* is the only question being asked. */
@@ -1300,14 +1303,15 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .shade-switch__swatch[data-band='3'] { opacity: 0.58; }
 .shade-switch__swatch[data-band='4'] { opacity: 0.72; }
 
-.shade-switch__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+/* The first block in the panel, because it is the only way to get a map at
+   all — nothing recomputes the light on a write any more. */
+.shade-switch__rebuild {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
 }
-.shade-switch__actions button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+.shade-switch__rebuild button { margin: 0; padding: 0.4rem 0.9rem; font-size: 0.9rem; }
+.shade-switch__rebuild .hint { margin: 0; }
 
 /* A warning, not an error: bordered rather than shouted, because the gardener
    may well know something the model does not. */

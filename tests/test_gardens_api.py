@@ -90,10 +90,18 @@ def test_an_unknown_soil_type_is_422_not_silently_defaulted(client: TestClient) 
 
 # --- the wave's actual point ----------------------------------------------
 
-def test_adding_an_obstacle_recomputes_light_without_a_second_call(
+def test_adding_an_obstacle_leaves_the_old_light_standing_until_asked(
     client: TestClient,
 ) -> None:
-    """Otherwise a plan shows values that no longer match its own obstacles."""
+    """The trade this app made on 2026-09-07, stated as a test.
+
+    It used to recompute on every write, so a plan never showed values that
+    disagreed with its own obstacles. It cost 3.3 s a shape in a garden out of
+    the map picker, which is what drawing one actually felt like.
+
+    Now the old value stands until somebody asks — and the map says it is stale,
+    which is the part that makes this honest rather than merely faster.
+    """
     token = _new_garden(client)
     client.post(f"/api/v1/gardens/{token}/beds", json={"name": "Beet", "polygon": SQUARE})
     client.post(f"/api/v1/gardens/{token}/recompute")
@@ -103,17 +111,36 @@ def test_adding_an_obstacle_recomputes_light_without_a_second_call(
         f"/api/v1/gardens/{token}/obstacles",
         json={"kind": "house", "x": 2, "y": -4, "radius": 10, "height": 12},
     )
+
+    unchanged = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    assert unchanged["sun_hours"] == before
+    assert client.get(f"/api/v1/gardens/{token}/light").json()["stale"] is True
+
+    client.post(f"/api/v1/gardens/{token}/recompute")
+
     after = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
     assert after["sun_hours"] < before
-    assert after["light_computed_at"] is not None
+    assert client.get(f"/api/v1/gardens/{token}/light").json()["stale"] is False
 
 
-def test_a_new_bed_gets_its_light_straight_away(client: TestClient) -> None:
-    """Regression: only adding an obstacle triggered the computation, so a garden
-    with no obstacles left every bed on "not yet computed" forever — and its
-    suggestions were then scored on soil alone, silently."""
+def test_a_new_bed_has_no_light_until_it_is_asked_for(client: TestClient) -> None:
+    """And "no light" is null rather than zero, all the way through.
+
+    The old regression this replaces was the opposite one: only adding an
+    obstacle triggered the computation, so a garden with no obstacles left every
+    bed uncomputed forever and its suggestions were scored on soil alone.
+    Silently, which is the part that mattered — and the reason the null is still
+    a null rather than a plausible-looking zero.
+    """
     token = _new_garden(client)
     client.post(f"/api/v1/gardens/{token}/beds", json={"name": "Neu", "polygon": SQUARE})
+
+    fresh = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    assert fresh["sun_hours"] is None
+    assert fresh["light_computed_at"] is None
+
+    client.post(f"/api/v1/gardens/{token}/recompute")
+
     bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
     assert bed["ellenberg_l"] is not None
     assert bed["sun_hours"] is not None

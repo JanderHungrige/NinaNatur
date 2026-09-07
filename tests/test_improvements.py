@@ -9,6 +9,7 @@ from ninanatur.bloom.improve import (
     marginal_gain,
 )
 from ninanatur.bloom.score import MONTH_SATURATION, garden_score
+from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import BedInput
 from ninanatur.garden.plantings import add_planting
 from ninanatur.garden.store import add_bed, create_garden, load_garden
@@ -86,6 +87,7 @@ def _garden_with_a_june_only_planting(c: sqlite3.Connection) -> int:
     bed = add_bed(c, gid, BedInput(name="Beet", polygon=SQUARE,
                                    soil_type="loam", moisture="fresh"))
     add_planting(c, bed, taxon_id=1, quantity=1)
+    recompute_light(c, gid)   # writes never relight any more; the caller asks
     return gid
 
 
@@ -178,6 +180,7 @@ def test_a_barely_fitting_species_is_not_proposed_even_with_few_candidates(
     gid = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
     add_bed(conn, gid, BedInput(name="Beet", polygon=SQUARE,
                                 soil_type="loam", moisture="fresh"))
+    recompute_light(conn, gid)
     names = [c.canonical_name for c in garden_improvements(conn, load_garden(conn, gid)).additions]
     assert "Passt" in names
     assert "Passt nicht" not in names, "900 partners cannot buy a place in the wrong bed"

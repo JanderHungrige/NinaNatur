@@ -19,7 +19,7 @@ test_files:
   - frontend/src/components/ShadeSwitch.test.tsx
   - tests/test_light_api.py
 data_flow: reads-existing
-last_synced: 2026-09-05
+last_synced: 2026-09-07
 status: complete
 phase: all
 mdd_version: 11
@@ -35,11 +35,20 @@ known_issues: []
 
 ## The switch
 
-One toggle over the plan, and two ways to read the same grid. **Sonnenstunden**
-darkens what has little sun; **Schattenstunden** darkens what has much. They are
-the same numbers inverted, and both exist because gardeners ask the question in
-both directions: *where can this sun-lover go* and *what do I do with that dark
-corner*.
+One toggle over the plan, and three things it can draw. **Sonnenstunden**
+darkens what has little sun; **Schattenstunden** washes what has much in yellow.
+They are the same numbers inverted, and both exist because gardeners ask the
+question in both directions: *where can this sun-lover go* and *what do I do
+with that dark corner*. **Tagesverlauf** is the third, and it is the only one
+that carries the moving obstacle shadows.
+
+Three choices rather than two layers. The heat map and the day's shadows used to
+be drawn together whenever the switch was on, and each made the other harder to
+read: a shadow crossing a dark wash is not visible, and a wash read through a
+shadow is not a reading. They answer different questions — *how much sun does
+this corner get all summer* against *where is the shade at four o'clock* — so
+they are now separate answers. The day paints its ground the way Schattenstunden
+does, yellow for much sun, because that is the surface a shadow shows up on.
 
 The legend is banded and every band carries its hours, because "Halbschatten" is
 a word people use for different things and 2.5–4 h is not:
@@ -67,11 +76,31 @@ drawn with light, not with more dark.
 `GET .../shadows?month=` returns the shadows of one middling day — the 15th, at
 every half hour the sun is above 5°. The play button walks the plan through it.
 
+Fetched only in Tagesverlauf mode. It used to be fetched whenever the switch was
+on, which asked the server for a thing nobody had chosen to watch.
+
 Computed rather than stored: one day is a fraction of a season's work, and
 nobody watches the same day twice in a row.
 
+Leaving Tagesverlauf stops the playback rather than handing it over. The play
+button means two things depending on the mode, and one that silently starts
+animating the *year* because the map mode changed is a control that did
+something nobody asked for.
+
 The 15th rather than the 1st or the 31st because a month's edges differ by a
 fortnight of sun, and the middle is the one that represents the month.
+
+## The button comes first
+
+The rebuild button is the first thing in the panel, above the toggle, with one
+line saying why: *nach dem Anlegen neuer Objekte den Schatten einmal neu
+berechnen — das passiert nicht mehr von selbst.*
+
+It is there because nothing recomputes the light on a write any longer (see
+`64-light-across-the-bed`), which makes this button the only way to get a map at
+all. It is rendered even when there is no map yet — the old panel showed
+"nothing drawn yet" *instead of* the button, which was survivable while a write
+built the first map and would now be a dead end.
 
 ## A thing that had to be learned twice
 
