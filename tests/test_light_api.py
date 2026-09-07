@@ -203,3 +203,99 @@ def test_terrain_comes_back_with_its_relief_and_its_credit(
 
 def test_an_unknown_garden_has_no_terrain_either(client: TestClient) -> None:
     assert client.get("/api/v1/gardens/gibtesnicht/terrain").status_code == 404
+
+
+# --- one month at a time ----------------------------------------------------
+
+def test_a_month_can_be_asked_for_instead_of_the_season(client: TestClient) -> None:
+    """March and June are different gardens wherever anything stands to the
+    south, and one number for the whole season describes neither."""
+    token = _garden(client, with_wall=True)
+
+    season = client.get(f"/api/v1/gardens/{token}/light").json()
+    march = client.get(f"/api/v1/gardens/{token}/light?month=3").json()
+    june = client.get(f"/api/v1/gardens/{token}/light?month=6").json()
+
+    assert june["max_hours"] > season["max_hours"] > march["max_hours"]
+    # Same garden, same grid: only the answer in each cell changes.
+    assert (march["cols"], march["rows"]) == (season["cols"], season["rows"])
+
+
+def test_a_month_is_computed_now_so_it_is_never_stale(client: TestClient) -> None:
+    """It is not the stored map. Nothing narrows the season on disk, so a month
+    can only be the current garden — and saying `stale` would be a lie."""
+    token = _garden(client)
+    client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "house", "x": 2, "y": -6, "radius": 6, "height": 9},
+    )
+
+    assert client.get(f"/api/v1/gardens/{token}/light").json()["stale"] is True
+    assert client.get(f"/api/v1/gardens/{token}/light?month=6").json()["stale"] is False
+
+
+def test_winter_cannot_be_asked_for(client: TestClient) -> None:
+    """The whole light model stops at October. A December map would drag every
+    German garden into shade and answer a question nobody plants by."""
+    token = _garden(client)
+    assert client.get(f"/api/v1/gardens/{token}/light?month=12").status_code == 422
+    assert client.get(f"/api/v1/gardens/{token}/light?month=1").status_code == 422
+
+
+def test_the_warnings_do_not_flicker_as_the_months_are_scrolled(
+    client: TestClient,
+) -> None:
+    """Misplacement is a judgement about a growing season. Warnings appearing
+    and vanishing while somebody looks through the months would be noise."""
+    token = _garden(client, with_wall=True)
+    season = client.get(f"/api/v1/gardens/{token}/light").json()["misplaced"]
+
+    for month in (3, 6, 10):
+        shown = client.get(f"/api/v1/gardens/{token}/light?month={month}").json()
+        assert shown["misplaced"] == season
+
+
+# --- there is no ground under a house ---------------------------------------
+
+def test_a_cell_under_a_building_has_no_answer_rather_than_a_dark_one(
+    client: TestClient,
+) -> None:
+    """Zero would be a claim about deep shade. True of the footprint, and false
+    of what a plan shows there — a roof, in full sun."""
+    token = client.post(
+        "/api/v1/gardens", json={"name": "Haus", "latitude": 51.2564, "longitude": 7.1501}
+    ).json()["share_token"]
+    client.post(f"/api/v1/gardens/{token}/beds", json=BED)
+    client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "house", "x": 6, "y": 8, "width": 10, "depth": 8, "height": 9},
+    )
+    client.post(f"/api/v1/gardens/{token}/light")
+
+    hours = client.get(f"/api/v1/gardens/{token}/light").json()["hours"]
+
+    body = client.get(f"/api/v1/gardens/{token}/light").json()
+    blank = sum(1 for h in hours if h is None)
+    cells_per_m2 = 1 / (body["cell_m"] ** 2)
+
+    assert any(h is not None for h in hours), "the rest of the garden is still ground"
+    # 10 x 8 m of house, give or take the cells its edge cuts through.
+    assert blank == pytest.approx(80 * cells_per_m2, rel=0.3)
+
+
+def test_a_tree_still_has_ground_under_it(client: TestClient) -> None:
+    """Dappled shade under an apple tree is exactly what somebody planting there
+    is asking about. Only a roof takes the ground away."""
+    token = client.post(
+        "/api/v1/gardens", json={"name": "Baum", "latitude": 51.2564, "longitude": 7.1501}
+    ).json()["share_token"]
+    client.post(f"/api/v1/gardens/{token}/beds", json=BED)
+    client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "tree", "x": 2, "y": 2, "radius": 3, "height": 8},
+    )
+    client.post(f"/api/v1/gardens/{token}/light")
+
+    hours = client.get(f"/api/v1/gardens/{token}/light").json()["hours"]
+
+    assert None not in hours

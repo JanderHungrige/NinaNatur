@@ -15,8 +15,11 @@ from pydantic import BaseModel
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.garden.building_sync import measure_buildings
-from ninanatur.garden.lightgrid import extent_of, load_grid, signature_of
+from ninanatur.garden.elements import now
+from ninanatur.garden.lightgrid import extent_of, signature_of
+from ninanatur.garden.lightgrid_store import load_grid
 from ninanatur.garden.lighting import recompute_light
+from ninanatur.garden.lightview import month_grid
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
@@ -41,14 +44,18 @@ class LightMap(BaseModel):
     min_y: float
     cols: int
     rows: int
-    hours: list[float]
+    #: Null where there is no ground to answer for — a cell under a house or a
+    #: shed. Zero would read as deep shade, which is true of the footprint and
+    #: false of what a plan shows there: a roof, in full sun.
+    hours: list[float | None]
     #: The most any cell gets, so the drawing can scale without a second pass.
     max_hours: float
     computed_at: str
     stale: bool
     #: Of those hours, the ones before the sun crosses due south. Empty on a
-    #: grid computed before the split existed; the next rebuild fills it.
-    morning: list[float]
+    #: grid computed before the split existed; the next rebuild fills it, and
+    #: nulls line up with `hours`.
+    morning: list[float | None]
     #: Plantings standing in light they did not ask for.
     misplaced: list[MisplacedOut]
 
@@ -122,10 +129,17 @@ class ShadowDay(BaseModel):
 def light_map(
     token: str,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+    month: Annotated[int | None, Query(ge=3, le=10)] = None,
 ) -> LightMap | None:
-    """The stored map, or null when nothing has been drawn yet."""
+    """The stored map, or null when nothing has been drawn yet.
+
+    `month` asks for one month instead of the season, computed on the spot and
+    not stored. March to October, the same window the whole light model uses:
+    a plant's December is not what decides where it can live, and a map of it
+    would drag every German garden into shade.
+    """
     garden = require_garden(conn, token)
-    return _read(conn, garden.garden_id)
+    return _read(conn, garden.garden_id, month)
 
 
 @router.post("/{token}/light", response_model=LightMap | None)
@@ -222,12 +236,26 @@ def shadows_through_a_day(
     )
 
 
-def _read(conn: sqlite3.Connection, garden_id: int) -> LightMap | None:
+def _read(
+    conn: sqlite3.Connection, garden_id: int, month: int | None = None
+) -> LightMap | None:
+    """The map to draw, and everything the panel says about it.
+
+    A month is drawn from a grid computed just now, so it is never stale and
+    says so. `misplaced` stays on the **stored season** grid in either case: a
+    plant standing in the wrong light is a judgement about its growing season,
+    and warnings that appeared and vanished as somebody scrolled through the
+    months would be noise rather than advice.
+    """
     stored = load_grid(conn, garden_id)
     if stored is None:
         return None
     grid, signature, computed_at = stored
     garden = load_garden(conn, garden_id)
+    if month is not None:
+        fresh = month_grid(conn, garden, month)
+        if fresh is not None:
+            grid, computed_at, signature = fresh, now(), signature_of(garden)
     return LightMap(
         cell_m=grid.cell_m,
         min_x=grid.min_x,
@@ -235,7 +263,8 @@ def _read(conn: sqlite3.Connection, garden_id: int) -> LightMap | None:
         cols=grid.cols,
         rows=grid.rows,
         hours=grid.hours,
-        max_hours=max(grid.hours) if grid.hours else 0.0,
+        max_hours=max(answered) if (answered := [h for h in grid.hours if h is not None])
+        else 0.0,
         morning=grid.morning,
         misplaced=[
             MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)

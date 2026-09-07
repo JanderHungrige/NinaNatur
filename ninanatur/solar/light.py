@@ -22,6 +22,10 @@ SEASON_END = (10, 31)
 DAY_STEP = 10
 MINUTE_STEP = 30
 
+# A single month gets a finer step, because ten days would sample it three
+# times. Six samples over four weeks, at a quarter of the season's cost.
+MONTH_DAY_STEP = 5
+
 # Mean daily direct sun (hours) -> Ellenberg L, best-first.
 #
 # THIS IS A CONVENTION, NOT A MEASUREMENT. Sun hours are physical; Ellenberg L is
@@ -56,14 +60,29 @@ def ellenberg_from_sun_hours(sun_hours: float) -> float:
     return SUN_HOUR_BANDS[-1][1]
 
 
-def _season_days(year: int) -> list[datetime]:
-    start = datetime(year, *SEASON_START, tzinfo=UTC)
-    end = datetime(year, *SEASON_END, tzinfo=UTC)
+def _season_days(year: int, month: int | None = None) -> list[datetime]:
+    """The days a light answer is averaged over.
+
+    March to October by default — a plant's whole growing season, which is what
+    decides where it can live. `month` narrows it to one, because *where does
+    the sun reach in April* and *where does it reach in July* are different
+    questions in a garden with a house on its south side, and the season average
+    answers neither on its own.
+    """
+    if month is not None:
+        start = datetime(year, month, 1, tzinfo=UTC)
+        end = start.replace(day=28) + timedelta(days=4)
+        end = end.replace(day=1) - timedelta(days=1)
+        step = MONTH_DAY_STEP
+    else:
+        start = datetime(year, *SEASON_START, tzinfo=UTC)
+        end = datetime(year, *SEASON_END, tzinfo=UTC)
+        step = DAY_STEP
     days: list[datetime] = []
     day = start
     while day <= end:
         days.append(day)
-        day += timedelta(days=DAY_STEP)
+        day += timedelta(days=step)
     return days
 
 

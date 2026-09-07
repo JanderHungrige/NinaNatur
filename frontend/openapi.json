@@ -1176,7 +1176,14 @@
           },
           "hours": {
             "items": {
-              "type": "number"
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "title": "Hours",
             "type": "array"
@@ -1202,7 +1209,14 @@
           },
           "morning": {
             "items": {
-              "type": "number"
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "title": "Morning",
             "type": "array"
@@ -3074,7 +3088,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.17.66"
+    "version": "V0.19.78"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3439,7 +3453,7 @@
     },
     "/api/v1/gardens/{token}/beds/{bed_id}": {
       "patch": {
-        "description": "Change what a bed is. Raising it changes its light, so the light is redone.\n\nLeaving the stored number alone would leave the screen describing a bed that\nno longer exists \u2014 the same reason adding an obstacle recomputes.",
+        "description": "Change what a bed is.\n\nRaising it changes its light, and the stored light does not follow: the map\ngoes `stale` and says so, rather than costing 2.5 s on a garden of forty\nhouses every time somebody renames a bed. See `garden.lighting`.",
         "operationId": "edit_bed_api_v1_gardens__token__beds__bed_id__patch",
         "parameters": [
           {
@@ -4084,7 +4098,7 @@
     },
     "/api/v1/gardens/{token}/light": {
       "get": {
-        "description": "The stored map, or null when nothing has been drawn yet.",
+        "description": "The stored map, or null when nothing has been drawn yet.\n\n`month` asks for one month instead of the season, computed on the spot and\nnot stored. March to October, the same window the whole light model uses:\na plant's December is not what decides where it can live, and a map of it\nwould drag every German garden into shade.",
         "operationId": "light_map_api_v1_gardens__token__light_get",
         "parameters": [
           {
@@ -4094,6 +4108,24 @@
             "schema": {
               "title": "Token",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 3,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
             }
           }
         ],
@@ -4184,7 +4216,7 @@
     },
     "/api/v1/gardens/{token}/obstacles": {
       "post": {
-        "description": "Add an obstacle and recompute in the same call.\n\nRequiring a second request would leave the plan showing light values that no\nlonger match its own obstacles \u2014 and nothing would make that visible.",
+        "description": "Add an obstacle. The light is *not* redone here.\n\nIt used to be, so the plan could never disagree with its own obstacles. On\na garden of forty houses that cost 2.5 s a call, which is the whole of why\ndrawing anything felt slow. The map says `stale` instead, and the button in\nthe shade panel is what clears it.",
         "operationId": "create_obstacle_api_v1_gardens__token__obstacles_post",
         "parameters": [
           {
@@ -4237,7 +4269,7 @@
     },
     "/api/v1/gardens/{token}/obstacles/{obstacle_id}": {
       "delete": {
-        "description": "Remove an element from the plan.\n\nNothing could be removed until now: a shape drawn by mistake stayed. The\ngarden comes back rather than a 204, because deleting a bed changes what\nevery other bed gets \u2014 the light is recomputed and the caller needs the\nresult, not a second request to find it.",
+        "description": "Remove an element from the plan.\n\nNothing could be removed until now: a shape drawn by mistake stayed. The\ngarden comes back rather than a 204, because deleting a bed changes what\nevery other bed shows and the caller needs the result, not a second request\nto find it. The *light* is not redone \u2014 the map goes stale and says so.",
         "operationId": "remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete",
         "parameters": [
           {

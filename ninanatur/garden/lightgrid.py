@@ -12,12 +12,11 @@ every one of them.
 from __future__ import annotations
 
 import hashlib
-import json
-import sqlite3
 from dataclasses import dataclass, field
 
 from ninanatur.garden.ground import height_at, lowest_ground, standing_on
 from ninanatur.garden.models import Garden
+from ninanatur.garden.objects import ObjectKind, is_roofed
 from ninanatur.garden.slopes import ring_for, slope_at
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
@@ -44,15 +43,23 @@ class LightGrid:
     cell_m: float
     cols: int
     rows: int
-    hours: list[float]
+    #: None where there is no ground to answer for: a cell under a house or a
+    #: shed. Zero would be a claim about deep shade, and read from above — where
+    #: what you see is a sunlit roof — a wrong one. See `objects.is_roofed`.
+    hours: list[float | None]
     #: Of those hours, the ones before the sun crosses due south. Kept because
     #: afternoon sun is hotter and harsher, and a great many species sold as
     #: *Halbschatten* want the morning specifically — a total cannot say which
     #: four hours a spot gets.
-    morning: list[float] = field(default_factory=list)
+    morning: list[float | None] = field(default_factory=list)
 
     def at(self, x: float, y: float) -> float | None:
-        """The cell containing this point, or None outside the grid."""
+        """The cell containing this point.
+
+        None outside the grid, and None for a cell that is under a roof — the
+        caller cannot tell the two apart and does not need to, because both mean
+        "this model has no answer for that point".
+        """
         col = int((x - self.min_x) // self.cell_m)
         row = int((y - self.min_y) // self.cell_m)
         if not (0 <= col < self.cols and 0 <= row < self.rows):
@@ -68,18 +75,20 @@ class LightGrid:
     def mean_over(self, polygon: list[list[float]]) -> float | None:
         """The mean of the cells whose centres fall inside a polygon.
 
-        None when no cell centre lands inside — a bed narrower than a cell. The
-        caller falls back rather than being handed a zero, because zero is a
-        number this model uses for genuine darkness.
+        None when no cell centre lands inside — a bed narrower than a cell — and
+        None when every cell that does land inside is under a roof. The caller
+        falls back rather than being handed a zero, because zero is a number
+        this model uses for genuine darkness.
         """
         from ninanatur.garden.footprint import covers
 
         ring = [(float(p[0]), float(p[1])) for p in polygon]
         inside = [
-            self.hours[row * self.cols + col]
+            hours
             for row in range(self.rows)
             for col in range(self.cols)
             if covers(ring, self.centre_of(col, row))
+            and (hours := self.hours[row * self.cols + col]) is not None
         ]
         return sum(inside) / len(inside) if inside else None
 
@@ -149,8 +158,13 @@ def compute_grid(
     height_above_ground: float = 0.0,
     ground: TerrainWindow | None = None,
     horizon: list[float] | None = None,
+    month: int | None = None,
 ) -> LightGrid | None:
     """Sun hours for every cell of the garden. None when nothing is drawn yet.
+
+    `month` narrows the average from the whole March-to-October season to one
+    month. A garden with a house on its south side is a different garden in
+    April and in July, and one number for the season says neither.
 
     `ground` is the terrain under the garden, or None for the flat world every
     shadow in this project was computed in until Wave 17. With it, each cell is
@@ -182,21 +196,53 @@ def compute_grid(
         height_above_ground=height_above_ground,
         ground_floor=floor,
         horizon=horizon,
+        month=month,
     )
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
     skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]] = {}
+    roofs = _roofed_footprints(garden)
     halves = [
-        _at_cell(field_of, grid, ground, horizon, floor, col, row, skies)
+        None
+        if _under_a_roof(roofs, *grid.centre_of(col, row))
+        else _at_cell(field_of, grid, ground, horizon, floor, col, row, skies)
         for row in range(rows)
         for col in range(cols)
     ]
     return LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows,
-        hours=[round(a + b, 2) for a, b in halves],
-        morning=[round(a, 2) for a, _b in halves],
+        hours=[None if h is None else round(h[0] + h[1], 2) for h in halves],
+        morning=[None if h is None else round(h[0], 2) for h in halves],
     )
+
+
+def _roofed_footprints(garden: Garden) -> list[list[tuple[float, float]]]:
+    """The outlines with a roof over them — houses and sheds.
+
+    Read off the garden rather than off the shading obstacles, which have
+    already been reduced to footprints and heights and no longer know what they
+    are.
+    """
+    return [
+        [(float(x), float(y)) for x, y in o.footprint]
+        for o in garden.obstacles
+        if is_roofed(ObjectKind(o.kind))
+    ]
+
+
+def _under_a_roof(roofs: list[list[tuple[float, float]]], x: float, y: float) -> bool:
+    """Whether this point has a building over it, so there is no ground to ask about.
+
+    Skipped rather than computed and then hidden: the cell would come back at
+    or near zero — a house shades its own footprint all day — and the map would
+    paint the building in the ink it uses for deep shade. Which is true of the
+    ground and false of the picture, because what a plan shows at a house is the
+    *roof*, and the roof is in full sun.
+    """
+    from ninanatur.garden.footprint import covers
+
+    return any(covers(roof, (x, y)) for roof in roofs)
 
 
 def signature_of(garden: Garden) -> str:
@@ -229,44 +275,3 @@ def signature_of(garden: Garden) -> str:
                 f"|{planting.x}|{planting.y}"
             )
     return hashlib.sha256("\n".join(parts).encode()).hexdigest()[:16]
-
-
-def save_grid(
-    conn: sqlite3.Connection, garden_id: int, grid: LightGrid, signature: str
-) -> None:
-    from ninanatur.garden.elements import now
-
-    conn.execute(
-        "INSERT INTO light_grid (garden_id, cell_m, min_x, min_y, cols, rows,"
-        " hours, morning, signature, computed_at)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        " ON CONFLICT (garden_id) DO UPDATE SET cell_m = excluded.cell_m,"
-        " min_x = excluded.min_x, min_y = excluded.min_y, cols = excluded.cols,"
-        " rows = excluded.rows, hours = excluded.hours,"
-        " morning = excluded.morning,"
-        " signature = excluded.signature, computed_at = excluded.computed_at",
-        (garden_id, grid.cell_m, grid.min_x, grid.min_y, grid.cols, grid.rows,
-         json.dumps(grid.hours), json.dumps(grid.morning), signature, now()),
-    )
-    conn.commit()
-
-
-def load_grid(
-    conn: sqlite3.Connection, garden_id: int
-) -> tuple[LightGrid, str, str] | None:
-    """The stored grid, its signature and when it was computed."""
-    row = conn.execute(
-        "SELECT cell_m, min_x, min_y, cols, rows, hours, morning, signature,"
-        " computed_at"
-        " FROM light_grid WHERE garden_id = ?",
-        (garden_id,),
-    ).fetchone()
-    if row is None:
-        return None
-    grid = LightGrid(
-        min_x=float(row["min_x"]), min_y=float(row["min_y"]),
-        cell_m=float(row["cell_m"]), cols=int(row["cols"]), rows=int(row["rows"]),
-        hours=[float(v) for v in json.loads(row["hours"])],
-        morning=[float(v) for v in json.loads(row["morning"] or "[]")],
-    )
-    return grid, str(row["signature"]), str(row["computed_at"])

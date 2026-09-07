@@ -213,8 +213,9 @@ def shadow_field(
     height_above_ground: float = 0.0,
     ground_floor: float = 0.0,
     horizon: list[float] | None = None,
+    month: int | None = None,
 ) -> ShadowField:
-    """Build the season's shadows for one garden.
+    """Build the season's shadows for one garden, or one month's.
 
     `height_above_ground` belongs here rather than at the point, because it
     changes each obstacle's effective height and therefore every polygon. A
@@ -227,7 +228,7 @@ def shadow_field(
     and only a point standing higher pays for the exact check. On flat ground
     the floor is zero, every point is at zero, and nothing ever does.
     """
-    days = _season_days(year)
+    days = _season_days(year, month)
     step = timedelta(minutes=MINUTE_STEP)
     receiver = ground_floor + height_above_ground
     lifted = [

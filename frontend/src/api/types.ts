@@ -209,10 +209,11 @@ export interface paths {
         head?: never;
         /**
          * Edit Bed
-         * @description Change what a bed is. Raising it changes its light, so the light is redone.
+         * @description Change what a bed is.
          *
-         *     Leaving the stored number alone would leave the screen describing a bed that
-         *     no longer exists — the same reason adding an obstacle recomputes.
+         *     Raising it changes its light, and the stored light does not follow: the map
+         *     goes `stale` and says so, rather than costing 2.5 s on a garden of forty
+         *     houses every time somebody renames a bed. See `garden.lighting`.
          */
         patch: operations["edit_bed_api_v1_gardens__token__beds__bed_id__patch"];
         trace?: never;
@@ -429,6 +430,11 @@ export interface paths {
         /**
          * Light Map
          * @description The stored map, or null when nothing has been drawn yet.
+         *
+         *     `month` asks for one month instead of the season, computed on the spot and
+         *     not stored. March to October, the same window the whole light model uses:
+         *     a plant's December is not what decides where it can live, and a map of it
+         *     would drag every German garden into shade.
          */
         get: operations["light_map_api_v1_gardens__token__light_get"];
         put?: never;
@@ -462,10 +468,12 @@ export interface paths {
         put?: never;
         /**
          * Create Obstacle
-         * @description Add an obstacle and recompute in the same call.
+         * @description Add an obstacle. The light is *not* redone here.
          *
-         *     Requiring a second request would leave the plan showing light values that no
-         *     longer match its own obstacles — and nothing would make that visible.
+         *     It used to be, so the plan could never disagree with its own obstacles. On
+         *     a garden of forty houses that cost 2.5 s a call, which is the whole of why
+         *     drawing anything felt slow. The map says `stale` instead, and the button in
+         *     the shade panel is what clears it.
          */
         post: operations["create_obstacle_api_v1_gardens__token__obstacles_post"];
         delete?: never;
@@ -490,8 +498,8 @@ export interface paths {
          *
          *     Nothing could be removed until now: a shape drawn by mistake stayed. The
          *     garden comes back rather than a 204, because deleting a bed changes what
-         *     every other bed gets — the light is recomputed and the caller needs the
-         *     result, not a second request to find it.
+         *     every other bed shows and the caller needs the result, not a second request
+         *     to find it. The *light* is not redone — the map goes stale and says so.
          */
         delete: operations["remove_element_api_v1_gardens__token__obstacles__obstacle_id__delete"];
         options?: never;
@@ -1296,7 +1304,7 @@ export interface components {
             /** Computed At */
             computed_at: string;
             /** Hours */
-            hours: number[];
+            hours: (number | null)[];
             /** Max Hours */
             max_hours: number;
             /** Min X */
@@ -1306,7 +1314,7 @@ export interface components {
             /** Misplaced */
             misplaced: components["schemas"]["MisplacedOut"][];
             /** Morning */
-            morning: number[];
+            morning: (number | null)[];
             /** Rows */
             rows: number;
             /** Stale */
@@ -2560,7 +2568,9 @@ export interface operations {
     };
     light_map_api_v1_gardens__token__light_get: {
         parameters: {
-            query?: never;
+            query?: {
+                month?: number | null;
+            };
             header?: never;
             path: {
                 token: string;

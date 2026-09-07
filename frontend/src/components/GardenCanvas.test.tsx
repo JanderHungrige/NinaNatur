@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GardenOut } from '../api/client';
@@ -106,5 +106,75 @@ describe('GardenCanvas', () => {
     const yOf = (el: Element) =>
       Number.parseFloat((el.getAttribute('points') ?? '0,0').split(',')[1] ?? '0');
     expect(yOf(polygons[0]!)).toBeLessThan(yOf(polygons[1]!));
+  });
+});
+
+describe('GardenCanvas — what the sun map says under the pointer', () => {
+  function sunMap(hours: (number | null)[]) {
+    return {
+      map: {
+        cell_m: 1, min_x: -1, min_y: -1, cols: 2, rows: 2,
+        hours,
+        max_hours: 9.2,
+        computed_at: '2026-09-07T10:00:00+00:00',
+        stale: false,
+        morning: hours.map((h) => (h === null ? null : h / 2)),
+        misplaced: [],
+      },
+      mode: 'hours' as const,
+    };
+  }
+
+  function plan(hours: (number | null)[] | null) {
+    render(
+      <GardenCanvas
+        garden={garden()}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={{ widthPx: 600, heightPx: 400 }}
+        {...(hours === null ? {} : { sunMap: sunMap(hours) })}
+      />,
+    );
+    const surface = screen.getByTestId('canvas-surface');
+    // jsdom lays nothing out, so the surface has to be told where it is. The
+    // view starts centred on the garden's origin, which is inside this map.
+    surface.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 600, height: 400 }) as DOMRect;
+    return surface;
+  }
+
+  it('says nothing until the pointer is over the plan', () => {
+    plan([9.2, 9.2, 9.2, 9.2]);
+    expect(screen.queryByTestId('sun-readout')).toBeNull();
+  });
+
+  it('reads out the hours and what they are called', () => {
+    // A wash cannot be read to one decimal place, and "volle Sonne" is the word
+    // on the plant label somebody is holding.
+    const surface = plan([9.2, 9.2, 9.2, 9.2]);
+    fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
+    expect(screen.getByTestId('sun-readout').textContent).toBe('9.2 h · volle Sonne');
+  });
+
+  it('says a roof is a roof rather than reporting deep shade', () => {
+    // The cell has no answer because there is no ground there. Zero would read
+    // as darkness, which is true of the footprint and false of what a plan
+    // shows at a house: a roof, in full sun.
+    const surface = plan([null, null, null, null]);
+    fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
+    expect(screen.getByTestId('sun-readout').textContent).toBe('Dach — kein Boden');
+  });
+
+  it('goes away when the pointer leaves', () => {
+    const surface = plan([9.2, 9.2, 9.2, 9.2]);
+    fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
+    fireEvent.pointerLeave(surface);
+    expect(screen.queryByTestId('sun-readout')).toBeNull();
+  });
+
+  it('is not there at all when no map is being shown', () => {
+    const surface = plan(null);
+    fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
+    expect(screen.queryByTestId('sun-readout')).toBeNull();
   });
 });
