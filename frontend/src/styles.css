@@ -1242,25 +1242,22 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* --- Sonne und Schatten über dem Plan (Wave 16) --------------------------- */
 
-/* One colour per reading, not a ramp: the plan already spends its colour on
-   flowers and on what things are, and a heat map in red and blue over the top
-   would be two languages at once.
-   
-   Two inks because the two readings paint opposite things. Showing sun hours
-   washes the *shade*, so it is cold and dark; showing shade hours washes the
-   *sun*, so it is warm and light. Neither is "grey" in both themes — the first
-   version used one near-black ink and vanished over the dark theme's near-black
-   ground. */
+/* Two flat inks, not a ramp through orange: the plan already spends its colour
+   on flowers and on what things are, and a heat map in red and blue over the
+   top would be two languages at once.
+
+   Neither ink is "grey" in both themes — the first version used one near-black
+   for shade and it vanished over the dark theme's near-black ground, measuring
+   1.09 contrast. The dark theme's shade ink is *lighter* than its page. */
 .sun-map__cell {
-  fill: var(--wash-shade);
   stroke: none;
   shape-rendering: crispEdges;
 }
 
-/* Shade and day share the warm ink: both are asking where the *sun* is, one
-   over the season and one at this minute. */
-.sun-map--shade .sun-map__cell,
-.sun-map--day .sun-map__cell { fill: var(--wash-sun); }
+/* One map, two inks: yellow where the sun is, grey where it is not, and the
+   plan itself showing through the Halbschatten band between them. */
+.sun-map__cell--sun { fill: var(--wash-sun); }
+.sun-map__cell--shade { fill: var(--wash-shade); }
 
 /* One moment of one day, over everything: while it plays, where the shadow is
    *now* is the only question being asked. */
@@ -1294,14 +1291,14 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   height: 0.9rem;
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: #2b2f28;
   flex: none;
 }
-.shade-switch__swatch[data-band='0'] { opacity: 0.06; }
-.shade-switch__swatch[data-band='1'] { opacity: 0.24; }
-.shade-switch__swatch[data-band='2'] { opacity: 0.42; }
-.shade-switch__swatch[data-band='3'] { opacity: 0.58; }
-.shade-switch__swatch[data-band='4'] { opacity: 0.72; }
+/* The strength comes from `washFor`, inline, so a swatch and the cells it
+   explains cannot disagree. Only the ink is chosen here. */
+.shade-switch__swatch[data-ink='sun'] { background: var(--wash-sun); }
+.shade-switch__swatch[data-ink='shade'] { background: var(--wash-shade); }
+/* Halbschatten takes no ink on the map either — the swatch is the bare plan. */
+.shade-switch__swatch[data-ink='none'] { background: transparent; }
 
 /* The first block in the panel, because it is the only way to get a map at
    all — nothing recomputes the light on a write any more. */
