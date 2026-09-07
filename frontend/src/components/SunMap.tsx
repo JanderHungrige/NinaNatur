@@ -14,25 +14,60 @@ interface Props {
   mode: MapMode;
 }
 
-/** Where yellow starts, and where it is fully yellow. The band edges the legend
- *  already names, so the map and the legend are one statement. */
-const SUN_FROM = 4.0;
-const SUN_FULL = 6.0;
-/** Where grey starts on the way down, and where it is fully grey. */
-const SHADE_FROM = 2.5;
-const SHADE_FULL = 0.0;
-
-/** Never solid: the plan underneath is the thing being annotated. */
-const MAX_OPACITY = 0.8;
-/** Below this the rect is a node the browser composites for nothing. */
-const MIN_INK = 0.02;
-
-/** Which ink a cell gets, and how much of it. Null through the middle band. */
+/** Which ink a cell gets, and how much of it. */
 export interface Wash {
   ink: 'sun' | 'shade';
   /** 0–1, before `MAX_OPACITY`. */
   strength: number;
 }
+
+/** One step of the wash: everything from `from` hours up to the step above it. */
+export interface Level {
+  /** Lower bound in hours. */
+  from: number;
+  /** Null through the middle, where the plan itself shows. */
+  ink: 'sun' | 'shade' | null;
+  strength: number;
+  /** The gardening name, where this step is where one begins. */
+  name?: string;
+}
+
+/**
+ * The steps the map is drawn in, brightest first.
+ *
+ * **Ten of them, and four above "volle Sonne".** The first
+ * version ramped from 4 h and reached full yellow at 6, which is where the
+ * plant-label convention stops caring. Measured on a real garden, 139 of its
+ * 165 answered cells were above 6 h — so the map painted five sixths of the
+ * garden in one flat colour and the honest reading was "it is sunny here",
+ * which the gardener already knew.
+ *
+ * A garden's real range at 51°N, averaged March to October, runs to about
+ * 12.5 h. These steps spread across that, so the thing the map is for — *which
+ * corner is better than which* — is visible again.
+ *
+ * Steps rather than a continuous ramp: two hundred cells of smoothly varying
+ * opacity read as mush, and the same cells in bands read as contours.
+ *
+ * The names are the same convention `BANDS` carries, and a test asserts they
+ * agree. They are attached to the step where each band begins; the steps
+ * between are increments of the same wash, not new names.
+ */
+export const LEVELS: readonly Level[] = [
+  { from: 11.0, ink: 'sun', strength: 1.0 },
+  { from: 9.0, ink: 'sun', strength: 0.82 },
+  { from: 7.5, ink: 'sun', strength: 0.64 },
+  { from: 6.0, ink: 'sun', strength: 0.48, name: 'volle Sonne' },
+  { from: 5.0, ink: 'sun', strength: 0.32 },
+  { from: 4.0, ink: 'sun', strength: 0.18, name: 'sonnig' },
+  { from: 2.5, ink: null, strength: 0, name: 'Halbschatten' },
+  { from: 1.5, ink: 'shade', strength: 0.26, name: 'Schatten' },
+  { from: 0.75, ink: 'shade', strength: 0.54 },
+  { from: 0.0, ink: 'shade', strength: 0.82, name: 'tiefer Schatten' },
+];
+
+/** Never solid: the plan underneath is the thing being annotated. */
+const MAX_OPACITY = 0.8;
 
 /**
  * The wash for one cell's hours, on the absolute scale the legend names.
@@ -43,26 +78,38 @@ export interface Wash {
  * says sunny and grey says shady — and a yellow that meant 3 h in one garden
  * and 9 h in another would be saying something untrue in one of them.
  *
- * Structure inside a dark garden survives it, because the ramps are continuous
- * rather than five steps: a courtyard between 0.5 h and 1.5 h still shows its
- * brighter corner, just in two shades of grey instead of grey against yellow.
- * Which is the honest picture of a courtyard.
- *
  * Halbschatten — 2.5 h to 4 h — takes no ink at all. It is the hinge the two
  * readings turn on, and painting it in either colour would pick a side that the
  * hours do not.
  */
 export function washFor(hours: number): Wash | null {
-  if (hours >= SUN_FROM) {
-    return { ink: 'sun', strength: Math.min(1, (hours - SUN_FROM) / (SUN_FULL - SUN_FROM)) };
-  }
-  if (hours < SHADE_FROM) {
-    return {
-      ink: 'shade',
-      strength: Math.min(1, (SHADE_FROM - hours) / (SHADE_FROM - SHADE_FULL)),
-    };
+  for (const level of LEVELS) {
+    if (hours >= level.from) {
+      return level.ink === null ? null : { ink: level.ink, strength: level.strength };
+    }
   }
   return null;
+}
+
+/** The hours at a point in garden metres.
+ *
+ * `undefined` outside the grid, `null` where the grid has no answer — a cell
+ * under a house or a shed, which is roof rather than ground. The two are
+ * different things to say and the readout says both.
+ */
+export function hoursAt(map: LightMap, x: number, y: number): number | null | undefined {
+  // Not finite is not a point. An SVG that has not been laid out measures zero
+  // and the viewport arithmetic hands back NaN — and NaN passes every bounds
+  // test below, because every comparison against it is false. It then indexed
+  // the array with NaN, got undefined, and the readout said "roof" over an open
+  // lawn. Found in a test, and reachable in the app before the first measure.
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+  const col = Math.floor((x - map.min_x) / map.cell_m);
+  const row = Math.floor((y - map.min_y) / map.cell_m);
+  if (col < 0 || col >= map.cols || row < 0 || row >= map.rows) return undefined;
+  const hours = map.hours[row * map.cols + col];
+  // Explicitly: a missing index is not a roof. Only a stored null is.
+  return hours === undefined ? undefined : hours;
 }
 
 /**
@@ -94,12 +141,16 @@ export function SunMap({ map, mode }: Props) {
       pointerEvents="none"
     >
       {map.hours.map((hours, index) => {
+        // Null is a cell with no ground under it — a house or a shed. Drawing
+        // nothing is the point: the plan already shows the building there, and
+        // painting it in the deep-shade ink would be a claim about a roof that
+        // is, in fact, in full sun.
+        if (hours === null) return null;
         const wash = washFor(hours);
-        if (wash === null) return null;
+        if (wash === null || wash.strength <= 0) return null;
         // The day keeps only the sunny half. A grey wash under a grey shadow
         // hides the one thing on the plan that is supposed to be moving.
         if (mode === 'day' && wash.ink === 'shade') return null;
-        if (wash.strength < MIN_INK) return null;
         const col = index % map.cols;
         const row = Math.floor(index / map.cols);
         return (
@@ -126,16 +177,6 @@ export const BANDS: ReadonlyArray<readonly [number, string]> = [
   [1.5, 'Schatten'],
   [0, 'tiefer Schatten'],
 ];
-
-/** A representative hour count for the band at `index`: its middle, or two
- *  hours past the edge for the open-ended top one. The legend paints its
- *  swatches by running this through `washFor`, so a swatch cannot drift out of
- *  agreement with the map it is explaining. */
-export function bandSample(index: number): number {
-  const lower = BANDS[index]![0];
-  const upper = index === 0 ? null : BANDS[index - 1]![0];
-  return upper === null ? lower + 2 : (lower + upper) / 2;
-}
 
 /** What to call this many hours. Mirrors the server's `SUN_HOUR_BANDS`, which
  *  is a documented convention rather than physics. */

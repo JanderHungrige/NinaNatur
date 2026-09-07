@@ -1,5 +1,5 @@
 import type { LightMap, Terrain } from '../api/client';
-import { BANDS, type MapMode, bandFor, bandSample, washFor } from './SunMap';
+import { LEVELS, type MapMode, bandFor } from './SunMap';
 
 interface Props {
   /** The ground under the garden, or null where nobody publishes it. */
@@ -7,17 +7,28 @@ interface Props {
   map: LightMap | null;
   on: boolean;
   mode: MapMode;
+  /** Null for the whole season. 3–10 for one month of it. */
+  month: number | null;
   onToggle: (on: boolean) => void;
   onMode: (mode: MapMode) => void;
+  onMonth: (month: number | null) => void;
   onRebuild: () => void;
   busy: boolean;
 }
 
+/** March to October, the window the whole light model works in. */
+const MONTHS: ReadonlyArray<readonly [number, string]> = [
+  [3, 'März'], [4, 'April'], [5, 'Mai'], [6, 'Juni'], [7, 'Juli'],
+  [8, 'August'], [9, 'September'], [10, 'Oktober'],
+];
+
 /** What share of the garden's sun falls before the sun crosses due south. */
 function morningShare(map: LightMap): number {
-  const total = map.hours.reduce((sum, h) => sum + h, 0);
+  // `?? 0` rather than a filter: a null is a cell under a roof, and it
+  // contributes nothing to either half rather than skewing one of them.
+  const total = map.hours.reduce((sum: number, h) => sum + (h ?? 0), 0);
   if (total <= 0) return 0;
-  const morning = map.morning.reduce((sum, h) => sum + h, 0);
+  const morning = map.morning.reduce((sum: number, h) => sum + (h ?? 0), 0);
   return Math.round((morning / total) * 100);
 }
 
@@ -47,7 +58,7 @@ function whenText(iso: string): string {
  * to be there before the first map exists.
  */
 export function ShadeSwitch({
-  map, terrain, on, mode, onToggle, onMode, onRebuild, busy,
+  map, terrain, on, mode, month, onToggle, onMode, onMonth, onRebuild, busy,
 }: Props) {
   return (
     <section className="panel shade-switch" aria-labelledby="shade-heading">
@@ -121,26 +132,43 @@ export function ShadeSwitch({
             </p>
           )}
 
-          {/* Painted by the same function the map is, on a sample hour from
-              inside each band. A legend maintained separately is a legend that
-              drifts, and this one is the only thing saying what the two inks
-              mean. */}
+          {/* A garden with a house to its south is a different garden in April
+              and in July, and the season average describes neither. Computed
+              on the spot rather than stored: it is a question somebody asks
+              while looking, not the number a plant is placed by. */}
+          <label className="shade-switch__month">
+            Zeitraum
+            <select
+              value={month ?? 'season'}
+              disabled={!on}
+              onChange={(e) =>
+                onMonth(e.target.value === 'season' ? null : Number(e.target.value))
+              }
+            >
+              <option value="season">Ganze Saison (März–Oktober)</option>
+              {MONTHS.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* One row per step the map actually draws, so "more yellow" has
+              somewhere to be read off. The gardening names sit on the step
+              where each band begins; the steps between are increments of the
+              same wash, not new names. */}
           <ul className="shade-switch__legend">
-            {BANDS.map(([lower, label], index) => {
-              const upper = index === 0 ? null : BANDS[index - 1]![0];
-              const wash = washFor(bandSample(index));
+            {LEVELS.map((level, index) => {
+              const upper = index === 0 ? null : LEVELS[index - 1]!.from;
               return (
-                <li key={label}>
+                <li key={level.from}>
                   <span
                     className="shade-switch__swatch"
-                    data-ink={wash === null ? 'none' : wash.ink}
-                    style={wash === null ? undefined : { opacity: wash.strength * 0.8 }}
+                    data-ink={level.ink ?? 'none'}
+                    style={level.ink === null ? undefined : { opacity: level.strength * 0.8 }}
                   />
                   <span>
-                    {upper === null
-                      ? `ab ${lower} h`
-                      : `${lower}–${upper} h`}{' '}
-                    — {label}
+                    {upper === null ? `ab ${level.from} h` : `${level.from}–${upper} h`}
+                    {level.name !== undefined && ` — ${level.name}`}
                   </span>
                 </li>
               );

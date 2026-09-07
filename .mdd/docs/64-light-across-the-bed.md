@@ -83,6 +83,32 @@ it has is the worse error: somebody plants for it and the plant dies. OSM's
 `roof:shape` fills this in where it says anything, and where it does not, the
 eaves default to 75 % of the height.
 
+## A cell can have no answer
+
+`hours` is `null` for a cell under a house or a shed. Zero would be a claim
+about deep shade — true of the footprint, since a building shades its own
+ground all day, and false of what a plan shows there, which is a sunlit roof.
+
+Null rather than a missing cell, so the grid stays rectangular and every index
+still means the same place. `mean_over` skips them, so a bed that overlaps a
+building is averaged over the ground it actually has; `max_hours` skips them,
+so one blanked cell cannot drag the scale.
+
+Only roofs. A tree is not roofed: there is real ground under it getting real
+dappled sun, and somebody planting under an apple tree is asking about that.
+
+## One month instead of the season
+
+`GET .../light?month=3` narrows the average from the whole March-to-October
+season to one month, computed on the spot and never stored. The season is
+sampled every tenth day and a month every fifth, so a month costs about a
+quarter of a season — cheap enough to answer live, and far cheaper than storing
+eight grids per garden would be to keep up to date.
+
+Winter is a 422. The whole light model stops at October: a plant's December does
+not decide where it can live, and a December map would drag every German garden
+into shade.
+
 ## Staleness
 
 The map is expensive enough to store, and a stored map can be wrong. It is

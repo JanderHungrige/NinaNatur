@@ -498,6 +498,29 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   gap: 0.5rem;
 }
 
+/* The plan alone, so the sun readout can be placed in pixels from *its* corner
+   rather than from the controls row above it. */
+.canvas-stage { position: relative; display: flex; }
+
+/* What the sun map says under the pointer. Offset up and right of the cursor so
+   it never sits under the thing being pointed at, and `pointer-events: none` so
+   it can never intercept the click that follows the look. */
+.sun-readout {
+  position: absolute;
+  transform: translate(0.7rem, -1.9rem);
+  pointer-events: none;
+  z-index: 2;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 18%);
+}
+
 .canvas-controls__row {
   display: flex;
   flex-wrap: wrap;
@@ -1271,6 +1294,16 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .shade-switch { display: grid; gap: 0.6rem; }
 .shade-switch h2 { margin: 0; font-size: 1.05rem; }
 .shade-switch__modes { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* The period the map answers for. A garden with a house to its south is a
+   different garden in April and in July. */
+.shade-switch__month {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+.shade-switch__month select { margin: 0; font-size: 0.9rem; }
 .shade-switch__modes .chip { margin: 0; padding: 0.3rem 0.85rem; cursor: pointer; }
 
 .shade-switch__legend {

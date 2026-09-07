@@ -11,6 +11,7 @@ import { useHandleDrag } from '../canvas/useHandleDrag';
 import { useVertexDrag } from '../canvas/useVertexDrag';
 import { usePolygonDraft } from '../canvas/usePolygonDraft';
 import { useViewport } from '../canvas/useViewport';
+import { useSunReadout } from '../canvas/useSunReadout';
 import { useCanvasGestures } from '../canvas/useCanvasGestures';
 import { useFreehandStroke } from '../canvas/useFreehandStroke';
 import { useShapeBand } from '../canvas/useShapeBand';
@@ -119,6 +120,9 @@ export function GardenCanvas({
   onReshapeObstacle,
 }: Props) {
   const { view, setView, surface, zoom } = useViewport(size);
+
+  const sun = useSunReadout(sunMap?.map, view, surface);
+
   const [placing, setPlacing] = useState(false);
   const spacing = gridSpacing(view);
   const elementDrag = useElementDrag({
@@ -291,6 +295,20 @@ export function GardenCanvas({
         />
       )}
 
+      {/* Its own positioning context, because the readout is placed in pixels
+          from the *drawing*'s top left and the controls row above it is not
+          part of that measurement. */}
+      <div className="canvas-stage">
+      {sun.readout !== null && (
+        <div
+          className="sun-readout"
+          data-testid="sun-readout"
+          style={{ left: sun.readout.left, top: sun.readout.top }}
+        >
+          {sun.readout.text}
+        </div>
+      )}
+
       <svg
         ref={surface}
         data-testid="canvas-surface"
@@ -302,9 +320,15 @@ export function GardenCanvas({
         aria-label={`Gartenplan ${garden.name}, ${bedCount(garden.beds.length)}, ${obstacleCount(garden.obstacles.length)}`}
         onClick={gestures.onClick}
         onPointerDown={gestures.onPointerDown}
-        onPointerMove={gestures.onPointerMove}
+        onPointerMove={(event) => {
+          gestures.onPointerMove(event);
+          sun.read(event);
+        }}
         onPointerUp={gestures.endDrag}
-        onPointerLeave={gestures.endDrag}
+        onPointerLeave={() => {
+          gestures.endDrag();
+          sun.clear();
+        }}
       >
         <CanvasScene
           garden={garden}
@@ -350,6 +374,7 @@ export function GardenCanvas({
           onGrab={onResizeObstacle === undefined ? null : grabHandle}
         />
       </svg>
+      </div>
     </div>
   );
 }
