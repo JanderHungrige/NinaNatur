@@ -1,0 +1,6 @@
+# Der Sicherheitsplan benennt verifizierte, noch nicht behobene Schwachstellen
+# der Live-Seite. Das Repository ist öffentlich. Er bleibt lokal, bis die
+# Befunde behoben sind; danach wird der Prüfbericht als .mdd/docs/NN-*.md
+# geschrieben (siehe Abschnitt 0 des Plans). Zeile löschen, wenn das Repo
+# privat ist oder die Fixes ausgeliefert sind.
+*sicherheit*

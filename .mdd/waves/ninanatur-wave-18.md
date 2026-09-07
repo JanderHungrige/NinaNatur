@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-17
 demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter einer eigenen Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Erst was dort in Ordnung ist, geht auf main — und main deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert."
 created: 2026-09-04
-hash: 34f3214a
+hash: db9d7e1c
 ---
 
 # Wave 18: A place to look before it is live
@@ -108,11 +108,28 @@ Two stages:
   watching 4001 change.
 - **Stage 2 — it is honest about itself:** 3, 4, 5.
 
-**Feature 3 is blocked, and only feature 3.** It is an entry in Nginx Proxy
+**Feature 3 was blocked, and only feature 3.** It is an entry in Nginx Proxy
 Manager plus the host steps in §1–4 of `SERVER-SETUP.md`, and on 2026-09-06 no
-SSH key on the development machine was accepted by the server — both keys with
-a private half were refused for `jan`. Everything that is code was finished
-anyway rather than left waiting behind an unrelated blocker.
+SSH key on the development machine was accepted by the server. Everything that
+is code was finished anyway rather than left waiting behind an unrelated
+blocker.
+
+**Unblocked 2026-09-07.** The key is in `authorized_keys` and the host answers.
+What was found on it, once anybody could look:
+
+- Both stacks are already running and healthy — prod on 4000 at `V0.19.84`,
+  dev on 4001 at `V0.19.83` reporting `environment: dev` — on two separate
+  volumes. Stage 1's acceptance is therefore met and was met before anyone
+  could see it.
+- The host steps in §1–4 had already been run.
+- **The note below about `auto-deploy.sh` is wrong.** It does pull git: the host
+  checkout moved from `42ce851` to the current `main` between two read-only
+  queries a minute apart, untouched.
+
+What is genuinely left is one Nginx Proxy Manager host —
+`ninanatur-dev.w3rth.de` → `172.17.0.1:4001`, Let's Encrypt, force SSL. The DNS
+name resolves and returns 500, because nothing is behind it yet. That is a web
+interface, so it is a person's click rather than a command.
 
 What is waiting on the host, in order:
 
