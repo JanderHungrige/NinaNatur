@@ -64,6 +64,8 @@ class ShadowAt:
     #: interchangeable: afternoon sun is hotter and harsher, and a great many
     #: species sold as *Halbschatten* want the morning specifically.
     morning: bool = True
+    #: The element this shadow belongs to. See `Obstacle.owner`.
+    owner: int | None = None
 
     def covers_point(self, x: float, y: float, z: float = 0.0) -> bool:
         """Is this point in this shadow, standing at this height?
@@ -162,6 +164,7 @@ class ShadowField:
         z: float = 0.0,
         ring: list[float] | None = None,
         under: list[tuple[list[ShadowAt], bool]] | None = None,
+        ignore: int | None = None,
     ) -> tuple[float, float]:
         """Mean daily sun hours before and after the sun crosses due south.
 
@@ -173,6 +176,9 @@ class ShadowField:
         `z` is the ground this point stands on. Zero is the flat world every
         shadow in this project was computed in until Wave 17: a point uphill of
         a house sees over it, and a point below it does not.
+
+        `ignore` drops one element's shadow, for a point standing on that
+        element. See the note where it is used.
 
         `ring` is how high the land stands in each degree of azimuth as seen
         from **this** point — the hills beyond the plot and the slope underfoot,
@@ -191,6 +197,12 @@ class ShadowField:
             # share, and a wall takes all of it whatever else is in the way.
             through = 1.0
             for shadow in moment:
+                # A point on a building's own roof is inside that building's
+                # footprint, and a footprint is inside its own shadow at every
+                # moment of every day. Without this the answer for every roof
+                # is darkness — which is what the map used to show.
+                if shadow.owner is not None and shadow.owner == ignore:
+                    continue
                 if shadow.covers_point(x, y, z):
                     through *= shadow.transmission
                     if through == 0.0:
@@ -238,6 +250,7 @@ def shadow_field(
             base=receiver,
             transmission=o.transmission,
             bare_transmission=o.bare_transmission,
+            owner=o.owner,
         )
         for o in obstacles
         if o.top - receiver > 0
@@ -289,6 +302,7 @@ def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:
         cos_azimuth=cos_a,
         min_x=min(xs), min_y=min(ys), max_x=max(xs), max_y=max(ys), polygon=polygon,
         transmission=obstacle.transmission_in(month),
+        owner=obstacle.owner,
     )
 
 

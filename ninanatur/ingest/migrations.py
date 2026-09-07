@@ -60,6 +60,10 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # roof in the database today was either picked by somebody or left at the
     # default, and neither should be overwritten by a survey arriving later.
     ("element", "roof_source", "TEXT NOT NULL DEFAULT 'user'"),
+    # 2026-09-07. Which cells are a roof rather than ground. Empty on an
+    # existing grid, which the reader treats as "computed before roofs were" —
+    # every cell is then ground, exactly as it was, until the next rebuild.
+    ("light_grid", "roof", "TEXT NOT NULL DEFAULT '[]'"),
 )
 
 

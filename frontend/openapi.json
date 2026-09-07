@@ -1221,6 +1221,13 @@
             "title": "Morning",
             "type": "array"
           },
+          "roof": {
+            "items": {
+              "type": "boolean"
+            },
+            "title": "Roof",
+            "type": "array"
+          },
           "rows": {
             "title": "Rows",
             "type": "integer"
@@ -1237,6 +1244,7 @@
           "cols",
           "rows",
           "hours",
+          "roof",
           "max_hours",
           "computed_at",
           "stale",
@@ -1511,6 +1519,17 @@
             ],
             "title": "Constraint Hint"
           },
+          "eaves_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eaves M"
+          },
           "footprint": {
             "items": {
               "items": {
@@ -1604,6 +1623,7 @@
           "obstacle_id",
           "kind",
           "roof",
+          "eaves_m",
           "label",
           "height_source",
           "x",
@@ -1644,6 +1664,19 @@
               }
             ],
             "title": "Depth"
+          },
+          "eaves_m": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eaves M"
           },
           "height": {
             "anyOf": [
@@ -3088,7 +3121,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.19.78"
+    "version": "V0.19.81"
   },
   "openapi": "3.1.0",
   "paths": {

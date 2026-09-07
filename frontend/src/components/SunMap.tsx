@@ -91,25 +91,32 @@ export function washFor(hours: number): Wash | null {
   return null;
 }
 
-/** The hours at a point in garden metres.
+/** What the map has to say about a point in garden metres.
  *
- * `undefined` outside the grid, `null` where the grid has no answer — a cell
- * under a house or a shed, which is roof rather than ground. The two are
- * different things to say and the readout says both.
+ * `null` outside the grid or where nothing could be computed — a building whose
+ * height nobody has recorded. Otherwise the hours, and whether they are about a
+ * roof rather than about ground, which is a different enough thing that the
+ * readout says which.
  */
-export function hoursAt(map: LightMap, x: number, y: number): number | null | undefined {
+export interface AtPoint {
+  hours: number;
+  onARoof: boolean;
+}
+
+export function atPoint(map: LightMap, x: number, y: number): AtPoint | null {
   // Not finite is not a point. An SVG that has not been laid out measures zero
   // and the viewport arithmetic hands back NaN — and NaN passes every bounds
   // test below, because every comparison against it is false. It then indexed
   // the array with NaN, got undefined, and the readout said "roof" over an open
   // lawn. Found in a test, and reachable in the app before the first measure.
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   const col = Math.floor((x - map.min_x) / map.cell_m);
   const row = Math.floor((y - map.min_y) / map.cell_m);
-  if (col < 0 || col >= map.cols || row < 0 || row >= map.rows) return undefined;
-  const hours = map.hours[row * map.cols + col];
-  // Explicitly: a missing index is not a roof. Only a stored null is.
-  return hours === undefined ? undefined : hours;
+  if (col < 0 || col >= map.cols || row < 0 || row >= map.rows) return null;
+  const index = row * map.cols + col;
+  const hours = map.hours[index];
+  if (hours === undefined || hours === null) return null;
+  return { hours, onARoof: map.roof[index] === true };
 }
 
 /**
@@ -120,6 +127,12 @@ export function hoursAt(map: LightMap, x: number, y: number): number | null | un
  * gardener wanted to ask — and each of them left half the garden blank, so
  * reading the whole picture meant switching back and forth and remembering.
  * Yellow for sun and grey for shade says both at once.
+ *
+ * A cell over a building is the **roof**, at its own height and its own pitch,
+ * and it is drawn in the same inks. What a plan shows at a house is the roof,
+ * and a roof in full sun painted as deep shade — which is what answering the
+ * ground under a building gives you — is the single most obviously wrong thing
+ * this map ever did.
  *
  * The wash is two flat inks rather than a continuous ramp through orange: the
  * plan already spends its colour on flowers and on what things are, and a heat
@@ -141,10 +154,9 @@ export function SunMap({ map, mode }: Props) {
       pointerEvents="none"
     >
       {map.hours.map((hours, index) => {
-        // Null is a cell with no ground under it — a house or a shed. Drawing
-        // nothing is the point: the plan already shows the building there, and
-        // painting it in the deep-shade ink would be a claim about a roof that
-        // is, in fact, in full sun.
+        // Null is a building whose height nobody has recorded — the one case
+        // the model cannot answer. Everything else has a surface: the ground,
+        // or the roof standing on it.
         if (hours === null) return null;
         const wash = washFor(hours);
         if (wash === null || wash.strength <= 0) return null;
@@ -156,7 +168,11 @@ export function SunMap({ map, mode }: Props) {
         return (
           <rect
             key={index}
-            className={`sun-map__cell sun-map__cell--${wash.ink}`}
+            className={
+              map.roof[index] === true
+                ? `sun-map__cell sun-map__cell--${wash.ink} sun-map__cell--roof`
+                : `sun-map__cell sun-map__cell--${wash.ink}`
+            }
             x={map.min_x + col * map.cell_m}
             y={-(map.min_y + (row + 1) * map.cell_m)}
             width={map.cell_m}

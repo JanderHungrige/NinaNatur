@@ -1282,6 +1282,11 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .sun-map__cell--sun { fill: var(--wash-sun); }
 .sun-map__cell--shade { fill: var(--wash-shade); }
 
+/* A roof carries no paint of its own: it is the same quantity in the same inks,
+   and "the roof is in full sun" is exactly what a bright yellow house is
+   supposed to say. The class is the DOM's record of which surface a cell is
+   about — the readout under the pointer is what puts it in words. */
+
 /* One moment of one day, over everything: while it plays, where the shadow is
    *now* is the only question being asked. */
 .day-shadows polygon {

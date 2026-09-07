@@ -8,7 +8,9 @@ import pytest
 
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.lightgrid import (
-    MAX_CELLS,
+    CELL_COST_MS,
+    GRID_BUDGET_S,
+    OBSTACLE_COST_MS,
     cell_size_for,
     compute_grid,
     extent_of,
@@ -51,17 +53,39 @@ def test_a_small_garden_gets_the_finest_cell() -> None:
     assert cell_size_for(10.0, 8.0) == 0.5
 
 
-def test_a_large_plot_gets_a_coarser_one_rather_than_a_long_wait() -> None:
-    """A 40 x 60 m plot at 1 m is 2,400 cells and 2.7 seconds. Nobody waits that
-    long after nudging a shed."""
-    cell = cell_size_for(40.0, 60.0)
+def _seconds(width: float, depth: float, cell: float, obstacles: int) -> float:
+    cells = (width / cell) * (depth / cell)
+    return cells * (CELL_COST_MS + OBSTACLE_COST_MS * obstacles) / 1000
 
-    assert (40.0 / cell) * (60.0 / cell) <= MAX_CELLS
+
+def test_a_large_plot_gets_a_coarser_one_rather_than_a_long_wait() -> None:
+    """The ladder exists so a big plot waits the same as a small one, not longer."""
+    cell = cell_size_for(150.0, 130.0, obstacles=40)
+
+    assert _seconds(150.0, 130.0, cell, 40) <= GRID_BUDGET_S
     assert cell > 1.0
 
 
+def test_the_budget_is_time_rather_than_a_cell_count() -> None:
+    """A cell is not a fixed price: it costs what the obstacles around it cost.
+    Measured, 0.24 ms with three buildings against 1.9 ms with forty — which one
+    number has to be wrong about at one end or the other."""
+    quiet = cell_size_for(60.0, 60.0, obstacles=2)
+    crowded = cell_size_for(60.0, 60.0, obstacles=40)
+
+    assert quiet < crowded, "the same plot gets a finer grid when less stands on it"
+    for cell, obstacles in ((quiet, 2), (crowded, 40)):
+        assert _seconds(60.0, 60.0, cell, obstacles) <= GRID_BUDGET_S
+
+
+def test_an_ordinary_garden_is_no_longer_held_at_a_metre() -> None:
+    """The complaint this replaced: a 24 x 33 m plot with three buildings was
+    given 2 m cells by a flat 600-cell cap, and the map read coarse."""
+    assert cell_size_for(24.0, 33.0, obstacles=3) == 0.5
+
+
 def test_even_a_field_stays_bounded() -> None:
-    cell = cell_size_for(300.0, 300.0)
+    cell = cell_size_for(300.0, 300.0, obstacles=40)
     assert cell == 5.0, "the ladder ends; it does not grow without limit"
 
 

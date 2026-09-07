@@ -611,6 +611,7 @@ export function App() {
         plantings: number;
         shape: string;
         roof: string;
+        eavesM: number | null;
         height: number | null;
         width: number | null;
         soilType: string | null;
@@ -832,6 +833,12 @@ export function App() {
         plantings: 'plantings' in found ? found.plantings.length : 0,
         shape: 'shape' in found ? found.shape : 'polygon',
         roof: 'roof' in found ? found.roof : 'unknown',
+        // `found` is a bed or an obstacle and only one of them has eaves, so
+        // the narrowing has to be explicit rather than a `??`.
+        eavesM:
+          'eaves_m' in found && typeof found.eaves_m === 'number'
+            ? found.eaves_m
+            : null,
         height: 'height' in found ? found.height : null,
         width: 'width' in found ? found.width : null,
         soilType: 'soil_type' in found ? found.soil_type : null,
@@ -1369,6 +1376,7 @@ export function App() {
                   plantings={asking.plantings}
                   shape={asking.shape}
                   roof={asking.roof}
+                  eavesM={asking.eavesM}
                   height={asking.height}
                   width={asking.width}
                   soilType={asking.soilType}
