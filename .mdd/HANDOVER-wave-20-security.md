@@ -183,8 +183,14 @@ The wave plan leaves three questions open, and they change the shape of the work
 - `main` and `dev-deployment` level at the wave re-slot commit; production at
   `V0.19.84` and healthy.
 - Waves 1–17 and 19 complete. Wave 18 `in_progress` with **only feature 3**
-  outstanding, and it is blocked on host access, not on code — no SSH key on the
-  development machine is accepted by the server. It does not block Wave 20.
+  outstanding: one Nginx Proxy Manager host for `ninanatur-dev.w3rth.de` →
+  `172.17.0.1:4001`. Not code, and not blocking Wave 20.
+- **Host access works** as of 2026-09-07: `ssh jan@159.195.148.193` with
+  `~/.ssh/id_ed25519`. Worth knowing for this wave, because the deployment path
+  is in scope — `deploy/auto-deploy.sh`, the cron that rolls containers, and the
+  `.env` files that live only on the host can now actually be read rather than
+  reasoned about. Both stacks run there: prod on 4000, dev on 4001, separate
+  volumes.
 - Waves 21 (roof detail), 22 (Zentrale) and 25 (ordering) planned and untouched.
 - Two things waiting on somebody with host access: the Wave 18 host steps in
   `deploy/SERVER-SETUP.md`, and deleting the unused subdomain
