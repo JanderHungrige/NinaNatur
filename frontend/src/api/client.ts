@@ -245,9 +245,14 @@ export class NinaNaturClient {
   }
 
   /** The stored sun map, or null when nothing has been drawn yet. */
-  async lightMap(token: string): Promise<LightMap | null> {
+  /** The stored season map, or one month of it computed on the spot.
+   *
+   * A month is never stored: the season is what the button computes and keeps,
+   * and a month costs about a quarter of it to answer fresh. */
+  async lightMap(token: string, month?: number | null): Promise<LightMap | null> {
+    const query = month === null || month === undefined ? '' : `?month=${month}`;
     return this.request<LightMap | null>(
-      `/api/v1/gardens/${encodeURIComponent(token)}/light`,
+      `/api/v1/gardens/${encodeURIComponent(token)}/light${query}`,
     );
   }
 

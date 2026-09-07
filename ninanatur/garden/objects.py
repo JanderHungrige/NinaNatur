@@ -116,6 +116,27 @@ def is_surface(kind: ObjectKind) -> bool:
     return TRAITS[kind].is_surface
 
 
+#: The kinds with a roof over them. Not a trait on `KindTraits`, because it is
+#: not a fact the drawing or the shading needs — it is one question, asked in
+#: one place: is there ground here at all?
+ROOFED: frozenset[ObjectKind] = frozenset({ObjectKind.HOUSE, ObjectKind.SHED})
+
+
+def is_roofed(kind: ObjectKind) -> bool:
+    """Whether this kind covers the ground rather than standing on it.
+
+    A house has no ground under it to get sun, and the sun map says nothing
+    about those cells rather than reporting them as deep shade — which is true
+    of the footprint and reads, from above, as a claim about the roof. The roof
+    is in full sun; that is simply not what this map is measuring.
+
+    A tree is not roofed. There is real ground under it, getting real dappled
+    sun, and a gardener planting under an apple tree is asking exactly about
+    that ground.
+    """
+    return kind in ROOFED
+
+
 def symbol_of(kind: ObjectKind) -> str:
     return TRAITS[kind].symbol
 

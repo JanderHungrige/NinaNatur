@@ -123,6 +123,8 @@ export function App() {
   const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
   const [shadeOn, setShadeOn] = useState(false);
   const [mapMode, setMapMode] = useState<MapMode>('hours');
+  // Null is the whole season, which is the number a plant is placed by.
+  const [mapMonth, setMapMonth] = useState<number | null>(null);
   /** A day's shadows, and which frame is showing. Fetched only when the day is
    *  actually being watched — it is a request nobody asks for by opening a
    *  garden. */
@@ -1168,6 +1170,15 @@ export function App() {
                 terrain={terrain}
                 on={shadeOn}
                 mode={mapMode}
+                month={mapMonth}
+                onMonth={(next) => {
+                  setMapMonth(next);
+                  if (garden !== null) {
+                    void run('Zeitraum gewechselt', async () => {
+                      setLightMap(await client.lightMap(garden.share_token, next));
+                    });
+                  }
+                }}
                 onToggle={(next) => {
                   setShadeOn(next);
                   // Leaving the map also leaves the day: the two are one
@@ -1178,6 +1189,10 @@ export function App() {
                 onMode={setMapMode}
                 onRebuild={() =>
                   void run('Schatten neu berechnen', async () => {
+                    // The button computes and stores the season. Coming back
+                    // to a month view afterwards would show a figure the
+                    // button did not produce.
+                    setMapMonth(null);
                     setLightMap(await client.rebuildLightMap(garden.share_token));
                   })
                 }

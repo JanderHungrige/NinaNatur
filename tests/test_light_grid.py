@@ -12,10 +12,9 @@ from ninanatur.garden.lightgrid import (
     cell_size_for,
     compute_grid,
     extent_of,
-    load_grid,
-    save_grid,
     signature_of,
 )
+from ninanatur.garden.lightgrid_store import load_grid, save_grid
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import add_planting, place_planting
 from ninanatur.garden.store import create_garden, load_garden

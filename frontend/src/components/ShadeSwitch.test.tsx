@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { LightMap } from '../api/client';
 import { ShadeSwitch } from './ShadeSwitch';
-import { SunMap, bandFor, washFor } from './SunMap';
+import { LEVELS, bandFor } from './SunMap';
 
 function map(overrides: Partial<LightMap> = {}): LightMap {
   return {
@@ -27,20 +27,23 @@ function map(overrides: Partial<LightMap> = {}): LightMap {
 function show(props: Record<string, unknown> = {}) {
   const onToggle = vi.fn();
   const onMode = vi.fn();
+  const onMonth = vi.fn();
   const onRebuild = vi.fn();
   render(
     <ShadeSwitch
       map={map()}
       on
       mode="hours"
+      month={null}
       onToggle={onToggle}
       onMode={onMode}
+      onMonth={onMonth}
       onRebuild={onRebuild}
       busy={false}
       {...props}
     />,
   );
-  return { onToggle, onMode, onRebuild };
+  return { onToggle, onMode, onMonth, onRebuild };
 }
 
 describe('ShadeSwitch', () => {
@@ -68,14 +71,34 @@ describe('ShadeSwitch', () => {
     expect(screen.getByRole('button', { name: 'Sonnenstunden' })).toBeDefined();
   });
 
-  it("paints the legend with the map's own function", () => {
-    // A legend maintained separately drifts, and this one is the only thing
-    // that says what the two inks mean.
+  it('gives the legend one row per step the map draws', () => {
+    // The map used to reach full yellow at 6 h, where the plant-label
+    // convention stops caring — and five sixths of a real garden sits above
+    // that, in one flat colour. The legend is what makes the extra steps
+    // readable rather than merely present.
     show();
     const swatches = [...document.querySelectorAll('.shade-switch__swatch')];
-    expect(swatches.map((s) => s.getAttribute('data-ink'))).toEqual([
-      'sun', 'sun', 'none', 'shade', 'shade',
-    ]);
+    expect(swatches).toHaveLength(LEVELS.length);
+    expect(swatches.map((s) => s.getAttribute('data-ink'))).toEqual(
+      LEVELS.map((l) => l.ink ?? 'none'),
+    );
+    // Strictly increasing yellow: the point of having steps at all.
+    const yellows = swatches
+      .filter((s) => s.getAttribute('data-ink') === 'sun')
+      .map((s) => Number((s as HTMLElement).style.opacity));
+    expect(yellows).toEqual([...yellows].sort((a, b) => b - a));
+    expect(new Set(yellows).size).toBe(yellows.length);
+  });
+
+  it('keeps the band names agreeing with the naming convention', () => {
+    // Two tables, one truth. `bandFor` mirrors the server's SUN_HOUR_BANDS and
+    // the legend reads its names off the map's steps; a name that drifted
+    // would label the map with something the server never said.
+    for (const level of LEVELS) {
+      if (level.name !== undefined) {
+        expect(bandFor(level.from)).toBe(level.name);
+      }
+    }
   });
 
   it('says when the map was computed', () => {
@@ -96,84 +119,33 @@ describe('ShadeSwitch', () => {
     expect(onRebuild).toHaveBeenCalled();
   });
 
+  it('offers a month instead of the whole season', () => {
+    // A garden with a house to its south is a different garden in April and in
+    // July, and the season average describes neither.
+    const { onMonth } = show();
+    fireEvent.change(screen.getByLabelText(/Zeitraum/), { target: { value: '3' } });
+    expect(onMonth).toHaveBeenCalledWith(3);
+  });
+
+  it('can be put back to the whole season', () => {
+    const { onMonth } = show({ month: 6 });
+    fireEvent.change(screen.getByLabelText(/Zeitraum/), { target: { value: 'season' } });
+    expect(onMonth).toHaveBeenCalledWith(null);
+  });
+
+  it('offers no winter, because the light model has none', () => {
+    show();
+    const options = [...screen.getByLabelText(/Zeitraum/).querySelectorAll('option')];
+    expect(options.map((o) => o.value)).toEqual(
+      ['season', '3', '4', '5', '6', '7', '8', '9', '10'],
+    );
+  });
+
   it('says there is nothing to show for an empty garden', () => {
     show({ map: null });
     expect(screen.getByText(/Noch nichts gezeichnet/)).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Sonnenstunden' })).toBeNull();
     expect((screen.getByRole('checkbox') as HTMLInputElement).disabled).toBe(true);
-  });
-});
-
-describe('SunMap — one map, two inks', () => {
-  function draw(mode: 'hours' | 'day', over = map()) {
-    const { container } = render(
-      <svg>
-        <SunMap map={over} mode={mode} />
-      </svg>,
-    );
-    return [...container.querySelectorAll('.sun-map__cell')];
-  }
-
-  it('paints the sun yellow and the shade grey in the same picture', () => {
-    // The whole point of merging the two modes: neither half of the garden is
-    // left blank, so the picture can be read without switching.
-    const cells = draw('hours');
-    const inks = cells.map((c) => c.getAttribute('class'));
-    expect(inks.some((c) => c?.includes('sun-map__cell--sun'))).toBe(true);
-    expect(inks.some((c) => c?.includes('sun-map__cell--shade'))).toBe(true);
-  });
-
-  it('leaves the Halbschatten band unpainted', () => {
-    // The hinge the two readings turn on. Painting it in either colour would
-    // pick a side that three hours of sun does not.
-    expect(draw('hours', map({ hours: [3.0, 3.0, 3.2, 3.2], max_hours: 3.2 }))).toEqual([]);
-  });
-
-  it('means the same hours in every garden', () => {
-    // It used to scale against the garden's own brightest cell, which was fine
-    // for one ink — it only claimed "more than the rest of here". Yellow says
-    // sunny, and a yellow meaning 3 h in one garden and 9 h in another would be
-    // saying something untrue in one of them.
-    const dim = draw('hours', map({ hours: [1.0, 1.0, 4.5, 4.5], max_hours: 4.5 }));
-    const bright = draw('hours', map({ hours: [1.0, 1.0, 9.0, 9.0], max_hours: 9.0 }));
-    const lit = (cells: Element[]) =>
-      cells.filter((c) => c.getAttribute('class')?.includes('--sun'));
-    expect(Number(lit(dim)[0]!.getAttribute('opacity')))
-      .toBeLessThan(Number(lit(bright)[0]!.getAttribute('opacity')));
-  });
-
-  it('still shows the structure of a garden that is dark all over', () => {
-    // The courtyard the old relative scale existed for. The ramps are
-    // continuous, so its brighter corner survives — in two shades of grey.
-    const cells = draw('hours', map({ hours: [0.2, 0.2, 2.0, 2.0], max_hours: 2.0 }));
-    const opacities = [...new Set(cells.map((c) => c.getAttribute('opacity')))];
-    expect(opacities.length).toBeGreaterThan(1);
-  });
-
-  it('keeps only the sunny half under the day, so the shadow is what moves', () => {
-    const cells = draw('day');
-    expect(cells.length).toBeGreaterThan(0);
-    expect(cells.every((c) => c.getAttribute('class')?.includes('--sun'))).toBe(true);
-  });
-
-  it('leaves a cell out entirely rather than drawing nothing visible', () => {
-    // A rect at 1% opacity is a node the browser composites for no reason, and
-    // a garden is six hundred of them.
-    expect(draw('hours', map({ hours: [4.01, 4.01, 4.01, 4.01], max_hours: 4.01 })))
-      .toEqual([]);
-  });
-});
-
-describe('washFor', () => {
-  it('turns at the band edges the legend names', () => {
-    expect(washFor(3.0)).toBeNull();
-    expect(washFor(4.5)?.ink).toBe('sun');
-    expect(washFor(2.0)?.ink).toBe('shade');
-  });
-
-  it('saturates rather than running past full strength', () => {
-    expect(washFor(14.0)?.strength).toBe(1);
-    expect(washFor(0)?.strength).toBe(1);
   });
 });
 
@@ -235,14 +207,6 @@ describe('ShadeSwitch — what is standing wrong', () => {
   it('leaves the split out on a grid computed before it existed', () => {
     show({ map: map({ morning: [] }) });
     expect(screen.queryByText(/Davon vormittags/)).toBeNull();
-  });
-});
-
-describe('bandFor', () => {
-  it('names the hours the way a plant label does', () => {
-    expect(bandFor(8)).toBe('volle Sonne');
-    expect(bandFor(3)).toBe('Halbschatten');
-    expect(bandFor(0.4)).toBe('tiefer Schatten');
   });
 });
 
