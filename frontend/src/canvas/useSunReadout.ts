@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { RefObject } from 'react';
 
 import type { LightMap } from '../api/client';
-import { bandFor, hoursAt } from '../components/SunMap';
+import { atPoint, bandFor } from '../components/SunMap';
 import { type Viewport, toGarden } from './viewport';
 
 export interface Readout {
@@ -35,19 +35,13 @@ export function useSunReadout(
     if (map === undefined || box === undefined) return setReadout(null);
     const left = event.clientX - box.left;
     const top = event.clientY - box.top;
-    const at = toGarden({ x: left, y: top }, view);
-    const hours = hoursAt(map, at.x, at.y);
-    // Undefined is off the grid and says nothing. Null is a cell with a roof
-    // over it, which is a different answer and worth giving.
-    if (hours === undefined) return setReadout(null);
-    return setReadout({
-      left,
-      top,
-      text:
-        hours === null
-          ? 'Dach — kein Boden'
-          : `${hours.toFixed(1)} h · ${bandFor(hours)}`,
-    });
+    const garden = toGarden({ x: left, y: top }, view);
+    const at = atPoint(map, garden.x, garden.y);
+    if (at === null) return setReadout(null);
+    // "Dach" first, because a roof's hours answer a different question from the
+    // ground's and a reader who missed that would take it for the bed below.
+    const reading = `${at.hours.toFixed(1)} h · ${bandFor(at.hours)}`;
+    return setReadout({ left, top, text: at.onARoof ? `Dach · ${reading}` : reading });
   };
 
   return { readout, read, clear: () => setReadout(null) };

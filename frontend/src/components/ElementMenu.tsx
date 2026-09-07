@@ -21,11 +21,15 @@ interface Props {
   shape: string;
   height: number | null;
   roof: string;
+  /** Where the roof starts. Null is "nobody has said". */
+  eavesM: number | null;
   width: number | null;
   soilType: string | null;
   moisture: string | null;
   heightAboveGround: number;
-  onSave: (changes: Record<string, string | number>) => void;
+  /** Null is a value, not an omission: it is how a typed-in eaves height is
+   *  put back to "nobody has said". */
+  onSave: (changes: Record<string, string | number | null>) => void;
   onDelete: () => void;
   onClose: () => void;
   busy: boolean;
@@ -49,6 +53,7 @@ export function ElementMenu({
   shape,
   height,
   roof,
+  eavesM,
   width,
   soilType,
   moisture,
@@ -65,6 +70,7 @@ export function ElementMenu({
   // already at the element, and two places to edit one thing is one too many.
   const [tall, setTall] = useState(height === null ? '' : String(height));
   const [roofShape, setRoofShape] = useState(roof);
+  const [eaves, setEaves] = useState(eavesM === null ? '' : String(eavesM));
   const [band, setBand] = useState(width === null ? '' : String(width));
   const [soil, setSoil] = useState(soilType ?? '');
   const [wet, setWet] = useState(moisture ?? '');
@@ -147,12 +153,23 @@ export function ElementMenu({
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
+          {/* Optional, and worth asking for: with the ridge it gives the
+              pitch, and the pitch is what makes the north side of a roof
+              darker than the south side. Without it the model assumes the
+              eaves are three quarters of the way up. */}
+          <label htmlFor="menu-eaves">Traufhöhe (m)</label>
+          <input id="menu-eaves" type="number" min="0" step="0.1"
+                 placeholder="geschätzt" value={eaves} disabled={busy}
+                 onChange={(e) => setEaves(e.target.value)} />
+
           {/* Said where the choice is made: the height came from the map and
               means the ridge, so a house without a shape shades as though its
               gables were solid. */}
           <p className="hint">
-            Die Höhe aus der Karte ist der First. Ohne Dachform rechnen wir das
-            Haus bis dahin als massiv — es verschattet dann zu viel.
+            Die Höhe aus der Karte ist der First; die Traufe ist, wo das Dach
+            anfängt. Ohne Dachform rechnen wir das Haus bis zum First als massiv
+            — es verschattet dann zu viel, und die Nordseite des Dachs bekommt
+            nicht weniger Sonne als die Südseite.
           </p>
         </>
       )}
@@ -236,7 +253,7 @@ export function ElementMenu({
               type="button"
               disabled={busy}
               onClick={() => {
-                const changes: Record<string, string | number> = {
+                const changes: Record<string, string | number | null> = {
                   kind: chosen,
                   label: text,
                 };
@@ -248,7 +265,12 @@ export function ElementMenu({
                 } else if (tall !== '') {
                   changes.height = Number(tall);
                 }
-                if (ROOFED.has(chosen)) changes.roof = roofShape;
+                if (ROOFED.has(chosen)) {
+                  changes.roof = roofShape;
+                  // Empty is "nobody has said", which is a value: it puts the
+                  // building back on the assumed eaves rather than on zero.
+                  changes.eaves_m = eaves === '' ? null : Number(eaves);
+                }
                 if (shape === 'line' && band !== '') changes.width = Number(band);
                 onSave(changes);
               }}

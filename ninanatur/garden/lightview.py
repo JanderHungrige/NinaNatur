@@ -170,6 +170,8 @@ def shading_obstacles(
             # The ridge is a line, not a wall. Without a roof shape this is the
             # recorded height, exactly as before.
             height=shading_height(o.height, Roof(o.roof), o.eaves_m),
+            # So a point on this building's own roof can leave it out.
+            owner=o.element_id,
         )
         for o in garden.obstacles
         # A height of None is an element nobody has said the height of. Treating

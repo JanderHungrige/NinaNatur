@@ -107,13 +107,26 @@ painting it either colour would pick a side that three hours of sun does not.
 Tagesverlauf keeps only the yellow half. A grey wash under a grey shadow hides
 the one thing on the plan that is supposed to be moving.
 
-### A house is not a dark place
+### The roof is the surface, not the ground under it
 
-A cell under a house or a shed has **no answer** — `hours` is null there and the
-map draws nothing. It used to be computed like any other cell, come back at
-about zero (a building shades its own footprint all day), and be painted in the
-deep-shade ink. True of the ground, and false of the picture: what a plan shows
-at a house is the *roof*, and the roof is in full sun.
+A cell under a house or a shed is answered **on the roof** — at its own height
+and its own pitch. It used to be answered on the ground beneath the building,
+where the sun never reaches, all day, every day, and painted in the deep-shade
+ink. True of that ground, and false of the picture: what a plan shows at a house
+is the roof.
+
+The pitch is folded into the sky exactly the way a hillside already is
+(`slopes.ring_for`): a point on the north pitch has its own ridge standing
+between it and the southern sun, so it loses the hours a north face should lose.
+Measured on a 14 × 9 m house at 51°N with a 38° gable — **north 10.2 h against
+south 11.7 h**, where a flat roof reads the same on both sides. A steeper pitch
+costs the north face more, which is the mechanism rather than a coincidence of
+one geometry.
+
+Roof cells are flagged in the response and left out of two things: a bed's mean
+and the garden's brightest point. Nothing is planted on a roof, and a sunny one
+would otherwise set the scale for the garden below it. The readout says "Dach"
+so a reader cannot take eleven hours on a roof for the bed underneath.
 
 A tree is not roofed. There is real ground under it getting real dappled sun,
 and somebody planting under an apple tree is asking about exactly that.
@@ -142,6 +155,25 @@ gardens are never asked. A month view is therefore never stale, and says so; the
 `misplaced` warnings stay on the stored season grid in every case, because
 misplacement is a judgement about a growing season and warnings that appeared
 and vanished while somebody scrolled the months would be noise.
+
+### How fine the grid is
+
+A time, not a cell count. It was a flat cap of 600 cells, set when every write
+recomputed the light and half a second was the whole budget — and it left an
+ordinary 24 × 33 m garden on 2 m cells, which is what "the raster is still
+rather coarse" was about.
+
+A count was the wrong shape anyway, because a cell is not a fixed price: it
+costs what the obstacles around it cost. Measured, 0.24 ms in a garden with
+three buildings and 1.9 ms in one with forty — which a single number has to be
+wrong about at one end or the other. The budget is five seconds of the button
+somebody pressed knowing it would take a moment, and the ladder picks the finest
+cell that fits: **0.5 m** for an ordinary garden, 3 m for a 150 m street with
+forty houses.
+
+Half a metre is the floor and stays there. Below it the map would be saying more
+than the model knows, given that most building heights are assumed and a roof
+pitch is inferred from a rectangle.
 
 ### What is under the pointer
 

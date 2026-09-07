@@ -15,6 +15,7 @@ function map(overrides: Partial<LightMap> = {}): LightMap {
     // Deep shade in the south, full sun in the north — one on each side of
     // the Halbschatten band the two inks turn on.
     hours: [1.0, 1.0, 7.0, 7.0],
+    roof: [false, false, false, false],
     max_hours: 7.0,
     computed_at: '2026-09-04T10:00:00+00:00',
     stale: false,

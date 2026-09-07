@@ -151,6 +151,13 @@ CREATE TABLE IF NOT EXISTS light_grid (
     -- is hotter and harsher, and a total cannot say which four hours a spot
     -- gets — which is the difference between a morning-sun bed and a baking one.
     morning     TEXT    NOT NULL DEFAULT '[]',
+    -- Which cells are a roof rather than ground. A house's own footprint gets
+    -- no sun at all — it is under a building — so the cell is answered on the
+    -- roof instead, at its own height and its own pitch. That is a real answer
+    -- to a different question, so it is flagged: it must not reach a bed's mean
+    -- or the garden's brightest point, and the reader is told which they are
+    -- looking at. Empty on a grid computed before roofs were.
+    roof        TEXT    NOT NULL DEFAULT '[]',
     signature   TEXT    NOT NULL,
     computed_at TEXT    NOT NULL
 );

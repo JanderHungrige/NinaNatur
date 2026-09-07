@@ -81,7 +81,7 @@ describe('GardenCanvas', () => {
 
   it('names the plan itself so its contents are knowable without seeing it', () => {
     const g = garden({
-      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, roof: 'unknown', height_source: 'user',
+      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, roof: 'unknown', eaves_m: null, height_source: 'user',
           x: 0, y: -4, shape: 'polygon', width: null, constraint_hint: 'rect',
           points: [[-5, -0.5], [5, -0.5], [5, 0.5], [-5, 0.5]], height: 6,
           footprint: [[-5, -4.5], [5, -4.5], [5, -3.5], [-5, -3.5]] }],
@@ -110,11 +110,12 @@ describe('GardenCanvas', () => {
 });
 
 describe('GardenCanvas — what the sun map says under the pointer', () => {
-  function sunMap(hours: (number | null)[]) {
+  function sunMap(hours: (number | null)[], roof = hours.map(() => false)) {
     return {
       map: {
         cell_m: 1, min_x: -1, min_y: -1, cols: 2, rows: 2,
         hours,
+        roof,
         max_hours: 9.2,
         computed_at: '2026-09-07T10:00:00+00:00',
         stale: false,
@@ -125,14 +126,14 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
     };
   }
 
-  function plan(hours: (number | null)[] | null) {
+  function plan(hours: (number | null)[] | null, roof?: boolean[]) {
     render(
       <GardenCanvas
         garden={garden()}
         selectedBedId={null}
         onSelectBed={vi.fn()}
         size={{ widthPx: 600, heightPx: 400 }}
-        {...(hours === null ? {} : { sunMap: sunMap(hours) })}
+        {...(hours === null ? {} : { sunMap: sunMap(hours, roof) })}
       />,
     );
     const surface = screen.getByTestId('canvas-surface');
@@ -156,13 +157,13 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
     expect(screen.getByTestId('sun-readout').textContent).toBe('9.2 h · volle Sonne');
   });
 
-  it('says a roof is a roof rather than reporting deep shade', () => {
-    // The cell has no answer because there is no ground there. Zero would read
-    // as darkness, which is true of the footprint and false of what a plan
-    // shows at a house: a roof, in full sun.
-    const surface = plan([null, null, null, null]);
+  it('says when the hours it is reading are a roof', () => {
+    // A different question from the ground's, and nothing is planted on one. A
+    // reader who took 11 h for the bed below would have it exactly backwards:
+    // the ground there is under a house.
+    const surface = plan([11.0, 11.0, 11.0, 11.0], [true, true, true, true]);
     fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
-    expect(screen.getByTestId('sun-readout').textContent).toBe('Dach — kein Boden');
+    expect(screen.getByTestId('sun-readout').textContent).toBe('Dach · 11.0 h · volle Sonne');
   });
 
   it('goes away when the pointer leaves', () => {

@@ -44,11 +44,17 @@ class LightMap(BaseModel):
     min_y: float
     cols: int
     rows: int
-    #: Null where there is no ground to answer for — a cell under a house or a
-    #: shed. Zero would read as deep shade, which is true of the footprint and
-    #: false of what a plan shows there: a roof, in full sun.
+    #: Null only where nothing can be answered: a building whose height nobody
+    #: has recorded. A cell under a house is answered **on the roof** — at its
+    #: own height and its own pitch, which at 51°N makes a north face and a
+    #: south face very different places.
     hours: list[float | None]
-    #: The most any cell gets, so the drawing can scale without a second pass.
+    #: Which of those cells are a roof rather than ground, in step with `hours`.
+    #: Empty on a grid computed before roofs were.
+    roof: list[bool]
+    #: The most any cell of **ground** gets, so the drawing can scale without a
+    #: second pass. Roofs are left out of it: nothing is planted on one, and a
+    #: sunny roof would otherwise set the scale for the garden below it.
     max_hours: float
     computed_at: str
     stale: bool
@@ -263,8 +269,11 @@ def _read(
         cols=grid.cols,
         rows=grid.rows,
         hours=grid.hours,
-        max_hours=max(answered) if (answered := [h for h in grid.hours if h is not None])
-        else 0.0,
+        roof=grid.roof,
+        max_hours=max(answered) if (answered := [
+            h for i, h in enumerate(grid.hours)
+            if h is not None and not grid.is_roof(i)
+        ]) else 0.0,
         morning=grid.morning,
         misplaced=[
             MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)

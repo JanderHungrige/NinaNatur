@@ -2,7 +2,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { LightMap } from '../api/client';
-import { LEVELS, SunMap, bandFor, hoursAt, washFor } from './SunMap';
+import { LEVELS, SunMap, atPoint, bandFor, washFor } from './SunMap';
 
 function map(overrides: Partial<LightMap> = {}): LightMap {
   return {
@@ -14,6 +14,7 @@ function map(overrides: Partial<LightMap> = {}): LightMap {
     // Deep shade in the south, full sun in the north — one on each side of
     // the Halbschatten band the two inks turn on.
     hours: [1.0, 1.0, 7.0, 7.0],
+    roof: [false, false, false, false],
     max_hours: 7.0,
     computed_at: '2026-09-04T10:00:00+00:00',
     stale: false,
@@ -75,25 +76,46 @@ describe('SunMap — one map, two inks', () => {
     expect(cells.every((c) => c.getAttribute('class')?.includes('--sun'))).toBe(true);
   });
 
-  it('draws nothing where there is no ground to answer for', () => {
-    // Null is a cell under a house or a shed. Zero would be a claim about deep
-    // shade — true of the footprint, and false of what a plan shows there: a
-    // roof, in full sun.
-    const roofed = map({ hours: [null, null, 9.0, 9.0], max_hours: 9.0 });
+  it('draws a roof in the same inks, and marks it as one', () => {
+    // The roof is a real surface with a real answer. Painting the building as
+    // deep shade — which is what answering the ground under it gives you — was
+    // the most obviously wrong thing this map ever did.
+    const roofed = map({
+      hours: [10.0, 10.0, 9.0, 9.0],
+      roof: [true, true, false, false],
+      max_hours: 9.0,
+    });
     const cells = draw('hours', roofed);
-    expect(cells).toHaveLength(2);
-    expect(cells.every((c) => c.getAttribute('class')?.includes('--sun'))).toBe(true);
+    expect(cells).toHaveLength(4);
+    expect(cells.filter((c) => c.classList.contains('sun-map__cell--roof'))).toHaveLength(2);
+  });
+
+  it('draws nothing for a building whose height nobody recorded', () => {
+    const unknown = map({ hours: [null, null, 9.0, 9.0], roof: [true, true, false, false] });
+    expect(draw('hours', unknown)).toHaveLength(2);
   });
 });
 
-describe('hoursAt', () => {
-  it('tells a roof apart from off the map', () => {
-    // Two different things to say: outside the grid the map has no opinion, and
-    // under a house it has one — that this is not ground.
-    const roofed = map({ hours: [null, 1.0, 7.0, 7.0], max_hours: 7.0 });
-    expect(hoursAt(roofed, 0.5, 0.5)).toBeNull();
-    expect(hoursAt(roofed, 1.5, 1.5)).toBe(7.0);
-    expect(hoursAt(roofed, 99, 99)).toBeUndefined();
+describe('atPoint', () => {
+  it('says whether the hours are about a roof or about ground', () => {
+    // Different questions. Nothing is planted on a roof, and a reader who took
+    // its 11 hours for the bed below would be reading it as the opposite of
+    // what it is — the ground there is under a house.
+    const roofed = map({
+      hours: [11.0, 1.0, 7.0, 7.0],
+      roof: [true, false, false, false],
+      max_hours: 7.0,
+    });
+    expect(atPoint(roofed, 0.5, 0.5)).toEqual({ hours: 11.0, onARoof: true });
+    expect(atPoint(roofed, 1.5, 1.5)).toEqual({ hours: 7.0, onARoof: false });
+  });
+
+  it('has nothing to say off the map, or where nothing could be computed', () => {
+    // Null is a building whose height nobody has recorded — skipped by the
+    // shading model since Wave 8, and there is no surface to stand on.
+    const gap = map({ hours: [null, 1.0, 7.0, 7.0], roof: [true, false, false, false] });
+    expect(atPoint(gap, 0.5, 0.5)).toBeNull();
+    expect(atPoint(gap, 99, 99)).toBeNull();
   });
 
   it('refuses a point that is not a point', () => {
@@ -102,9 +124,9 @@ describe('hoursAt', () => {
     // comparison against it is false — so it used to index the array with NaN,
     // get undefined, and report a roof over an open lawn.
     const lit = map({ hours: [7.0, 7.0, 7.0, 7.0], max_hours: 7.0 });
-    expect(hoursAt(lit, Number.NaN, 1)).toBeUndefined();
-    expect(hoursAt(lit, 1, Number.NaN)).toBeUndefined();
-    expect(hoursAt(lit, Number.POSITIVE_INFINITY, 1)).toBeUndefined();
+    expect(atPoint(lit, Number.NaN, 1)).toBeNull();
+    expect(atPoint(lit, 1, Number.NaN)).toBeNull();
+    expect(atPoint(lit, Number.POSITIVE_INFINITY, 1)).toBeNull();
   });
 });
 
