@@ -7,7 +7,7 @@ status: planned
 depends_on: ninanatur-wave-12
 demo_state: "A finished plan turns into a shopping list split across as few nurseries as possible"
 created: 2026-08-27
-hash: 95abe82b
+hash: 61efbcf6
 ---
 
 # Wave 25 — One plan, fewest possible parcels
@@ -17,6 +17,10 @@ to Wave 20, and to Wave 25 on 2026-09-05 to leave room for waves that are not
 planned yet. Ordering is the last step of the loop and has moved every time the
 garden itself turned out to be worth more work — which is the right direction
 for it to move.*
+
+*It did **not** move again on 2026-09-07, when the security review took Wave 20
+and the roof detail took Wave 21. The gap between 22 and 25 is the room this
+number was given on purpose, and spending it is what it is for.*
 
 *Originally: Ordering plants is the last step of the loop, and four waves
 of making the garden itself worth planning come first.*
