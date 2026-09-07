@@ -25,7 +25,7 @@ def conn() -> Iterator[sqlite3.Connection]:
     yield connection
 
 
-def _garden(conn: sqlite3.Connection, lat: float = 51.0, lon: float = 6.0) -> object:
+def _garden(conn: sqlite3.Connection, lat: float = 51.2564, lon: float = 7.1501) -> object:
     garden_id = create_garden(conn, name="G", latitude=lat, longitude=lon)
     return load_garden(conn, garden_id)
 
@@ -39,14 +39,7 @@ def _window() -> TerrainWindow:
 
 
 def _patch(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> None:
-    """Replace the three things that would otherwise reach the network.
-
-    And lift the hold. `LOCATION_IS_PRECISE` is False in production because a
-    garden's stored coordinates are rounded to 0.1° — see
-    `tests/test_anchor_precision.py`. These tests are about what happens around
-    the fetch, so they assume the day it is allowed to happen.
-    """
-    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
+    """Replace the three things that would otherwise reach the network."""
     defaults = {
         "state_at": lambda *_: "Nordrhein-Westfalen",
         "fetch_window": lambda *_a, **_k: _window(),
@@ -64,7 +57,7 @@ def test_a_garden_gets_its_ground_and_its_horizon(
 
     assert terrain_sync.ensure_terrain(conn, garden) is True  # type: ignore[arg-type]
 
-    key = cache_key(LatLon(lat=51.0, lon=6.0))
+    key = cache_key(LatLon(lat=51.2564, lon=7.1501))
     assert load_window(conn, key) is not None
     assert load_horizon(conn, key) is not None
 
@@ -82,7 +75,7 @@ def test_the_second_garden_in_the_street_costs_nothing(
 
     _patch(monkeypatch, fetch_window=counted)
     terrain_sync.ensure_terrain(conn, _garden(conn))  # type: ignore[arg-type]
-    terrain_sync.ensure_terrain(conn, _garden(conn, lat=51.00005, lon=6.00005))  # type: ignore[arg-type]
+    terrain_sync.ensure_terrain(conn, _garden(conn, lat=51.2565, lon=7.1502))  # type: ignore[arg-type]
 
     assert calls["n"] == 1
 
@@ -119,7 +112,7 @@ def test_a_failed_horizon_does_not_throw_away_a_window_that_worked(
     _patch(monkeypatch, horizon_ring=boom)
 
     assert terrain_sync.ensure_terrain(conn, _garden(conn)) is True  # type: ignore[arg-type]
-    key = cache_key(LatLon(lat=51.0, lon=6.0))
+    key = cache_key(LatLon(lat=51.2564, lon=7.1501))
     assert load_window(conn, key) is not None
     assert load_horizon(conn, key) is None
 
@@ -127,40 +120,40 @@ def test_a_failed_horizon_does_not_throw_away_a_window_that_worked(
 def test_nothing_is_fetched_while_the_location_is_rounded(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The hold itself. A window fetched six kilometres away is worse than no
-    window, because it is confidently wrong — so the garden keeps the flat
-    assumption it had before Wave 17, and the page says so."""
+    """A garden created before 2026-09-07 holds coordinates rounded to 0.1°. A
+    window fetched six kilometres away is worse than no window, because it is
+    confidently wrong — so that garden keeps the flat assumption it had before
+    Wave 17, and the page says so. Nothing is even asked of the network."""
     calls = {"n": 0}
 
     def counted(*_a: object, **_k: object) -> None:
         calls["n"] += 1
         raise AssertionError("should not have been reached")
 
-    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", False)
     monkeypatch.setattr(terrain_sync, "state_at", counted)
+    legacy = _garden(conn, lat=51.3, lon=7.2)
 
-    assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
+    assert terrain_sync.ensure_terrain(conn, legacy) is False  # type: ignore[arg-type]
     assert calls["n"] == 0
 
 
-def test_a_window_stored_before_the_hold_is_not_served_either(
-    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+def test_a_window_stored_under_the_old_rounding_is_not_served_either(
+    conn: sqlite3.Connection,
 ) -> None:
-    """Holding the fetch was not enough.
+    """Guarding the fetch was never enough.
 
-    Windows fetched before the hold are still in the database, keyed by the
-    rounded location — so every garden near Wuppertal was still being served the
-    same wrong hillside. Readers go through `ground_for`, which is where the hold
-    lives.
+    Windows fetched before the change are still in the database, keyed by the
+    rounded location — so every garden near Wuppertal would still be served the
+    same wrong hillside. Readers go through `ground_for`, which is where the
+    check lives.
     """
     from ninanatur.geo.terrain_store import save_window
 
-    anchor = LatLon(lat=51.0, lon=6.0)
-    save_window(conn, cache_key(anchor), _window())
+    precise = LatLon(lat=51.2564, lon=7.1501)
+    legacy = LatLon(lat=51.3, lon=7.2)
+    for anchor in (precise, legacy):
+        save_window(conn, cache_key(anchor), _window())
 
-    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
-    assert terrain_sync.ground_for(conn, anchor) is not None
-
-    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", False)
-    assert terrain_sync.ground_for(conn, anchor) is None
-    assert terrain_sync.horizon_for(conn, anchor) is None
+    assert terrain_sync.ground_for(conn, precise) is not None
+    assert terrain_sync.ground_for(conn, legacy) is None
+    assert terrain_sync.horizon_for(conn, legacy) is None

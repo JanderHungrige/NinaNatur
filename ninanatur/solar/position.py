@@ -16,9 +16,28 @@ import math
 from dataclasses import dataclass
 from datetime import datetime
 
-# ~11 km. Solar angles do not measurably change over that distance, so the extra
-# precision buys nothing and a garden's exact coordinates are personal data.
-LOCATION_PRECISION = 1
+# ~7 m at German latitudes. Still a deliberate rounding — a garden's coordinates
+# are personal data — but no longer a coarse one, because since Wave 17 they do
+# more than feed sun angles.
+#
+# It was 1 decimal place, ~6.6 km, which solar geometry genuinely cannot tell
+# apart. Wave 17 started fetching a 100 m terrain window, a 5 km horizon ring and
+# a 1 km² building tile from the same coordinates, and a 6.6 km error puts all
+# three on a different hillside: measured at Wuppertal, where the garden's ground
+# is 147 m and the rounded point's is 268. Confidently wrong, and worse than the
+# flat assumption it replaced.
+#
+# 4 places rather than none, because it is the coarsest rounding a 100 m window
+# survives, and because the rounding is not what protects the address anyway: a
+# garden imported from the map stores its own plot outline and every neighbouring
+# building at metre precision *relative* to this anchor, which identifies the
+# place to anyone willing to match it against OSM. This stores less than the plan
+# already shows.
+#
+# Gardens created before 2026-09-07 hold the old 0.1° value and cannot be
+# recovered. `garden.terrain_sync.is_precise` recognises them and leaves them
+# flat rather than fetching somebody else's hillside.
+LOCATION_PRECISION = 4
 
 
 @dataclass(frozen=True)

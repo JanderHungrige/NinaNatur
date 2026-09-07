@@ -35,34 +35,64 @@ known_issues: []
 
 ## The switch
 
-One toggle over the plan, and three things it can draw. **Sonnenstunden**
-darkens what has little sun; **Schattenstunden** washes what has much in yellow.
-They are the same numbers inverted, and both exist because gardeners ask the
-question in both directions: *where can this sun-lover go* and *what do I do
-with that dark corner*. **Tagesverlauf** is the third, and it is the only one
-that carries the moving obstacle shadows.
+One toggle over the plan, and two things it can draw. **Sonnenstunden** is the
+heat map; **Tagesverlauf** is the same garden with the day's moving obstacle
+shadows over it.
 
-Three choices rather than two layers. The heat map and the day's shadows used to
+Two choices rather than two layers. The heat map and the day's shadows used to
 be drawn together whenever the switch was on, and each made the other harder to
 read: a shadow crossing a dark wash is not visible, and a wash read through a
 shadow is not a reading. They answer different questions — *how much sun does
 this corner get all summer* against *where is the shade at four o'clock* — so
-they are now separate answers. The day paints its ground the way Schattenstunden
-does, yellow for much sun, because that is the surface a shadow shows up on.
+they are separate answers now.
+
+### One map, two inks
+
+Sonnenstunden was itself two modes until 2026-09-07: a dark wash on the shade,
+or a yellow wash on the sun, whichever direction the gardener wanted to ask
+from. Each left half the garden blank, so reading the whole picture meant
+switching back and forth and remembering the other half. Yellow for sun and grey
+for shade says both at once, and there is nothing left to choose between.
+
+The ink is chosen by `washFor`, on the **absolute** band edges below rather than
+against the garden's own brightest cell:
+
+| hours | ink |
+|-------|-----|
+| ≥ 4 h | yellow, full at 6 h |
+| 2.5–4 h | none — the plan shows through |
+| < 2.5 h | grey, full at 0 h |
+
+Absolute because two inks make a stronger claim than one did. A single wash only
+ever said *more than the rest of this garden*; yellow says **sunny**, and a
+yellow that meant 3 h in one garden and 9 h in another would be saying something
+untrue in one of them.
+
+The relative scale existed for the shaded courtyard — a garden that never gets
+more than four hours still has a bright end and a dark one. That case survives,
+because the ramps are continuous rather than five steps: a courtyard between
+0.5 h and 1.5 h still shows its brighter corner, in two strengths of grey
+instead of grey against yellow. Which is the honest picture of a courtyard.
+
+Halbschatten takes no ink. It is the hinge the two readings turn on, and
+painting it either colour would pick a side that three hours of sun does not.
+
+Tagesverlauf keeps only the yellow half. A grey wash under a grey shadow hides
+the one thing on the plan that is supposed to be moving.
 
 The legend is banded and every band carries its hours, because "Halbschatten" is
-a word people use for different things and 2.5–4 h is not:
+a word people use for different things and 2.5–4 h is not. Its swatches are
+painted by running a sample hour from each band through the map's own `washFor`,
+so a swatch cannot drift out of agreement with the cells it explains — and the
+legend is the only thing that says what the two inks mean:
 
-| Band | Hours |
-|------|-------|
-| volle Sonne | ab 6 h |
-| sonnig | 4–6 h |
-| Halbschatten | 2.5–4 h |
-| Schatten | 1.5–2.5 h |
-| tiefer Schatten | 0–1.5 h |
-
-Cells scale against the garden's own brightest cell rather than an absolute, so
-a shaded courtyard still shows its structure instead of going uniformly black.
+| Band | Hours | Swatch |
+|------|-------|--------|
+| volle Sonne | ab 6 h | yellow, full |
+| sonnig | 4–6 h | yellow, half |
+| Halbschatten | 2.5–4 h | none |
+| Schatten | 1.5–2.5 h | grey, faint |
+| tiefer Schatten | 0–1.5 h | grey, strong |
 
 ### The colour took three tries
 

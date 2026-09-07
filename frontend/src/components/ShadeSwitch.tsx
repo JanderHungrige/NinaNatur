@@ -1,5 +1,5 @@
 import type { LightMap, Terrain } from '../api/client';
-import { BANDS, type MapMode, bandFor } from './SunMap';
+import { BANDS, type MapMode, bandFor, bandSample, washFor } from './SunMap';
 
 interface Props {
   /** The ground under the garden, or null where nobody publishes it. */
@@ -35,7 +35,9 @@ function whenText(iso: string): string {
  *
  * The legend carries the **numbers**. "Darker means less sun" is not a reading;
  * "3 Stunden" is, and a gardener buying a plant labelled *Halbschatten* needs
- * the one they can compare against the label.
+ * the one they can compare against the label. It is also the only thing that
+ * says what the two inks mean, so it is painted by the map's own `washFor`
+ * rather than by a parallel set of colours that could drift from it.
  *
  * The rebuild button is the **first** thing in the panel, not a footnote under
  * the legend. Nothing recomputes the light on a write any more — a garden of
@@ -91,8 +93,7 @@ export function ShadeSwitch({
           <div className="shade-switch__modes" role="group" aria-label="Was gezeigt wird">
             {(
               [
-                ['sun', 'Sonnenstunden'],
-                ['shade', 'Schattenstunden'],
+                ['hours', 'Sonnenstunden'],
                 ['day', 'Tagesverlauf'],
               ] as Array<[MapMode, string]>
             ).map(([value, label]) => (
@@ -109,10 +110,10 @@ export function ShadeSwitch({
             ))}
           </div>
 
-          {/* Three choices rather than two drawn at once. The heat map answers
-              "how much sun does this corner get all summer"; the moving
-              shadows answer "where is the shade at four o'clock". Painting
-              both together made each harder to read than either alone. */}
+          {/* Two choices, not three drawn at once. The heat map answers "how
+              much sun does this corner get all summer"; the moving shadows
+              answer "where is the shade at four o'clock". Painting both
+              together made each harder to read than either alone. */}
           {mode === 'day' && (
             <p className="hint">
               Zeigt die wandernden Objektschatten über der Sonnenkarte — gelb
@@ -120,12 +121,21 @@ export function ShadeSwitch({
             </p>
           )}
 
+          {/* Painted by the same function the map is, on a sample hour from
+              inside each band. A legend maintained separately is a legend that
+              drifts, and this one is the only thing saying what the two inks
+              mean. */}
           <ul className="shade-switch__legend">
             {BANDS.map(([lower, label], index) => {
               const upper = index === 0 ? null : BANDS[index - 1]![0];
+              const wash = washFor(bandSample(index));
               return (
                 <li key={label}>
-                  <span className="shade-switch__swatch" data-band={index} />
+                  <span
+                    className="shade-switch__swatch"
+                    data-ink={wash === null ? 'none' : wash.ink}
+                    style={wash === null ? undefined : { opacity: wash.strength * 0.8 }}
+                  />
                   <span>
                     {upper === null
                       ? `ab ${lower} h`

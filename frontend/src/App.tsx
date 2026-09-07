@@ -122,7 +122,7 @@ export function App() {
   const [environment, setEnvironment] = useState<string | null>(null);
   const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
   const [shadeOn, setShadeOn] = useState(false);
-  const [mapMode, setMapMode] = useState<MapMode>('sun');
+  const [mapMode, setMapMode] = useState<MapMode>('hours');
   /** A day's shadows, and which frame is showing. Fetched only when the day is
    *  actually being watched — it is a request nobody asks for by opening a
    *  garden. */
