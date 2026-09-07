@@ -91,11 +91,13 @@ def test_summer_days_are_longer_than_winter_days() -> None:
     assert winter < 9, "Berlin midwinter has ~7.5 h of daylight"
 
 
-def test_location_is_rounded_to_a_tenth_of_a_degree() -> None:
-    """~11 km. Solar angles do not care; a garden's exact coordinates are personal."""
+def test_location_is_rounded_to_four_places() -> None:
+    """~7 m. It was a tenth of a degree — ~6.6 km — while these coordinates only
+    fed sun angles, which is a distance solar geometry genuinely cannot see. Wave
+    17 gave them a second job that it very much can."""
     precise = Location(latitude=52.5170365, longitude=13.3888599)
-    assert precise.latitude == 52.5
-    assert precise.longitude == 13.4
+    assert precise.latitude == 52.517
+    assert precise.longitude == 13.3889
 
 
 def test_rounding_does_not_meaningfully_change_the_answer() -> None:

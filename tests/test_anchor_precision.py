@@ -1,59 +1,112 @@
-"""The garden's stored location is too coarse for the data Wave 17 fetches.
+"""How precisely a garden's location is stored, and what it is precise enough for.
 
-This file asserts a *defect*, on purpose. It is not a guard against regression —
-it is a guard against the defect being forgotten, because everything built on
-top of it looks entirely plausible: a terrain window six kilometres away is
-still a terrain window, with sensible heights and a believable slope.
+This file replaces one that asserted a *defect*. Until 2026-09-07 `create_garden`
+rounded to 0.1° — about 6.6 km — which was right while the coordinates only fed
+sun angles and ruinous once Wave 17 began fetching a 100 m terrain window, a
+5 km horizon ring and a 1 km² building tile from them.
 
-Delete this file when the location question is settled, whichever way it goes.
+The rounding stayed; only its size changed. Four places is the coarsest a 100 m
+window survives, and it is still less than the plan already shows: a garden
+imported from the map stores its plot outline and every neighbouring building at
+metre precision *relative* to this anchor.
 """
 from __future__ import annotations
 
 import math
+import sqlite3
 
 import pytest
 
 from ninanatur.garden.store import create_garden, load_garden
+from ninanatur.garden.terrain_sync import is_precise
+from ninanatur.geo.projection import LatLon
+from ninanatur.geo.terrain import WINDOW_M
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.solar.position import Location
 
+#: Half a rounding step: the furthest a stored coordinate can be from the real one.
+HALF_STEP = 0.00005
 
-def test_a_gardens_stored_location_is_rounded_to_a_tenth_of_a_degree() -> None:
-    """Deliberate, and documented in `create_garden`: coarse coordinates were a
-    privacy choice made when they only fed sun angles."""
-    conn = connect(":memory:")
-    init_schema(conn)
-    garden_id = create_garden(conn, name="G", latitude=51.2560, longitude=7.1500)
+
+@pytest.fixture()
+def conn() -> sqlite3.Connection:
+    made = connect(":memory:")
+    init_schema(made)
+    return made
+
+
+def _metres(from_lat: float, from_lon: float, to_lat: float, to_lon: float) -> float:
+    north = (to_lat - from_lat) * 111_320
+    east = (to_lon - from_lon) * 111_320 * math.cos(math.radians(from_lat))
+    return math.hypot(north, east)
+
+
+def test_a_gardens_location_is_still_rounded_before_it_is_stored(
+    conn: sqlite3.Connection,
+) -> None:
+    """Deliberate. A coordinate is personal data whatever it is used for, and the
+    fifth decimal place buys nothing a 1 m terrain grid can see."""
+    garden_id = create_garden(conn, name="G", latitude=51.2563871, longitude=7.1501234)
+
+    stored = load_garden(conn, garden_id)
+
+    assert stored.latitude == pytest.approx(51.2564)
+    assert stored.longitude == pytest.approx(7.1501)
+
+
+def test_the_rounding_never_moves_a_garden_out_of_its_own_window() -> None:
+    """The number that decides the precision: the offset has to be small against
+    the thing being fetched, not — as at 0.1° — sixty times larger than it."""
+    worst = _metres(52.0, 10.0, 52.0 + HALF_STEP, 10.0 + HALF_STEP)
+    assert worst < WINDOW_M / 10
+
+
+def test_no_coordinate_is_moved_further_than_that() -> None:
+    """The bound above is arithmetic; this is `Location` actually obeying it."""
+    for latitude, longitude in (
+        (51.2563871, 7.1501234),
+        (51.3099999, 9.4900001),
+        (50.9257777, 6.9253333),
+        (54.7788888, 9.4366666),
+    ):
+        stored = Location(latitude=latitude, longitude=longitude)
+        assert _metres(latitude, longitude, stored.latitude, stored.longitude) < WINDOW_M / 10
+
+
+def test_wuppertal_is_no_longer_six_kilometres_from_itself() -> None:
+    """The measured case the old rounding broke: its terrain read 268 m where
+    the garden's ground is 147, because 0.1° moved it onto the next hillside."""
+    latitude, longitude = 51.2563871, 7.1501234
+    fine = Location(latitude=latitude, longitude=longitude)
+
+    assert _metres(latitude, longitude, round(latitude, 1), round(longitude, 1)) > 5_000
+    assert _metres(latitude, longitude, fine.latitude, fine.longitude) < 10
+
+
+# --- the gardens that cannot be recovered -----------------------------------
+
+def test_a_garden_from_before_the_change_is_recognised_and_left_flat() -> None:
+    """Its precision is gone rather than hidden, so it keeps the flat ground
+    every garden had before Wave 17 — never somebody else's hillside."""
+    assert is_precise(LatLon(lat=51.3, lon=7.2)) is False
+    assert is_precise(LatLon(lat=52.5, lon=13.4)) is False
+
+
+def test_a_garden_stored_since_the_change_is_used() -> None:
+    assert is_precise(LatLon(lat=51.2564, lon=7.1501)) is True
+    # One axis on the old grid is not a legacy row: both have to be.
+    assert is_precise(LatLon(lat=51.3, lon=7.1501)) is True
+
+
+def test_the_rare_false_negative_costs_a_garden_its_ground_and_nothing_else(
+    conn: sqlite3.Connection,
+) -> None:
+    """A new garden landing on the 0.1° grid in both axes is read as a legacy
+    row. It is created and usable; only its relief is withheld. That is the safe
+    direction to be wrong in — the other one serves a hillside 6 km away."""
+    garden_id = create_garden(conn, name="Pech", latitude=51.300001, longitude=7.200002)
 
     stored = load_garden(conn, garden_id)
 
     assert stored.latitude == pytest.approx(51.3)
-    assert stored.longitude == pytest.approx(7.2)
-
-
-def test_which_puts_the_terrain_window_kilometres_from_the_garden() -> None:
-    """The consequence, in metres, for the three places this was measured at.
-
-    Wave 17 fetches a 200 m window, a 5 km horizon ring and a 1 km² building
-    tile from this location. At Wuppertal the rounding moves all of them six
-    kilometres — onto a different hillside, whose terrain reads 268 m where the
-    garden's reads 147.
-    """
-    for latitude, longitude, expected_km in (
-        (51.2560, 7.1500, 6.0),    # Wuppertal
-        (51.3100, 9.4900, 1.3),    # Kassel
-        (50.9250, 6.9250, 3.3),    # Köln
-    ):
-        coarse = Location(latitude=latitude, longitude=longitude)
-        north = (coarse.latitude - latitude) * 111_320
-        east = (coarse.longitude - longitude) * 111_320 * math.cos(math.radians(latitude))
-        assert math.hypot(north, east) / 1000 == pytest.approx(expected_km, abs=0.2)
-
-
-def test_the_offset_can_exceed_the_window_it_centres() -> None:
-    """The clearest statement of the problem: the error is larger than the thing
-    being fetched, so the window and the garden do not overlap at all."""
-    from ninanatur.geo.terrain import WINDOW_M
-
-    worst_case_m = 0.05 * 111_320  # half a rounding step in latitude alone
-    assert worst_case_m > WINDOW_M * 10
+    assert is_precise(LatLon(lat=stored.latitude, lon=stored.longitude)) is False

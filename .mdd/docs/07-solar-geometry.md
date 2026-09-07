@@ -118,9 +118,21 @@ does not decide where it can live.
 - **Every light value carries the sun hours it came from.** A bare number the
   user cannot trace back to their own obstacles is not explainable, and this one
   will surprise people.
-- **Location is rounded to 0.1° before use and storage** (~11 km). Solar angles
-  do not measurably change over that distance, so the precision is worthless
-  here and a garden's exact coordinates are personal.
+- **Location is rounded to four decimal places before use and storage** (~7 m).
+  A garden's exact coordinates are personal data, and the fifth place buys
+  nothing a 1 m terrain grid can see.
+
+  It was 0.1° (~11 km) until 2026-09-07, which is genuinely invisible to solar
+  angles — the reasoning was sound for what the coordinates were then for. Wave
+  17 gave them a second job: a 100 m terrain window, a 5 km horizon ring and a
+  1 km² building tile are all fetched from this anchor, and 6.6 km of error puts
+  every one of them on a different hillside. At Wuppertal the rounded point
+  reads 268 m where the garden's ground is 147.
+
+  Gardens created before the change cannot be recovered — the precision is gone,
+  not hidden. `garden.terrain_sync.is_precise` recognises them by their sitting
+  exactly on the old 0.1° grid in both axes, and leaves them on flat ground
+  rather than serving somebody else's hill.
 - **Computation happens on save, not per request.** Sampling a season for several
   beds is far too slow to repeat on every page load.
 

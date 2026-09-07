@@ -17,7 +17,7 @@ import sqlite3
 from ninanatur.garden.canopies_found import remember
 from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
-from ninanatur.garden.terrain_sync import LOCATION_IS_PRECISE, ground_for
+from ninanatur.garden.terrain_sync import ground_for, is_precise
 from ninanatur.geo.canopy import canopies_in
 from ninanatur.geo.lod2 import Lod2Building, buildings_from, in_garden_frame, tile_name
 from ninanatur.geo.osm import state_at
@@ -43,12 +43,12 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
     Zero is an ordinary answer: no service for this state, nothing surveyed near
     enough to match, or every building already spoken for by the user.
     """
-    if not LOCATION_IS_PRECISE:
-        # Same hold as the terrain: a surface window and a building tile fetched
-        # six kilometres away measure somebody else's houses.
+    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
+    if not is_precise(anchor):
+        # Same check as the terrain: a surface window and a building tile
+        # fetched six kilometres away measure somebody else's houses.
         return 0
 
-    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
     state = state_at(anchor.lat, anchor.lon)
     if state is None:
         return 0

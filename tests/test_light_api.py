@@ -29,7 +29,7 @@ def client() -> Iterator[TestClient]:
 
 def _garden(client: TestClient, with_wall: bool = False) -> str:
     token = client.post(
-        "/api/v1/gardens", json={"name": "G", "latitude": 52.5, "longitude": 13.4}
+        "/api/v1/gardens", json={"name": "G", "latitude": 52.5171, "longitude": 13.3889}
     ).json()["share_token"]
     client.post(f"/api/v1/gardens/{token}/beds", json=BED)
     if with_wall:
@@ -173,13 +173,7 @@ def test_a_garden_with_no_ground_fetched_has_no_terrain(client: TestClient) -> N
 def test_terrain_comes_back_with_its_relief_and_its_credit(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from ninanatur.garden import terrain_sync
     from ninanatur.geo.projection import LatLon
-
-    # The hold is lifted here. In production nothing is served, because every
-    # stored window was fetched at a rounded location — see
-    # tests/test_anchor_precision.py.
-    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
     from ninanatur.geo.terrain import TerrainWindow
     from ninanatur.geo.terrain_store import cache_key, save_window
 
@@ -188,7 +182,7 @@ def test_terrain_comes_back_with_its_relief_and_its_credit(
     size = 30
     save_window(
         conn,
-        cache_key(LatLon(lat=52.5, lon=13.4)),
+        cache_key(LatLon(lat=52.5171, lon=13.3889)),
         TerrainWindow(
             min_x=-15.0, min_y=-15.0, cell_m=1.0, cols=size, rows=size,
             heights=[100.0 + row * 0.2 for row in range(size) for _ in range(size)],

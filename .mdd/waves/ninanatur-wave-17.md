@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-16
 demo_state: "Ein Garten am Hang bekommt ein Höhenprofil aus öffentlichen Daten, und die Schattenkarte rechnet damit: ein Nachbarhaus bergauf verschattet mehr als eines auf gleicher Höhe, eines bergab weniger. Ein Hügel im Süden frisst die Wintersonne, bevor sie im Garten ankommt. Woher die Höhen stammen, wie alt sie sind und wie genau, steht neben dem Ergebnis — und wo es keine gibt, steht das auch."
 created: 2026-09-04
-hash: 8c35af2e
+hash: ae8d8923
 ---
 
 # Wave 17: The ground is not flat
@@ -448,7 +448,7 @@ because everything built on it looks entirely plausible: a window six kilometres
 away is still a window, with sensible heights and a believable slope.
 
 Three ways out, and choosing between them reverses a documented decision, so it
-is not a change to make quietly:
+was not a change to make quietly:
 
 - **Store the precise location** and accept the change of privacy posture. Worth
   weighing: the plot outline and the neighbouring buildings are already stored
@@ -461,6 +461,38 @@ is not a change to make quietly:
   kept out of a page load, and leaves gardens created without a map unable to
   refetch.
 - **Keep the rounding and withdraw the elevation features.**
+
+### Settled, 2026-09-07: the first, at four decimal places
+
+**`LOCATION_PRECISION` 1 → 4.** The rounding stays and only its size changes —
+0.1° (~6.6 km) becomes 0.0001° (~7 m), which is the coarsest a 100 m window
+survives. The privacy posture moves by strictly less than what the garden
+already shows, for the reason the second bullet above names: the plot outline
+and the neighbours are in the same table at metre precision.
+
+Verified against the case that started this, live on the NRW survey:
+
+| | terrain reported |
+|---|---|
+| stored at 0.1° | 252–278 m |
+| stored at 4 places | **140.6–147.2 m** |
+
+The garden's ground is 147. The first press of *Schatten neu berechnen* costs
+27.6 s — window plus a 5 km horizon ring — and every press after it 1.0 s.
+
+**Gardens created before the change keep flat ground.** Their precision is gone
+rather than hidden. `terrain_sync.is_precise` recognises them by their sitting
+exactly on the old grid in both axes and returns no window, no ring and no
+building measurement — the state nine Bundesländer are in anyway, which the page
+already writes a sentence for. The global `LOCATION_IS_PRECISE` hold is gone
+with it, replaced by that per-garden check.
+
+**One thing the change woke up:** with a precise anchor, `POST /light` in
+`test_light_api.py` began answering with a *real* 27×27 window off Berlin's
+survey. The whole elevation path had been inert under test because the rounding
+held it. `tests/conftest.py` now switches the survey off for every test in the
+one honest way the code supports — no service for this state — and the suite was
+re-run with sockets forbidden to prove it.
 
 ## Deliberately not in this wave
 

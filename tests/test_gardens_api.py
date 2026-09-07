@@ -60,7 +60,7 @@ def test_the_stored_location_is_rounded(client: TestClient) -> None:
         json={"name": "Präzise", "latitude": 52.5170365, "longitude": 13.3888599},
     ).json()["share_token"]
     body = client.get(f"/api/v1/gardens/{token}").json()
-    assert (body["latitude"], body["longitude"]) == (52.5, 13.4)
+    assert (body["latitude"], body["longitude"]) == (52.517, 13.3889)
 
 
 def test_an_impossible_latitude_is_422(client: TestClient) -> None:
