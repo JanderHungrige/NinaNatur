@@ -61,12 +61,14 @@ def test_an_unknown_token_returns_none(conn: sqlite3.Connection) -> None:
 
 # --- storage rules --------------------------------------------------------
 
-def test_location_is_stored_rounded_to_a_tenth_of_a_degree(
+def test_location_is_stored_rounded_to_four_places(
     conn: sqlite3.Connection,
 ) -> None:
+    """Still rounded — a coordinate is personal data — but to ~7 m rather than
+    the ~6.6 km that put Wave 17's terrain on the next hillside."""
     gid = create_garden(conn, name="Präzise", latitude=52.5170365, longitude=13.3888599)
     garden = load_garden(conn, gid)
-    assert (garden.latitude, garden.longitude) == (52.5, 13.4)
+    assert (garden.latitude, garden.longitude) == (52.517, 13.3889)
 
 
 def test_a_bed_stores_its_polygon_and_derived_axes(conn: sqlite3.Connection) -> None:

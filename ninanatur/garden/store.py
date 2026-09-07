@@ -65,9 +65,12 @@ def create_garden(
 ) -> int:
     """Create a garden and return its id.
 
-    The location is rounded by `Location` before it is ever stored — 0.1° is about
-    11 km, which solar geometry cannot tell apart and which keeps a private
-    garden's coordinates coarse.
+    The location is rounded by `Location` before it is ever stored, to four
+    decimal places — about 7 m. Deliberate, and no longer coarse: it was 0.1°
+    (~6.6 km) while the coordinates only fed sun angles, and that put Wave 17's
+    terrain window on a different hillside. `solar.position.LOCATION_PRECISION`
+    carries the reasoning, including why the rounding is not what keeps the
+    address private.
     """
     location = Location(latitude=latitude, longitude=longitude)
     now = _now()

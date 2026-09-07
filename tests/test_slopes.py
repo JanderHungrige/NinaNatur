@@ -202,15 +202,11 @@ def test_a_slope_changes_the_hours_far_less_than_it_changes_a_garden() -> None:
 def test_a_bed_carries_how_its_ground_falls(monkeypatch: pytest.MonkeyPatch) -> None:
     """Stored beside the light figure, computed at the same moment.
 
-    The hold is lifted here: `LOCATION_IS_PRECISE` is False in production because
-    a garden's coordinates are rounded, and this test is about what happens once
-    a window is trusted. See `tests/test_anchor_precision.py`.
+    Off the 0.1° grid on purpose: a garden whose stored coordinates sit exactly
+    on it predates the precise anchor and is served no ground at all. See
+    `tests/test_anchor_precision.py`.
     """
     import sqlite3
-
-    from ninanatur.garden import terrain_sync
-
-    monkeypatch.setattr(terrain_sync, "LOCATION_IS_PRECISE", True)
 
     from ninanatur.garden.elements import insert_element
     from ninanatur.garden.lighting import recompute_light
@@ -222,12 +218,12 @@ def test_a_bed_carries_how_its_ground_falls(monkeypatch: pytest.MonkeyPatch) -> 
 
     conn: sqlite3.Connection = connect(":memory:")
     init_schema(conn)
-    garden_id = create_garden(conn, name="G", latitude=51.0, longitude=6.0)
+    garden_id = create_garden(conn, name="G", latitude=51.2564, longitude=7.1501)
     insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
                    name="Beet", points=[[0.0, 0.0], [10.0, 0.0], [10.0, 8.0], [0.0, 8.0]])
     conn.commit()
     # Ground climbing towards the south, under the whole garden.
-    save_window(conn, cache_key(LatLon(lat=51.0, lon=6.0)),
+    save_window(conn, cache_key(LatLon(lat=51.2564, lon=7.1501)),
                 _plane(rise_north=-0.20, size=120))
 
     recompute_light(conn, garden_id)
@@ -250,7 +246,7 @@ def test_a_bed_with_no_ground_fetched_says_nothing_rather_than_flat() -> None:
 
     conn: sqlite3.Connection = connect(":memory:")
     init_schema(conn)
-    garden_id = create_garden(conn, name="G", latitude=51.0, longitude=6.0)
+    garden_id = create_garden(conn, name="G", latitude=51.2564, longitude=7.1501)
     insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
                    name="Beet", points=[[0.0, 0.0], [10.0, 0.0], [10.0, 8.0], [0.0, 8.0]])
     conn.commit()

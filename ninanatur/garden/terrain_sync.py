@@ -14,9 +14,10 @@ It happens on the explicit *Schatten neu berechnen*, which is a button somebody
 pressed knowing it would take a moment. After that the garden has its ground for
 good, and every later recompute reads it for nothing.
 
-A survey that fails, times out, or has no service for this state leaves the
-garden flat. That is a supported state — nine Bundesländer have no service at
-all — and never an error the gardener has to care about.
+A survey that fails, times out, has no service for this state, or is asked about
+a garden too old to know where it is leaves that garden flat. That is a
+supported state — nine Bundesländer have no service at all — and never an error
+the gardener has to care about.
 """
 from __future__ import annotations
 
@@ -39,27 +40,29 @@ from ninanatur.geo.terrain_store import (
 
 log = logging.getLogger(__name__)
 
-#: Whether a garden's stored location is precise enough to fetch its ground.
-#:
-#: **False, and this is a hold rather than a preference.** `create_garden` rounds
-#: latitude and longitude to 0.1° before storing them — deliberately, and rightly
-#: when they only fed sun angles. That puts a 200 m terrain window, a 5 km
-#: horizon ring and a 1 km² building tile up to **six kilometres** from the
-#: garden: measured at Wuppertal, where the real ground is 147 m and the rounded
-#: point's is 268.
-#:
-#: Absolute height hardly matters, since a window is relative throughout. What is
-#: wrong is *which land* — another hillside's slope, another valley's horizon,
-#: another street's building bases. On a slope that is worse than the flat
-#: assumption it replaced, because it is confidently wrong.
-#:
-#: So the elevation features fall back to what every garden had before Wave 17:
-#: flat ground, and a page that says so. Wave 17's own feature 6 already writes
-#: that sentence.
-#:
-#: Flip this to True when the location question is settled — see Wave 17's doc
-#: for the three ways out, and `tests/test_anchor_precision.py` for the defect.
-LOCATION_IS_PRECISE = False
+def is_precise(anchor: LatLon) -> bool:
+    """Whether this garden's stored location is precise enough to fetch ground.
+
+    False for gardens created before 2026-09-07. Until then `create_garden`
+    rounded to 0.1° — rightly, while the coordinates only fed sun angles, and
+    ruinously once Wave 17 started fetching a 100 m terrain window, a 5 km
+    horizon ring and a 1 km² building tile from them. At Wuppertal that put all
+    three **6.6 km** away, on a hillside reading 268 m where the garden's ground
+    is 147.
+
+    Those rows cannot be recovered — the precision is gone, not hidden — so they
+    keep what every garden had before Wave 17: flat ground, and a page that says
+    so. That is a supported state; nine Bundesländer have no service at all.
+
+    Recognised by shape rather than by a stored flag: a legacy row sits exactly
+    on the 0.1° grid in *both* axes, which a coordinate rounded to four places
+    does about once in a million times. The rare false negative costs that
+    garden its relief and nothing else, which is the safe direction to be wrong
+    in.
+    """
+    return not (
+        anchor.lat == round(anchor.lat, 1) and anchor.lon == round(anchor.lon, 1)
+    )
 
 
 def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
@@ -70,11 +73,11 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
     worked, because they are separate requests and the window is the one that
     every garden uses.
     """
-    if not LOCATION_IS_PRECISE:
-        log.info("not fetching ground: the garden's stored location is rounded")
+    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
+    if not is_precise(anchor):
+        log.info("not fetching ground: this garden predates the precise anchor")
         return False
 
-    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
     key = cache_key(anchor)
     have_window = load_window(conn, key) is not None
     have_ring = load_horizon(conn, key) is not None
@@ -112,23 +115,24 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
 
 
 def ground_for(conn: sqlite3.Connection, anchor: LatLon) -> TerrainWindow | None:
-    """The stored ground for a location — and nothing at all while the hold is on.
+    """The stored ground for a location, or None where it must not be used.
 
-    Holding the *fetch* was not enough. Windows fetched before the hold are still
-    in the database, keyed by the rounded location, so every garden near
-    Wuppertal was still being served the same wrong hillside. Readers go through
-    here rather than through the store, so the hold has one place to be.
+    Guarding the *fetch* was never enough. Windows fetched under the old rounding
+    are still in the database, keyed by the rounded location, so every garden
+    near Wuppertal would still be served the same wrong hillside. Readers go
+    through here rather than through the store, so the check has one place to
+    live.
     """
-    if not LOCATION_IS_PRECISE:
+    if not is_precise(anchor):
         return None
     return load_window(conn, cache_key(anchor))
 
 
 def horizon_for(conn: sqlite3.Connection, anchor: LatLon) -> list[float] | None:
-    """The stored ring, under the same hold and for the same reason."""
-    if not LOCATION_IS_PRECISE:
+    """The stored ring, under the same check and for the same reason."""
+    if not is_precise(anchor):
         return None
     return load_horizon(conn, cache_key(anchor))
 
 
-__all__ = ["LOCATION_IS_PRECISE", "ensure_terrain", "ground_for", "horizon_for"]
+__all__ = ["ensure_terrain", "ground_for", "horizon_for", "is_precise"]

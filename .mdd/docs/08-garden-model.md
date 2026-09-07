@@ -103,7 +103,9 @@ that can be argued with, not a measurement.
 - **A bed's site vector is stored alongside the inputs it came from.** A light
   value must be traceable to the obstacles that produced it.
 - **A garden always has a location**, because without one there is no sun path.
-  It is rounded to 0.1° by the `Location` type before it is ever stored.
+  It is rounded to four decimal places — about 7 m — by the `Location` type
+  before it is ever stored. It was 0.1° until 2026-09-07; see `07-solar-geometry`
+  for why that changed and what it cost.
 - **Deleting a garden deletes its beds and obstacles.** Foreign keys are declared
   `ON DELETE CASCADE` and enforcement is already on in `connect()`.
 - **Polygons are stored as JSON**, validated on the way in. SQLite has no
@@ -116,7 +118,15 @@ security-critical line in this feature. Every query is parameterised; polygon
 JSON is parsed, never evaluated.
 
 Storing a garden's location is the only personal data here, and it is
-deliberately coarse — 0.1° is about 11 km.
+deliberately rounded — four places, about 7 m. It was 0.1° (~11 km) while the
+coordinates only fed sun angles.
+
+Worth being clear-eyed about what the rounding buys, because it is less than it
+looks: a garden imported from the map stores its own plot outline and every
+neighbouring building's footprint at metre precision *relative* to this anchor,
+which identifies the place to anyone willing to match it against OSM. The
+rounding is a statement of intent and a limit on what this table alone reveals;
+it is not what keeps an address private.
 
 ## Known Issues
 
