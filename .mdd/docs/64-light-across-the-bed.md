@@ -8,6 +8,9 @@ relates: [65-the-shade-switch, 66-a-tree-is-not-a-wall]
 source_files:
   - ninanatur/solar/field.py
   - ninanatur/garden/lightgrid.py
+  - ninanatur/garden/lightcells.py
+  - ninanatur/garden/lightgrid_store.py
+  - ninanatur/garden/roofshape.py
   - ninanatur/garden/roofs.py
   - ninanatur/garden/lighting.py
   - ninanatur/api/light.py
@@ -17,6 +20,8 @@ routes:
 models: [light_grid, element]
 test_files:
   - tests/test_light_grid.py
+  - tests/test_roof_light.py
+  - tests/test_roofshape.py
   - tests/test_shading_is_ray_tracing.py
   - tests/test_roofs.py
   - tests/test_light_api.py
@@ -83,19 +88,49 @@ it has is the worse error: somebody plants for it and the plant dies. OSM's
 `roof:shape` fills this in where it says anything, and where it does not, the
 eaves default to 75 % of the height.
 
-## A cell can have no answer
+## A cell under a building is answered on its roof
 
-`hours` is `null` for a cell under a house or a shed. Zero would be a claim
-about deep shade — true of the footprint, since a building shades its own
-ground all day, and false of what a plan shows there, which is a sunlit roof.
+Not on the ground beneath it. That ground gets no sun at all — a building shades
+its own footprint every hour of every day — and reporting it is true and
+useless: a plan shows the roof, and the roof is in the sun.
 
-Null rather than a missing cell, so the grid stays rectangular and every index
-still means the same place. `mean_over` skips them, so a bed that overlaps a
-building is averaged over the ground it actually has; `max_hours` skips them,
-so one blanked cell cannot drag the scale.
+The surface comes from `garden/roofshape.py`: a ridge running along the long
+axis of the footprint's smallest enclosing rectangle, two pitches falling from
+it, and the ridge shortened by one span at each end for a hip so its ends slope
+too. The ridge direction is the one assumption — nothing in the stored data
+carries it — and where it cannot be made honestly it is not made: a pent roof
+has one pitch and nothing says which way it falls, so it is left unpitched, and
+so is any shape nobody has identified.
+
+The pitch reaches the sun through `slopes.ring_for`, the same function a
+hillside uses. A plane of slope *s* climbing towards *a* stands at
+`atan(tan(s)·cos(θ−a))` in direction θ; on a roof "uphill" is towards the ridge,
+so a point on the north pitch has its own roof between it and the southern sky.
+That is precisely why a north pitch is the darker one.
+
+Two consequences worth naming:
+
+- **A building must not shade its own roof.** Its footprint is inside its own
+  shadow at every moment of every day, so the query drops that one element —
+  `Obstacle.owner` and `halves_at(ignore=)`. Without it every roof came back as
+  darkness, which is exactly what the map used to show.
+- **A roof is flagged, not folded in.** `mean_over` and `max_hours` skip roof
+  cells: nothing is planted up there, and a sunny roof would otherwise set the
+  scale for the garden below it.
+
+`hours` is `null` only for a building whose height nobody has recorded — skipped
+by the shading model since Wave 8, and with no surface to stand on.
 
 Only roofs. A tree is not roofed: there is real ground under it getting real
 dappled sun, and somebody planting under an apple tree is asking about that.
+
+## How fine the grid is
+
+`cell_size_for` picks the finest cell whose grid fits `GRID_BUDGET_S`, five
+seconds. It was a flat 600-cell cap, from when every write recomputed the light;
+nothing recomputes on a write any more, so the limit can be a time rather than a
+count — which is the right shape, because a cell costs what the obstacles around
+it cost. Measured: 0.24 ms with three buildings, 1.9 ms with forty.
 
 ## One month instead of the season
 

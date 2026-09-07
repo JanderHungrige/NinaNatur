@@ -1315,6 +1315,8 @@ export interface components {
             misplaced: components["schemas"]["MisplacedOut"][];
             /** Morning */
             morning: (number | null)[];
+            /** Roof */
+            roof: boolean[];
             /** Rows */
             rows: number;
             /** Stale */
@@ -1412,6 +1414,8 @@ export interface components {
         ObstacleOut: {
             /** Constraint Hint */
             constraint_hint: string | null;
+            /** Eaves M */
+            eaves_m: number | null;
             /** Footprint */
             footprint: number[][];
             /** Height */
@@ -1446,6 +1450,8 @@ export interface components {
             constraint_hint?: string | null;
             /** Depth */
             depth?: number | null;
+            /** Eaves M */
+            eaves_m?: number | null;
             /** Height */
             height?: number | null;
             /** Height Source */

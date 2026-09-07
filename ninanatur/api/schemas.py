@@ -291,6 +291,12 @@ class ObstacleUpdate(BaseModel):
     #: no answer here is modelled as solid to it — which is what every building
     #: was before this existed.
     roof: RoofShape | None = None
+    #: Where the roof starts, in metres. With the ridge it gives the pitch, and
+    #: the pitch is what makes a north face darker than a south one — so it is
+    #: worth being able to say, rather than living on the 75 %-of-the-ridge
+    #: assumption that stands in when nobody has. `building:levels` fills it at
+    #: import wherever OSM carries it.
+    eaves_m: float | None = Field(default=None, ge=0, le=200)
     #: A bed may differ from its garden — bought soil, a watered corner.
     soil_type: str | None = None
     moisture: str | None = None
@@ -422,6 +428,10 @@ class ObstacleOut(BaseModel):
     #: 'flat' | 'gable' | 'hip' | 'pent' | 'unknown'. OSM's height is the ridge,
     #: so this says how much of the top is solid.
     roof: str
+    #: Where the roof starts. Null is "nobody has said", and the model then puts
+    #: the eaves three quarters of the way up. Sent so the edit form can show
+    #: what is actually stored rather than an empty box over a real value.
+    eaves_m: float | None
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

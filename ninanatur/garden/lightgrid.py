@@ -14,10 +14,9 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 
-from ninanatur.garden.ground import height_at, lowest_ground, standing_on
+from ninanatur.garden.ground import lowest_ground, standing_on
+from ninanatur.garden.lightcells import answer_at, roofs_of
 from ninanatur.garden.models import Garden
-from ninanatur.garden.objects import ObjectKind, is_roofed
-from ninanatur.garden.slopes import ring_for, slope_at
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
 from ninanatur.solar.position import Location
@@ -25,13 +24,29 @@ from ninanatur.solar.shading import Obstacle
 
 #: Cell sizes to choose from, finest first. A garden is measured in metres and a
 #: gardener thinks in them; anything below half a metre says more than the model
-#: knows, given that most building heights are assumed.
+#: knows, given that most building heights are assumed and a roof pitch is
+#: inferred from a rectangle.
 CELL_LADDER_M: tuple[float, ...] = (0.5, 1.0, 2.0, 3.0, 5.0)
 
-#: Roughly what fits in half a second. 600 cells at 1.09 ms is 0.65 s, and the
-#: whole point of the ladder is that a large plot gets a coarser grid rather
-#: than a long wait.
-MAX_CELLS = 600
+#: Seconds the recompute may spend on the grid.
+#:
+#: It was a flat cap of 600 cells, chosen when every write recomputed the light
+#: and half a second was the whole budget. Nothing recomputes on a write any
+#: more — it happens when somebody presses a button knowing it will take a
+#: moment — so the limit can be what it should always have been: a time, not a
+#: count.
+#:
+#: A count was the wrong shape anyway, because a cell is not a fixed price. It
+#: costs what the obstacles around it cost. Measured on 2026-09-07: 0.24 ms in a
+#: garden with three buildings and 1.9 ms in one with forty, which a single
+#: number has to be wrong about at one end or the other. At 600 cells a small
+#: garden waited 0.16 s for a 1 m grid it did not need to be that coarse.
+GRID_BUDGET_S = 5.0
+
+#: The straight line those measurements sit on: a fixed cost per cell, plus what
+#: each obstacle adds to it. Rounded from 0.105 and 0.045 ms.
+CELL_COST_MS = 0.1
+OBSTACLE_COST_MS = 0.05
 
 
 @dataclass(frozen=True)
@@ -43,15 +58,28 @@ class LightGrid:
     cell_m: float
     cols: int
     rows: int
-    #: None where there is no ground to answer for: a cell under a house or a
-    #: shed. Zero would be a claim about deep shade, and read from above — where
-    #: what you see is a sunlit roof — a wrong one. See `objects.is_roofed`.
+    #: None only where nothing can be answered: a building whose height nobody
+    #: has recorded, which the shading model has skipped since Wave 8.
+    #:
+    #: A cell under a house is **not** null. It is answered on the roof, which
+    #: is the surface anything looking down at a plan can see, and which at
+    #: 51°N is a very different place on its north pitch than on its south. It
+    #: used to be answered on the ground under the building — where the sun
+    #: never reaches, all day, every day — and painted as deep shade.
     hours: list[float | None]
     #: Of those hours, the ones before the sun crosses due south. Kept because
     #: afternoon sun is hotter and harsher, and a great many species sold as
     #: *Halbschatten* want the morning specifically — a total cannot say which
     #: four hours a spot gets.
     morning: list[float | None] = field(default_factory=list)
+    #: Which cells are a roof rather than ground, in step with `hours`. Empty on
+    #: a grid computed before roofs were; the next rebuild fills it.
+    #:
+    #: Kept apart from the hours instead of folded into them, because a roof's
+    #: sun is a real answer to a different question: it is not where anything is
+    #: planted, so it must not reach a bed's mean or the garden's brightest
+    #: point, and the reader is told which one they are hovering.
+    roof: list[bool] = field(default_factory=list)
 
     def at(self, x: float, y: float) -> float | None:
         """The cell containing this point.
@@ -65,6 +93,10 @@ class LightGrid:
         if not (0 <= col < self.cols and 0 <= row < self.rows):
             return None
         return self.hours[row * self.cols + col]
+
+    def is_roof(self, index: int) -> bool:
+        """Whether this cell is a roof. False on a grid computed before roofs."""
+        return index < len(self.roof) and self.roof[index]
 
     def centre_of(self, col: int, row: int) -> tuple[float, float]:
         return (
@@ -88,48 +120,23 @@ class LightGrid:
             for row in range(self.rows)
             for col in range(self.cols)
             if covers(ring, self.centre_of(col, row))
+            and not self.is_roof(row * self.cols + col)
             and (hours := self.hours[row * self.cols + col]) is not None
         ]
         return sum(inside) / len(inside) if inside else None
 
 
-def _at_cell(
-    field_of: ShadowField,
-    grid: LightGrid,
-    ground: TerrainWindow | None,
-    horizon: list[float] | None,
-    floor: float,
-    col: int,
-    row: int,
-    skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]],
-) -> tuple[float, float]:
-    """One cell's morning and afternoon, at its own height and under its own sky.
+def cell_size_for(width_m: float, depth_m: float, obstacles: int = 0) -> float:
+    """The finest cell that keeps the recompute inside `GRID_BUDGET_S`.
 
-    The ring is built per cell rather than per garden because the near field is
-    the slope and the slope is a property of the cell. Without terrain there is
-    no slope to add, so the garden's ring is used unchanged — and without a ring
-    either, the whole question disappears.
+    A small garden with three buildings gets 0.5 m and takes half a second; a
+    150 m street with forty gets 3 m and takes four and a half. Both are the
+    finest grid that fits the same budget, which is the point of asking about
+    time rather than about a cell count.
     """
-    x, y = grid.centre_of(col, row)
-    z = height_at(ground, x, y, floor)
-    ring = (
-        tuple(horizon or ())
-        if ground is None
-        else ring_for(horizon, *slope_at(ground, x, y))
-    )
-    if ring not in skies:
-        skies[ring] = field_of.moments_under(ring or None)
-    return field_of.halves_at(x, y, z, under=skies[ring])
-
-
-def cell_size_for(width_m: float, depth_m: float) -> float:
-    """The finest cell that keeps the grid under `MAX_CELLS`.
-
-    A 40 x 60 m plot at 1 m is 2,400 cells and 2.7 seconds, which is too long to
-    wait after nudging a shed. It gets 3 m instead, and says so.
-    """
+    allowed = GRID_BUDGET_S * 1000 / (CELL_COST_MS + OBSTACLE_COST_MS * obstacles)
     for cell in CELL_LADDER_M:
-        if (width_m / cell) * (depth_m / cell) <= MAX_CELLS:
+        if (width_m / cell) * (depth_m / cell) <= allowed:
             return cell
     return CELL_LADDER_M[-1]
 
@@ -183,7 +190,7 @@ def compute_grid(
     min_x, min_y, max_x, max_y = box
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
-    cell = cell_size_for(width, depth)
+    cell = cell_size_for(width, depth, len(obstacles))
     cols = max(1, int(width / cell) + 1)
     rows = max(1, int(depth / cell) + 1)
 
@@ -202,47 +209,19 @@ def compute_grid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
     skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]] = {}
-    roofs = _roofed_footprints(garden)
-    halves = [
-        None
-        if _under_a_roof(roofs, *grid.centre_of(col, row))
-        else _at_cell(field_of, grid, ground, horizon, floor, col, row, skies)
+    roofs = roofs_of(garden, ground)
+    answers = [
+        answer_at(field_of, grid.centre_of(col, row), ground, horizon, floor,
+                  skies, roofs)
         for row in range(rows)
         for col in range(cols)
     ]
     return LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows,
-        hours=[None if h is None else round(h[0] + h[1], 2) for h in halves],
-        morning=[None if h is None else round(h[0], 2) for h in halves],
+        hours=[None if a.halves is None else round(sum(a.halves), 2) for a in answers],
+        morning=[None if a.halves is None else round(a.halves[0], 2) for a in answers],
+        roof=[a.on_a_roof for a in answers],
     )
-
-
-def _roofed_footprints(garden: Garden) -> list[list[tuple[float, float]]]:
-    """The outlines with a roof over them — houses and sheds.
-
-    Read off the garden rather than off the shading obstacles, which have
-    already been reduced to footprints and heights and no longer know what they
-    are.
-    """
-    return [
-        [(float(x), float(y)) for x, y in o.footprint]
-        for o in garden.obstacles
-        if is_roofed(ObjectKind(o.kind))
-    ]
-
-
-def _under_a_roof(roofs: list[list[tuple[float, float]]], x: float, y: float) -> bool:
-    """Whether this point has a building over it, so there is no ground to ask about.
-
-    Skipped rather than computed and then hidden: the cell would come back at
-    or near zero — a house shades its own footprint all day — and the map would
-    paint the building in the ink it uses for deep shade. Which is true of the
-    ground and false of the picture, because what a plan shows at a house is the
-    *roof*, and the roof is in full sun.
-    """
-    from ninanatur.garden.footprint import covers
-
-    return any(covers(roof, (x, y)) for roof in roofs)
 
 
 def signature_of(garden: Garden) -> str:

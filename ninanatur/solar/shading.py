@@ -53,6 +53,11 @@ class Obstacle:
     #: and every conifer.
     transmission: float = 0.0
     bare_transmission: float | None = None
+    #: Which drawn element this is, where the caller needs to tell one shadow
+    #: from another. Only the roof query does: a building's own footprint is
+    #: inside its own shadow at every moment of every day, so asking about a
+    #: point *on* that building has to leave it out or the answer is darkness.
+    owner: int | None = None
 
     def transmission_in(self, month: int) -> float:
         """What passes through in this month.

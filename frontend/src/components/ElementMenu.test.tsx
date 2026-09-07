@@ -12,6 +12,7 @@ function open(props: Partial<Parameters<typeof ElementMenu>[0]> = {}) {
       at={{ x: 120, y: 80 }}
       kind="other"
       label={null}
+      eavesM={null}
       area={24}
       plantings={0}
       shape="polygon"
@@ -97,7 +98,7 @@ describe('ElementMenu — which element is this?', () => {
       <ElementMenu
         elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label="Der alte Teich" area={12.5}
-        plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        plantings={0} shape="polygon" roof="unknown" eavesM={null} height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={vi.fn()} busy={false}
       />,
     );
@@ -118,7 +119,7 @@ describe('ElementMenu — getting out of the way', () => {
         <ElementMenu
           elementId={7}
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+          plantings={0} shape="polygon" roof="unknown" eavesM={null} height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
@@ -135,7 +136,7 @@ describe('ElementMenu — getting out of the way', () => {
       <ElementMenu
         elementId={7}
         at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-        plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        plantings={0} shape="polygon" roof="unknown" eavesM={null} height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
       />,
     );
@@ -161,7 +162,7 @@ describe('ElementMenu — a click that stops propagating', () => {
         <ElementMenu
           elementId={7}
           at={{ x: 0, y: 0 }} kind="pond" label={null} area={4}
-          plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+          plantings={0} shape="polygon" roof="unknown" eavesM={null} height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={vi.fn()} onClose={onClose} busy={false}
         />
       </>,
@@ -178,7 +179,7 @@ describe('ElementMenu — deleting', () => {
     render(
       <ElementMenu
         elementId={7}
-        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0} shape="polygon" roof="unknown" height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
+        at={{ x: 0, y: 0 }} kind="pond" label={null} area={12} plantings={0} shape="polygon" roof="unknown" eavesM={null} height={null} width={null} soilType={null} moisture={null} heightAboveGround={0}
         onSave={vi.fn()} onDelete={onDelete} onClose={onClose} busy={false}
         {...props}
       />,
@@ -222,5 +223,37 @@ describe('ElementMenu — deleting', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Doch nicht' }));
     expect(onDelete).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Löschen' })).toBeDefined();
+  });
+});
+
+describe('ElementMenu — the eaves, and why they are asked for', () => {
+  it('offers the eaves height on a building', () => {
+    // With the ridge it gives the pitch, and the pitch is what makes the north
+    // side of a roof darker than the south side. Without it the model assumes
+    // three quarters of the way up and says so.
+    open({ kind: 'house', height: 9.5 });
+    expect(screen.getByLabelText(/Traufhöhe/)).toBeDefined();
+  });
+
+  it('does not ask about eaves for something with no roof', () => {
+    open({ kind: 'pond' });
+    expect(screen.queryByLabelText(/Traufhöhe/)).toBeNull();
+  });
+
+  it('sends what was typed', () => {
+    const { onSave } = open({ kind: 'house', height: 9.5 });
+    fireEvent.change(screen.getByLabelText(/Traufhöhe/), { target: { value: '6.2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Übernehmen' }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ eaves_m: 6.2 }));
+  });
+
+  it('sends null when it is cleared, rather than nothing', () => {
+    // Null is a value here: it puts the building back on the assumed eaves.
+    // Omitting the field would leave the old number in place, and a field that
+    // cannot be undone is worse than one that is not offered.
+    const { onSave } = open({ kind: 'house', height: 9.5, eavesM: 6.2 });
+    fireEvent.change(screen.getByLabelText(/Traufhöhe/), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Übernehmen' }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ eaves_m: null }));
   });
 });

@@ -40,6 +40,7 @@ def standing_on(
                 base=base,
                 transmission=obstacle.transmission,
                 bare_transmission=obstacle.bare_transmission,
+                owner=obstacle.owner,
             )
         )
     return placed

@@ -24,11 +24,17 @@ const MONTHS: ReadonlyArray<readonly [number, string]> = [
 
 /** What share of the garden's sun falls before the sun crosses due south. */
 function morningShare(map: LightMap): number {
-  // `?? 0` rather than a filter: a null is a cell under a roof, and it
-  // contributes nothing to either half rather than skewing one of them.
-  const total = map.hours.reduce((sum: number, h) => sum + (h ?? 0), 0);
+  // Ground only. A roof's hours are a real answer to a different question, and
+  // nothing is planted on one — so they belong in neither half of this.
+  const ground = (values: (number | null)[]) =>
+    values.reduce(
+      (sum: number, value, index) =>
+        sum + (map.roof[index] === true ? 0 : (value ?? 0)),
+      0,
+    );
+  const total = ground(map.hours);
   if (total <= 0) return 0;
-  const morning = map.morning.reduce((sum: number, h) => sum + (h ?? 0), 0);
+  const morning = ground(map.morning);
   return Math.round((morning / total) * 100);
 }
 

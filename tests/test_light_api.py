@@ -257,11 +257,35 @@ def test_the_warnings_do_not_flicker_as_the_months_are_scrolled(
 
 # --- there is no ground under a house ---------------------------------------
 
-def test_a_cell_under_a_building_has_no_answer_rather_than_a_dark_one(
+def test_a_building_is_answered_on_its_roof_rather_than_under_it(
     client: TestClient,
 ) -> None:
-    """Zero would be a claim about deep shade. True of the footprint, and false
-    of what a plan shows there — a roof, in full sun."""
+    """The ground under a house gets no sun at all, all day, every day. Reporting
+    that is true and useless: what a plan shows at a house is the roof, and the
+    roof is in the sun. So the cell is answered up there instead, and flagged."""
+    token = client.post(
+        "/api/v1/gardens", json={"name": "Haus", "latitude": 51.2564, "longitude": 7.1501}
+    ).json()["share_token"]
+    client.post(f"/api/v1/gardens/{token}/beds", json=BED)
+    client.post(
+        f"/api/v1/gardens/{token}/obstacles",
+        json={"kind": "house", "x": 6, "y": 8, "width": 10, "depth": 8,
+              "height": 9, "roof": "gable", "eaves_m": 6},
+    )
+    client.post(f"/api/v1/gardens/{token}/light")
+
+    body = client.get(f"/api/v1/gardens/{token}/light").json()
+    roofs = [h for h, on_roof in zip(body["hours"], body["roof"], strict=True) if on_roof]
+
+    assert roofs, "the house's footprint is flagged as roof"
+    assert min(roofs) > 1.0, "and it is not the darkness under the building"
+
+
+def test_a_sunny_roof_does_not_set_the_scale_for_the_garden(
+    client: TestClient,
+) -> None:
+    """Nothing is planted on a roof. `max_hours` is what the drawing scales the
+    ground against and what the panel calls the brightest point in the garden."""
     token = client.post(
         "/api/v1/gardens", json={"name": "Haus", "latitude": 51.2564, "longitude": 7.1501}
     ).json()["share_token"]
@@ -272,15 +296,11 @@ def test_a_cell_under_a_building_has_no_answer_rather_than_a_dark_one(
     )
     client.post(f"/api/v1/gardens/{token}/light")
 
-    hours = client.get(f"/api/v1/gardens/{token}/light").json()["hours"]
-
     body = client.get(f"/api/v1/gardens/{token}/light").json()
-    blank = sum(1 for h in hours if h is None)
-    cells_per_m2 = 1 / (body["cell_m"] ** 2)
+    ground = [h for h, on_roof in zip(body["hours"], body["roof"], strict=True)
+              if not on_roof and h is not None]
 
-    assert any(h is not None for h in hours), "the rest of the garden is still ground"
-    # 10 x 8 m of house, give or take the cells its edge cuts through.
-    assert blank == pytest.approx(80 * cells_per_m2, rel=0.3)
+    assert body["max_hours"] == pytest.approx(max(ground))
 
 
 def test_a_tree_still_has_ground_under_it(client: TestClient) -> None:
@@ -296,6 +316,7 @@ def test_a_tree_still_has_ground_under_it(client: TestClient) -> None:
     )
     client.post(f"/api/v1/gardens/{token}/light")
 
-    hours = client.get(f"/api/v1/gardens/{token}/light").json()["hours"]
+    body = client.get(f"/api/v1/gardens/{token}/light").json()
 
-    assert None not in hours
+    assert None not in body["hours"]
+    assert not any(body["roof"]), "a crown is not a roof"
