@@ -1,6 +1,13 @@
 import type { LightMap } from '../api/client';
 
-export type MapMode = 'sun' | 'shade';
+/** What is drawn over the plan. Exactly one of the three at a time.
+ *
+ * `day` is not a third heat map: it is the same wash as `shade` — yellow where
+ * the sun is — with the day's moving obstacle shadows on top of it. The two
+ * heat maps carry no obstacle shadows at all, which is the whole point of
+ * having a third choice rather than a second layer.
+ */
+export type MapMode = 'sun' | 'shade' | 'day';
 
 interface Props {
   map: LightMap;
@@ -14,6 +21,10 @@ interface Props {
  * paints the dark places: more sun, more transparent, so the plan shows through
  * where it is bright and the shade is what stands out. **Shade** does the
  * reverse for somebody hunting a spot for a fern.
+ *
+ * **Day** paints the same way shade does, because it is the ground the moving
+ * shadows travel over: yellow means much sun, and a shadow crossing it is
+ * legible in a way a shadow crossing a dark wash is not.
  *
  * The wash is one colour per reading rather than a ramp — the plan already
  * spends its colour on flowers and on what things are, and a heat map in red
@@ -43,7 +54,7 @@ export function SunMap({ map, mode }: Props) {
         const col = index % map.cols;
         const row = Math.floor(index / map.cols);
         const share = Math.min(1, Math.max(0, hours / brightest));
-        // Sun: bright cells vanish. Shade: bright cells are the wash.
+        // Sun: bright cells vanish. Shade and day: bright cells are the wash.
         const ink = mode === 'sun' ? 1 - share : share;
         if (ink < 0.02) return null;
         return (

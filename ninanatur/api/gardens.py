@@ -178,10 +178,12 @@ def create_obstacle(
     payload: ObstacleCreate,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    """Add an obstacle and recompute in the same call.
+    """Add an obstacle. The light is *not* redone here.
 
-    Requiring a second request would leave the plan showing light values that no
-    longer match its own obstacles — and nothing would make that visible.
+    It used to be, so the plan could never disagree with its own obstacles. On
+    a garden of forty houses that cost 2.5 s a call, which is the whole of why
+    drawing anything felt slow. The map says `stale` instead, and the button in
+    the shade panel is what clears it.
     """
     garden = require_garden(conn, token)
     kind = ObjectKind(payload.kind)
@@ -203,7 +205,6 @@ def create_obstacle(
         height=payload.height if payload.height is not None else default_height(kind),
         label=payload.label,
     ))
-    recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
 
 
@@ -246,15 +247,15 @@ def edit_bed(
     payload: BedUpdate,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
-    """Change what a bed is. Raising it changes its light, so the light is redone.
+    """Change what a bed is.
 
-    Leaving the stored number alone would leave the screen describing a bed that
-    no longer exists — the same reason adding an obstacle recomputes.
+    Raising it changes its light, and the stored light does not follow: the map
+    goes `stale` and says so, rather than costing 2.5 s on a garden of forty
+    houses every time somebody renames a bed. See `garden.lighting`.
     """
     garden = require_garden(conn, token)
     require_bed(garden, bed_id)
     update_bed(conn, bed_id, **payload.model_dump(exclude_unset=True))
-    recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
 
 
@@ -282,7 +283,6 @@ def edit_obstacle(
     if changes.get("height") is not None:
         changes.setdefault("height_source", "user")
     update_obstacle(conn, obstacle_id, **changes)
-    recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
 
 
@@ -320,15 +320,14 @@ def remove_element(
 
     Nothing could be removed until now: a shape drawn by mistake stayed. The
     garden comes back rather than a 204, because deleting a bed changes what
-    every other bed gets — the light is recomputed and the caller needs the
-    result, not a second request to find it.
+    every other bed shows and the caller needs the result, not a second request
+    to find it. The *light* is not redone — the map goes stale and says so.
     """
     garden = require_garden(conn, token)
     if not any(e.element_id == obstacle_id for e in garden.elements):
         raise HTTPException(status_code=404, detail=f"no such element: {obstacle_id}")
     delete_element(conn, obstacle_id)
     conn.commit()
-    recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
 
 

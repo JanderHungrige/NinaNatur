@@ -21,7 +21,6 @@ from ninanatur.garden.elements import (
 from ninanatur.garden.elements import (
     polygon_centroid as _polygon_centroid,
 )
-from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.models import (
     PLANTING_KIND,
     BedInput,
@@ -125,7 +124,8 @@ def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
         points=[[p[0] - cx, p[1] - cy] for p in bed.polygon],
     )
     _touch(conn, garden_id)
-    recompute_light(conn, garden_id)
+    # No recomputation here. See `lighting.recompute_light` for why every write
+    # path stopped doing this.
     return element_id
 
 

@@ -8,9 +8,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from ninanatur.garden.canopy import shades
 from ninanatur.garden.elements import now as _now
-from ninanatur.garden.lighting import _relight_if_woody, _woody_heights, recompute_light
 from ninanatur.garden.models import Planting
 
 
@@ -74,7 +72,6 @@ def add_planting(
         (bed_id, taxon_id, raw_name, quantity, _now()),
     )
     conn.commit()
-    _relight_if_woody(conn, bed_id, taxon_id)
     row = conn.execute(
         "SELECT planting_id FROM planting WHERE element_id = ? AND taxon_id = ?",
         (bed_id, taxon_id),
@@ -83,20 +80,14 @@ def add_planting(
 
 
 def remove_planting(conn: sqlite3.Connection, planting_id: int) -> None:
-    # Read the bed before the row is gone: removing a tree gives the light back,
-    # and afterwards there is nothing left to say which garden to recompute.
-    row = conn.execute(
-        "SELECT p.element_id, p.taxon_id, e.garden_id FROM planting p"
-        " JOIN element e ON e.element_id = p.element_id WHERE p.planting_id = ?",
-        (planting_id,),
-    ).fetchone()
+    """Take a planting out. Removing a tree gives the light back — on request.
+
+    This used to look the bed up first, because the relight needed to know which
+    garden the row had belonged to before it was gone. Nothing relights on a
+    write any more (see `garden.lighting`), so the lookup went with it.
+    """
     conn.execute("DELETE FROM planting WHERE planting_id = ?", (planting_id,))
     conn.commit()
-    if row is None:
-        return
-    canopy = _woody_heights(conn, [int(row["taxon_id"])]).get(int(row["taxon_id"]))
-    if shades(canopy):
-        recompute_light(conn, int(row["garden_id"]))
 
 
 def _plantings_for(conn: sqlite3.Connection, bed_id: int) -> list[Planting]:

@@ -147,15 +147,19 @@ def test_a_species_with_no_recorded_height_casts_no_shadow(conn: sqlite3.Connect
     assert _light(conn, garden_id, bed_id) == before
 
 
-def test_planting_a_tree_recomputes_the_light_without_being_asked(
+def test_planting_a_tree_changes_the_light_once_it_is_recomputed(
     conn: sqlite3.Connection,
 ) -> None:
-    """The integration gap the unit tests could not see.
+    """A tree planted in one bed darkens the bed north of it.
 
-    Every other test here calls `recompute_light` itself, so each one passed
-    while the running app left the bed at 12.6 h and Ellenberg 8 with a 24 m oak
-    standing in it. The invariant belongs to the store for the same reason the
-    light computation itself does: it has to hold whatever the entry point.
+    This used to happen on the write, and the test that made it so exists
+    because it did *not* for a while: every unit test called `recompute_light`
+    itself and passed, while the running app left the bed at 12.6 h with a 24 m
+    oak standing in it.
+
+    Since 2026-09-07 the recomputation is asked for — three seconds a shape was
+    too much to pay on every write — so this asks, and what it still guards is
+    that a planting reaches the shading model at all.
     """
     garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
     south = add_bed(
@@ -168,18 +172,23 @@ def test_planting_a_tree_recomputes_the_light_without_being_asked(
     before = _light(conn, garden_id, north)
 
     add_planting(conn, south, taxon_id=1, quantity=1)
+    recompute_light(conn, garden_id)
 
     assert _light(conn, garden_id, north) < before
 
 
-def test_planting_a_perennial_does_not_trigger_a_recompute(
+def test_a_perennial_changes_nothing_even_when_the_light_is_recomputed(
     conn: sqlite3.Connection,
 ) -> None:
-    # Recomputing the whole garden on every perennial would be work with no
-    # possible effect: nothing under 1.5 m casts a shadow anyone can use.
+    # Nothing under 1.5 m casts a shadow anybody can use. This used to be a
+    # statement about *not doing work*; now that no write does work, it is the
+    # plainer statement that the answer does not move.
     garden_id, bed_id = _sunny_garden(conn)
     before = _light(conn, garden_id, bed_id)
+
     add_planting(conn, bed_id, taxon_id=2, quantity=1)
+    recompute_light(conn, garden_id)
+
     assert _light(conn, garden_id, bed_id) == before
 
 
@@ -196,8 +205,10 @@ def test_removing_the_tree_gives_the_light_back(conn: sqlite3.Connection) -> Non
     recompute_light(conn, garden_id)
     before = _light(conn, garden_id, north)
     planting_id = add_planting(conn, south, taxon_id=1, quantity=1)
+    recompute_light(conn, garden_id)
     assert _light(conn, garden_id, north) < before
 
     remove_planting(conn, planting_id)
+    recompute_light(conn, garden_id)
 
     assert _light(conn, garden_id, north) == before
