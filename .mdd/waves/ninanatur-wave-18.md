@@ -3,11 +3,11 @@ id: ninanatur-wave-18
 title: "Wave 18: A place to look before it is live"
 initiative: ninanatur
 initiative_version: 20
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-17
 demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter einer eigenen Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Erst was dort in Ordnung ist, geht auf main — und main deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert."
 created: 2026-09-04
-hash: db9d7e1c
+hash: 1ae94935
 ---
 
 # Wave 18: A place to look before it is live
@@ -98,7 +98,7 @@ down instead of being discovered.
 | 0 | the-branch-that-goes-first | docs/75-the-branch-that-goes-first.md | complete | — |
 | 1 | a-second-stack | docs/76-a-second-stack.md | complete | 0 |
 | 2 | one-cron-two-environments | docs/77-one-cron-two-environments.md | complete | 1 |
-| 3 | an-address-of-its-own | — | **blocked** | 1 |
+| 3 | an-address-of-its-own | — | complete | 1 |
 | 4 | you-are-looking-at-the-preview | docs/78-you-are-looking-at-the-preview.md | complete | 1 |
 | 5 | feedback-knows-where-it-came-from | docs/79-feedback-knows-where-it-came-from.md | complete | 4 |
 
@@ -126,10 +126,31 @@ What was found on it, once anybody could look:
   checkout moved from `42ce851` to the current `main` between two read-only
   queries a minute apart, untouched.
 
-What is genuinely left is one Nginx Proxy Manager host —
-`ninanatur-dev.w3rth.de` → `172.17.0.1:4001`, Let's Encrypt, force SSL. The DNS
-name resolves and returns 500, because nothing is behind it yet. That is a web
-interface, so it is a person's click rather than a command.
+**Feature 3 finished on 2026-09-07**, and how it finished is the part worth
+keeping. `ninanatur-dev.w3rth.de` answered 500, and the obvious reading — no
+proxy host yet — was wrong. A hostname NPM does not know gets no certificate at
+all, so TLS fails outright; this one completed TLS and *then* returned 500,
+which says the host existed and could not reach its upstream. From inside the
+NPM container `172.17.0.1:4001` answered 200, so the upstream was fine too.
+
+The config said it plainly, once read next to the one that works:
+
+```
+prod:  set $server  "172.17.0.1";
+dev:   set $server  "http://172.17.0.1";
+```
+
+NPM adds the scheme itself, so the Forward Hostname field had one `http://` too
+many and nginx built `proxy_pass http://http://172.17.0.1:4001`. A typo in one
+field, not a missing entry.
+
+The lesson is the diagnostic, not the typo: **500 and "not configured" are
+different states and they are distinguishable from outside** — compare the host
+against a hostname that certainly does not exist. Guessing skipped that, and the
+person who had actually looked at the NPM screen was right to push back.
+
+`ninanatur-zentrale.w3rth.de` was deleted at the same time, which Wave 22's
+feature 0 depends on.
 
 What is waiting on the host, in order:
 

@@ -182,9 +182,12 @@ The wave plan leaves three questions open, and they change the shape of the work
 
 - `main` and `dev-deployment` level at the wave re-slot commit; production at
   `V0.19.84` and healthy.
-- Waves 1–17 and 19 complete. Wave 18 `in_progress` with **only feature 3**
-  outstanding: one Nginx Proxy Manager host for `ninanatur-dev.w3rth.de` →
-  `172.17.0.1:4001`. Not code, and not blocking Wave 20.
+- **Waves 1–19 all complete.** Wave 18's dev environment went live on
+  2026-09-07: `ninanatur-dev.w3rth.de` reports `environment: dev` and runs its
+  own container on its own volume. There is a second deployed surface now, and
+  the review should treat it as one — it is the same image with different
+  configuration, and a preview environment that is less careful than production
+  is a way into production.
 - **Host access works** as of 2026-09-07: `ssh jan@159.195.148.193` with
   `~/.ssh/id_ed25519`. Worth knowing for this wave, because the deployment path
   is in scope — `deploy/auto-deploy.sh`, the cron that rolls containers, and the
