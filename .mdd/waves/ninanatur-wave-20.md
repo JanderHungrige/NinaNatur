@@ -154,6 +154,22 @@ decisions shape the features:
   message** (`JSONDecodeError` is a `ValueError`); both are now a 502 that names
   nobody, logged in full. Eighteen tests in `tests/test_security_headers.py` —
   the header assertions are one of the three CI gates.
+- **2026-09-10 — feature 4, a copy of everything.** Until today there was no
+  backup of the 27 gardens, 3 accounts and 7 feedback reports in production.
+  `ninanatur/ops/backup.py` takes a copy with SQLite's online backup API (the
+  container has no `sqlite3` CLI, and a file copy of a live database is not a
+  backup), checks it with `integrity_check` before it is kept, gzips it and
+  rotates it — 14 nightly copies and 5 pre-migration copies, each rotation
+  blind to the other label. Startup copies an existing database into
+  `/data/backups` before `init_schema`; a fresh volume gets nothing, and a failed
+  copy is logged and does not stop the site. `deploy/backup.sh` takes the copy
+  off the volume onto the host (30 kept), from jan's crontab at 03:17. Restore
+  refuses to overwrite without `--replace`. **Drilled on both deployments:** the
+  host copy restored into a fresh volume, a throwaway container started on it,
+  and its counts matched live (prod 27/3, dev 3/1). Twelve tests in
+  `tests/test_backup.py`, including consistency under an open write
+  transaction. Still open: the **off-host** copy — the backups survive a lost
+  volume but not a lost machine, and where they go is the owner's decision.
 
 ## Features
 
@@ -163,7 +179,7 @@ decisions shape the features:
 | 1 | behind-the-proxy-only | — | complete | 0 |
 | 2 | every-number-has-an-edge | — | complete | 0 |
 | 3 | what-the-app-says-about-itself | — | complete | 0 |
-| 4 | a-copy-of-everything | — | planned | — |
+| 4 | a-copy-of-everything | — | complete (off-host copy: owner) | — |
 | 5 | busy-not-broken | — | planned | 2 |
 | 6 | what-the-log-knows | — | planned | 3 |
 | 7 | locked-and-signed | — | planned | 0 |
