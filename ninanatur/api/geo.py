@@ -11,8 +11,9 @@ import logging
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
+from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import to_out
@@ -80,6 +81,7 @@ def imagery_at(
 )
 def garden_from_map(
     payload: MapSelection,
+    request: Request,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     account: Annotated[Account | None, Depends(current_account)] = None,
 ) -> MapGardenOut:
@@ -88,6 +90,8 @@ def garden_from_map(
     The margin is 50 m and objects are filtered by whether their shadow could
     arrive at all — generous where it matters, quiet where it does not.
     """
+    # Before anything leaves this server: a refused import must cost Overpass nothing.
+    ratelimit.check(conn, request, "from-map")
     outline = [LatLon(lat=p.lat, lon=p.lon) for p in payload.outline]
     anchor = centroid(outline)
 

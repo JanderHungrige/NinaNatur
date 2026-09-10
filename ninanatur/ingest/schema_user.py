@@ -284,6 +284,17 @@ CREATE INDEX IF NOT EXISTS idx_session_account ON session(account_id);
 -- `sender` is a salted hash of the caller's address, never the address itself:
 -- it exists to count how many reports came from one place in an hour, and that
 -- is the only question it can answer.
+-- How often one visitor asked for something that costs, within its window.
+-- On the volume rather than in the process, so an image roll does not forget
+-- who was being slowed down. Rows older than their bucket's window are removed
+-- as the bucket is next checked. See `api/ratelimit.py`.
+CREATE TABLE IF NOT EXISTS rate_limit (
+    bucket TEXT NOT NULL,
+    client TEXT NOT NULL,
+    at     REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS rate_limit_lookup ON rate_limit (bucket, client, at);
+
 CREATE TABLE IF NOT EXISTS feedback (
     feedback_id INTEGER PRIMARY KEY,
     kind        TEXT NOT NULL CHECK (kind IN ('bug', 'idea')),

@@ -6,6 +6,7 @@ complicated to confuse a diagnosis. Wave 2 mounts the /api/v1 router here.
 """
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -13,6 +14,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from ninanatur.api.accounts import router as accounts_router
 from ninanatur.api.canopies import router as canopies_router
@@ -79,6 +81,24 @@ app.include_router(accounts_router)
 app.include_router(feedback_router)
 app.include_router(light_router)
 app.include_router(canopies_router)
+
+
+#: Who may say, in `X-Forwarded-For` and `X-Forwarded-Proto`, who the visitor
+#: was and how they connected.
+#:
+#: Nginx Proxy Manager reaches the app through the Docker network's gateway —
+#: measured on the host as 172.27.0.1 for production and 172.30.0.1 for the
+#: preview — not through 172.17.0.1, which is where the port is *published*.
+#: uvicorn's default trusted only 127.0.0.1, so the app believed nobody: every
+#: visitor was the proxy, and the login limit put the whole site in one bucket.
+#:
+#: Docker's default address pools are inside 172.16.0.0/12, and since the port
+#: is bound to the bridge only, nothing else can connect. The middleware takes
+#: the rightmost address the trusted proxies did not vouch for — the one a
+#: visitor cannot write. Never "*": that takes the leftmost, which anybody can.
+TRUSTED_PROXIES = os.environ.get("NINANATUR_TRUSTED_PROXIES", "127.0.0.1,172.16.0.0/12")
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_PROXIES)
 
 
 #: The largest request body the API reads, in bytes. The biggest legitimate one

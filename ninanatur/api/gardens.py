@@ -9,8 +9,9 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
+from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account, require_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
@@ -212,8 +213,10 @@ def create_obstacle(
 @router.post("/{token}/recompute", response_model=GardenOut)
 def recompute(
     token: str,
+    request: Request,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
+    ratelimit.check(conn, request, "recompute")
     garden = require_garden(conn, token)
     recompute_light(conn, garden.garden_id)
     return to_out(load_garden(conn, garden.garden_id))
