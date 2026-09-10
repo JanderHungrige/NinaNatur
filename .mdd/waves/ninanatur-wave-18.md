@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-17
 demo_state: "Ein Merge auf dev-deployment erscheint binnen einer Minute unter einer eigenen Adresse auf Port 4001, mit eigener Datenbank und einem Banner, das unübersehbar Vorschau sagt. Erst was dort in Ordnung ist, geht auf main — und main deployt weiter wie bisher, ohne dass sich für die Produktion irgendetwas ändert."
 created: 2026-09-04
-hash: 1ae94935
+hash: 807240ea
 ---
 
 # Wave 18: A place to look before it is live
@@ -122,9 +122,13 @@ What was found on it, once anybody could look:
   volumes. Stage 1's acceptance is therefore met and was met before anyone
   could see it.
 - The host steps in §1–4 had already been run.
-- **The note below about `auto-deploy.sh` is wrong.** It does pull git: the host
-  checkout moved from `42ce851` to the current `main` between two read-only
-  queries a minute apart, untouched.
+- ~~The note below about `auto-deploy.sh` is wrong. It does pull git.~~ **That
+  correction was itself wrong** (found 2026-09-10). Neither `auto-deploy.sh` nor
+  `roll-all.sh` touches git; they pull images. The checkout moved between two
+  queries because a person ran `git pull` on the host at that minute — the
+  reflog says `2026-09-07 18:15:17 pull: Fast-forward`. So a change under
+  `deploy/` reaches the host only when somebody pulls, which
+  `deploy/SERVER-SETUP.md` now says where it matters.
 
 **Feature 3 finished on 2026-09-07**, and how it finished is the part worth
 keeping. `ninanatur-dev.w3rth.de` answered 500, and the obvious reading — no

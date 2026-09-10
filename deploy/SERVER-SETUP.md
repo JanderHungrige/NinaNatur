@@ -158,7 +158,27 @@ tail -f /var/log/ninanatur-deploy.log
 | SSL | request a Let's Encrypt cert, force SSL |
 
 `172.17.0.1` is the docker bridge gateway, so NPM reaches the port the container
-publishes on the host without sharing a network.
+publishes on the host without sharing a network. `compose.app.yml` publishes on
+**that interface only** — `172.17.0.1:${APP_PORT}:4000` — so the app is not
+reachable from outside except through NPM and its TLS.
+
+Check it from any machine that is not the host; both lines must fail:
+
+```bash
+curl -m 5 http://159.195.148.193:4000/healthz
+curl -m 5 http://159.195.148.193:4001/healthz
+```
+
+and the domains must still answer over 443.
+
+A compose change does **not** reach the host by itself: `roll-all.sh` and
+`auto-deploy.sh` pull images, never git. After merging a change under
+`deploy/`, run `cd /opt/ninanatur && git pull` on the host; the next cron tick's
+`up -d` then recreates the container with the new binding.
+
+**Second layer (needs sudo):** a host firewall that drops 4000 and 4001 from
+outside. Not a substitute for the binding — Docker's published ports bypass
+ufw's INPUT rules — but it holds if the binding is ever loosened again.
 
 ## The plant catalogue
 

@@ -172,3 +172,120 @@ Land; 5 etwa 1 PT. Bayern + Copernicus + BW-LoD2 zusammen sind eine Wave.
   gilt für die Kachel-Stufe genauso.
 - **Saarland:** WCS-Nutzungsbedingung verbietet das Einbinden; nur der Download
   mit seiner eigenen Lizenz kommt in Frage, und nur mit gelesenem Lizenztext.
+
+---
+
+## 6. Nachfrage: „Wir wollen rund 1 m² Genauigkeit — DGM1 reicht dafür nicht"
+
+*Ergänzt am 2026-09-07 nach Rückfrage des Owners.*
+
+### 6.1 Was DGM1 ist, und was es nie sein wird
+
+DGM1 **ist** ein 1-m-Raster: eine Zelle je Quadratmeter, Höhengenauigkeit
+±15–30 cm (Thüringen nennt ±15 cm, NRW ±30 cm). Für das *Gelände* — Hang,
+Böschung, Horizont — ist das Ziel damit überall erreicht, wo DGM1 vorliegt
+(seit 2024 in allen 16 Ländern, Abschnitt 2). Feiner als 1 m ist beim Gelände
+auch nicht sinnvoll: was darunter liegt, ist Gartenbau, kein Relief.
+
+Was DGM1 **nicht** kann, und was ein Garten für seine Schatten braucht, sind die
+**Dinge auf dem Gelände**: Häuser, Bäume, Hecken, Mauern, Hochbeete, Schuppen.
+Das ist keine Auflösungs-, sondern eine Produktfrage — DGM ist per Definition
+„ohne Bewuchs und Bebauung". Die 1 m² gelten also für die *Oberfläche*, und dort
+sieht die Treppe so aus:
+
+| Stufe | Quelle | Auflösung | Sieht | Sieht nicht | Wo |
+|---|---|---|---|---|---|
+| A | nDOM / DOM (Raster) | 0,5 m (NW) · 1 m (7 Länder) · 5 m (BW, abgelehnt) | Höhe je Zelle | *was* es ist; Kronenansatz; Innenstruktur | 8 Länder, gebaut |
+| B | **Laserscan-Punktwolke** (LAZ, klassifiziert) | 3–10 Punkte/m² → eigenes Raster 0,5–1 m | Boden / Gebäude / Vegetation getrennt, **Kronenansatz**, Hecken, Mauern ab ~0,5 m | Hochbeet < 30 cm (Rauschen), alles unter dichtem Kronendach | 9 Länder offen (6.2) |
+| C | LoD2 | je Gebäude | gemessene Höhe, Dachform, Traufe | nur Gebäude | fast alle Länder (Abschnitt 2) |
+| D | bDOM / DOP20 (Bildbasis) | 0,2–0,4 m | Umrisse von Hecken, Kronen, Schuppen auf 20 cm | verlässliche Höhen unter Bewuchs | BY, SH, HH (bDOM); DOP20 fast überall (Wave 8) |
+| E | **Eigenmessung mit dem Telefon** | 1–5 cm auf 5 m, drift über den Garten | alles im eigenen Garten inkl. Hochbeet, Zaun, junger Baum | Nachbars Grundstück | jeder Garten, opt-in |
+
+**Die Antwort auf „1 m²":** außerhalb des eigenen Zauns erreichen B + C das Ziel
+(Objekthöhen auf 0,5–1 m mit Klassifikation), innerhalb des Zauns nur E. Alles
+darüber hinaus (Google/Apple-3D-Meshes, Streetview-Ableitungen) ist nicht
+lizenzierbar oder nicht offen und kommt nicht in Frage.
+
+### 6.2 Punktwolken: wer sie offen abgibt (Stand Juni 2026, zu verifizieren in Feature 0)
+
+Aus der gepflegten Übersicht `wiesehahn/lidar_availability_germany` (2026-06-02),
+NRW am 2026-09-07 selbst geprüft:
+
+| Land | offen? | Lizenz | Dichte | Bemerkung |
+|---|---|---|---|---|
+| **Nordrhein-Westfalen** | ✔ | dl-de/zero-2-0 | 4–10 /m² | **✔ geprüft:** `opengeodata.nrw.de/…/3dm_l_las/3dm_32_{E}_{N}_1_nw.laz`, 35 860 Kacheln, Ø 104 MB, max 445 MB, Index als XML |
+| Bayern | ✔ (seit 2023) | CC-BY-4.0 | 1–4 /m² | OpenData „Laserdaten"; dünn — 1 m Raster, nicht 0,5 |
+| Berlin | ✔ | dl-de/by-2-0 | 10 /m² | LAS 1.4, 2021 |
+| Brandenburg | ✔ (seit 2021) | dl-de/zero-2-0 | 5 /m² | LAZ 1.4 |
+| Hamburg | ✔ | dl-de/zero-2-0 | ? | plus bDOM |
+| Hessen | ✔ (seit 2022) | dl-de/zero-2-0 | 4–8 /m² | LAS 1.3 |
+| Sachsen | ✔ | dl-de/zero-2-0 | 4 /m² | LAZ 1.2, klassifiziert |
+| Sachsen-Anhalt | ✔ (seit 2023) | dl-de/zero-2-0 | 3–5 /m² | mit RGB |
+| Thüringen | ✔ | dl-de/zero-2-0 | 4 /m² | LAZ 1.4 |
+| Baden-Württemberg | gebührenpflichtig (8 /m²), Öffnung angekündigt | — | — | LoD2 + bDOM als Ersatz |
+| Niedersachsen | laut Liste gebührenpflichtig, Öffnung 2024 angekündigt — **prüfen** | — | 4 /m² | DOM1-WCS ist offen (Registry) |
+| RP, MV, SL, HB | gebührenpflichtig (10–120 €/km²) | — | 2–5 /m² | LoD2 (RP) bzw. DOM-Kacheln als Ersatz |
+| Schleswig-Holstein | nur DGM1 offen | — | — | bDOM 2020–2023 |
+
+Neun Länder mit offener Punktwolke decken mit BY, NW, HE, SN, ST, TH, BB, BE, HH
+einen großen Teil der Bevölkerung ab; wo sie fehlt, bleibt Stufe A/C/D.
+
+### 6.3 Was das rechnerisch kostet — realistisch, je Garten, einmalig
+
+Gemessen an NRW (die größten Kacheln der Liste):
+
+| Schritt | Aufwand | Anmerkung |
+|---|---|---|
+| Kachel laden | 60–450 MB, Ø 104 MB → 10–60 s | einmal je Kilometerquadrat, Cache auf dem **Volume** mit LRU (Muster: LoD2-Kachel 161 MB) |
+| Dekomprimieren | `laspy` + `lazrs`, ~2–5 Mio. Punkte/s → 2–10 s je Kachel | chunkweise lesen, < 300 MB RAM |
+| Auf das 300-m-Fenster klippen | ~9 % der Kachel → ≤ 1 Mio. Punkte | Fenster = Garten + 50 m Rand + Reichweite hoher Bäume |
+| Rastern (0,5 m oder 1 m) | 600×600 Zellen, numpy-Binning: DTM (Klasse 2, min), DSM (max), **nDSM**, Gebäudemaske (Klasse 6), Vegetationshöhe (3–5), **Kronenansatz** (5. Perzentil der Vegetationspunkte > 1 m je Zelle) | < 2 s |
+| Speichern | 360 k Zellen × int16 × 3–4 Ebenen, deflated ≈ 0,5–1 MB je Ort | wie `terrain_window.heights_cm`, nach Ort geschlüsselt, nie im Image |
+| **Gesamt** | **1–2 min je Garten, einmalig, im Hintergrund** | nie im Request-Thread: Prozesspool aus Plan 01 (ST-03), Status „wird vermessen" auf der Seite |
+
+Die Kachel selbst darf nach dem Rastern wieder aus dem Cache fallen; behalten
+wird nur das Fenster. Für hundert Gärten sind das ~100 MB auf dem Volume.
+
+**Ehrlich zur Auflösung:** bei 4 Punkten/m² hat eine 0,5-m-Zelle im Mittel
+*einen* Punkt — dann ist 1 m das ehrliche Raster; 0,5 m erst ab ~8–10 /m²
+(Berlin, neuere NRW-Befliegungen, Hessen). Objekthöhen ±0,3–0,5 m: eine 1,8-m-
+Mauer ist sicher, ein 30-cm-Hochbeet liegt im Rauschen. Das steht dann als
+`vertical_step_m`/Konfidenz dabei, wie bei jeder Quelle hier.
+
+**Was die Punktwolke dem Schattenmodell zusätzlich schenkt:** den
+**Kronenansatz** und die Kronenform je Baum (Plan 03, E5 — heute geschätzt aus
+der Höhe), Hecken als Körper statt als gezeichnete Linie, und die Trennung
+Gebäude/Vegetation, an der `canopies_in` heute scheitert (Doc 84: „ein Zelt
+und ein Baum lesen gleich").
+
+### 6.4 Der eigene Garten: das Telefon als Messgerät (Stufe E)
+
+Für Hochbeet, Zaun, jungen Baum und Nachbars Hecke *hinter* dem Zaun gibt es
+keine amtliche Quelle mit 1 m². Realistisch und billig für uns ist eine
+**Aufnahme durch den Gärtner**:
+
+- **LiDAR-Telefone/Tablets** (iPhone/iPad Pro, ARKit-Scanner-Apps) liefern ein
+  Mesh oder eine Punktwolke, 1–5 cm auf kurze Distanz, 5–20 MB. Upload → auf dem
+  Server in Sekunden auf 0,25 m gerastert; Georeferenz über 2–3 vom Nutzer im
+  Plan angeklickte Passpunkte (Hausecken). Ein Fenster je Garten, ~1 MB.
+- **Photogrammetrie aus Fotos** (COLMAP/OpenSfM) ist *nicht* realistisch
+  serverseitig: 100 Fotos sind 10–30 min GPU oder Stunden CPU je Garten. Wenn,
+  dann auf dem Gerät (ARCore/ARKit machen das bereits) — wir nehmen nur das Ergebnis.
+- **Tippen bleibt.** Höhe und Dachform je Element sind heute editierbar; ein
+  „AR-Maßband" (Höhe eines Baums aus Winkel und Abstand) wäre die kleinste Stufe.
+
+Das ist opt-in, per Garten, und lizenzfrei — die Daten gehören dem, der sie
+gemacht hat, und liegen auf dem Volume wie sein Garten.
+
+### 6.5 Reihenfolge für die 1-m²-Frage
+
+1. **Stufe B in NRW** (Kachel-URL und Index geprüft, dl-zero): Punktwolke →
+   nDSM 0,5 m + Klassifikation + Kronenansatz; Prozesspool; Speicher- und
+   Zeitbudget als Test.
+2. Stufe B in BY, HE, SN, ST, TH, BB, BE, HH — je ein Adapter für Portal und
+   Kachelschema (1 km / 2 km, LAZ 1.2–1.4), gemeinsamer Rasterer.
+3. **Stufe C (LoD2)** überall dort, wo B fehlt (Abschnitt 4, Feature 3).
+4. **Stufe E** als Feature „Meinen Garten vermessen" (Upload, Passpunkte, Raster).
+5. Stufe D (bDOM/DOP20) nur für Umrisse, wenn B und C fehlen.
+
+Stufe A bleibt, was sie ist: der schnelle WCS-Ausschnitt, wo ein Land ihn bietet.
