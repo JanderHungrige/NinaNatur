@@ -200,3 +200,20 @@ The wave plan leaves three questions open, and they change the shape of the work
   `ninanatur-zentrale.w3rth.de`.
 - Gardens created before 2026-09-07 hold coordinates rounded to 0.1°. The owner
   has said they may simply be deleted; no migration is owed.
+
+## 9. Where the review stands — 2026-09-10
+
+The review ran on 2026-09-07. Its verified finding list — location,
+reproduction against the app's own test client, fix, test — is
+`.mdd/plans/01-sicherheit-stabilitaet-optimierung.md`, **gitignored on
+purpose** (`.mdd/plans/.gitignore`) and therefore local to the owner's machine:
+this repository is public. Section 6's three questions are answered there and
+in the wave: the report is written after the fixes as `.mdd/docs/85-…`; every
+finding gets a failing test first; the dependency audits, the header assertions
+and an authorisation matrix become CI gates.
+
+`.mdd/waves/ninanatur-wave-20.md` is cut in detail with neutral feature names —
+twelve features in five stages — and maps to the local list in its section 5.
+With host access open, the host-side steps are steps rather than waits; Nginx
+Proxy Manager runs as a container and reaches the app through `172.17.0.1`,
+which decides how feature 1 binds the ports.

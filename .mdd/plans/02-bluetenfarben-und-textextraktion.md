@@ -63,6 +63,10 @@ Ellenberg-Achsen, aus dem die Vorschläge kommen):
 
 # Teil 1 — Blütenfarben-Annotationspipeline (primär + sekundär)
 
+> **Ausführungstiefe:** `08-bluetenfarben-datenbank-lokale-ki.md` (2026-09-07)
+> — Quellen mit geprüften API-Aufrufen, Modelle mit Lizenz und Laufzeit auf
+> dem M1, Farbmetrik, VLM-Schema, Aggregation, Provenienz-Schema, Tests, Budgets.
+
 ## 1.1 Warum aus Bildern
 
 GIFT gibt 590 Farben. Der Rest der Flora ist auf Fotos gut belegt: die Stichprobe

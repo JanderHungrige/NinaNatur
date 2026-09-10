@@ -11,7 +11,7 @@
 > mit Übergabe in die Warenkörbe der Partner**. Der Plan empfiehlt, in dieser
 > Reihenfolge zu bauen.
 >
-> Wave 25 (`.mdd/waves/ninanatur-wave-25.md`) hat die Optimierung — Mengen-
+> Wave 27 (`.mdd/waves/ninanatur-wave-27.md`) hat die Optimierung — Mengen-
 > überdeckung mit Fixkosten, so wenige Pakete wie möglich — und die Regel
 > „Partnerdaten per Vereinbarung, nie per Scraping" schon gesetzt. Dieser Plan
 > baut darauf, er ersetzt es nicht.
@@ -58,7 +58,7 @@
 ### M1 — Konsolidierte Einkaufsliste mit Übergabe
 
 Der Plan wird zur Liste: je Beet die Arten und Mengen (Pflanzen aus dem
-Flächenbedarf `space_m2`, Saatgut in g/m²), der Optimierer aus Wave 25 gruppiert
+Flächenbedarf `space_m2`, Saatgut in g/m²), der Optimierer aus Wave 27 gruppiert
 sie nach Anbietern und Paketen; je Anbieter ein Knopf „Warenkorb bei X öffnen".
 Wo der Partner **Shopify** nutzt: die *Storefront Cart API* (`cartCreate` → die
 `checkoutUrl` des Shops; die alte Checkout-API ist seit 2025-04-01 abgeschaltet).
@@ -147,7 +147,7 @@ Cultivar der Art zugeordnet, sichtbar markiert.
 1. **Plan → Liste.** „Einkaufsliste" im Inspektor (Plan 05): je Beet Arten und
    Mengen, Form wählbar (Saatgut/Pflanze), Regionalhinweis („dein Garten liegt in
    Ursprungsgebiet 4 — Westdeutsches Berg- und Hügelland").
-2. **Optimieren** (Wave 25): wenigste Pakete, Ersatzvorschlag „ökologisch
+2. **Optimieren** (Wave 27): wenigste Pakete, Ersatzvorschlag „ökologisch
    gleichwertig, aber vom schon genutzten Anbieter" über Fit und Insektenwert.
 3. **Übergabe (M1)** je Anbieter — oder **Kasse (M3)** mit Adresse (Konto nötig:
    das Share-Token reicht dafür nicht, siehe Plan 01), Zahlung beim PSP,
@@ -178,7 +178,7 @@ eine unterschriebene Partnervereinbarung (für M3: Anschluss beim PSP).
 |---|---|---|
 | P0 | Entscheidung Rechtsform/Modell; erste Partnergespräche; Rechtsberatung zu M3-Pflichten | Kalenderwochen, wenig Code |
 | P1 | **M1**: `supplier`/`offer`/`shipping_profile`, Feed-Adapter (Merchant-Feed), Ursprungsgebiete, Einkaufsliste im Inspektor, Übergabe je Shop | 5–8 PT |
-| P2 | **Optimierer** (Wave 25, CP-SAT), Ersatzvorschläge | 3–5 PT |
+| P2 | **Optimierer** (Wave 27, CP-SAT), Ersatzvorschläge | 3–5 PT |
 | P3 | **M3**: PSP-Anbindung (Connect), Kasse, Aufteilung, Verkäufer-Benachrichtigung, Rechtstexte, Meldeprozesse | 10–15 PT + Beratung |
 | P4 | Statusrückfluss, Saisonfenster-Logik („bestellbar ab März"), Nachbestellung | 3 PT |
 
