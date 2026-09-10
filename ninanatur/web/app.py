@@ -81,6 +81,25 @@ app.include_router(light_router)
 app.include_router(canopies_router)
 
 
+#: The largest request body the API reads, in bytes. The biggest legitimate one
+#: is a 500-corner outline, around 15 KB; a bed polygon used to be accepted at
+#: 2.8 MB before anything looked at it.
+MAX_BODY_BYTES = 1_000_000
+
+
+@app.middleware("http")
+async def body_has_an_edge(request: Request, call_next):  # type: ignore[no-untyped-def]
+    """Refuse an oversized body before it is read, parsed or validated.
+
+    Declared by Content-Length; a body sent without one is still bounded by the
+    schema limits behind this, which is where the real edges are.
+    """
+    declared = request.headers.get("content-length")
+    if declared is not None and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+        return JSONResponse(status_code=413, content={"detail": "Anfrage zu groß"})
+    return await call_next(request)
+
+
 @app.exception_handler(ValueError)
 async def value_error_is_422(_: Request, exc: ValueError) -> JSONResponse:
     """A validation failure must never surface as a 500.
