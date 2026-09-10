@@ -168,8 +168,10 @@ decisions shape the features:
   host copy restored into a fresh volume, a throwaway container started on it,
   and its counts matched live (prod 27/3, dev 3/1). Twelve tests in
   `tests/test_backup.py`, including consistency under an open write
-  transaction. Still open: the **off-host** copy — the backups survive a lost
-  volume but not a lost machine, and where they go is the owner's decision.
+  transaction. The **off-host** copy, the owner's choice: a launchd agent on the
+  owner's Mac pulls the host copies with rsync daily at 09:30 — pulled, so the
+  server holds no key to the Mac — checks the newest with `gzip -t` and keeps
+  90 per deployment (`deploy/mac/`). First pull verified for prod and dev.
 
 ## Features
 
