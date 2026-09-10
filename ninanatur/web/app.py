@@ -7,6 +7,7 @@ complicated to confuse a diagnosis. Wave 2 mounts the /api/v1 router here.
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -26,6 +27,7 @@ from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, init_schema
+from ninanatur.ops.backup import default_dest, snapshot_before_migration
 from ninanatur.version import app_version
 from ninanatur.web.environment import environment
 from ninanatur.web.security import install as install_security
@@ -47,7 +49,21 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     Both steps are idempotent — CREATE TABLE IF NOT EXISTS, and seeding only when
     there are no taxa at all, so a newer local ingest is never overwritten.
     """
-    conn = connect(database_path(), same_thread=False)
+    path = database_path()
+    # Before anything touches the file, and before migrations run: a migration
+    # that fails halfway must leave something to go back to. A fresh volume has
+    # nothing to copy. A failed copy is reported loudly and does not stop the
+    # app — the nightly backups still exist, and a site that will not start is
+    # the worse outcome.
+    try:
+        taken = snapshot_before_migration(path, default_dest(path))
+        if taken is not None:
+            print(f"database copied before migrating: {taken.name}", flush=True)
+    except Exception as exc:  # noqa: BLE001 - logged with context, startup goes on
+        print(f"WARNING: pre-migration backup of {path} failed: {exc!r}",
+              file=sys.stderr, flush=True)
+
+    conn = connect(path, same_thread=False)
     try:
         migrated = init_schema(conn)
         if migrated:

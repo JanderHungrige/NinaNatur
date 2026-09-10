@@ -146,6 +146,51 @@ Check that it is actually running:
 tail -f /var/log/ninanatur-deploy.log
 ```
 
+## Backups
+
+There was no backup at all until 2026-09-10. Now there are three layers, and
+each protects against something the others do not:
+
+| Where | Protects against | Kept |
+|---|---|---|
+| `/data/backups/` inside the volume | a bad migration, a deleted row | 14 nightly + 5 taken before each migration |
+| `~/backups/ninanatur/prod/` on the host | the volume itself being removed or recreated | 30 |
+| off the host | losing the machine | see below |
+
+**Nightly**, from jan's crontab (docker works without sudo for jan):
+
+```bash
+( crontab -l 2>/dev/null; echo '17 3 * * * /opt/ninanatur/deploy/backup.sh >> $HOME/backups/ninanatur/backup.log 2>&1' ) | crontab -
+```
+
+03:17 is clear of every project's deploy minute (:00, :15, :30, :45). The copy
+is taken with SQLite's online backup API inside the running container, so the
+app keeps serving, and it is checked with `PRAGMA integrity_check` before it is
+kept — a copy that fails is deleted, never left under a good-looking name.
+
+**Before every migration** the app copies an existing database into
+`/data/backups/` itself, at startup. A fresh volume has nothing to copy and gets
+nothing.
+
+**Restoring** — rehearsed, not assumed. Always restore into a *new* file first
+and look at it; `restore` refuses to overwrite a live database unless told to.
+
+```bash
+# 1. Check a copy is sound, and what is in it
+docker exec ninanatur-prod-app-1 python -m ninanatur.ops.backup verify /data/backups/<file>.sqlite.gz
+
+# 2. Stop the app, restore over the live file, start it again
+cd /opt/ninanatur
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml stop app
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml run --rm --no-deps app \
+  python -m ninanatur.ops.backup restore /data/backups/<file>.sqlite.gz /data/ninanatur.sqlite --replace
+docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml start app
+```
+
+A copy that exists only on the host is put back into the volume with
+`docker cp ~/backups/ninanatur/prod/<file>.sqlite.gz ninanatur-prod-app-1:/data/backups/`
+first.
+
 ## 5. Nginx Proxy Manager
 
 | Field | Value |
