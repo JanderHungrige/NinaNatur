@@ -136,18 +136,20 @@ def test_one_sender_cannot_fill_the_tracker(client: TestClient) -> None:
     assert "Stunde" in refused.json()["detail"]
 
 
-def test_the_hourly_cap_holds_when_the_address_is_forged(
+def test_the_hourly_cap_holds_across_many_senders(
     client: TestClient, conn: sqlite3.Connection
 ) -> None:
-    """`X-Forwarded-For` can say anything, so the per-sender count alone is a
-    speed bump. The global cap is what a script actually meets."""
+    """Many real visitors, each under their own limit — through the proxy, which
+    is the only source whose `X-Forwarded-For` is believed. The global cap is
+    what a distributed script actually meets."""
+    proxy = TestClient(app, client=("172.27.0.1", 50000))
     for i in range(store.TOTAL_HOURLY):
-        response = client.post(
+        response = proxy.post(
             "/api/v1/feedback", json=BUG, headers={"x-forwarded-for": f"10.0.0.{i}"}
         )
         assert response.status_code == 201
 
-    refused = client.post(
+    refused = proxy.post(
         "/api/v1/feedback", json=BUG, headers={"x-forwarded-for": "10.9.9.9"}
     )
     assert refused.status_code == 429
@@ -159,7 +161,8 @@ def test_the_hourly_cap_holds_when_the_address_is_forged(
 def test_the_address_itself_is_never_stored(
     client: TestClient, conn: sqlite3.Connection
 ) -> None:
-    client.post("/api/v1/feedback", json=BUG, headers={"x-forwarded-for": "203.0.113.9"})
+    proxy = TestClient(app, client=("172.27.0.1", 50000))
+    proxy.post("/api/v1/feedback", json=BUG, headers={"x-forwarded-for": "203.0.113.9"})
 
     stored = conn.execute("SELECT sender FROM feedback").fetchone()[0]
     assert "203.0.113.9" not in stored
@@ -283,3 +286,15 @@ def test_the_environment_name_is_defused_like_everything_else(
 
     assert "@someone" not in text
     assert "#12" not in text
+
+
+def test_a_forged_address_from_a_stranger_is_not_a_new_sender(client: TestClient) -> None:
+    """The finding: `_caller` took the leftmost `X-Forwarded-For` entry, which
+    the sender writes themselves — a fresh sender on every request. From a
+    connection that is not the proxy, the header now means nothing."""
+    stranger = TestClient(app, client=("203.0.113.50", 50000))
+    for i in range(store.PER_SENDER_HOURLY):
+        stranger.post("/api/v1/feedback", json=BUG, headers={"x-forwarded-for": f"10.1.0.{i}"})
+    refused = stranger.post("/api/v1/feedback", json=BUG,
+                            headers={"x-forwarded-for": "10.1.9.9"})
+    assert refused.status_code == 429

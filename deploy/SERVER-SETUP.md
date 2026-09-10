@@ -176,6 +176,19 @@ A compose change does **not** reach the host by itself: `roll-all.sh` and
 `deploy/`, run `cd /opt/ninanatur && git pull` on the host; the next cron tick's
 `up -d` then recreates the container with the new binding.
 
+**Whom the app believes.** NPM's requests reach the container from the Docker
+network's gateway (172.27.0.1 for production, 172.30.0.1 for the preview — not
+172.17.0.1), and the app trusts `X-Forwarded-For` / `-Proto` only from
+`NINANATUR_TRUSTED_PROXIES`, default `127.0.0.1,172.16.0.0/12`. If Docker ever
+hands out a network outside that range, set the variable in the env file; the
+symptom otherwise is every visitor sharing one rate-limit bucket. Check:
+
+```bash
+docker exec ninanatur-prod-app-1 python -c "import sqlite3;print(sqlite3.connect('/data/ninanatur.sqlite').execute('SELECT DISTINCT client FROM rate_limit').fetchall())"
+```
+
+— real visitor addresses, never `172.x.0.1`.
+
 **Second layer (needs sudo):** a host firewall that drops 4000 and 4001 from
 outside. Not a substitute for the binding — Docker's published ports bypass
 ufw's INPUT rules — but it holds if the binding is ever loosened again.

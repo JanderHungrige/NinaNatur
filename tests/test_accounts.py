@@ -20,9 +20,6 @@ def client() -> Iterator[TestClient]:
     conn = connect(":memory:", same_thread=False)
     init_schema(conn)
     app.dependency_overrides[get_connection] = lambda: conn
-    from ninanatur.api import accounts
-
-    accounts.ATTEMPTS.clear()
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -180,8 +177,11 @@ def test_the_cookie_is_marked_secure_behind_an_https_proxy(client: TestClient) -
     """The deployment sits behind Nginx Proxy Manager, so the app only learns
     the real scheme from the forwarded header. Hardcoding Secure on breaks local
     development; hardcoding it off ships a session cookie over plaintext."""
-    client.post("/api/v1/accounts", json=GOOD)
-    response = client.post(
+    # From the proxy's own address: a stranger's X-Forwarded-Proto is not
+    # believed any more (tests/test_security_proxy.py says why).
+    proxy = TestClient(app, client=("172.27.0.1", 50000))
+    proxy.post("/api/v1/accounts", json=GOOD)
+    response = proxy.post(
         "/api/v1/sessions", json=GOOD, headers={"x-forwarded-proto": "https"}
     )
     assert "secure" in response.headers["set-cookie"].lower()

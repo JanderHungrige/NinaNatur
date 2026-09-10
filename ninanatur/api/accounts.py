@@ -1,5 +1,8 @@
 """Registration, login, logout — and the rate limit that has to come with them.
 
+The limit itself lives in `api/ratelimit.py`, on the volume and keyed on the
+visitor rather than the proxy.
+
 The API has had no rate limiting since Wave 3, which was defensible while the
 only credential was a 32-byte share token. It stops being defensible the moment
 a person chooses a password.
@@ -7,13 +10,12 @@ a person chooses a password.
 from __future__ import annotations
 
 import sqlite3
-import time
-from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
+from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
     AccountOut,
@@ -27,13 +29,6 @@ from ninanatur.auth.sessions import COOKIE_NAME, Account, account_for, issue, re
 
 router = APIRouter(prefix="/api/v1", tags=["accounts"])
 
-# In-process and per-IP. Honest about what it is: one container, and a restart
-# forgets everything. A shared store is the answer at more than one process, and
-# a slow login is not a substitute for one — it is the floor beneath it.
-WINDOW_S = 300.0
-MAX_ATTEMPTS = 10
-ATTEMPTS: dict[str, list[float]] = defaultdict(list)
-
 # Said where the choice is made, not discovered later.
 NO_EMAIL_NOTE = (
     "Ohne E-Mail-Adresse kann dein Passwort nicht zurückgesetzt werden. "
@@ -46,30 +41,13 @@ EMAIL_NOTE = "Mit deiner E-Mail-Adresse lässt sich das Passwort zurücksetzen."
 BAD_LOGIN = "Benutzername oder Passwort stimmt nicht."
 
 
-def _client(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
-
-
-def _rate_limit(request: Request, bucket: str) -> None:
-    key = f"{bucket}:{_client(request)}"
-    now = time.monotonic()
-    recent = [t for t in ATTEMPTS[key] if now - t < WINDOW_S]
-    if len(recent) >= MAX_ATTEMPTS:
-        ATTEMPTS[key] = recent
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Zu viele Versuche. Bitte warte ein paar Minuten.",
-        )
-    recent.append(now)
-    ATTEMPTS[key] = recent
-
-
 def _set_cookie(response: Response, request: Request, token: str) -> None:
-    # Secure follows the scheme the request actually arrived on, including the
-    # proxy's header — hardcoding it on breaks local development, hardcoding it
-    # off ships a session cookie over plaintext.
-    forwarded = request.headers.get("x-forwarded-proto", "")
-    https = request.url.scheme == "https" or forwarded.split(",")[0].strip() == "https"
+    # Secure follows the scheme the request actually arrived on. Behind the
+    # proxy that is the proxy's X-Forwarded-Proto — applied to the URL by the
+    # trusted-proxy middleware in `web.app`, and only for a trusted proxy. It
+    # used to be read raw here, so anybody talking to the app could decide it.
+    # Hardcoding it on breaks local development; off ships a cookie over plaintext.
+    https = request.url.scheme == "https"
     response.set_cookie(
         COOKIE_NAME,
         token,
@@ -106,7 +84,7 @@ def register(
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> AccountOut:
     """Create an account. Email is optional and the cost of that is returned."""
-    _rate_limit(request, "register")
+    ratelimit.check(conn, request, "register")
     taken = conn.execute(
         "SELECT 1 FROM account WHERE username = ?", (payload.username,)
     ).fetchone()
@@ -139,7 +117,7 @@ def log_in(
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> AccountOut:
     """Log in. A wrong password and an unknown user answer identically."""
-    _rate_limit(request, "login")
+    ratelimit.check(conn, request, "login")
     row = conn.execute(
         "SELECT account_id, username, email, password_hash FROM account WHERE username = ?",
         (payload.username,),

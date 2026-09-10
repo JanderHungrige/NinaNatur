@@ -9,9 +9,10 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
+from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.garden.building_sync import measure_buildings
@@ -151,6 +152,7 @@ def light_map(
 @router.post("/{token}/light", response_model=LightMap | None)
 def rebuild_light_map(
     token: str,
+    request: Request,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> LightMap | None:
     """Recompute the whole map, now, because somebody asked.
@@ -163,6 +165,7 @@ def rebuild_light_map(
     takes seconds to answer, which is too long for a page load and perfectly
     reasonable for a button — and afterwards every recompute reads it for free.
     """
+    ratelimit.check(conn, request, "light")
     garden = require_garden(conn, token)
     # The one place the ground is fetched. A survey answers in seconds, which is
     # too long for a page load and fine for a button somebody pressed.
