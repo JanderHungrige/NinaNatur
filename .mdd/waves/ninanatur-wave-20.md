@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-19
 demo_state: "Ein geschriebener Prüfbericht über Web- und Anwendungssicherheit, jede Feststellung mit dem Ort im Code und einem Reproduktionsweg; die Befunde behoben und durch Tests festgehalten, die den Angriff selbst versuchen. Die Abhängigkeiten sind auf bekannte Schwachstellen geprüft, und CI bricht ab, wenn eine neue dazukommt. Die Datenbank hat eine Sicherung, die jede Nacht läuft und deren Rückspielen geprobt ist."
 created: 2026-09-07
-hash: 670f1e8e
+hash: abee6db8
 ---
 
 # Wave 20: Nothing here is worse than it looks
@@ -106,6 +106,23 @@ decisions shape the features:
   host and from inside the NPM container. Feature 1 stays open for its other two
   parts — forwarded-header trust and the rate-limit key — and for the host
   firewall, which needs sudo and is the owner's step.
+- **2026-09-10 — the same binding on every project on the host.** At the
+  owner's request the other stacks behind the same NPM — funding-tender-tracker,
+  3dmap, Battlefuel, ctt-report — were rebound to `172.17.0.1` too, and the
+  owner moved NPM's admin port 81 to localhost. From outside, no app or admin
+  port on the host answers any more; every domain still does.
+- **2026-09-10 — feature 2, every number has an edge.** Fourteen attack tests in
+  `tests/test_security_input.py`, all red first. Coordinates are bounded to
+  ±2 km and refuse NaN and Infinity (a 422, not the 500 NaN used to cause, and
+  never stored); outlines and polygons are capped at 500 corners; a map
+  selection may not be longer than 1 km, checked before Overpass is asked; the
+  light grid refuses a garden it could not compute within four times its budget
+  (`GardenTooLarge`, a 422); and any body over 1 MB is a 413 before it is read.
+  The plan's ±5 km / 2 km were tightened to ±2 km / 1 km so the import bound and
+  the grid bound agree: a 2 km selection would have imported and then been
+  refused by the grid. The rate limit for the expensive routes waits for
+  feature 1's rate-limit key — keyed as it is today, it would limit everyone
+  together.
 
 ## Features
 
@@ -113,7 +130,7 @@ decisions shape the features:
 |---|---------|-----|--------|------------|
 | 0 | a-test-that-attacks | — | planned | — |
 | 1 | behind-the-proxy-only | — | in_progress | 0 |
-| 2 | every-number-has-an-edge | — | planned | 0 |
+| 2 | every-number-has-an-edge | — | complete | 0 |
 | 3 | what-the-app-says-about-itself | — | planned | 0 |
 | 4 | a-copy-of-everything | — | planned | — |
 | 5 | busy-not-broken | — | planned | 2 |

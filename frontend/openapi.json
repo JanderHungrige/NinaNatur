@@ -93,10 +93,15 @@
           "polygon": {
             "items": {
               "items": {
+                "maximum": 2000.0,
+                "minimum": -2000.0,
                 "type": "number"
               },
+              "maxItems": 2,
+              "minItems": 2,
               "type": "array"
             },
+            "maxItems": 500,
             "title": "Polygon",
             "type": "array"
           },
@@ -1288,6 +1293,7 @@
             "items": {
               "$ref": "#/components/schemas/LatLonIn"
             },
+            "maxItems": 500,
             "minItems": 3,
             "title": "Outline",
             "type": "array"
@@ -1446,8 +1452,12 @@
               {
                 "items": {
                   "items": {
+                    "maximum": 2000.0,
+                    "minimum": -2000.0,
                     "type": "number"
                   },
+                  "maxItems": 2,
+                  "minItems": 2,
                   "type": "array"
                 },
                 "maxItems": 500,
@@ -1490,10 +1500,14 @@
             "title": "Width"
           },
           "x": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
             "title": "X",
             "type": "number"
           },
           "y": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
             "title": "Y",
             "type": "number"
           }
@@ -1740,8 +1754,12 @@
               {
                 "items": {
                   "items": {
+                    "maximum": 2000.0,
+                    "minimum": -2000.0,
                     "type": "number"
                   },
+                  "maxItems": 2,
+                  "minItems": 2,
                   "type": "array"
                 },
                 "maxItems": 500,
@@ -1813,6 +1831,8 @@
           "x": {
             "anyOf": [
               {
+                "maximum": 2000.0,
+                "minimum": -2000.0,
                 "type": "number"
               },
               {
@@ -1824,6 +1844,8 @@
           "y": {
             "anyOf": [
               {
+                "maximum": 2000.0,
+                "minimum": -2000.0,
                 "type": "number"
               },
               {
@@ -2372,10 +2394,14 @@
         "description": "Where a cluster was dragged to.",
         "properties": {
           "x": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
             "title": "X",
             "type": "number"
           },
           "y": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
             "title": "Y",
             "type": "number"
           }
@@ -3121,7 +3147,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.19.81"
+    "version": "V0.19.90"
   },
   "openapi": "3.1.0",
   "paths": {

@@ -126,6 +126,45 @@ class LightGrid:
         return sum(inside) / len(inside) if inside else None
 
 
+class GardenTooLarge(ValueError):
+    """A garden whose light grid cannot be computed in any reasonable time.
+
+    A ValueError, so the API's one backstop turns it into a 422 with its reason
+    rather than a 500 — or, as before this existed, no answer at all.
+    """
+
+
+#: How far past the grid budget a garden may go before it is refused outright.
+#: `cell_size_for` stops at its coarsest cell and simply runs long beyond that;
+#: a little over is a slow button, far over is a request that never returns.
+REFUSE_AT_BUDGET_MULTIPLE = 4.0
+
+
+def check_extent(
+    min_x: float, min_y: float, max_x: float, max_y: float, obstacles: int = 0
+) -> None:
+    """Refuse a garden whose grid would take far longer than the budget allows.
+
+    The second line of defence, behind the API's coordinate bounds. It asks the
+    same question `cell_size_for` does — cells times the measured cost of each —
+    at the coarsest cell the ladder has, so the limit is the budget rather than
+    a second number somebody has to keep in step with it.
+
+    Reproduced before it existed: one obstacle at x = 1e9 made the grid a
+    billion metres wide, and `POST /light` did not come back.
+    """
+    width = max(max_x - min_x, 1.0)
+    depth = max(max_y - min_y, 1.0)
+    coarsest = CELL_LADDER_M[-1]
+    cells = (width / coarsest + 1) * (depth / coarsest + 1)
+    seconds = cells * (CELL_COST_MS + OBSTACLE_COST_MS * obstacles) / 1000
+    if seconds > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
+        raise GardenTooLarge(
+            f"Garten zu groß: {width:.0f} × {depth:.0f} m lassen sich nicht in "
+            f"vertretbarer Zeit berechnen"
+        )
+
+
 def cell_size_for(width_m: float, depth_m: float, obstacles: int = 0) -> float:
     """The finest cell that keeps the recompute inside `GRID_BUDGET_S`.
 
@@ -188,6 +227,7 @@ def compute_grid(
     if box is None:
         return None
     min_x, min_y, max_x, max_y = box
+    check_extent(min_x, min_y, max_x, max_y, len(obstacles))
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
     cell = cell_size_for(width, depth, len(obstacles))

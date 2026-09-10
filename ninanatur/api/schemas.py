@@ -7,8 +7,9 @@ is partly unknown.
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Annotated
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ninanatur.garden.footprint import Shape
 from ninanatur.garden.objects import ObjectKind
@@ -220,9 +221,38 @@ class PlantDetail(BaseModel):
 # --- gardens ---------------------------------------------------------------
 
 
+#: How far from its anchor anything in a garden may be drawn, in metres.
+#:
+#: A garden is not four kilometres across, and without this the API accepted an
+#: obstacle at x = 1e9 — after which the light grid spanned a billion metres and
+#: `POST /light` stopped answering. The largest legitimate plan is a plot plus the
+#: neighbours the map import brings in, well inside one kilometre either way.
+COORD_LIMIT_M = 2000.0
+
+#: The most corners one outline may have. The freehand tool already capped
+#: `points` at this; a bed polygon took two hundred thousand.
+MAX_CORNERS = 500
+
+#: The longest edge of a map selection's bounding box. A three-point outline
+#: across the country sent Overpass a query over half the republic and held the
+#: server for 41 seconds; a garden plot is never a kilometre long.
+MAX_OUTLINE_EDGE_M = 1000.0
+
+#: Every input model refuses NaN and Infinity. pydantic allows both by default;
+#: NaN then broke the response's JSON and surfaced as a 500, and Infinity was
+#: stored and poisoned every extent and shadow computed after it.
+FINITE = ConfigDict(allow_inf_nan=False)
+
+Metres = Annotated[float, Field(ge=-COORD_LIMIT_M, le=COORD_LIMIT_M, allow_inf_nan=False)]
+#: One corner: x and y, in metres from the anchor.
+Corner = Annotated[list[Metres], Field(min_length=2, max_length=2)]
+
+
 class GardenCreate(BaseModel):
     """Creating a garden. Latitude and longitude are range-checked here, before
     they reach solar code that would happily compute a sun path for latitude 500."""
+
+    model_config = FINITE
 
     name: str = Field(min_length=1, max_length=200)
     latitude: float = Field(ge=-90, le=90)
@@ -237,18 +267,25 @@ class GardenCreated(BaseModel):
 
 
 class BedCreate(BaseModel):
+    model_config = FINITE
+
     name: str = Field(min_length=1, max_length=200)
-    polygon: list[list[float]]
+    # An upper bound only. "At least three corners" stays with the domain check
+    # behind this, which says so in words; pydantic would answer the same thing
+    # as a structured list the page does not read.
+    polygon: list[Corner] = Field(max_length=MAX_CORNERS)
     soil_type: str | None = None
     moisture: str | None = None
 
 
 class ObstacleCreate(BaseModel):
+    model_config = FINITE
+
     # A closed set, validated before it reaches any query. A free string means
     # the shading table silently misses a value and nobody finds out.
     kind: ObjectKind
-    x: float
-    y: float
+    x: Metres
+    y: Metres
     #: `circle` | `rect` | `polygon`. Omitted means the kind's own default.
     shape: Shape | None = None
     #: Metres. For a circle this is the diameter.
@@ -256,7 +293,7 @@ class ObstacleCreate(BaseModel):
     depth: float | None = Field(default=None, gt=0, le=500)
     rotation: float = Field(default=0.0, ge=-360, le=360)
     #: Freehand outlines only. Bounded in count and extent before storage.
-    points: list[list[float]] | None = Field(default=None, max_length=500)
+    points: list[Corner] | None = Field(default=None, max_length=MAX_CORNERS)
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
 
@@ -276,14 +313,16 @@ class RoofShape(StrEnum):
 class ObstacleUpdate(BaseModel):
     """Every field optional: an edit says what changed, not what everything is."""
 
+    model_config = FINITE
+
     kind: ObjectKind | None = None
-    x: float | None = None
-    y: float | None = None
+    x: Metres | None = None
+    y: Metres | None = None
     shape: Shape | None = None
     width: float | None = Field(default=None, gt=0, le=500)
     depth: float | None = Field(default=None, gt=0, le=500)
     rotation: float | None = Field(default=None, ge=-360, le=360)
-    points: list[list[float]] | None = Field(default=None, max_length=500)
+    points: list[Corner] | None = Field(default=None, max_length=MAX_CORNERS)
     #: Set to null when a vertex is dragged out of true: the geometry does not
     #: change, but the promise that the corners stay square ends.
     constraint_hint: str | None = None
@@ -321,6 +360,8 @@ class ColourObservation(BaseModel):
 
 
 class BedUpdate(BaseModel):
+    model_config = FINITE
+
     name: str | None = Field(default=None, min_length=1, max_length=120)
     soil_type: str | None = None
     moisture: str | None = None
@@ -335,6 +376,8 @@ class PlantingCreate(BaseModel):
     Both are ordinary. The catalogue holds 8,939 German species and no cultivars,
     so a name it cannot match is an answer rather than a mistake.
     """
+
+    model_config = FINITE
 
     taxon_id: int | None = Field(default=None, gt=0)
     raw_name: str | None = Field(default=None, max_length=200)
@@ -364,8 +407,10 @@ class PlantingOut(BaseModel):
 class PlantingPlacement(BaseModel):
     """Where a cluster was dragged to."""
 
-    x: float
-    y: float
+    model_config = FINITE
+
+    x: Metres
+    y: Metres
 
 
 class PlantingColours(BaseModel):
@@ -513,6 +558,8 @@ class PlaceSearchOut(BaseModel):
 
 
 class LatLonIn(BaseModel):
+    model_config = FINITE
+
     # Germany, roughly. The catalogue is German: a garden in Ohio would get
     # suggestions for plants that do not grow there.
     lat: float = Field(ge=47.0, le=55.2)
@@ -520,11 +567,35 @@ class LatLonIn(BaseModel):
 
 
 class MapSelection(BaseModel):
+    model_config = FINITE
+
     name: str = Field(min_length=1, max_length=120)
-    outline: list[LatLonIn] = Field(min_length=3)
+    outline: list[LatLonIn] = Field(min_length=3, max_length=MAX_CORNERS)
     # One question per garden, standing in for the 75-88% of German suburban
     # buildings that carry no height in OSM at all.
     neighbourhood: str = "detached"
+
+    @model_validator(mode="after")
+    def _a_plot_not_a_region(self) -> MapSelection:
+        """Refused here, before the map import asks Overpass anything.
+
+        A bound on each point is not enough: every corner of a triangle across
+        Germany is individually a valid German coordinate.
+        """
+        import math
+
+        lats = [p.lat for p in self.outline]
+        lons = [p.lon for p in self.outline]
+        north_south = (max(lats) - min(lats)) * 111_320
+        east_west = (max(lons) - min(lons)) * 111_320 * math.cos(
+            math.radians(sum(lats) / len(lats))
+        )
+        if max(north_south, east_west) > MAX_OUTLINE_EDGE_M:
+            raise ValueError(
+                f"Garten zu groß: der Umriss ist {max(north_south, east_west):.0f} m "
+                f"lang, höchstens {MAX_OUTLINE_EDGE_M:.0f} m sind möglich"
+            )
+        return self
 
 
 class HeightReport(BaseModel):
