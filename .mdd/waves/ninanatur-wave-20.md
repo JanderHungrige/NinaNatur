@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-19
 demo_state: "Ein geschriebener Prüfbericht über Web- und Anwendungssicherheit, jede Feststellung mit dem Ort im Code und einem Reproduktionsweg; die Befunde behoben und durch Tests festgehalten, die den Angriff selbst versuchen. Die Abhängigkeiten sind auf bekannte Schwachstellen geprüft, und CI bricht ab, wenn eine neue dazukommt. Die Datenbank hat eine Sicherung, die jede Nacht läuft und deren Rückspielen geprobt ist."
 created: 2026-09-07
-hash: abee6db8
+hash: 9937f513
 ---
 
 # Wave 20: Nothing here is worse than it looks
@@ -123,13 +123,27 @@ decisions shape the features:
   refused by the grid. The rate limit for the expensive routes waits for
   feature 1's rate-limit key — keyed as it is today, it would limit everyone
   together.
+- **2026-09-10 — feature 1 closed: whom the app believes.** Measured on the
+  host, NPM's requests arrive from the Docker network's gateway — 172.27.0.1 for
+  production, 172.30.0.1 for the preview — not from 172.17.0.1, where the port
+  is published. The plan's `--forwarded-allow-ips=172.17.0.1` would therefore
+  have changed nothing. The trust decision now lives in the app
+  (`ProxyHeadersMiddleware`, `NINANATUR_TRUSTED_PROXIES`, default
+  `127.0.0.1,172.16.0.0/12`) rather than on uvicorn's command line, so the test
+  client exercises exactly what the deployment does; uvicorn starts with
+  `--no-proxy-headers`. Safe to trust the whole Docker range because the port is
+  bound to the bridge only. The rate limit moved from a dict to a SQLite table
+  on the volume, keyed on the real visitor, with buckets for `POST /light`,
+  `/recompute` and `/from-map` — the last piece of feature 2. `feedback.py` had
+  read the **leftmost** `X-Forwarded-For` entry raw, the part anybody writes;
+  fixed with it. Ten attack tests, `tests/test_security_proxy.py`.
 
 ## Features
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | a-test-that-attacks | — | planned | — |
-| 1 | behind-the-proxy-only | — | in_progress | 0 |
+| 1 | behind-the-proxy-only | — | complete | 0 |
 | 2 | every-number-has-an-edge | — | complete | 0 |
 | 3 | what-the-app-says-about-itself | — | planned | 0 |
 | 4 | a-copy-of-everything | — | planned | — |

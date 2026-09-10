@@ -58,4 +58,7 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4000/healthz', timeout=4).status==200 else 1)"
 
-CMD ["uvicorn", "ninanatur.web.app:app", "--host", "0.0.0.0", "--port", "4000"]
+# --no-proxy-headers: the app decides whom to believe about forwarded headers
+# (web/app.py, TRUSTED_PROXIES), so the tests exercise the same decision the
+# deployment makes. Two places deciding it is how they come to disagree.
+CMD ["uvicorn", "ninanatur.web.app:app", "--host", "0.0.0.0", "--port", "4000", "--no-proxy-headers"]

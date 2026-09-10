@@ -22,9 +22,6 @@ def client() -> Iterator[TestClient]:
     conn = connect(":memory:", same_thread=False)
     init_schema(conn)
     app.dependency_overrides[get_connection] = lambda: conn
-    from ninanatur.api import accounts
-
-    accounts.ATTEMPTS.clear()
     yield TestClient(app)
     app.dependency_overrides.clear()
 

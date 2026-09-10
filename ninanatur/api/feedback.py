@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.feedback import issues, store
 from ninanatur.version import app_version
@@ -130,14 +131,13 @@ def _cleaned(kind: str, answers: dict[str, str]) -> dict[str, str] | None:
 
 
 def _caller(request: Request) -> str:
-    """Who to count this submission against.
+    """Who to count this submission against: the visitor, as the trusted proxy
+    reports them.
 
-    `X-Forwarded-For` because the app sits behind a proxy and `request.client`
-    is otherwise the proxy for everybody. It can be forged, which is why the
-    per-sender limit is a speed bump and the global hourly cap is the actual
-    backstop.
+    It used to read `X-Forwarded-For` raw and take the **leftmost** address —
+    the one part of that header any visitor writes themselves — so a script
+    could be a new sender on every request. `request.client` is now rewritten
+    by the trusted-proxy middleware in `web.app`, from the rightmost address a
+    trusted proxy did not vouch for. The global hourly cap stays the backstop.
     """
-    forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    return ratelimit.client_of(request)
