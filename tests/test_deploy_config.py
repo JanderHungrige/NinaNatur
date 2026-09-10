@@ -94,3 +94,24 @@ def test_a_template_carries_no_real_secret(template: Path) -> None:
     the example is a token in the repository."""
     token = env(template).get("NINANATUR_GITHUB_TOKEN", "")
     assert token == "", f"{template.name} carries a token value"
+
+
+def test_every_published_port_is_bound_to_the_proxy_interface() -> None:
+    """A bare `PORT:4000` binds to 0.0.0.0, and then the app answers the whole
+    internet in plaintext, beside the proxy rather than behind it.
+
+    Found on 2026-09-07 and still live on 2026-09-10: `http://<host-ip>:4000`
+    and `:4001` both answered, so the TLS, the proxy's exploit rules and the
+    forwarded-scheme signal the session cookie relies on were all optional —
+    and the preview, which must never be public, was.
+
+    Nginx Proxy Manager runs as a container and reaches the app through the
+    Docker bridge gateway, so that is the one interface to bind. Not 127.0.0.1:
+    the proxy is not on the host's loopback, and that binding would lock it out.
+    """
+    ports = re.findall(r'^\s*-\s*"?([^"\n]+:4000)"?\s*$', COMPOSE.read_text(), re.M)
+    assert ports, "compose publishes no port at all — the proxy has nothing to reach"
+    for port in ports:
+        assert port.startswith("172.17.0.1:"), (
+            f"{port!r} binds to every interface; bind it to 172.17.0.1"
+        )

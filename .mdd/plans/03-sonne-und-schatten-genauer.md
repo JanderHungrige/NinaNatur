@@ -257,11 +257,96 @@ drei Wochen, wobei 0–4 den größten Teil des Nutzens tragen.
 1. **Was steht als Hauptzahl auf der Seite?** Sonnenstunden (vergleichbar mit
    dem Etikett) oder relative Beleuchtung (näher an Ellenberg)? Empfehlung: beide,
    Stunden groß, Himmelsanteil und L daneben.
-2. **Regionale Bewölkung ja/nein?** Der DWD stellt Monatsraster der
-   Globalstrahlung offen bereit (Attribution nach GeoNutzV). Damit würde aus
-   „mögliche Sonne" „erwartbare Sonne" (Freiburg ≠ Kiel). Eine Quelle mehr in
-   der Registry, wie Wave 17 sie führt. Nicht nötig für E2–E3, aber der Schritt
-   danach.
+2. **Regionale Bewölkung** — beantwortet in Abschnitt 6: Klimatologie je
+   Koordinate aus PVGIS (Direkt/Diffus je Monat), DWD-Raster als Prüfung;
+   kein Dreijahresmittel.
 3. **Werte werden sich verschieben.** E2/E3 ändern L-Werte bestehender Gärten
    beim nächsten Neuberechnen. Das gehört auf die Seite gesagt („Modell v2,
    berechnet am …"), nicht stillschweigend.
+
+---
+
+## 6. Bewölkung: Klimatologie statt Dreijahresmittel
+
+*Ergänzt am 2026-09-07 nach Rückfrage des Owners: „Wie geht man mit Bewölkung
+um, wenn der Himmel einbezogen wird — Durchschnitt der letzten drei Jahre?"*
+
+### 6.1 Warum nicht drei Jahre
+
+Eine Pflanzentscheidung gilt für Jahre; sie braucht das **zu erwartende** Licht
+eines Orts, nicht das der letzten Saison. Die Sonnenscheindauer schwankt in
+Deutschland von Jahr zu Jahr um ±10–20 % (2018 und 2022 waren Rekordjahre,
+2021 trüb). Ein Dreijahresmittel trägt diese Zufälligkeit fast ungedämpft und
+hängt davon ab, *welche* drei Jahre. Der Standard ist eine **Klimatologie** über
+mindestens 15, besser 30 Jahre — aber nicht 1961–1990, denn Deutschland ist
+seither spürbar sonniger geworden. Zwei brauchbare Fenster: die WMO-Referenz
+**1991–2020** (DWD) und die Satellitenära **2005 ff.** (PVGIS SARAH-3; PVGIS 6
+Beta: 2014–2024).
+
+### 6.2 Quellen, am 2026-09-07 geprüft
+
+| Quelle | Liefert | Zugriff | Lizenz |
+|---|---|---|---|
+| **PVGIS (JRC), `MRcalc`** | je Koordinate **Monatsmittel** von Globalstrahlung horizontal, Direkt-Normalstrahlung und **Diffusanteil Kd**, aus SARAH-3 (Satellit, ~5 km) + ERA5 | ein HTTP-GET je Garten, JSON, ohne Registrierung; Limit 30 Aufrufe/s je IP, kein AJAX (serverseitig also genau richtig); **`usehorizon=0` setzen** — PVGIS rechnet sonst seinen eigenen DEM-Horizont ein, und den haben wir selbst (Doppelzählung) | „free and there are no restrictions on its use" (PVGIS-Nutzungsbedingungen); Quellenangabe „PVGIS © European Union" als Anstand |
+| **DWD Climate Data Center** | 1-km-Raster: Globalstrahlung **Mehrjahresmittel 1991–2020** (Zip 705 KB — könnte im Image mitfahren), Sonnenscheindauer (Mehrjahresmittel), Diffusstrahlung monatlich ab 2015 | `opendata.dwd.de/climate_environment/CDC/grids_germany/…`, ASCII-Grid | **CC BY 4.0** (`Terms_of_use.txt`), Quellenangabe „Deutscher Wetterdienst" |
+
+Stichprobe PVGIS für Wuppertal (51,25° N, 7,15° O), SARAH-3, 2015–2020:
+
+| Monat | Global H(h) kWh/m² | Diffusanteil |
+|---|---|---|
+| März | 78 | 0,54 |
+| April | 128 | 0,48 |
+| Mai–August | 141–161 | 0,49–0,52 |
+| September | 97 | 0,51 |
+| Oktober | 52 | 0,61 |
+
+**Rund die Hälfte des Lichts der Vegetationszeit ist diffus.** Das ist die
+Zahl, die das heutige Modell mit „Stunden direkter Sonne" schlicht nicht
+kennt — und der Grund, warum ein offener Nordstandort heller ist, als seine
+Sonnenstunden sagen.
+
+### 6.3 Wie die Bewölkung ins Modell kommt
+
+Die Geometrie liefert je Zelle und Monat zwei Zahlen, die Klimatologie liefert
+die Gewichte:
+
+    Licht(Zelle, Monat) = D(Monat) · f_direkt(Zelle, Monat) + Hd(Monat) · SVF(Zelle)
+
+- `f_direkt` — Anteil der Klarhimmel-Direktstrahlung, der die Zelle durch
+  Hindernisse, Hang und Horizont erreicht, mit cos(Einfall) gewichtet (E2/E3).
+- `SVF` — Himmelsanteil der Zelle (E2), gewichtet mit einem **bedeckten
+  CIE-Himmel** (Zenit heller als Horizont), weil Hindernisse den tiefen Himmel
+  verdecken und der Zenit unter Wolken den Löwenanteil liefert.
+- `D(Monat) = H(h) · (1 − Kd)`, `Hd(Monat) = H(h) · Kd` — direkte und diffuse
+  Horizontalstrahlung aus PVGIS, also **die tatsächliche, bewölkungsbereinigte
+  Klimatologie dieses Orts**, keine Klarhimmel-Annahme.
+- **Relative Beleuchtung** `r.B. = Licht(Zelle) / Licht(Freiland)` mit dem
+  Freiland bei `f_direkt = 1`, `SVF = 1`. Die Bewölkung kürzt sich im Verhältnis
+  nur *teilweise* heraus — ihr eigentlicher Effekt ist die **Mischung**: in Kiel
+  (Kd höher) zählt der Himmelsanteil mehr und der Sonnenstundenverlust weniger
+  als in Freiburg. Genau das ist physikalisch richtig und ist mit Stunden allein
+  nicht darstellbar.
+- Ellenberg L folgt aus r.B. (Schwellen in E2). Nebenbei: die relative
+  Beleuchtungsstärke wird in der Vegetationskunde klassisch **bei bedecktem
+  Himmel** gemessen, weil der Wert dann stabil ist — L korreliert also vor allem
+  mit dem diffusen Anteil, den das heutige Modell ganz weglässt. Direkte Sonne
+  ist zusätzlich Wärme- und Trockenstress; dafür stehen Morgen/Nachmittag und
+  die Achsen T und M.
+
+Für die Seite bleibt eine Zahl, die jeder versteht: **„erwartbare
+Sonnenstunden"** = geometrisch mögliche Stunden × (klimatologische
+Sonnenscheindauer / astronomisch mögliche) je Monat — im Juni z. B. 7,5 statt
+15 möglichen. Daneben Himmelsanteil und L.
+
+### 6.4 Was das kostet
+
+Ein PVGIS-Aufruf je Garten (zwölf Monate, drei Zahlen), auf dem Volume
+gecached wie das Geländefenster — für immer, denn eine Klimatologie ändert sich
+nicht zwischen zwei Neuberechnungen. Rückfall ohne Netz: das DWD-1991–2020-Raster
+(705 KB, CC BY 4.0) im Image, Punktabfrage per Zelle. Rechenzeit: zwölf
+Multiplikationen je Zelle. Speicher: einige hundert Byte je Garten.
+
+Nicht modelliert und so zu sagen: der Tagesgang der Bewölkung (Morgennebel im
+Tal, Nachmittagsquellwolken), das Mikroklima, einzelne Jahre. Eine
+1-km-Monatsklimatologie ist die richtige Körnung für die Frage „was kann hier
+wachsen"; Wettervorhersage ist ein anderes Produkt.

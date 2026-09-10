@@ -63,7 +63,11 @@ Nginx Proxy Manager: ninanatur.w3rth.de -> 172.17.0.1:4000
 ```
 
 CI never SSHes into the host. `172.17.0.1` is the Docker bridge gateway, so the
-proxy reaches the published host port without a shared network.
+proxy reaches the published host port without a shared network — and since
+2026-09-10 the port is published **on that interface only**. Until then it was
+bound to `0.0.0.0`, and both stacks answered `http://<host-ip>:4000` and `:4001`
+in plaintext, beside the proxy rather than behind it.
+`tests/test_deploy_config.py` now fails on a bare `PORT:4000`.
 
 ## API Endpoints
 

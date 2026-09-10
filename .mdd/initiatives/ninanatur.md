@@ -2,8 +2,8 @@
 id: ninanatur
 title: NinaNatur
 status: active
-version: 22
-hash: 247208f5
+version: 24
+hash: d735d8b7
 created: 2026-08-27
 ---
 
@@ -204,4 +204,9 @@ data would be convenient.
 | Wave 20 | waves/ninanatur-wave-20.md | Nothing here is worse than it looks: a web and application security review, and the fixes it names | planned |
 | Wave 21 | waves/ninanatur-wave-21.md | The roof, said properly: eaves and ridge direction measured rather than assumed | planned |
 | Wave 22 | waves/ninanatur-wave-22.md | A place to look at it from: accounts, visits and progress, behind an SSH tunnel | planned |
-| Wave 25 | waves/ninanatur-wave-25.md | A finished plan split across as few nurseries as possible | planned |
+| Wave 23 | waves/ninanatur-wave-23.md | The plan is the page: a workspace that never scrolls, on the desk and on the phone | planned |
+| Wave 24 | waves/ninanatur-wave-24.md | A drawing of a garden: Draft Sketch, with Warren Davison's permission, extended for gardens behind a swappable theme | planned |
+| Wave 25 | waves/ninanatur-wave-25.md | Down to the square metre: open tiles, point clouds and LoD2 for every state | planned |
+| Wave 26 | waves/ninanatur-wave-26.md | Light, not hours: sky, climatology and exact shadows, checked against reality | planned |
+| Wave 27 | waves/ninanatur-wave-27.md | One plan, one basket: a shopping list by region and parcel, handed to the nurseries | planned |
+| Wave 28 | waves/ninanatur-wave-28.md | What colour it flowers: primary and secondary flower colours from open photographs, measured, judged and evidenced | planned |
