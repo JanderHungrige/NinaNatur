@@ -28,6 +28,7 @@ from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, init_schema
 from ninanatur.version import app_version
 from ninanatur.web.environment import environment
+from ninanatur.web.security import install as install_security
 
 STATIC_DIR = Path(__file__).parent / "static"
 # The built frontend, present only in the container image. Vite serves it in
@@ -68,8 +69,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="NinaNatur",
     version=app_version(),
-    docs_url="/api/docs",
+    # Served by `web/security.py` instead, on the preview only. FastAPI's own
+    # routes would publish the whole API surface on the live site.
+    docs_url=None,
     redoc_url=None,
+    openapi_url=None,
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -98,8 +102,6 @@ app.include_router(canopies_router)
 #: visitor cannot write. Never "*": that takes the leftmost, which anybody can.
 TRUSTED_PROXIES = os.environ.get("NINANATUR_TRUSTED_PROXIES", "127.0.0.1,172.16.0.0/12")
 
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_PROXIES)
-
 
 #: The largest request body the API reads, in bytes. The biggest legitimate one
 #: is a 500-corner outline, around 15 KB; a bed polygon used to be accepted at
@@ -118,6 +120,17 @@ async def body_has_an_edge(request: Request, call_next):  # type: ignore[no-unty
     if declared is not None and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
         return JSONResponse(status_code=413, content={"detail": "Anfrage zu groß"})
     return await call_next(request)
+
+
+# Headers, allowed hosts, upstream failures and the preview-only API docs —
+# see `web/security.py`. Installed after the body limit so its guard wraps the
+# 413 too.
+install_security(app)
+
+# Last, so it runs first: every later decision — the rate-limit key, the
+# cookie's Secure flag, HSTS — needs the visitor's address and scheme already
+# rewritten from the trusted proxy's headers.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_PROXIES)
 
 
 @app.exception_handler(ValueError)

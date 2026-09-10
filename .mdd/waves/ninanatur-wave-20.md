@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-19
 demo_state: "Ein geschriebener Prüfbericht über Web- und Anwendungssicherheit, jede Feststellung mit dem Ort im Code und einem Reproduktionsweg; die Befunde behoben und durch Tests festgehalten, die den Angriff selbst versuchen. Die Abhängigkeiten sind auf bekannte Schwachstellen geprüft, und CI bricht ab, wenn eine neue dazukommt. Die Datenbank hat eine Sicherung, die jede Nacht läuft und deren Rückspielen geprobt ist."
 created: 2026-09-07
-hash: 9937f513
+hash: b8250b0e
 ---
 
 # Wave 20: Nothing here is worse than it looks
@@ -137,6 +137,23 @@ decisions shape the features:
   `/recompute` and `/from-map` — the last piece of feature 2. `feedback.py` had
   read the **leftmost** `X-Forwarded-For` entry raw, the part anybody writes;
   fixed with it. Ten attack tests, `tests/test_security_proxy.py`.
+- **2026-09-10 — feature 3, what the app says about itself.** Measured first:
+  the live site sent **no** security header (NPM adds only `Server` and
+  `X-Served-By`), and `/openapi.json` and `/api/docs` were public on both
+  deployments. `web/security.py` now sets `nosniff`, `DENY`, a referrer policy
+  (`strict-origin-when-cross-origin`, not `no-referrer`, because OSM's tile
+  policy wants a Referer), COOP, a Permissions-Policy that leaves the clipboard
+  alone, and a CSP without `unsafe-inline` — the bundle is one module script and
+  one stylesheet. Its `img-src` is read from the orthophoto registry, and names
+  `thumb.wikimedia.org` beside `upload.`: the plan named only `upload.`, which
+  would have blanked five of the seven photos in the catalogue. HSTS is set by
+  the app, only when the trusted proxy reports https. A forged Host is a 400;
+  the API description is 404 in production and up on the preview, decided per
+  request. Two upstream paths were reproduced and fixed: an unreachable service
+  was a bare **500**, and one answering HTML was a **422 carrying the parser's
+  message** (`JSONDecodeError` is a `ValueError`); both are now a 502 that names
+  nobody, logged in full. Eighteen tests in `tests/test_security_headers.py` —
+  the header assertions are one of the three CI gates.
 
 ## Features
 
@@ -145,7 +162,7 @@ decisions shape the features:
 | 0 | a-test-that-attacks | — | planned | — |
 | 1 | behind-the-proxy-only | — | complete | 0 |
 | 2 | every-number-has-an-edge | — | complete | 0 |
-| 3 | what-the-app-says-about-itself | — | planned | 0 |
+| 3 | what-the-app-says-about-itself | — | complete | 0 |
 | 4 | a-copy-of-everything | — | planned | — |
 | 5 | busy-not-broken | — | planned | 2 |
 | 6 | what-the-log-knows | — | planned | 3 |

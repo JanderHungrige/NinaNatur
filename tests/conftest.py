@@ -20,9 +20,19 @@ it is applied later.
 """
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 
 import pytest
+
+# The names the app answers to, plus `testserver` — the Host every TestClient
+# sends. Set here, before any test module imports the app, because the list is
+# read once at import. Production never sees this value: the image's default
+# names only the real domains, localhost and the loopback address.
+os.environ.setdefault(
+    "NINANATUR_ALLOWED_HOSTS",
+    "ninanatur.w3rth.de,ninanatur-dev.w3rth.de,localhost,127.0.0.1,testserver",
+)
 
 
 @pytest.fixture(autouse=True)
