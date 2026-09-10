@@ -155,7 +155,7 @@ each protects against something the others do not:
 |---|---|---|
 | `/data/backups/` inside the volume | a bad migration, a deleted row | 14 nightly + 5 taken before each migration |
 | `~/backups/ninanatur/prod/` on the host | the volume itself being removed or recreated | 30 |
-| off the host | losing the machine | see below |
+| `~/Backups/ninanatur/` on the owner's Mac | losing the machine | 90 per deployment |
 
 **Nightly**, from jan's crontab (docker works without sudo for jan):
 
@@ -190,6 +190,20 @@ docker compose --env-file deploy/.env.prod -f deploy/compose.app.yml start app
 A copy that exists only on the host is put back into the volume with
 `docker cp ~/backups/ninanatur/prod/<file>.sqlite.gz ninanatur-prod-app-1:/data/backups/`
 first.
+
+**Off the host**, on the owner's Mac: a launchd agent pulls `~/backups/ninanatur/`
+with rsync daily at 09:30 — pulled, not pushed, so the server holds no key to
+the Mac — checks the newest copy with `gzip -t`, and keeps 90 per deployment.
+launchd runs a slot the Mac slept through when it wakes. Install or update it
+from the repository on the Mac (the script is copied out of the checkout, so a
+branch switch cannot stop it):
+
+```bash
+deploy/mac/install-pull.sh
+```
+
+Log: `~/Backups/ninanatur/pull.log`. A copy on the Mac goes back to the server
+with `scp` into `~/backups/ninanatur/prod/`, then as above.
 
 ## 5. Nginx Proxy Manager
 
