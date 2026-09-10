@@ -185,6 +185,20 @@ decisions shape the features:
   nightly backup run under WAL). Five tests, `tests/test_busy_not_broken.py`.
   Still open in feature 5: async `/healthz`, a concurrency limit with 429, the
   light computation in a process pool, and the outbound budgets.
+- **2026-09-10 — feature 5, part 2: a full house says so.** The three expensive
+  routes share two slots, one per core on the host (uvicorn runs one process,
+  so the cap is the app's, not a worker's). The one too many gets a 429 with
+  `Retry-After: 10` at once instead of queueing in the thread pool, and is not
+  counted against the visitor's own limit — the slot is a dependency, taken
+  before the handler's rate-limit check. A slot is given back however the
+  computation ends. Measured on the preview: four `/light` calls 0.2 s apart on
+  a garden that had to fetch its terrain — two ran (10.7 s), two were refused
+  in 3 ms. `/healthz` is async, so the Docker healthcheck (4 s timeout) no
+  longer waits behind a full thread pool. `api/gardens.py` was already 365
+  lines on main; the bed and obstacle routes moved to `api/elements.py`, the
+  helpers stayed where their importers find them. Eight tests,
+  `tests/test_busy_slots.py`. Still open in feature 5: the light computation in
+  a process pool, and the outbound budgets.
 
 ## Features
 
