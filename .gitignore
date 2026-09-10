@@ -44,3 +44,7 @@ frontend/dist/
 # Built frontend copied in for the container image
 ninanatur/web/dist/
 frontend/openapi.json
+
+# Database backups (Wave 20 feature 4) — the same data as *.sqlite, compressed
+*.sqlite.gz
+data/backups/
