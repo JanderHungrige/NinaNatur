@@ -153,6 +153,7 @@ def light_map(
 def rebuild_light_map(
     token: str,
     request: Request,
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> LightMap | None:
     """Recompute the whole map, now, because somebody asked.
