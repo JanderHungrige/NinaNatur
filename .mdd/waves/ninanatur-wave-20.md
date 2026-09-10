@@ -3,11 +3,11 @@ id: ninanatur-wave-20
 title: "Wave 20: Nothing here is worse than it looks"
 initiative: ninanatur
 initiative_version: 24
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-19
 demo_state: "Ein geschriebener Prüfbericht über Web- und Anwendungssicherheit, jede Feststellung mit dem Ort im Code und einem Reproduktionsweg; die Befunde behoben und durch Tests festgehalten, die den Angriff selbst versuchen. Die Abhängigkeiten sind auf bekannte Schwachstellen geprüft, und CI bricht ab, wenn eine neue dazukommt. Die Datenbank hat eine Sicherung, die jede Nacht läuft und deren Rückspielen geprobt ist."
 created: 2026-09-07
-hash: 6081daa2
+hash: 670f1e8e
 ---
 
 # Wave 20: Nothing here is worse than it looks
@@ -96,12 +96,23 @@ decisions shape the features:
   which feature 6 addresses.
 - `ninanatur-zentrale.w3rth.de` was deleted, as Wave 22 requires.
 
+## Progress
+
+- **2026-09-10 — the binding, ahead of the harness.** Feature 1's port binding
+  shipped before feature 0, deliberately: it was live, it needed no account, and
+  it was a one-line change with a self-consistency test
+  (`test_every_published_port_is_bound_to_the_proxy_interface`) written red
+  first. Both stacks now publish on `172.17.0.1` only; verified from outside the
+  host and from inside the NPM container. Feature 1 stays open for its other two
+  parts — forwarded-header trust and the rate-limit key — and for the host
+  firewall, which needs sudo and is the owner's step.
+
 ## Features
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | a-test-that-attacks | — | planned | — |
-| 1 | behind-the-proxy-only | — | planned | 0 |
+| 1 | behind-the-proxy-only | — | in_progress | 0 |
 | 2 | every-number-has-an-edge | — | planned | 0 |
 | 3 | what-the-app-says-about-itself | — | planned | 0 |
 | 4 | a-copy-of-everything | — | planned | — |
