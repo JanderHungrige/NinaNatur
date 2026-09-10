@@ -27,10 +27,15 @@ from ninanatur.ingest.schema import SCHEMA
 
 DEFAULT_DB_PATH = Path("data/ninanatur.sqlite")
 DB_PATH_ENV = "NINANATUR_DB"
+#: How long a connection waits for a lock before giving up. Long enough to sit
+#: out a commit or a checkpoint, short enough that a genuinely stuck write still
+#: surfaces as an error rather than a hung request.
+BUSY_TIMEOUT_MS = 5000
 
 #: Re-exported: callers and tests reach for these here, and moving the schema
 #: out should not move where the rest of the project imports from.
 __all__ = [
+    "BUSY_TIMEOUT_MS",
     "DB_PATH_ENV",
     "DEFAULT_DB_PATH",
     "ELEMENT_RESET_KEY",
@@ -38,6 +43,7 @@ __all__ = [
     "SCHEMA",
     "connect",
     "database_path",
+    "enable_wal",
     "init_schema",
 ]
 
@@ -67,7 +73,28 @@ def connect(
     conn = sqlite3.connect(str(path), check_same_thread=same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    # Said explicitly rather than inherited from the driver's default, because
+    # it is what stands between a busy moment and a 500.
+    conn.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
+    # Per connection, and only meaningful under WAL: a power cut can lose the
+    # last commit but never corrupt, and a write saves an fsync.
+    conn.execute("PRAGMA synchronous = NORMAL")
     return conn
+
+
+def enable_wal(conn: sqlite3.Connection) -> str:
+    """Put the database in write-ahead-log mode; returns the mode it is in.
+
+    Under the default rollback journal a writer that is committing locks the
+    whole file, and a reader waiting longer than the busy timeout gets
+    "database is locked" — a 500 no single-threaded test sees. Under WAL readers
+    read the last committed state while a writer writes.
+
+    Called by the app's startup on its own database, not by `connect`: the mode
+    is stored in the file, so once is enough, and switching it needs write
+    access that the catalogue in the image and a read-only copy do not give.
+    """
+    return str(conn.execute("PRAGMA journal_mode = WAL").fetchone()[0])
 
 
 def init_schema(conn: sqlite3.Connection) -> list[str]:

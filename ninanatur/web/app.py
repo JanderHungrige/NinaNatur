@@ -26,7 +26,7 @@ from ninanatur.api.light import router as light_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
-from ninanatur.ingest.db import connect, database_path, init_schema
+from ninanatur.ingest.db import connect, database_path, enable_wal, init_schema
 from ninanatur.ops.backup import default_dest, snapshot_before_migration
 from ninanatur.version import app_version
 from ninanatur.web.environment import environment
@@ -68,6 +68,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         migrated = init_schema(conn)
         if migrated:
             print(f"schema migrated: {', '.join(migrated)}", flush=True)
+        # After the pre-migration copy and the migrations, so both still ran
+        # against the file exactly as the previous release left it.
+        mode = enable_wal(conn)
+        if mode != "wal":
+            print(f"WARNING: database stayed in journal mode {mode!r}, not WAL",
+                  file=sys.stderr, flush=True)
         # A fresh volume has the schema but no plants, and the app then answers
         # "0 matching species" to every request. An *existing* volume has plants
         # but not the ones a newer image ships — which is how the insect group
