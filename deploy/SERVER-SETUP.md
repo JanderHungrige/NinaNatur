@@ -189,6 +189,15 @@ docker exec ninanatur-prod-app-1 python -c "import sqlite3;print(sqlite3.connect
 
 — real visitor addresses, never `172.x.0.1`.
 
+**Which names the app answers to.** Any Host other than those in
+`NINANATUR_ALLOWED_HOSTS` is refused with a 400 — default
+`ninanatur.w3rth.de,ninanatur-dev.w3rth.de,localhost,127.0.0.1`. **A new domain
+in NPM needs its name added here too**, in the env file, or it will answer 400
+and look broken.
+
+**HSTS** is sent by the app itself, only when the proxy reports https. NPM's own
+HSTS switch can stay off; turning it on as well is harmless.
+
 **Second layer (needs sudo):** a host firewall that drops 4000 and 4001 from
 outside. Not a substitute for the binding — Docker's published ports bypass
 ufw's INPUT rules — but it holds if the binding is ever loosened again.
