@@ -172,6 +172,19 @@ decisions shape the features:
   owner's Mac pulls the host copies with rsync daily at 09:30 — pulled, so the
   server holds no key to the Mac — checks the newest with `gzip -t` and keeps
   90 per deployment (`deploy/mac/`). First pull verified for prod and dev.
+- **2026-09-10 — feature 5, part 1: readers are answered while a writer
+  writes.** Reproduced first: under the default rollback journal a reader
+  behind a writer holding the lock got `database is locked`; under WAL it reads
+  the last committed state at once. Startup now puts the serving database in
+  WAL (`enable_wal`, after the pre-migration copy and the migrations), and every
+  connection sets an explicit 5 s busy timeout and `synchronous=NORMAL`.
+  `connect()` itself changes no file's journal, so the catalogue in the image
+  and the ingest files stay as they are. The online backup takes a commit that
+  is still in `-wal` — tested, because a file copy would miss it. Verified on a
+  fresh volume, on the preview and in production (both in WAL, counts intact,
+  nightly backup run under WAL). Five tests, `tests/test_busy_not_broken.py`.
+  Still open in feature 5: async `/healthz`, a concurrency limit with 429, the
+  light computation in a process pool, and the outbound budgets.
 
 ## Features
 
