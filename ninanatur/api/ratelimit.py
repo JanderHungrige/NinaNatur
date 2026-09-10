@@ -14,7 +14,9 @@ value in the header a visitor cannot choose.
 from __future__ import annotations
 
 import sqlite3
+import threading
 import time
+from collections.abc import Iterator
 
 from fastapi import HTTPException, Request, status
 
@@ -57,4 +59,40 @@ def check(conn: sqlite3.Connection, request: Request, bucket: str) -> None:
     conn.commit()
 
 
-__all__ = ["LIMITS", "REFUSAL", "check", "client_of"]
+# --- how much may run at once, whoever is asking ------------------------------
+
+#: One per core on the host (two). The expensive routes are CPU-bound for
+#: seconds; more at once than there are cores only makes each of them slower
+#: while the thread pool fills and the cheap page loads queue behind them.
+HEAVY_SLOTS = 2
+HEAVY = threading.BoundedSemaphore(HEAVY_SLOTS)
+#: Roughly one computation's worth of waiting.
+RETRY_AFTER_S = 10
+BUSY = "Gerade wird schon viel gerechnet. Bitte versuch es in ein paar Sekunden noch einmal."
+
+
+def heavy_slot() -> Iterator[None]:
+    """A slot for one expensive computation, or a 429 at once rather than a queue.
+
+    A dependency rather than code in the handler, so it is taken before the
+    handler's own rate-limit check: a visitor turned away because the house is
+    full has not used up any of their own allowance. Given back however the
+    computation ends — a crash that kept its slot would shrink the house by one
+    each time until it answered nobody.
+    """
+    if not HEAVY.acquire(blocking=False):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=BUSY,
+            headers={"Retry-After": str(RETRY_AFTER_S)},
+        )
+    try:
+        yield
+    finally:
+        HEAVY.release()
+
+
+__all__ = [
+    "BUSY", "HEAVY", "HEAVY_SLOTS", "LIMITS", "REFUSAL", "RETRY_AFTER_S",
+    "check", "client_of", "heavy_slot",
+]

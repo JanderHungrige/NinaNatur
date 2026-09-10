@@ -82,6 +82,7 @@ def imagery_at(
 def garden_from_map(
     payload: MapSelection,
     request: Request,
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     account: Annotated[Account | None, Depends(current_account)] = None,
 ) -> MapGardenOut:

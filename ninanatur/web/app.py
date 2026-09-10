@@ -19,6 +19,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from ninanatur.api.accounts import router as accounts_router
 from ninanatur.api.canopies import router as canopies_router
+from ninanatur.api.elements import router as elements_router
 from ninanatur.api.feedback import router as feedback_router
 from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.geo import router as geo_router
@@ -101,6 +102,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(plants_router)
 app.include_router(gardens_router)
+app.include_router(elements_router)
 app.include_router(planning_router)
 app.include_router(geo_router)
 app.include_router(accounts_router)
@@ -168,11 +170,13 @@ async def value_error_is_422(_: Request, exc: ValueError) -> JSONResponse:
 
 
 @app.get("/healthz")
-def healthz() -> JSONResponse:
+async def healthz() -> JSONResponse:
     """Liveness probe for the deploy cron and the reverse proxy.
 
     Deliberately dependency-free: it must answer while the app is otherwise
-    broken, or a failing deploy looks identical to a failing database.
+    broken, or a failing deploy looks identical to a failing database. And
+    async, so it runs on the event loop rather than in the thread pool the
+    expensive computations fill — a busy app must not look like a dead one.
     """
     return JSONResponse(
         {
