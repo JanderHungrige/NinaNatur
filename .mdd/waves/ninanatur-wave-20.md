@@ -344,7 +344,7 @@ decisions shape the features:
   refuses a request whose `Origin` names another host, or that the browser marks
   `same-site` or `cross-site` (`api/origin.py`), and logs it on the security
   channel with the route rather than the path; a test walks every route, so a
-  new one cannot forget. And the account answer promised a password reset with
+  new one cannot forget (it walked none of them until feature 0 — see there). And the account answer promised a password reset with
   an e-mail where there is none: it now says the address is stored unverified
   and nothing can be reset yet, and a test holds that no reset route appears
   before addresses can be verified. Checked on the preview through the proxy:
@@ -412,12 +412,59 @@ decisions shape the features:
   `tests/test_candidate_cache.py`, `tests/test_served_fast.py`,
   `tests/test_measure_is_bounded.py`, one in `tests/test_front_door_video.py`,
   `frontend/src/derived.test.ts` and one in `LivingBackground.test.tsx`.
+- **2026-09-11 — feature 0, a test that attacks.** Written last rather than
+  first, and it found the one thing the other features had missed: the guard
+  feature 9 put on every route checked none. FastAPI 0.141 — the version the
+  lock pinned in feature 7 — keeps included routers in `app.routes` as opaque
+  entries, so a loop over `app.routes` meets three of the forty-five routes,
+  `/healthz` and the preview's two documentation routes, none of them a write.
+  The walker that promised a new route could not forget the origin check, and
+  the guard that no password reset appears before e-mail is verified, both
+  passed by looking at nothing. The protection itself held — the origin tests
+  call the real routes — but the proof that it reaches the next route did not
+  exist. Both now walk the routes the way the API document does
+  (`tests/route_walk.py`, `iter_route_contexts`), refuse to answer if the walk
+  stops reaching routes that are always there, and say what they checked: all
+  six routes that act on a login carry the check. Then the matrix the review
+  asked for (`tests/test_security_matrix.py`): each of the nine routes that take
+  the id of something inside a garden refuses one from another garden with a
+  404, and both gardens are exactly what they were; the same call with the
+  garden's own id is answered, so the 404 is about whose id it is; each of the
+  twenty-seven routes that take a token refuses one that names no garden with a
+  404, never a 403. The tables are checked against the app's own route list, so
+  the next route fails until somebody has decided what kind of id it takes; the
+  three that take a catalogue id are named as public. All of it held — nothing
+  had to be fixed. `pytest-socket` now refuses every socket but a Unix one for
+  the whole suite, and 1,232 tests pass under it: no test was reaching the
+  network, and now none can. CI runs the gates first and by name (`pytest -m
+  gate`: the matrix, the headers, the origin walker, the socket rule), beside the
+  dependency audit feature 7 put in. And each gate was shown to fail: with
+  `require_bed` no longer checking whose bed it is, the matrix goes red on
+  exactly the three routes that use it; without claim's origin check, the
+  walker; without `X-Frame-Options`, six header tests; with the socket rule off,
+  the network tests; and `pip-audit`, given Jinja pinned at 2.10, names its
+  advisories and exits 1. In production as V0.19.146, where CI now runs the
+  gates first and by name. Forty-nine new tests,
+  `tests/test_security_matrix.py` and `tests/test_no_network.py`; the walkers
+  in `tests/test_sessions_end.py`.
+- **2026-09-11 — feature 11, the report.**
+  `.mdd/docs/85-nothing-worse-than-it-looks.md`, written last and naming each
+  finding only now that it is fixed: what was found, what it is now, and which
+  test holds it — for what needed no account, for durability and load, for the
+  chain around the code, and for what turned up beside the audit, the tree
+  finder's mask included. The strengths the review confirmed are listed with
+  the test that now keeps them, the authorization matrix first; the
+  hand-entered colours and the share-token model are named as decisions rather
+  than defects; the four gates are shown with the seeded regression each failed
+  on. The raw finding list stays local. What is still the owner's — branch
+  protection, a host firewall behind the bridge-only binding, a host-wide log
+  default — is named as this file already names it.
 
 ## Features
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | a-test-that-attacks | — | planned | — |
+| 0 | a-test-that-attacks | — | complete | — |
 | 1 | behind-the-proxy-only | — | complete | 0 |
 | 2 | every-number-has-an-edge | — | complete | 0 |
 | 3 | what-the-app-says-about-itself | — | complete | 0 |
@@ -428,7 +475,7 @@ decisions shape the features:
 | 8 | parsers-that-refuse | — | complete | 2 |
 | 9 | sessions-that-end | — | complete | 3 |
 | 10 | faster-where-it-is-felt | — | complete | 5 |
-| 11 | the-report | — | planned | 1–10 |
+| 11 | the-report | 85-nothing-worse-than-it-looks | complete | 1–10 |
 
 Five stages, in the order the local plan sets — what the live site can suffer
 without an account first:
