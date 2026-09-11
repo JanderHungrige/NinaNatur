@@ -11,3 +11,10 @@ __pycache__
 .pytest_cache
 .mypy_cache
 .ruff_cache
+# No secret file reaches an image. The frontend stage copies its whole directory,
+# and Vite bakes VITE_* variables from a .env into the public bundle.
+**/.env
+**/.env.*
+# The developer's install, for another platform; the image runs its own npm ci.
+frontend/node_modules
+frontend/dist
