@@ -288,7 +288,10 @@ cyclonedx-python-lib==11.12.0 \
 defusedxml==0.7.1 \
     --hash=sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69 \
     --hash=sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61
-    # via py-serializable
+    # via
+    #   -c requirements.txt
+    #   ninanatur (pyproject.toml)
+    #   py-serializable
 et-xmlfile==2.0.0 \
     --hash=sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa \
     --hash=sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54
@@ -1185,6 +1188,10 @@ tomli-w==1.2.0 \
     --hash=sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90 \
     --hash=sha256:2dd14fac5a47c27be9cd4c976af5a12d87fb1f0b4512f81d69cce3b35ae25021
     # via pip-audit
+types-defusedxml==0.7.0.20260504 \
+    --hash=sha256:2ab2828a3f97111ba1c16cee273ad4124a831fc9198c41bf8368ff6ea48ad300 \
+    --hash=sha256:a959e3a0a43b93e464bd625d91ec9193a2703ddc10443bdd627792485fae0b10
+    # via -r requirements-dev.in
 types-requests==2.33.0.20260906 \
     --hash=sha256:76ab8a0fb736744a0c3deee7aa57b2927e301f078d9e61f5391b3e92002416b9 \
     --hash=sha256:9f53622652bd921ead7a54d665be1b8d518165c8b51cc9d68d944cd6b6bfa8fb

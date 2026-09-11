@@ -8,5 +8,6 @@ pytest
 ruff
 mypy
 types-requests
+types-defusedxml
 httpx
 pip-audit

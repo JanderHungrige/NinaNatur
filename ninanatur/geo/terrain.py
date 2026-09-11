@@ -79,9 +79,10 @@ def fetch_window(
 ) -> TerrainWindow | None:
     """One request, one window, in the garden's own metres.
 
-    Returns None when the service answers with something unreadable rather than
-    raising: a garden whose ground could not be fetched is a garden that keeps
-    the flat assumption and says so, not a request that fails.
+    An unreadable answer raises `TiffError` — every kind of unreadable, since
+    Wave 20's feature 8 — and `terrain_sync.ensure_terrain` logs it: a garden
+    whose ground could not be fetched keeps the flat assumption and says so, and
+    is not a request that fails. (This used to promise None, and never did.)
     """
     zone = 32 if source.epsg == 25832 else 33
     east, north = to_utm(anchor.lat, anchor.lon, zone)
