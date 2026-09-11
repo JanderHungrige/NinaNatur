@@ -48,3 +48,7 @@ frontend/openapi.json
 # Database backups (Wave 20 feature 4) — the same data as *.sqlite, compressed
 *.sqlite.gz
 data/backups/
+
+# The deploy script's memory on the host: which build failed its health check
+# there, and a log of what it rolled. It belongs to the host, never to the repo.
+deploy/.state/
