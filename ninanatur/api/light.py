@@ -17,10 +17,9 @@ from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.garden.building_sync import measure_buildings
 from ninanatur.garden.elements import now
+from ninanatur.garden.light_worker import month_grid, recompute_light
 from ninanatur.garden.lightgrid import extent_of, signature_of
 from ninanatur.garden.lightgrid_store import load_grid
-from ninanatur.garden.lighting import recompute_light
-from ninanatur.garden.lightview import month_grid
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
@@ -135,6 +134,7 @@ class ShadowDay(BaseModel):
 @router.get("/{token}/light", response_model=LightMap | None)
 def light_map(
     token: str,
+    request: Request,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     month: Annotated[int | None, Query(ge=3, le=10)] = None,
 ) -> LightMap | None:
@@ -144,9 +144,17 @@ def light_map(
     not stored. March to October, the same window the whole light model uses:
     a plant's December is not what decides where it can live, and a map of it
     would drag every German garden into shade.
+
+    A month is a computation — about a quarter of a relight, seconds on a big
+    garden — so it takes a slot and counts against the visitor's limit like the
+    other three, slot first. The stored season map is a read, never turned away.
     """
     garden = require_garden(conn, token)
-    return _read(conn, garden.garden_id, month)
+    if month is None:
+        return _read(conn, garden.garden_id)
+    with ratelimit.heavy():
+        ratelimit.check(conn, request, "month")
+        return _read(conn, garden.garden_id, month)
 
 
 @router.post("/{token}/light", response_model=LightMap | None)

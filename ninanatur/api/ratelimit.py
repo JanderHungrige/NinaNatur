@@ -17,6 +17,7 @@ import sqlite3
 import threading
 import time
 from collections.abc import Iterator
+from contextlib import contextmanager
 
 from fastapi import HTTPException, Request, status
 
@@ -29,6 +30,9 @@ LIMITS: dict[str, tuple[int, float]] = {
     "light": (30, 600.0),
     "recompute": (30, 600.0),
     "from-map": (10, 600.0),
+    # A month view is looked at, not pressed: eight months, clicked through a
+    # few times, is well inside it.
+    "month": (60, 600.0),
 }
 
 REFUSAL = "Zu viele Anfragen. Bitte warte ein paar Minuten."
@@ -71,14 +75,12 @@ RETRY_AFTER_S = 10
 BUSY = "Gerade wird schon viel gerechnet. Bitte versuch es in ein paar Sekunden noch einmal."
 
 
-def heavy_slot() -> Iterator[None]:
+@contextmanager
+def heavy() -> Iterator[None]:
     """A slot for one expensive computation, or a 429 at once rather than a queue.
 
-    A dependency rather than code in the handler, so it is taken before the
-    handler's own rate-limit check: a visitor turned away because the house is
-    full has not used up any of their own allowance. Given back however the
-    computation ends — a crash that kept its slot would shrink the house by one
-    each time until it answered nobody.
+    Given back however the computation ends — a crash that kept its slot would
+    shrink the house by one each time until it answered nobody.
     """
     if not HEAVY.acquire(blocking=False):
         raise HTTPException(
@@ -92,7 +94,19 @@ def heavy_slot() -> Iterator[None]:
         HEAVY.release()
 
 
+def heavy_slot() -> Iterator[None]:
+    """`heavy` as a dependency, for a route that always computes.
+
+    A dependency rather than code in the handler, so it is taken before the
+    handler's own rate-limit check: a visitor turned away because the house is
+    full has not used up any of their own allowance. A route that computes only
+    sometimes — the month view — takes `heavy` itself, in the same order.
+    """
+    with heavy():
+        yield
+
+
 __all__ = [
     "BUSY", "HEAVY", "HEAVY_SLOTS", "LIMITS", "REFUSAL", "RETRY_AFTER_S",
-    "check", "client_of", "heavy_slot",
+    "check", "client_of", "heavy", "heavy_slot",
 ]
