@@ -218,6 +218,25 @@ decisions shape the features:
   Streets moved to `geo/osm_streets.py` to keep `osm.py` under 300 lines.
   Twelve tests, `tests/test_outbound_budgets.py`. Still open in feature 5: the
   light computation in a process pool.
+- **2026-09-11 — feature 5, part 4: the light in a process of its own.**
+  Measured first, on the preview, on a garden of 87 elements: a relight took
+  12.9 s alone and **37.8 s each** when two ran at once, and a plain `GET` of a
+  garden went from 8 ms to a median of 220 ms (worst 1.05 s) while they ran —
+  the computation held the interpreter lock every request needs. It now runs in
+  a `forkserver` pool (`garden/light_worker.py`), one worker per slot, warmed at
+  startup: the request commits before handing over, a database without a file
+  is computed in-process as before, and a worker that dies is replaced and the
+  job run once more. Measured again on the same garden: two at once took
+  **19.5 s** each, a third was refused in 6 ms, and the `GET` stayed at a
+  median of **22 ms** (worst 89 ms) while they ran; `/healthz` answered in 8 ms.
+  It costs memory: production's container went from 57 to 108 MiB with the
+  forkserver and one worker warm (the preview's, from 100 to 110 MiB); the
+  second worker starts on demand. Live in production as V0.19.116. Found beside it: the month view
+  (`GET /light?month=`) computed a grid on every request with no slot and no
+  limit — about a quarter of a relight, seconds on a big garden, behind a token
+  anyone can mint. It now takes a slot (slot first, then its own per-visitor
+  limit of 60 in ten minutes) and runs in the pool: 3.8 s on that garden.
+  Eleven tests, `tests/test_light_worker.py`. **Feature 5 complete.**
 
 ## Features
 
@@ -228,7 +247,7 @@ decisions shape the features:
 | 2 | every-number-has-an-edge | — | complete | 0 |
 | 3 | what-the-app-says-about-itself | — | complete | 0 |
 | 4 | a-copy-of-everything | — | complete (off-host copy: owner) | — |
-| 5 | busy-not-broken | — | planned | 2 |
+| 5 | busy-not-broken | — | complete | 2 |
 | 6 | what-the-log-knows | — | planned | 3 |
 | 7 | locked-and-signed | — | planned | 0 |
 | 8 | parsers-that-refuse | — | planned | 2 |
