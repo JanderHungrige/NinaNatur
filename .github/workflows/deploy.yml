@@ -57,6 +57,13 @@ jobs:
         run: |
           pip install --require-hashes -r requirements-dev.txt
           pip install --no-deps -e .
+      # Named, and first, so that a red build says which promise broke: every
+      # route refuses another garden's ids and a token that names none, the
+      # security headers are on every answer, every route that acts on a login
+      # checks where the request came from, and no test reaches the network.
+      # They run again below with everything else.
+      - name: Security gates
+        run: pytest -q -m gate
       - name: Lint, type-check, test
         run: |
           ruff check .

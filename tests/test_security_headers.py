@@ -27,6 +27,8 @@ from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.http import HttpError
 from ninanatur.web.app import app
 
+pytestmark = pytest.mark.gate
+
 PROXY = ("172.27.0.1", 50000)
 FIXED = {
     "x-content-type-options": "nosniff",
