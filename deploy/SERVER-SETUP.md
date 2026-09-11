@@ -146,6 +146,31 @@ Check that it is actually running:
 tail -f /var/log/ninanatur-deploy.log
 ```
 
+## Rollouts
+
+`deploy/roll-all.sh` runs every minute and calls `deploy/auto-deploy.sh` for each
+configured stack, production first. Since 2026-09-11 a roll is kept only if it
+works — before that the script pruned the image it had just replaced, which was
+the only one it could have gone back to, and nothing waited for the health check:
+
+- the image a stack runs is tagged `:<tag>-previous` before a new one starts, so
+  there is always one to go back to;
+- the new container has 150 s to report healthy;
+- one that does not is rolled back, and its image id is written to
+  `deploy/.state/<env>.bad` so the next tick does not roll it forward again. A
+  different build is tried as soon as CI pushes one;
+- every roll and every rollback is written, with its digest, to
+  `deploy/.state/deploy.log`.
+
+The roll cron runs as root on this host (the lock file in /tmp is root's), so
+the state files are root's too: reading them needs nothing, removing one needs sudo.
+
+```bash
+tail deploy/.state/deploy.log                      # what the script did, and when
+docker image ls ghcr.io/janderhungrige/ninanatur   # :main, :main-previous, :dev, :dev-previous
+sudo rm deploy/.state/prod.bad                     # try a build marked bad once more
+```
+
 ## Backups
 
 There was no backup at all until 2026-09-10. Now there are three layers, and
