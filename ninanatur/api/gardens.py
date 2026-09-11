@@ -27,7 +27,7 @@ from ninanatur.api.schemas import (
     PlantingOut,
 )
 from ninanatur.auth.sessions import Account
-from ninanatur.garden.lighting import recompute_light
+from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.store import (
     create_garden,

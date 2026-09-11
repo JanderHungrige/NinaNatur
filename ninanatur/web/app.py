@@ -26,6 +26,7 @@ from ninanatur.api.geo import router as geo_router
 from ninanatur.api.light import router as light_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
+from ninanatur.garden import light_worker
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, enable_wal, init_schema
 from ninanatur.ops.backup import default_dest, snapshot_before_migration
@@ -86,7 +87,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             print(f"catalogue synced: {synced}", flush=True)
     finally:
         conn.close()
-    yield
+    # The light is computed in processes of their own; see `light_worker`.
+    worker = light_worker.start()
+    if worker is not None:
+        print(f"light worker ready: pid {worker}", flush=True)
+    try:
+        yield
+    finally:
+        light_worker.stop()
 
 
 app = FastAPI(
