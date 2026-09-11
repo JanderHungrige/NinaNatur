@@ -18,6 +18,10 @@ import type {
   TimelineOut,
 } from './api/client';
 import { NinaNaturClient } from './api/client';
+// Imported rather than served from `public/`, so the build names it by its
+// content and it may be cached for a year — see `ninanatur/web/delivery.py`.
+import meadow from './assets/meadow.mp4';
+import { fetchDerived, type DerivedSetters } from './derived';
 import { BedPanel } from './components/BedPanel';
 import { CanopyBox } from './components/CanopyBox';
 import { AccountBar } from './components/AccountBar';
@@ -133,6 +137,19 @@ export function App() {
 
   const { remember, undo, forget } = useUndoStack();
 
+  /** Where each derived answer lands: the same six on opening and after every change. */
+  const derived = useMemo<DerivedSetters>(
+    () => ({
+      timeline: setTimeline,
+      score: setScore,
+      improvements: setImprovements,
+      palette: setPalette,
+      lightMap: setLightMap,
+      terrain: setTerrain,
+    }),
+    [],
+  );
+
   const load = useCallback(async (token: string, weighted = true) => {
     const found = await client.getGarden(token);
     if (found === null) {
@@ -144,23 +161,15 @@ export function App() {
     }
     setOpenProblem(undefined);
     setGarden(found);
-    setTimeline(await client.timeline(token, weighted));
-    setScore(await client.score(token));
-    // Loaded here rather than on bed selection: the suggestions are the point of
-    // the score, and hiding them until something is clicked buries it.
-    setImprovements(await client.improvements(token));
-    // Also here, not only in refresh: a garden opened from its link never goes
-    // through refresh, so the plan had no colours until something was edited.
-    //
-    // The same trap caught the sun map on the day it was written — the switch
-    // said "nothing drawn yet" for a garden that plainly had a map. Anything
-    // fetched in `refresh` and not here is invisible until the first edit.
-    setPalette(await client.bloom(token));
-    setLightMap(await client.lightMap(token));
-    setTerrain(await client.terrain(token));
-    setCanopies(await client.canopies(token));
+    // All at once rather than in turn: none of them waits on another's answer
+    // (see `fetchDerived`). The canopy suggestions come with the garden, not
+    // after every edit — an edit does not move a tree.
+    await Promise.all([
+      fetchDerived(client, token, weighted, derived),
+      client.canopies(token).then(setCanopies),
+    ]);
     setStatus(`${found.name} geladen.`);
-  }, []);
+  }, [derived]);
 
   useEffect(() => {
     const token = tokenFromHash();
@@ -278,8 +287,10 @@ export function App() {
       setSelectedObstacleId(bedId);
       if (garden === null) return;
       void run('Vorschläge laden', async () => {
-        setSuggestions(await client.bedSuggestions(garden.share_token, bedId, filters));
-        setImprovements(await client.improvements(garden.share_token));
+        await Promise.all([
+          client.bedSuggestions(garden.share_token, bedId, filters).then(setSuggestions),
+          client.improvements(garden.share_token).then(setImprovements),
+        ]);
       });
     },
     [garden, filters, run],
@@ -358,19 +369,10 @@ export function App() {
     });
   }, garden !== null);
 
-  const refresh = useCallback(async (token: string, weighted: boolean) => {
-    setLightMap(await client.lightMap(token));
-    // The ground changes only when it is first fetched, which happens on the
-    // recompute button — so this is nearly always the same answer. It is here
-    // anyway, because the alternative is the map being right and the relief
-    // being a version behind, which is exactly the bug the comment on `load`
-    // was written about.
-    setTerrain(await client.terrain(token));
-    setTimeline(await client.timeline(token, weighted));
-    setScore(await client.score(token));
-    setImprovements(await client.improvements(token));
-    setPalette(await client.bloom(token));
-  }, []);
+  const refresh = useCallback(
+    async (token: string, weighted: boolean) => fetchDerived(client, token, weighted, derived),
+    [derived],
+  );
 
   const applyChange = useCallback(
     async (change: ChangeOut) => {
@@ -392,8 +394,10 @@ export function App() {
         // Re-read from the server: the timeline depends on data only it has.
         const updated = await client.plant(garden.share_token, selectedBedId, taxonId);
         setGarden(updated);
-        await refresh(garden.share_token, forage);
-        setSuggestions(await client.bedSuggestions(garden.share_token, selectedBedId, filters));
+        await Promise.all([
+          refresh(garden.share_token, forage),
+          client.bedSuggestions(garden.share_token, selectedBedId, filters).then(setSuggestions),
+        ]);
         setStatus(`${name} gepflanzt.`);
       });
     },
@@ -1004,7 +1008,7 @@ export function App() {
     // The front door is dark all the way out to the edges; a garden is not.
     <div className={garden === null ? 'app app--front-door' : 'app'}>
       <a className="skip-link" href="#main">Zum Inhalt springen</a>
-      {garden === null && <LivingBackground videoSrc="/meadow.mp4" />}
+      {garden === null && <LivingBackground videoSrc={meadow} />}
       <PreviewBand environment={environment} />
       <header className="site-header">
         <button type="button" className="brand" onClick={goHome} aria-label="Zur Startseite">

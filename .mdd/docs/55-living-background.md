@@ -10,7 +10,7 @@ relates: [41-garden-style]
 source_files:
   - frontend/src/components/LivingBackground.tsx
   - frontend/src/usePrefersReducedMotion.ts
-  - frontend/public/meadow.mp4
+  - frontend/src/assets/meadow.mp4
   - frontend/src/styles.css
 routes: []
 models: []
