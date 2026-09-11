@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-VIDEO = Path(__file__).resolve().parents[1] / "frontend" / "public" / "meadow.mp4"
+FRONTEND = Path(__file__).resolve().parents[1] / "frontend"
+VIDEO = FRONTEND / "src" / "assets" / "meadow.mp4"
 
 # Generous against what it is (3.2 MB), tight against what it could become. The
 # source was 11.6 MB; re-encoding it is a thing somebody has to remember to do,
@@ -20,6 +21,16 @@ BUDGET_BYTES = 4 * 1024 * 1024
 
 def test_the_film_ships_with_the_front_end() -> None:
     assert VIDEO.is_file(), f"the front door's background is missing: {VIDEO}"
+
+
+def test_it_is_built_under_a_name_that_changes_with_it() -> None:
+    """Imported rather than copied from `public/`, so Vite names it by its
+    content and a browser may keep it for a year (`web/delivery.py`). Copied from
+    `public/` it kept its name, took a new date with every deployment, and was
+    downloaded again after each one — 3.35 MB, several times a day while a wave
+    ships."""
+    assert not (FRONTEND / "public" / "meadow.mp4").exists()
+    assert "from './assets/meadow.mp4'" in (FRONTEND / "src" / "App.tsx").read_text()
 
 
 def test_it_stays_within_its_budget() -> None:

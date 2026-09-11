@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from ninanatur.api.accounts import router as accounts_router
+from ninanatur.api.bloom_year import router as bloom_year_router
 from ninanatur.api.canopies import router as canopies_router
 from ninanatur.api.elements import router as elements_router
 from ninanatur.api.feedback import router as feedback_router
@@ -26,11 +27,14 @@ from ninanatur.api.geo import router as geo_router
 from ninanatur.api.light import router as light_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
+from ninanatur.api.sightlines import router as sightlines_router
+from ninanatur.api.suggestions import router as suggestions_router
 from ninanatur.garden import light_worker
 from ninanatur.ingest.catalogue import DEFAULT_CATALOGUE, sync_catalogue
 from ninanatur.ingest.db import connect, database_path, enable_wal, init_schema
 from ninanatur.ops.backup import default_dest, snapshot_before_migration
 from ninanatur.version import app_version
+from ninanatur.web.delivery import compress, serve_bundle
 from ninanatur.web.environment import environment
 from ninanatur.web.logs import AccessLog
 from ninanatur.web.security import install as install_security
@@ -113,6 +117,9 @@ app.include_router(plants_router)
 app.include_router(gardens_router)
 app.include_router(elements_router)
 app.include_router(planning_router)
+app.include_router(suggestions_router)
+app.include_router(bloom_year_router)
+app.include_router(sightlines_router)
 app.include_router(geo_router)
 app.include_router(accounts_router)
 app.include_router(feedback_router)
@@ -134,6 +141,13 @@ app.include_router(canopies_router)
 #: the rightmost address the trusted proxies did not vouch for — the one a
 #: visitor cannot write. Never "*": that takes the leftmost, which anybody can.
 TRUSTED_PROXIES = os.environ.get("NINANATUR_TRUSTED_PROXIES", "127.0.0.1,172.16.0.0/12")
+
+
+# Compression first, so it sits innermost and sees each route's own answer. The
+# `@app.middleware` layers below are BaseHTTPMiddleware, which turns every body
+# into a stream — and a stream is compressed whatever its size: a 19-byte
+# /healthz went out as 45. See `web/delivery.py`.
+compress(app)
 
 
 #: The largest request body the API reads, in bytes. The biggest legitimate one
@@ -203,13 +217,8 @@ async def healthz() -> JSONResponse:
     )
 
 
-if DIST_DIR.is_dir():
-    # Mounted last so /api/v1 and /healthz keep priority. With html=True a
-    # mount at "/" answers anything unmatched with the SPA shell and a 200 —
-    # which would make the deploy cron's health probe start passing on a broken
-    # app, and that is far worse than a 404.
-    app.mount("/", StaticFiles(directory=DIST_DIR, html=True), name="app")
-else:
+# Last, so /api/v1 and /healthz keep priority — see `serve_bundle`.
+if not serve_bundle(app, DIST_DIR):
 
     @app.get("/")
     def index() -> FileResponse:

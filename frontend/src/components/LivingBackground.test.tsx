@@ -71,6 +71,15 @@ describe('LivingBackground', () => {
     expect(video.getAttribute('src')).toBe('/meadow.mp4');
   });
 
+  it('asks for no more than the metadata until the film plays', () => {
+    // A browser that refuses autoplay — iOS in low-power mode — would otherwise
+    // download three megabytes for a film it never starts.
+    wantsLessMotion(false);
+    render(<LivingBackground videoSrc="/meadow.mp4" />);
+
+    expect(screen.getByTestId('living-video').getAttribute('preload')).toBe('metadata');
+  });
+
   it('does not even fetch the film when less motion was asked for', () => {
     // Hiding it with CSS would still download three megabytes and decode them
     // for the one visitor who asked for the opposite.

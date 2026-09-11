@@ -37,6 +37,14 @@ CATALOGUE_TABLES: tuple[str, ...] = (
 DEFAULT_CATALOGUE = Path("ninanatur/data/catalogue.sqlite")
 VERSION_KEY = "catalogue_built_at"
 
+#: How many times the catalogue has been changed in place since it was built.
+#:
+#: A build brings a new stamp. A colour somebody enters by hand is a trait row
+#: written while the app runs, and brings nothing — so anything that holds the
+#: catalogue between requests has to read both: the stamp names the build, this
+#: counts what happened to it since.
+EDITS_KEY = "catalogue_edits"
+
 
 def export_catalogue(conn: sqlite3.Connection, dest: Path) -> dict[str, int]:
     """Write a runtime-only catalogue, stamped with a build time.
@@ -95,6 +103,28 @@ def _version_of(conn: sqlite3.Connection, prefix: str = "") -> str | None:
         f"SELECT value FROM {table} WHERE key = ?", (VERSION_KEY,)  # noqa: S608
     ).fetchone()
     return str(row["value"]) if row else None
+
+
+def edition(conn: sqlite3.Connection) -> tuple[str | None, str | None]:
+    """The catalogue's build stamp and its count of edits since, in one read."""
+    rows = conn.execute(
+        "SELECT key, value FROM catalogue_meta WHERE key IN (?, ?)", (VERSION_KEY, EDITS_KEY)
+    ).fetchall()
+    found = {str(row[0]): str(row[1]) for row in rows}
+    return found.get(VERSION_KEY), found.get(EDITS_KEY)
+
+
+def mark_edited(conn: sqlite3.Connection) -> None:
+    """Count one change to the catalogue, inside the caller's transaction.
+
+    Committed together with the change it counts, so no reader sees one without
+    the other; SQLite serialises writers, so the count only ever goes up.
+    """
+    conn.execute(
+        "INSERT INTO catalogue_meta (key, value) VALUES (?, '1')"
+        " ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1",
+        (EDITS_KEY,),
+    )
 
 
 def _shared_columns(conn: sqlite3.Connection, table: str) -> list[str]:

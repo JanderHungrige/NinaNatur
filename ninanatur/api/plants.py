@@ -10,6 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ninanatur.api.candidate_cache import candidate_set
 from ninanatur.api.candidates import OBSERVED_COLOUR
 from ninanatur.api.deps import get_connection
 from ninanatur.api.schemas import (
@@ -30,7 +31,6 @@ from ninanatur.api.search import (
     AXIS_PARAMS,
     ScoredPlant,
     SearchFilters,
-    load_candidates,
     rank_plants,
 )
 from ninanatur.data.interactions import bird_counts, german_partner_counts
@@ -121,7 +121,7 @@ def search_plants(
         )
 
     ranked = rank_plants(
-        load_candidates(conn),
+        candidate_set(conn),
         SiteVector(values=axes),
         SearchFilters(
             height_min=height_min,

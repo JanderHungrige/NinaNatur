@@ -12,7 +12,7 @@ source_files:
   - frontend/src/plural.ts
   - frontend/src/App.tsx
   - frontend/src/styles.css
-  - ninanatur/api/planning.py
+  - ninanatur/api/bloom_year.py
   - ninanatur/api/schemas.py
 routes:
   - GET /api/v1/gardens/{token}/score

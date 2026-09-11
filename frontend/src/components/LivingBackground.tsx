@@ -83,7 +83,11 @@ export function LivingBackground({ videoSrc }: { videoSrc?: string }) {
           muted
           loop
           playsInline
-          preload="auto"
+          // Metadata only until it plays. Where autoplay is allowed the browser
+          // fetches what playing needs regardless; where it is refused — iOS in
+          // low-power mode, a browser set against autoplay — `auto` downloaded
+          // three megabytes for a film that never started.
+          preload="metadata"
           tabIndex={-1}
           onPlaying={() => setPlaying(true)}
           // A missing file or a codec this browser will not take leaves the
