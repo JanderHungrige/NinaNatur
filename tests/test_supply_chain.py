@@ -15,8 +15,12 @@ other, not that any version is a particular number.
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 import tomllib
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCK = ROOT / "requirements.txt"
@@ -183,3 +187,15 @@ def test_dependabot_proposes_new_digests_not_a_new_interpreter() -> None:
     docker = text[text.index('package-ecosystem: "docker"'):]
     assert "version-update:semver-major" in docker
     assert "version-update:semver-minor" in docker
+
+
+def test_nothing_generated_is_committed() -> None:
+    """`ninanatur.egg-info/` was committed on 2026-08-27 by accident. Every
+    `pip install -e .` rewrites it, so any install dirtied the tree — on
+    2026-09-11 an install into a fresh venv did exactly that."""
+    assert "*.egg-info/" in (ROOT / ".gitignore").read_text().splitlines()
+    if not (ROOT / ".git").exists() or shutil.which("git") is None:
+        pytest.skip("not a git checkout")
+    tracked = subprocess.run(["git", "ls-files", "*.egg-info*"], cwd=ROOT,
+                             capture_output=True, text=True, check=True).stdout
+    assert tracked == "", f"generated files are tracked:\n{tracked}"
