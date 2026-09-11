@@ -156,3 +156,30 @@ def test_no_env_file_can_reach_an_image() -> None:
         assert pattern in lines, f".dockerignore does not exclude {pattern}"
     # The shipped catalogue lives under an excluded directory and is let back in.
     assert lines.index("!ninanatur/data/catalogue.sqlite") > lines.index("data")
+
+
+def test_a_pull_request_builds_the_image_but_never_pushes_it() -> None:
+    """Dependabot's base-image and action bumps change the Dockerfile and the
+    build job — and a pull request skipped that job entirely, so they passed on
+    the test job alone. A pull request builds now; only a push publishes."""
+    text = DEPLOY.read_text()
+    job = text[text.index("  build-and-push:"):]
+    assert "pull_request" not in job[: job.index("steps:")], "the whole job is skipped for a PR"
+    steps = re.split(r"\n      - ", job)
+    login = next(s for s in steps if "docker/login-action" in s)
+    push = next(s for s in steps if "docker push" in s)
+    build = next(s for s in steps if "docker build" in s)
+    assert "if: github.event_name != 'pull_request'" in login
+    assert "if: github.event_name != 'pull_request'" in push
+    assert "if:" not in build.split("run:")[0], "the build itself runs for every event"
+    assert "docker push" not in build, "building and publishing are separate steps"
+
+
+def test_dependabot_proposes_new_digests_not_a_new_interpreter() -> None:
+    """A new Python in the base image needs a lock made for it; the lock test
+    turns such a proposal red, and it would stay red. Digests and patches only —
+    a new Python or Node is a deliberate change, made with its lock."""
+    text = DEPENDABOT.read_text()
+    docker = text[text.index('package-ecosystem: "docker"'):]
+    assert "version-update:semver-major" in docker
+    assert "version-update:semver-minor" in docker

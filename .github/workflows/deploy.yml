@@ -96,8 +96,6 @@ jobs:
 
   build-and-push:
     needs: test
-    # A push or a manual rebuild; never a pull request.
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -122,6 +120,8 @@ jobs:
           echo "version=V0.${WAVE:-0}.${MERGES}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
+        # A pull request builds the image and never publishes it.
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -130,7 +130,9 @@ jobs:
 
       # Build with the runner's built-in BuildKit — no docker-container builder to
       # boot, avoiding an extra buildkit pull from Docker Hub.
-      - name: Build & push image
+      # Every event builds: a Dependabot bump of a base image, or of the build
+      # itself, is only tested if the image is actually built.
+      - name: Build image
         env:
           DOCKER_BUILDKIT: "1"
           IMG: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE }}
@@ -142,6 +144,14 @@ jobs:
             --build-arg NINANATUR_VERSION="${{ steps.cfg.outputs.version }}" \
             -t "$IMG:$TAG" -t "$IMG:$SHA" .
 
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        env:
+          IMG: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE }}
+          TAG: ${{ steps.cfg.outputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
           # GHCR answers "unknown blob" now and then on an otherwise fine push.
           # Without a retry that red build is the whole outcome: the image never
           # reaches the registry, the host's deploy cron keeps rolling the old
@@ -162,6 +172,7 @@ jobs:
           push "$IMG:$SHA"
 
       - name: Summary
+        if: github.event_name != 'pull_request'
         run: |
           echo "Pushed :${{ steps.cfg.outputs.tag }} (${{ steps.cfg.outputs.version }}) to ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE }}." >> "$GITHUB_STEP_SUMMARY"
           echo "deploy/auto-deploy.sh on the host will pull and roll it on its next tick." >> "$GITHUB_STEP_SUMMARY"
