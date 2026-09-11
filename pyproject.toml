@@ -14,6 +14,10 @@ dependencies = [
     "openpyxl>=3.1",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+    # Wave 20, feature 8: the LoD2 tiles are XML from a service this project
+    # does not run. The standard library accepts a DTD and expands what it
+    # declares; this refuses both.
+    "defusedxml>=0.7",
 ]
 
 # Explicit, not auto-discovered: setuptools' flat-layout discovery sees every

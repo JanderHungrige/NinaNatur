@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ninanatur.geo.tiff_codec import lzw, undo_predictor
+from ninanatur.geo.tiff_codec import TiffCodecError, lzw, to_values, undo_predictor
 
 #: Tags that matter here. Everything else in the directory is skipped.
 _WIDTH, _HEIGHT, _BITS, _COMPRESSION = 256, 257, 258, 259
@@ -32,6 +32,15 @@ _TYPE_BYTES = {1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 
 _TYPE_CODE = {1: "B", 3: "H", 4: "I"}
 
 NO_DATA = -9999.0
+
+#: The largest window any caller asks for is the horizon ring, about 504 × 504
+#: cells. Sixteen times that is still a window; a header claiming more is refused
+#: while it is still a header (Wave 20, feature 8).
+MAX_PIXELS = 4_000_000
+#: These services tile at 128 or 256. Anything past this is not a tile size.
+MAX_TILE_SIDE = 4096
+#: (SampleFormat, BitsPerSample) pairs `tiff_codec.to_values` knows how to read.
+_SUPPORTED = {(3, 32), (3, 64), (1, 16), (0, 16), (2, 16)}
 
 
 class TiffError(ValueError):
@@ -55,7 +64,22 @@ def read_raster(data: bytes) -> Raster:
 
     Raises rather than guesses. A service that starts returning tiles, or JPEG,
     or three bands, is a change worth being told about at the moment it happens.
+
+    Every way a file can be wrong ends as a `TiffError` — a truncated directory,
+    an offset past the end, a header claiming more pixels than any request asks
+    for — and the size checks come before anything is allocated. Until Wave 20's
+    feature 8 a malformed offset surfaced as `struct.error`, and a tiled header
+    could ask for gigabytes before a byte of pixels was read.
     """
+    try:
+        return _decode(data)
+    except TiffError:
+        raise
+    except (struct.error, IndexError, KeyError, ValueError, TiffCodecError) as broken:
+        raise TiffError(f"malformed TIFF: {broken}") from broken
+
+
+def _decode(data: bytes) -> Raster:
     data = _unwrap(data)
     if data[:2] == b"II":
         end = "<"
@@ -70,14 +94,25 @@ def read_raster(data: bytes) -> Raster:
     sample_format = _one(fields, _SAMPLE_FORMAT, 1)
     if _one(fields, _SAMPLES_PER_PIXEL, 1) != 1:
         raise TiffError("only single-band rasters are supported")
+    _check_shape(width, height, bits, sample_format)
 
     raw = _strips(data, end, fields, width, height, bits)
-    values = _to_metres(raw, end, bits, sample_format)
+    values = to_values(raw, end, bits, sample_format)
     if values.size != width * height:
         raise TiffError(f"{values.size} values for a {width}x{height} raster")
     grid = values.reshape(height, width).astype(np.float64)
     grid[grid <= NO_DATA] = np.nan
     return Raster(width=width, height=height, values=grid)
+
+
+def _check_shape(width: int, height: int, bits: int, sample_format: int) -> None:
+    """Refuse an image by its header, before a byte of it is allocated."""
+    if width < 1 or height < 1:
+        raise TiffError(f"a {width}x{height} raster has no pixels")
+    if width * height > MAX_PIXELS:
+        raise TiffError(f"{width}x{height} is more than any window here asks for")
+    if (sample_format, bits) not in _SUPPORTED:
+        raise TiffError(f"{bits}-bit sample format {sample_format} is not supported")
 
 
 @dataclass(frozen=True)
@@ -120,8 +155,14 @@ def _directory(data: bytes, end: str) -> dict[int, _Field]:
     field, so the type has to be read before the value — the mistake that made
     Baden-Württemberg look like a 13-million-pixel image.
     """
+    if len(data) < 8:
+        raise TiffError("too short to be a TIFF")
     offset = struct.unpack_from(end + "I", data, 4)[0]
+    if offset + 2 > len(data):
+        raise TiffError("the directory lies beyond the end of the file")
     entries = struct.unpack_from(end + "H", data, offset)[0]
+    if offset + 2 + entries * 12 > len(data):
+        raise TiffError("the directory runs past the end of the file")
     fields: dict[int, _Field] = {}
     for i in range(entries):
         at = offset + 2 + i * 12
@@ -150,12 +191,16 @@ def _array(data: bytes, end: str, fields: dict[int, _Field], tag: int) -> list[i
     byte counts as SHORT in the same file. Reading both as LONG produced
     plausible-looking garbage lengths and a raster nine times too long.
     """
-    field = fields[tag]
+    field = fields.get(tag)
+    if field is None:
+        raise TiffError(f"tag {tag} is missing")
     if field.count == 1:
         return [field.at]
     code = _TYPE_CODE.get(field.kind)
     if code is None:
         raise TiffError(f"tag {tag} has unreadable type {field.kind}")
+    if field.at + field.count * struct.calcsize(end + code) > len(data):
+        raise TiffError(f"tag {tag} points past the end of the file")
     return list(struct.unpack_from(end + f"{field.count}{code}", data, field.at))
 
 
@@ -169,13 +214,20 @@ def _strips(
         raise TiffError(f"compression {compression} is not supported")
     offsets = _array(data, end, fields, _STRIP_OFFSETS)
     counts = _array(data, end, fields, _STRIP_BYTES)
+    if len(offsets) != len(counts):
+        raise TiffError(f"{len(offsets)} strip offsets but {len(counts)} lengths")
+    expected = width * height * (bits // 8)
     out = bytearray()
     for offset, length in zip(offsets, counts, strict=True):
+        if offset + length > len(data):
+            raise TiffError("a strip runs past the end of the file")
         chunk = data[offset : offset + length]
         if compression == 5:
-            chunk = lzw(chunk)
+            chunk = lzw(chunk, limit=max(0, expected - len(out)))
             chunk = undo_predictor(chunk, end, width, _one(fields, _PREDICTOR, 1), bits)
         out += chunk
+        if len(out) > expected:
+            raise TiffError(f"the strips hold more than {width}x{height} pixels")
     return bytes(out)
 
 
@@ -199,16 +251,23 @@ def _tiles(
         raise TiffError(f"compression {compression} is not supported")
     tile_w = _one(fields, _TILE_WIDTH)
     tile_h = _one(fields, _TILE_LENGTH)
+    if not (0 < tile_w <= MAX_TILE_SIDE and 0 < tile_h <= MAX_TILE_SIDE):
+        raise TiffError(f"{tile_w}x{tile_h} is not a tile size")
     across = (width + tile_w - 1) // tile_w
+    down = (height + tile_h - 1) // tile_h
     per_sample = bits // 8
 
     offsets = _array(data, end, fields, _TILE_OFFSETS)
     counts = _array(data, end, fields, _TILE_BYTES)
+    if len(offsets) != across * down or len(counts) != len(offsets):
+        raise TiffError(f"{len(offsets)} tiles for a grid of {across}x{down}")
     rows: list[bytearray] = [bytearray(width * per_sample) for _ in range(height)]
     for index, (offset, length) in enumerate(zip(offsets, counts, strict=True)):
+        if offset + length > len(data):
+            raise TiffError("a tile runs past the end of the file")
         chunk = data[offset : offset + length]
         if compression == 5:
-            chunk = lzw(chunk)
+            chunk = lzw(chunk, limit=tile_w * tile_h * per_sample)
             chunk = undo_predictor(chunk, end, tile_w, _one(fields, _PREDICTOR, 1), bits)
         left = (index % across) * tile_w
         top = (index // across) * tile_h
@@ -222,24 +281,4 @@ def _tiles(
     return b"".join(bytes(r) for r in rows)
 
 
-def _to_metres(raw: bytes, end: str, bits: int, sample_format: int) -> np.ndarray:
-    """Interpret the bytes as the numbers the service says they are.
-
-    Baden-Württemberg's 16-bit unsigned values are whole metres — verified
-    against Stuttgart, where they read 241 to 244. They are not a scaled
-    fixed-point, which is the thing to check first the next time a service is
-    added, because reading decimetres as metres is off by ten and looks
-    plausible on flat ground.
-    """
-    if sample_format == 3 and bits == 32:
-        return np.frombuffer(raw, dtype=np.dtype(end + "f4"))
-    if sample_format == 3 and bits == 64:
-        return np.frombuffer(raw, dtype=np.dtype(end + "f8"))
-    if sample_format in (1, 0) and bits == 16:
-        return np.frombuffer(raw, dtype=np.dtype(end + "u2"))
-    if sample_format == 2 and bits == 16:
-        return np.frombuffer(raw, dtype=np.dtype(end + "i2"))
-    raise TiffError(f"{bits}-bit sample format {sample_format} is not supported")
-
-
-__all__ = ["NO_DATA", "Raster", "TiffError", "read_raster"]
+__all__ = ["MAX_PIXELS", "NO_DATA", "Raster", "TiffError", "read_raster"]

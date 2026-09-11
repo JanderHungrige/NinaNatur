@@ -19,7 +19,13 @@ from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
 from ninanatur.garden.terrain_sync import ground_for, is_precise
 from ninanatur.geo.canopy import canopies_in
-from ninanatur.geo.lod2 import Lod2Building, buildings_from, in_garden_frame, tile_name
+from ninanatur.geo.lod2 import (
+    MAX_TILE_BYTES,
+    Lod2Building,
+    buildings_from,
+    in_garden_frame,
+    tile_name,
+)
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import SurfaceWindow, fetch_surface
@@ -73,7 +79,7 @@ def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:
         return None
     east, north = to_utm(anchor.lat, anchor.lon, 32)
     try:
-        document = get_bytes(f"{NRW_LOD2}/{tile_name(east, north)}")
+        document = get_bytes(f"{NRW_LOD2}/{tile_name(east, north)}", max_bytes=MAX_TILE_BYTES)
         return in_garden_frame(buildings_from(document), anchor, 32)
     except Exception:
         log.warning("LoD2 tile failed for %s", state, exc_info=True)

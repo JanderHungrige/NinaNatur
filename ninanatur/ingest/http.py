@@ -44,6 +44,10 @@ PRUNE_TO = 0.8
 USER_AGENT = "NinaNatur-ingest/0.1 (open-data garden planning; contact: local dev)"
 REQUEST_DELAY_S = 0.2
 MAX_RETRIES = 3
+#: The most any one answer may be. The largest real ones are LoD2 tiles of tens
+#: of megabytes; an answer of gigabytes would otherwise be read into memory whole
+#: before anything could look at it (Wave 20, feature 8).
+DEFAULT_MAX_BYTES = 200_000_000
 #: (connect, read). Read covers Overpass's own 40 s query limit with a margin.
 TIMEOUT: tuple[float, float] = (5.0, 45.0)
 
@@ -99,6 +103,7 @@ def get_json(
     use_cache: bool = True,
     timeout: tuple[float, float] = TIMEOUT,
     accept: Callable[[Any], bool] | None = None,
+    max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> Any:
     """GET a JSON document, served from disk cache when available.
 
@@ -108,7 +113,7 @@ def get_json(
     path = _cache_path(url, params)
     if use_cache and path.exists():
         return json.loads(path.read_text())
-    payload = _get(url, params, timeout).json()
+    payload = _get(url, params, timeout, max_bytes).json()
     if accept is not None and not accept(payload):
         raise HttpError(f"GET {url} answered, but incompletely; not cached")
     if use_cache:
@@ -116,18 +121,24 @@ def get_json(
     return payload
 
 
-def get_text(url: str, params: dict[str, Any] | None = None, *, use_cache: bool = True) -> str:
+def get_text(
+    url: str, params: dict[str, Any] | None = None, *, use_cache: bool = True,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> str:
     """GET a text document (CSV/TSV), served from disk cache when available."""
     path = _cache_path(url, params).with_suffix(".txt")
     if use_cache and path.exists():
         return path.read_text()
-    text = _get(url, params, TIMEOUT).text
+    text = _get(url, params, TIMEOUT, max_bytes).text
     if use_cache:
         _keep(path, lambda p: p.write_text(text))
     return text
 
 
-def get_bytes(url: str, params: dict[str, Any] | None = None, *, use_cache: bool = True) -> bytes:
+def get_bytes(
+    url: str, params: dict[str, Any] | None = None, *, use_cache: bool = True,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> bytes:
     """GET a binary document, served from disk cache when available.
 
     The coverage services answer a request for one garden's ground with a
@@ -138,27 +149,51 @@ def get_bytes(url: str, params: dict[str, Any] | None = None, *, use_cache: bool
     path = _cache_path(url, params).with_suffix(".bin")
     if use_cache and path.exists():
         return path.read_bytes()
-    payload = _get(url, params, TIMEOUT).content
+    payload = _get(url, params, TIMEOUT, max_bytes).content
     if use_cache:
         _keep(path, lambda p: p.write_bytes(payload))
     return payload
 
 
+def _read_capped(response: requests.Response, url: str, max_bytes: int) -> None:
+    """Read the body, and refuse it the moment it passes `max_bytes`.
+
+    A declared length over the cap is refused before a byte is read; a body
+    that grows past it is dropped as it does. Not retried: a too-large answer
+    does not shrink on the second asking.
+    """
+    declared = response.headers.get("Content-Length", "")
+    if declared.isdigit() and int(declared) > max_bytes:
+        response.close()
+        raise HttpError(f"GET {url} announced {int(declared):,} bytes; the cap is {max_bytes:,}")
+    body = bytearray()
+    for chunk in response.iter_content(chunk_size=1 << 16):
+        body += chunk
+        if len(body) > max_bytes:
+            response.close()
+            raise HttpError(f"GET {url} passed its cap of {max_bytes:,} bytes")
+    response._content = bytes(body)
+
+
 def _get(
-    url: str, params: dict[str, Any] | None, timeout: tuple[float, float],
+    url: str, params: dict[str, Any] | None, timeout: tuple[float, float], max_bytes: int,
 ) -> requests.Response:
     last: Exception | None = None
     for attempt in range(MAX_RETRIES):
         time.sleep(REQUEST_DELAY_S)
         try:
             response = requests.get(
-                url, params=params, headers={"User-Agent": USER_AGENT}, timeout=timeout
+                url, params=params, headers={"User-Agent": USER_AGENT}, timeout=timeout,
+                stream=True,
             )
+            if response.status_code < 400:
+                _read_capped(response, url, max_bytes)
         except requests.RequestException as exc:  # noqa: PERF203 - retry needs the loop
             last = exc
         else:
             if response.status_code < 400:
                 return response
+            response.close()
             if response.status_code < 500:
                 # Asking again gets the same answer. 429 included: it means
                 # slow down, and three quick retries are the opposite.
