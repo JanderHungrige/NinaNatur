@@ -205,6 +205,47 @@ deploy/mac/install-pull.sh
 Log: `~/Backups/ninanatur/pull.log`. A copy on the Mac goes back to the server
 with `scp` into `~/backups/ninanatur/prod/`, then as above.
 
+## Logs
+
+The app writes JSON lines to stdout (`ninanatur/web/log_config.json`), and the
+share token never appears in them: the access line names the route —
+`/api/v1/gardens/{token}/light` — with an eight-character hash of the token, and
+the formatter masks anything token-shaped whatever wrote it. Addresses are kept
+to their /24 or /48; the full address is held only in the rate-limit table, for
+minutes. Every response carries `X-Request-ID`, and the same id is on every line
+written for that request — a visitor quoting it finds their request.
+
+```bash
+docker logs --since 1h ninanatur-prod-app-1 | grep '"logger": "ninanatur.security"'
+docker logs --since 1h ninanatur-prod-app-1 | grep '"request_id": "<id>"'
+```
+
+The security channel carries `login_failed` (the account as a hash),
+`rate_limited`, `busy` (both slots taken) and `server_error`.
+
+**Rotation.** Each stack keeps 5 × 10 MB (`logging:` in `compose.app.yml`).
+Until 2026-09-11 nothing on this host rotated anything: all seventeen containers
+used Docker's `json-file` driver with no options, and there is no
+`/etc/docker/daemon.json`, so every log grew for as long as its container lived.
+The host-wide default is the owner's step — it needs sudo, and restarting the
+daemon restarts every project on this host:
+
+```bash
+# /etc/docker/daemon.json
+{"log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "5"}}
+sudo systemctl restart docker
+```
+
+It applies to containers created afterwards; each project's next roll picks it up.
+
+**Watched from outside.** `.github/workflows/healthz.yml` asks both stacks'
+`/healthz` every 30 minutes from GitHub's runners, and fails — which GitHub
+emails about — when either is down or answers as the wrong environment. The
+preview answered 500 from 2026-09-07 to 2026-09-10 and nobody knew; this is the
+machine that would have. GitHub switches a scheduled workflow off after 60 days
+without a commit to a public repository; switch it back on under *Actions* if
+that ever happens.
+
 ## 5. Nginx Proxy Manager
 
 | Field | Value |
