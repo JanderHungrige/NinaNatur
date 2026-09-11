@@ -294,7 +294,10 @@ decisions shape the features:
   on the test job alone — pull requests now build and never push; and a new
   Python in the base image can never pass by itself, because the lock is
   compiled for one interpreter — base images now get new digests, not new
-  interpreters, and all Python pins move in one pull request.
+  interpreters, and all Python pins move in one pull request. Branch protection
+  is the owner's decision and still open. Twenty-five tests across
+  `tests/test_supply_chain.py`, `tests/test_auto_deploy.py` and
+  `tests/test_container_hardening.py`.
 - **2026-09-11 — feature 8, parsers that refuse.** Read before anything was
   changed: `lod2.buildings_from` parsed NRW's tiles with the standard library,
   which accepts a DTD and expands what it declares; `get_bytes` read an answer
@@ -324,9 +327,9 @@ decisions shape the features:
   on that garden took five to seven minutes, in the request thread. Not the
   parsers — they take a second — but `measured.py`, which casts a ray from every
   half-metre sample of every footprint against every one of the tile's 2,601
-  buildings, with no box around them first, and samples the garden's own
-  outline as though it were a building: 12,544 points, 22 seconds of the 28 on a
-  laptop, and several times that on the host.
+  buildings, with no box around them first: 28 seconds on a laptop, and several
+  times that on the host. (This entry first blamed the garden's own outline;
+  `measure()` skips it — see feature 10.)
 - **2026-09-11 — feature 9, sessions that end.** Read before anything changed:
   `needs_rehash` existed and nothing called it, so raised scrypt parameters would
   only ever have reached new accounts; an expired session was refused but never
@@ -350,9 +353,65 @@ decisions shape the features:
   and a real browser on the page itself still creates a garden (201), is told
   its wrong password is wrong (401, not 403) and deletes the garden again.
   In production as V0.19.138, where a sister subdomain's login is refused before
-  it reaches the database. Thirty-five tests, `tests/test_sessions_end.py`. Branch protection is the owner's decision
-  and still open. Twenty-five tests across `tests/test_supply_chain.py`,
-  `tests/test_auto_deploy.py` and `tests/test_container_hardening.py`.
+  it reaches the database. Thirty-five tests, `tests/test_sessions_end.py`.
+- **2026-09-11 — feature 10, faster where it is felt.** Measured first, on the
+  preview, before anything changed. The candidate set — 8,939 species — was
+  rebuilt for every search, every bed's suggestions and every improvement: a
+  200-row search took 1.09–1.97 s, a dense garden's suggestions a median of
+  1.03 s and its improvements 1.49 s. It is now held (`api/candidate_cache.py`),
+  keyed on the database file, the catalogue's build stamp and a count of hand
+  edits. The stamp alone would have been wrong: a colour somebody enters is a
+  trait row in the shared catalogue, written while the app runs, and it would
+  have stayed invisible until the next build — so `record_colour` counts itself
+  in the same transaction, in the database rather than in the process, and an
+  edit made through any connection reaches the next request. A garden's own
+  colours are still laid over the set per request and never enter it, every
+  caller gets a list of its own, and an in-memory database is never held:
+  14.9 MB, held once, where every request used to build it at a 52.7 MB peak.
+  After, through the proxy: a median of 0.45 s for the search, 0.35 s for the
+  suggestions, 0.33 s for the improvements. Nothing was compressed — the proxy
+  passes on what the app sends — and nothing said how long it might be kept.
+  Answers are now gzipped (`web/delivery.py`), and innermost, because the test
+  found that outside the `BaseHTTPMiddleware` layers every body is a stream and
+  a stream is compressed whatever its size: a 19-byte `/healthz` went out as
+  45. Film, pictures and fonts are left alone. The search went from 115,353
+  bytes to 12,630, the bundle from 271 KB to 86 KB. Hashed assets may be kept
+  for a year; the page is asked about every time, so a browser can no longer
+  hold an `index.html` that names a bundle the next deployment removed. The
+  front door's film lay in `public/`, took a new date with every deployment and
+  was fetched again after each one — 3.35 MB, several times a day while a wave
+  ships. It is imported now, named by its content, and falls under the year;
+  `preload="metadata"` keeps a browser that refuses autoplay from fetching it
+  for nothing. The first visit still costs its 3.35 MB: a moving background
+  needs them. Opening a garden awaited eight requests one after another —
+  1,318 ms for the dense garden in a real browser, the improvements alone
+  727 ms. The six answers derived from a garden are now asked for at once
+  (`frontend/src/derived.ts`), each shown as it arrives and a failure costing
+  only itself: 455 ms, the same 1.3 s of work overlapped. And `measured.py`,
+  found in feature 8: a box test before every polygon test takes the dense
+  garden from 19.13 s to 0.04 s on a laptop, the same three houses at the same
+  heights, and a test checks against a whole tile that the box drops nothing
+  that could have matched; `POST /light` on that garden now takes 30.6 s on the
+  preview, tile, surface, terrain and light included. What feature 8's entry
+  said about the outline was wrong: the garden's outline carries `user`, like
+  every street from the map import, and `measure()` skips it — those 22 seconds
+  came from a call made while profiling. What was found instead: an accepted
+  tree suggestion is stored as `measured`, and was measured again as a building
+  on every recompute — over a house it took that house's roof. Only roofed kinds
+  are measured now. Tried and taken back: the tree finder masks every drawn
+  element as though it were a building, the outline and every street included.
+  Masked by what stands only, the dense garden lost its tallest crown, 17.6 m,
+  because the street boxes had been cutting a row of trees into pieces small
+  enough to propose; what the mask should be is a design question, named in the
+  local plan, not a speed fix. `planning.py` had reached 470 lines and is split
+  by concern into `suggestions.py`, `bloom_year.py` and `sightlines.py`;
+  `App.tsx`, at 1,459, is a task of its own. In production as V0.19.142: a
+  200-row search in 0.22–1.24 s (median 0.46 s) where it took 0.91–1.93 s,
+  12,630 bytes over the wire, and every log line since the roll JSON and none an
+  error. Thirty-three tests:
+  `tests/test_candidate_cache.py`, `tests/test_served_fast.py`,
+  `tests/test_measure_is_bounded.py`, one in `tests/test_front_door_video.py`,
+  `frontend/src/derived.test.ts` and one in `LivingBackground.test.tsx`.
 
 ## Features
 
@@ -368,7 +427,7 @@ decisions shape the features:
 | 7 | locked-and-signed | — | complete (branch protection: owner) | 0 |
 | 8 | parsers-that-refuse | — | complete | 2 |
 | 9 | sessions-that-end | — | complete | 3 |
-| 10 | faster-where-it-is-felt | — | planned | 5 |
+| 10 | faster-where-it-is-felt | — | complete | 5 |
 | 11 | the-report | — | planned | 1–10 |
 
 Five stages, in the order the local plan sets — what the live site can suffer
