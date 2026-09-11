@@ -199,6 +199,25 @@ decisions shape the features:
   helpers stayed where their importers find them. Eight tests,
   `tests/test_busy_slots.py`. Still open in feature 5: the light computation in
   a process pool, and the outbound budgets.
+- **2026-09-11 — feature 5, part 3: every outbound call has a budget.** Three
+  findings, each reproduced against the old code before the fix: a 404 was
+  asked **three** times with 1+2+4 s of back-off; a species without a Wikipedia
+  article cost three requests on **every** open and was never stored (the
+  failure path returned before the miss was written, and English was never
+  asked); and Overpass's "runtime error" answer — HTTP 200, no elements — was
+  cached as "no buildings here" for good. Now only a network failure, a timeout
+  or a 5xx is retried; a Wikipedia 404 means *no article*, so English is asked
+  and the miss is remembered for its 14 days, while an outage is not; an
+  Overpass answer that gave up raises before it can reach the cache, whichever
+  fetch brought it; every call has a connect and a read timeout, and Wikipedia
+  gets seconds rather than a minute. The HTTP cache moved from the container
+  layer onto the volume (`NINANATUR_CACHE_DIR=/data/cache`) with a 500 MB cap
+  that forgets the oldest first — on the preview it filled from a map import
+  and survived a restart, where production's had been empty since its last
+  roll. `species_info`'s swallowed exception is logged now (plan item S2).
+  Streets moved to `geo/osm_streets.py` to keep `osm.py` under 300 lines.
+  Twelve tests, `tests/test_outbound_budgets.py`. Still open in feature 5: the
+  light computation in a process pool.
 
 ## Features
 
