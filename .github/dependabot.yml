@@ -10,8 +10,11 @@ updates:
     schedule:
       interval: "weekly"
     groups:
+      # One pull request for all of them. The lock is compiled, and a pin bumped
+      # on its own — pydantic-core without pydantic — is a lock that cannot
+      # install; the gate turns that red. Bumped together, they usually fit.
       python:
-        update-types: ["minor", "patch"]
+        patterns: ["*"]
     open-pull-requests-limit: 5
 
   - package-ecosystem: "npm"
@@ -35,3 +38,8 @@ updates:
     target-branch: "dev-deployment"
     schedule:
       interval: "weekly"
+    # New digests of the same image, not a new Python or Node: a new interpreter
+    # needs a lock made for it, and is a deliberate change rather than a bump.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
