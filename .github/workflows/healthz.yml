@@ -1,0 +1,52 @@
+name: healthz
+
+# One machine watching both stacks from outside the host. The preview answered
+# 500 from 2026-09-07 to 2026-09-10 and nobody knew; a failed run of this is
+# what GitHub emails about. No third-party action: curl and python on the
+# runner are all it needs, and they need no pin.
+#
+# GitHub switches a scheduled workflow off after 60 days without a commit to a
+# public repository. Switch it back on under Actions if that ever happens.
+
+on:
+  schedule:
+    # Twice an hour, off the top of the hour when GitHub's runners are busiest.
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - url: https://ninanatur.w3rth.de/healthz
+            expect: prod
+          - url: https://ninanatur-dev.w3rth.de/healthz
+            expect: dev
+    steps:
+      - name: Ask ${{ matrix.expect }}
+        env:
+          URL: ${{ matrix.url }}
+          EXPECT: ${{ matrix.expect }}
+        run: |
+          # Three tries a minute apart: a roll restarts the container for a few
+          # seconds, and that is not an outage.
+          body=""
+          for attempt in 1 2 3; do
+            if body=$(curl -fsS --max-time 15 "$URL"); then break; fi
+            body=""
+            if [ "$attempt" -lt 3 ]; then sleep 60; fi
+          done
+          echo "$body"
+          python3 - "$body" <<'PY'
+          import json, os, sys
+          answer = json.loads(sys.argv[1] or "{}")
+          if answer.get("status") != "ok" or answer.get("environment") != os.environ["EXPECT"]:
+              sys.exit(os.environ["URL"] + " answered " + (json.dumps(answer) if answer else "nothing"))
+          PY
