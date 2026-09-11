@@ -17,6 +17,7 @@ from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import to_out
+from ninanatur.api.origin import same_origin
 from ninanatur.api.schemas import (
     HeightReport,
     ImageryOut,
@@ -78,7 +79,8 @@ def imagery_at(
 
 
 @router.post(
-    "/gardens/from-map", response_model=MapGardenOut, status_code=status.HTTP_201_CREATED
+    "/gardens/from-map", response_model=MapGardenOut, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(same_origin)],
 )
 def garden_from_map(
     payload: MapSelection,

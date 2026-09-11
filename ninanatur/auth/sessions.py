@@ -37,9 +37,15 @@ def token_hash(token: str) -> str:
 
 
 def issue(conn: sqlite3.Connection, account_id: int) -> str:
-    """Create a session and return the token. It is never stored as given."""
+    """Create a session and return the token. It is never stored as given.
+
+    Every new session also sweeps away the expired ones — anybody's (Wave 20,
+    feature 9). Nobody brings a forgotten session back, so without a sweep they
+    stayed for ever.
+    """
     token = secrets.token_urlsafe(TOKEN_BYTES)
     now = _now()
+    conn.execute("DELETE FROM session WHERE expires_at <= ?", (now.isoformat(),))
     conn.execute(
         "INSERT INTO session (token_hash, account_id, created_at, expires_at)"
         " VALUES (?, ?, ?, ?)",
@@ -67,6 +73,10 @@ def account_for(conn: sqlite3.Connection, token: str | None) -> Account | None:
     if row is None:
         return None
     if datetime.fromisoformat(row["expires_at"]) <= _now():
+        # Refused and forgotten: an expired session that comes back is deleted
+        # on the spot rather than kept to be refused again.
+        conn.execute("DELETE FROM session WHERE token_hash = ?", (token_hash(token),))
+        conn.commit()
         return None
     return Account(
         account_id=int(row["account_id"]), username=row["username"], email=row["email"]
