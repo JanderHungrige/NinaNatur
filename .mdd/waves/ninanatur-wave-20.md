@@ -237,6 +237,29 @@ decisions shape the features:
   anyone can mint. It now takes a slot (slot first, then its own per-visitor
   limit of 60 in ten minutes) and runs in the pool: 3.8 s on that garden.
   Eleven tests, `tests/test_light_worker.py`. **Feature 5 complete.**
+- **2026-09-11 — feature 6, what the log knows.** Measured first: production's
+  container log held a line for every request with the visitor's full address
+  and the whole path — on the garden routes, the share token — and
+  `upstream_failed` wrote the same path into its warnings. There was no logging
+  configuration at all, so the app's own INFO lines went nowhere; no log on the
+  host was ever rotated (all seventeen containers on `json-file` with no
+  options, no `daemon.json`); and nothing outside the host watched either
+  stack. Now the app writes its own access line naming the **route**
+  (`/api/v1/gardens/{token}/light`) with an eight-character hash of the token,
+  and uvicorn's access log is off; the formatter masks anything token-shaped
+  whatever wrote it; a request id comes in (when sane) or is made, goes out as
+  `X-Request-ID` and is on every line of that request; failed logins (the
+  account as a hash), rate-limit and capacity refusals and 5xx go to a security
+  channel; addresses are kept to their /24 or /48. JSON lines on stdout from
+  `web/log_config.json`. Each stack's log is capped at 5 × 10 MB; the host-wide
+  default is written up as the owner's step, because it restarts every project
+  on the host. `.github/workflows/healthz.yml` asks both stacks twice an hour
+  from GitHub's runners and uses no third-party action; its script was run
+  against both live domains, and against the wrong expectation, before it was
+  committed. Verified on the preview: every line since start is JSON, no
+  token-shaped segment anywhere, an incoming request id echoed and on its
+  access line. Seventeen tests in `tests/test_logs.py`, three more in
+  `tests/test_deploy_config.py`.
 
 ## Features
 
@@ -248,7 +271,7 @@ decisions shape the features:
 | 3 | what-the-app-says-about-itself | — | complete | 0 |
 | 4 | a-copy-of-everything | — | complete (off-host copy: owner) | — |
 | 5 | busy-not-broken | — | complete | 2 |
-| 6 | what-the-log-knows | — | planned | 3 |
+| 6 | what-the-log-knows | — | complete | 3 |
 | 7 | locked-and-signed | — | planned | 0 |
 | 8 | parsers-that-refuse | — | planned | 2 |
 | 9 | sessions-that-end | — | planned | 3 |
