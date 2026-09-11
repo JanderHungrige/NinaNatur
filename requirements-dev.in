@@ -1,0 +1,12 @@
+# What CI installs beside the image's lock: the tools, never the app's own
+# dependencies. Those are constrained to requirements.txt when this is compiled,
+# so the dev lock is exactly the image's lock plus these — CI tests what ships.
+#
+#   uv pip compile pyproject.toml requirements-dev.in -c requirements.txt \
+#     --universal --generate-hashes --python-version 3.13 -o requirements-dev.txt
+pytest
+ruff
+mypy
+types-requests
+httpx
+pip-audit
