@@ -31,6 +31,15 @@ services:
       # a new image would silently start from an empty database — and with a
       # self-updating deploy nobody notices until the gardens are gone.
       - ninanatur-data:/data
+    # Docker's json-file driver keeps everything unless told otherwise, and until
+    # 2026-09-11 nothing on this host told it: every log grew for as long as its
+    # container lived, holding every address that had asked. 5 × 10 MB is weeks
+    # of this app's lines.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4000/healthz', timeout=4).status==200 else 1)"]
       interval: 30s
