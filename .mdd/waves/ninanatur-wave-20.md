@@ -294,7 +294,63 @@ decisions shape the features:
   on the test job alone — pull requests now build and never push; and a new
   Python in the base image can never pass by itself, because the lock is
   compiled for one interpreter — base images now get new digests, not new
-  interpreters, and all Python pins move in one pull request. Branch protection is the owner's decision
+  interpreters, and all Python pins move in one pull request.
+- **2026-09-11 — feature 8, parsers that refuse.** Read before anything was
+  changed: `lod2.buildings_from` parsed NRW's tiles with the standard library,
+  which accepts a DTD and expands what it declares; `get_bytes` read an answer
+  of any size into memory; `tiff._tiles` allocated width × height bytes, both
+  straight from the file, before a byte of pixels — in the request thread, where
+  a container at its memory limit loses the whole app, not a worker; the LZW
+  decoder's table grew past the 4,096 entries TIFF allows, with no bound on its
+  output; and a malformed offset surfaced as `struct.error`, not `TiffError`.
+  Now the tiles go through `defusedxml` (no DTD, no entities, nothing external)
+  under a 150 MB cap, and every fetch has a byte cap — a declared length over it
+  is refused before a byte is read, a body that grows past it as it does, never
+  retried and never cached. The TIFF reader refuses a header claiming more than
+  4 million pixels while it is still a header, checks every offset and length
+  against the file, decodes LZW only up to the size it expects, and ends every
+  malformed file as a `TiffError`; the byte interpretation moved to
+  `tiff_codec.to_values` to keep `tiff.py` under 300 lines. A real 49 MB tile
+  from Wuppertal parses to the same 2,601 buildings through `defusedxml` as
+  through the standard library (0.96 s against 0.74 s), and has no DTD. Three
+  thousand seeded mutations of five valid tiles end as a raster or a
+  `TiffError`, in under a second. Found beside it: the test suite's own LZW
+  encoder widened its codes one code before libtiff does — invisible, because
+  every stream in the tests fitted in nine-bit codes; the round trip now crosses
+  all three widenings and a full table. On the preview a real Wuppertal garden went through
+  all of it — terrain 200 × 200 cells, three houses' heights from the survey and
+  five from the surface model, no warning in the log — and production runs it as
+  V0.19.136. That preview check also found what feature 10 is for: `POST /light`
+  on that garden took five to seven minutes, in the request thread. Not the
+  parsers — they take a second — but `measured.py`, which casts a ray from every
+  half-metre sample of every footprint against every one of the tile's 2,601
+  buildings, with no box around them first, and samples the garden's own
+  outline as though it were a building: 12,544 points, 22 seconds of the 28 on a
+  laptop, and several times that on the host.
+- **2026-09-11 — feature 9, sessions that end.** Read before anything changed:
+  `needs_rehash` existed and nothing called it, so raised scrypt parameters would
+  only ever have reached new accounts; an expired session was refused but never
+  deleted; the cookie's lifetime was written out beside `SESSION_DAYS`; and
+  `SameSite=Lax`, which keeps the cookie off other *sites*, let the other
+  projects on this host through — to a browser a site is the registrable
+  domain, `w3rth.de`, a POST without a body needs no preflight, and claiming a
+  garden is one. Now a login rehashes a password stored with weaker parameters;
+  every new session sweeps the expired ones, and an expired one that comes back
+  is deleted on the spot; the cookie's lifetime is `SESSION_DAYS`. Every route
+  that acts on a login — register, log in, log out, create, import, claim —
+  refuses a request whose `Origin` names another host, or that the browser marks
+  `same-site` or `cross-site` (`api/origin.py`), and logs it on the security
+  channel with the route rather than the path; a test walks every route, so a
+  new one cannot forget. And the account answer promised a password reset with
+  an e-mail where there is none: it now says the address is stored unverified
+  and nothing can be reset yet, and a test holds that no reset route appears
+  before addresses can be verified. Checked on the preview through the proxy:
+  a wrong password from our own page is a 401, the same request from a sister
+  subdomain a 403, a claim from a sister site a 403, an opaque origin a 403 —
+  and a real browser on the page itself still creates a garden (201), is told
+  its wrong password is wrong (401, not 403) and deletes the garden again.
+  In production as V0.19.138, where a sister subdomain's login is refused before
+  it reaches the database. Thirty-five tests, `tests/test_sessions_end.py`. Branch protection is the owner's decision
   and still open. Twenty-five tests across `tests/test_supply_chain.py`,
   `tests/test_auto_deploy.py` and `tests/test_container_hardening.py`.
 
@@ -310,8 +366,8 @@ decisions shape the features:
 | 5 | busy-not-broken | — | complete | 2 |
 | 6 | what-the-log-knows | — | complete | 3 |
 | 7 | locked-and-signed | — | complete (branch protection: owner) | 0 |
-| 8 | parsers-that-refuse | — | planned | 2 |
-| 9 | sessions-that-end | — | planned | 3 |
+| 8 | parsers-that-refuse | — | complete | 2 |
+| 9 | sessions-that-end | — | complete | 3 |
 | 10 | faster-where-it-is-felt | — | planned | 5 |
 | 11 | the-report | — | planned | 1–10 |
 
