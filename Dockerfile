@@ -2,9 +2,12 @@
 #
 # Three stages: the frontend bundle, the Python install, and a runtime carrying
 # neither toolchain. Build tooling never reaches the layer that runs.
+#
+# Base images by digest, not by tag: a tag is a pointer its owner can move, and
+# the build should be the same build tomorrow. Dependabot proposes new digests.
 
 # --- frontend -----------------------------------------------------------------
-FROM node:22-slim AS frontend
+FROM node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS frontend
 
 WORKDIR /build
 # Manifests first, so a source-only change reuses the install layer.
@@ -16,18 +19,21 @@ RUN npm run build
 
 
 # --- python deps --------------------------------------------------------------
-FROM python:3.13-slim AS build
+FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285 AS build
 
 WORKDIR /build
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
 
-COPY pyproject.toml ./
+COPY pyproject.toml requirements.txt ./
 COPY ninanatur ./ninanatur
-RUN pip install --prefix=/install . "uvicorn[standard]" fastapi
+# Exactly the lock CI tested against, every file checked against its hash — then
+# the project itself, which must not pull a dependency of its own.
+RUN pip install --prefix=/install --require-hashes -r requirements.txt \
+ && pip install --prefix=/install --no-deps .
 
 
 # --- runtime ------------------------------------------------------------------
-FROM python:3.13-slim AS runtime
+FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285 AS runtime
 
 # Baked at build time: the container carries neither git nor .mdd, so the
 # version cannot be derived at runtime — an unset value would show "dev" on a
