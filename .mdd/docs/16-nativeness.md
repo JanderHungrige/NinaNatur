@@ -11,7 +11,7 @@ source_files:
   - ninanatur/ingest/sources/nativeness.py
   - ninanatur/api/search.py
   - ninanatur/api/gardens.py
-  - ninanatur/api/planning.py
+  - ninanatur/api/suggestions.py
 test_files:
   - tests/test_nativeness.py
 routes: []

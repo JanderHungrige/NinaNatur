@@ -8,7 +8,7 @@ wave_status: complete
 depends_on: [26-drawing-canvas]
 relates: [24-month-suggestions, 15-timeline-ui]
 source_files:
-  - ninanatur/api/planning.py
+  - ninanatur/api/bloom_year.py
   - ninanatur/api/schemas.py
   - ninanatur/bloom/palette.py
   - frontend/src/components/CanvasScene.tsx

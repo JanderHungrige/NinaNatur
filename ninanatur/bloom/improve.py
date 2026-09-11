@@ -10,7 +10,8 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass, field
 
-from ninanatur.api.search import SearchFilters, load_candidates, rank_plants
+from ninanatur.api.candidate_cache import candidate_set
+from ninanatur.api.search import SearchFilters, rank_plants
 from ninanatur.bloom.score import (
     MONTH_SATURATION,
     ScoreResult,
@@ -112,7 +113,7 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
     current: ScoreResult = garden_score(conn, garden)
     raw = {m: current.raw_month.get(m, 0.0) for m in SEASON_MONTHS}
     planted = {p.taxon_id for bed in garden.beds for p in bed.plantings}
-    candidates = load_candidates(conn)
+    candidates = candidate_set(conn)
 
     additions: list[Change] = []
     swaps: list[Change] = []

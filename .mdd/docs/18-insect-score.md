@@ -9,7 +9,7 @@ depends_on: [16-nativeness, 17-insect-groups, 14-bloom-timeline]
 relates: [19-swap-suggestions]
 source_files:
   - ninanatur/bloom/score.py
-  - ninanatur/api/planning.py
+  - ninanatur/api/bloom_year.py
   - ninanatur/api/schemas.py
 routes:
   - GET /api/v1/gardens/{token}/score

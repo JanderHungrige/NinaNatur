@@ -11,7 +11,7 @@ source_files:
   - ninanatur/solar/shading.py
   - ninanatur/garden/sightlines.py
   - ninanatur/garden/store.py
-  - ninanatur/api/planning.py
+  - ninanatur/api/sightlines.py
 routes: []
 models: []
 test_files:

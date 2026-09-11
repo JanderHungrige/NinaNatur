@@ -26,6 +26,7 @@ from __future__ import annotations
 import sqlite3
 
 from ninanatur.data.traits import MANUAL_SOURCE
+from ninanatur.ingest.catalogue import mark_edited
 from ninanatur.ingest.provenance import upsert_trait
 
 #: The colours the plan can draw. A free string would reach the canvas as a dot
@@ -59,10 +60,12 @@ def record_colour(
     not.
     """
     if colour is None:
-        conn.execute(
+        taken = conn.execute(
             "DELETE FROM trait WHERE taxon_id = ? AND trait_key = ? AND source = ?",
             (taxon_id, TRAIT_KEY, MANUAL_SOURCE),
         )
+        if taken.rowcount:
+            mark_edited(conn)
         conn.commit()
         return
 
@@ -87,6 +90,11 @@ def record_colour(
     # that is one request rather than a batch, so the commit belongs here — and
     # without it the write is visible to the very request that made it and to
     # nothing afterwards, which is exactly how it behaved in production.
+    #
+    # Counted in the same transaction: the candidate set is held between
+    # requests and keyed on this count (`api/candidate_cache.py`), and a colour
+    # that changed without it would stay invisible until the next build.
+    mark_edited(conn)
     conn.commit()
 
 
