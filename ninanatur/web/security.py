@@ -27,6 +27,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from ninanatur.geo.orthophotos import ORTHOPHOTOS
 from ninanatur.ingest.http import HttpError
 from ninanatur.web.environment import is_production
+from ninanatur.web.logs import mask
 
 log = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ async def upstream_failed(request: Request, exc: Exception) -> JSONResponse:
     this app leans on. `JSONDecodeError` is a `ValueError`, which is why it used
     to fall through to the 422 handler meant for the domain's own refusals.
     """
-    log.warning("upstream failure on %s %s: %r", request.method, request.url.path, exc)
+    log.warning("upstream failure on %s %s: %r", request.method, mask(request.url.path), exc)
     return JSONResponse(status_code=502, content={"detail": UPSTREAM_DOWN})
 
 

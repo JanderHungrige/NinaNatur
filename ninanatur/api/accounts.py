@@ -26,6 +26,7 @@ from ninanatur.api.schemas import (
 )
 from ninanatur.auth.passwords import hash_password, verify_password
 from ninanatur.auth.sessions import COOKIE_NAME, Account, account_for, issue, revoke
+from ninanatur.web.logs import network_of, security_event, short_hash
 
 router = APIRouter(prefix="/api/v1", tags=["accounts"])
 
@@ -124,6 +125,10 @@ def log_in(
     ).fetchone()
 
     if row is None or not verify_password(payload.password, row["password_hash"]):
+        # Which account, as a hash: enough to see one being tried again and
+        # again, without the log naming anybody.
+        security_event("login_failed", client=network_of(ratelimit.client_of(request)),
+                       account=short_hash(payload.username))
         raise HTTPException(status_code=401, detail=BAD_LOGIN)
 
     token = issue(conn, int(row["account_id"]))

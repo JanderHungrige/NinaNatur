@@ -62,4 +62,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # --no-proxy-headers: the app decides whom to believe about forwarded headers
 # (web/app.py, TRUSTED_PROXIES), so the tests exercise the same decision the
 # deployment makes. Two places deciding it is how they come to disagree.
-CMD ["uvicorn", "ninanatur.web.app:app", "--host", "0.0.0.0", "--port", "4000", "--no-proxy-headers"]
+# --log-config: JSON lines through `web/logs.py`, which masks the share token.
+# --no-access-log: the app writes its own access line, naming the route; uvicorn
+# can only write the raw path, and on a garden route the path is the token.
+CMD ["uvicorn", "ninanatur.web.app:app", "--host", "0.0.0.0", "--port", "4000", "--no-proxy-headers", \
+     "--log-config", "ninanatur/web/log_config.json", "--no-access-log"]

@@ -21,6 +21,8 @@ from contextlib import contextmanager
 
 from fastapi import HTTPException, Request, status
 
+from ninanatur.web.logs import network_of, security_event
+
 #: Bucket → (most requests, window in seconds). Generous for a person using the
 #: page, and a wall for a script: the three expensive routes need no account and
 #: each can cost seconds of CPU and an outbound survey or Overpass query.
@@ -58,6 +60,7 @@ def check(conn: sqlite3.Connection, request: Request, bucket: str) -> None:
     ).fetchone()[0]
     if seen >= limit:
         conn.commit()
+        security_event("rate_limited", bucket=bucket, client=network_of(who))
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=REFUSAL)
     conn.execute("INSERT INTO rate_limit (bucket, client, at) VALUES (?, ?, ?)", (bucket, who, now))
     conn.commit()
@@ -83,6 +86,7 @@ def heavy() -> Iterator[None]:
     shrink the house by one each time until it answered nobody.
     """
     if not HEAVY.acquire(blocking=False):
+        security_event("busy", slots=HEAVY_SLOTS)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=BUSY,
