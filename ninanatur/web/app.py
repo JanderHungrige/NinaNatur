@@ -6,8 +6,8 @@ complicated to confuse a diagnosis. Wave 2 mounts the /api/v1 router here.
 """
 from __future__ import annotations
 
+import logging
 import os
-import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -32,7 +32,10 @@ from ninanatur.ingest.db import connect, database_path, enable_wal, init_schema
 from ninanatur.ops.backup import default_dest, snapshot_before_migration
 from ninanatur.version import app_version
 from ninanatur.web.environment import environment
+from ninanatur.web.logs import AccessLog
 from ninanatur.web.security import install as install_security
+
+log = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
 # The built frontend, present only in the container image. Vite serves it in
@@ -60,22 +63,20 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     try:
         taken = snapshot_before_migration(path, default_dest(path))
         if taken is not None:
-            print(f"database copied before migrating: {taken.name}", flush=True)
+            log.info("database copied before migrating: %s", taken.name)
     except Exception as exc:  # noqa: BLE001 - logged with context, startup goes on
-        print(f"WARNING: pre-migration backup of {path} failed: {exc!r}",
-              file=sys.stderr, flush=True)
+        log.warning("pre-migration backup of %s failed: %r", path, exc)
 
     conn = connect(path, same_thread=False)
     try:
         migrated = init_schema(conn)
         if migrated:
-            print(f"schema migrated: {', '.join(migrated)}", flush=True)
+            log.info("schema migrated: %s", ", ".join(migrated))
         # After the pre-migration copy and the migrations, so both still ran
         # against the file exactly as the previous release left it.
         mode = enable_wal(conn)
         if mode != "wal":
-            print(f"WARNING: database stayed in journal mode {mode!r}, not WAL",
-                  file=sys.stderr, flush=True)
+            log.warning("database stayed in journal mode %r, not WAL", mode)
         # A fresh volume has the schema but no plants, and the app then answers
         # "0 matching species" to every request. An *existing* volume has plants
         # but not the ones a newer image ships — which is how the insect group
@@ -84,13 +85,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         # on the volume are not touched.
         synced = sync_catalogue(conn, DEFAULT_CATALOGUE)
         if synced:
-            print(f"catalogue synced: {synced}", flush=True)
+            log.info("catalogue synced: %s", synced)
     finally:
         conn.close()
     # The light is computed in processes of their own; see `light_worker`.
     worker = light_worker.start()
     if worker is not None:
-        print(f"light worker ready: pid {worker}", flush=True)
+        log.info("light worker ready: pid %s", worker)
     try:
         yield
     finally:
@@ -162,6 +163,10 @@ install_security(app)
 # Last, so it runs first: every later decision — the rate-limit key, the
 # cookie's Secure flag, HSTS — needs the visitor's address and scheme already
 # rewritten from the trusted proxy's headers.
+# Inside the proxy-header rewrite, so it records the visitor's network rather
+# than the proxy's; outside everything else, so the 400s and 413s the
+# middleware above answer are logged too. See `web/logs.py`.
+app.add_middleware(AccessLog)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=TRUSTED_PROXIES)
 
 
