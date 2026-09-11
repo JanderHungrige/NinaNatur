@@ -54,3 +54,10 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# No test reaches the network: every socket but a Unix one is refused
+# (`tests/test_no_network.py`). The light worker's forkserver and the event
+# loop talk over Unix sockets, so those stay.
+addopts = "--disable-socket --allow-unix-socket"
+markers = [
+    "gate: a security gate — CI runs these first, by name (.github/workflows/deploy.yml)",
+]

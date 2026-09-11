@@ -23,8 +23,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
+from route_walk import WRITES, api_routes
 
 from ninanatur.api import geo
 from ninanatur.api.accounts import current_account
@@ -210,18 +210,28 @@ def _calls(dependant: Any) -> Iterator[Any]:
         yield from _calls(dependency)
 
 
+@pytest.mark.gate
 def test_every_route_that_acts_on_a_login_checks_where_it_came_from() -> None:
     """So a route added next year cannot forget it: anything that changes state
-    and reads the session — or sets or clears it — carries the check."""
+    and reads the session — or sets or clears it — carries the check.
+
+    Walked the way the API document walks them (`route_walk.py`). The first
+    version looped over `app.routes`, which since FastAPI 0.141 holds included
+    routers as opaque entries: it met three routes, none of them a write, and
+    passed by checking nothing. So it now also says what it checked.
+    """
     from ninanatur.api.origin import same_origin
 
-    for route in app.routes:
-        if not isinstance(route, APIRoute) or not route.methods & {"POST", "PUT", "PATCH",
-                                                                    "DELETE"}:
+    checked: set[str] = set()
+    for route in api_routes(app):
+        if not set(route.methods) & WRITES:
             continue
         calls = set(_calls(route.dependant))
         if current_account in calls or route.path in ("/api/v1/sessions", "/api/v1/accounts"):
             assert same_origin in calls, f"{route.path} acts on a login without the check"
+            checked.add(route.path)
+    assert checked >= {"/api/v1/accounts", "/api/v1/sessions", "/api/v1/gardens",
+                       "/api/v1/gardens/from-map", "/api/v1/gardens/{token}/claim"}
 
 
 # --- what the account answer may promise -------------------------------------------------
@@ -239,7 +249,7 @@ def test_no_password_reset_exists_while_email_addresses_are_unverified(
 ) -> None:
     """A reset mailed to an address nobody confirmed hands the account to
     whoever typed it. If a reset route ever appears, verification comes first."""
-    paths = [str(getattr(route, "path", "")).lower() for route in app.routes]
+    paths = [str(route.path).lower() for route in api_routes(app)]
     resets = [p for p in paths if "reset" in p or "recover" in p]
     columns = {str(row[1]) for row in conn.execute("PRAGMA table_info(account)")}
     assert not resets or "email_verified_at" in columns

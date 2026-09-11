@@ -5,6 +5,9 @@
 #   uv pip compile pyproject.toml requirements-dev.in -c requirements.txt \
 #     --universal --generate-hashes --python-version 3.13 -o requirements-dev.txt
 pytest
+# Refuses every socket that is not a Unix one, so no test can reach the network
+# by accident (`pyproject.toml` addopts; `tests/test_no_network.py`).
+pytest-socket
 ruff
 mypy
 types-requests
