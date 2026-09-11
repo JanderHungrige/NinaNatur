@@ -40,6 +40,23 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    # What the container may do: what the app needs, and nothing more (Wave 20,
+    # feature 7). Measured first: the running app writes outside its volume only
+    # to /tmp — the light worker's socket, and `backup verify` unpacking a copy —
+    # and two relights of an 87-element garden plus a month view peaked at
+    # 223 MiB. Trialled on the preview with every setting below switched on.
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 256
+    # A weight, not a quota: under contention the other projects on this host
+    # come first; on its own the app still has both cores.
+    cpu_shares: 512
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4000/healthz', timeout=4).status==200 else 1)"]
       interval: 30s
