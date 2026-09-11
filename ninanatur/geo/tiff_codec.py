@@ -18,12 +18,22 @@ class TiffCodecError(ValueError):
     """A stream this decoder will not guess at."""
 
 
-def lzw(data: bytes) -> bytes:
+#: TIFF's LZW table holds 4,096 entries, and an encoder clears it before it
+#: overflows. A stream that does not is not a TIFF stream, and a decoder that
+#: kept adding would keep adding for as long as the stream went on.
+TABLE_SIZE = 4096
+
+
+def lzw(data: bytes, limit: int | None = None) -> bytes:
     """TIFF's LZW variant: 9-bit codes growing to 12, with the early change.
 
     "Early change" is the part everybody gets wrong: the width grows one code
     *before* the table is actually full, so 511 and not 512 is where nine bits
     become ten. Getting it wrong decodes the first strip and garbles the rest.
+
+    `limit` is the most the caller expects (Wave 20, feature 8): a stream that
+    decodes to more is refused as it passes it, not after it has filled the
+    memory — a quarter-megabyte strip can otherwise decode to hundreds of MB.
     """
     clear, end_of_information, first = 256, 257, 258
     table: list[bytes] = [bytes([i]) for i in range(256)] + [b"", b""]
@@ -50,7 +60,9 @@ def lzw(data: bytes) -> bytes:
             else:
                 raise TiffCodecError(f"LZW code {code} outside the table")
             out += entry
-            if previous:
+            if limit is not None and len(out) > limit:
+                raise TiffCodecError(f"LZW stream decodes to more than {limit} bytes")
+            if previous and len(table) < TABLE_SIZE:
                 table.append(previous + entry[:1])
             previous = entry
             if len(table) + 1 >= (1 << width) and width < 12:
@@ -109,4 +121,27 @@ def undo_floating_point(chunk: bytes, end: str, width: int, bits: int) -> bytes:
     return bytes(np.ascontiguousarray(ordered.transpose(0, 2, 1)).tobytes())
 
 
-__all__ = ["TiffCodecError", "lzw", "undo_horizontal", "undo_predictor"]
+def to_values(raw: bytes, end: str, bits: int, sample_format: int) -> np.ndarray:
+    """Interpret the bytes as the numbers the service says they are.
+
+    Moved here from `tiff.py` (Wave 20, feature 8): it is about the bytes, not
+    about where they live, and `tiff.py` had passed three hundred lines.
+
+    Baden-Württemberg's 16-bit unsigned values are whole metres — verified
+    against Stuttgart, where they read 241 to 244. They are not a scaled
+    fixed-point, which is the thing to check first the next time a service is
+    added, because reading decimetres as metres is off by ten and looks
+    plausible on flat ground.
+    """
+    if sample_format == 3 and bits == 32:
+        return np.frombuffer(raw, dtype=np.dtype(end + "f4"))
+    if sample_format == 3 and bits == 64:
+        return np.frombuffer(raw, dtype=np.dtype(end + "f8"))
+    if sample_format in (1, 0) and bits == 16:
+        return np.frombuffer(raw, dtype=np.dtype(end + "u2"))
+    if sample_format == 2 and bits == 16:
+        return np.frombuffer(raw, dtype=np.dtype(end + "i2"))
+    raise TiffCodecError(f"{bits}-bit sample format {sample_format} is not supported")
+
+
+__all__ = ["TABLE_SIZE", "TiffCodecError", "lzw", "to_values", "undo_horizontal", "undo_predictor"]

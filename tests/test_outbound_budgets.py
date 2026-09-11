@@ -46,6 +46,7 @@ class FakeWeb:
         response.reason = "scripted"
         response._content = (body if isinstance(body, bytes)
                              else __import__("json").dumps(body).encode())
+        response._content_consumed = True  # read in chunks since the fetch cap
         return response
 
 

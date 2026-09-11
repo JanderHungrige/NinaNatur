@@ -3,143 +3,17 @@
 No fixtures and no network: the six services disagree in three dimensions —
 byte order, sample format, and compression with two different predictors — and
 every combination has to be constructible here or it cannot be regression-tested.
-
-The LZW stream is produced by an encoder written from the specification in
-`_lzw_encode` below. Encoding and decoding are different enough algorithms that
-agreeing on the early-change rule is evidence rather than a shared assumption.
+The files are built in `tiff_builders.py`, and the LZW stream by an encoder
+written from the specification there, not by the decoder under test.
 """
 from __future__ import annotations
 
-import struct
-
 import numpy as np
 import pytest
+from tiff_builders import HEIGHTS, _lzw_encode, _tiff, _tiled
 
 from ninanatur.geo.tiff import TiffError, read_raster
-
-
-def _lzw_encode(data: bytes) -> bytes:
-    """TIFF LZW, written from the spec to check the decoder against."""
-    table = {bytes([i]): i for i in range(256)}
-    nxt, width = 258, 9
-    out, held, bits = bytearray(), 0, 0
-
-    def emit(code: int, width: int) -> None:
-        nonlocal held, bits
-        held = (held << width) | code
-        bits += width
-        while bits >= 8:
-            out.append((held >> (bits - 8)) & 0xFF)
-            bits -= 8
-
-    emit(256, width)
-    current = b""
-    for byte in data:
-        nextt = current + bytes([byte])
-        if nextt in table:
-            current = nextt
-            continue
-        emit(table[current], width)
-        table[nextt] = nxt
-        nxt += 1
-        if nxt + 1 >= (1 << width) and width < 12:
-            width += 1
-        current = bytes([byte])
-    if current:
-        emit(table[current], width)
-    emit(257, width)
-    if bits:
-        out.append((held << (8 - bits)) & 0xFF)
-    return bytes(out)
-
-
-def _tiff(
-    values: np.ndarray,
-    *,
-    big_endian: bool = False,
-    compress: bool = False,
-    predictor: int = 1,
-    short_counts: bool = False,
-    rows_per_strip: int | None = None,
-) -> bytes:
-    """A single-band TIFF holding `values`, assembled to order."""
-    end = ">" if big_endian else "<"
-    height, width = values.shape
-    bits = values.dtype.itemsize * 8
-    fmt = 3 if values.dtype.kind == "f" else 1
-    rows_per_strip = rows_per_strip or height
-
-    body = values.astype(end + values.dtype.str[1:]).tobytes()
-    row_bytes = width * (bits // 8)
-    strips = [
-        body[i * row_bytes : (i + rows_per_strip) * row_bytes]
-        for i in range(0, height, rows_per_strip)
-    ]
-    if predictor == 3:
-        strips = [_apply_float_predictor(s, end, width, bits) for s in strips]
-    if compress:
-        strips = [_lzw_encode(s) for s in strips]
-
-    entries = [
-        (256, 3, 1, width), (257, 3, 1, height), (258, 3, 1, bits),
-        (259, 3, 1, 5 if compress else 1), (277, 3, 1, 1),
-        (278, 3, 1, rows_per_strip), (317, 3, 1, predictor), (339, 3, 1, fmt),
-    ]
-    header = 8
-    dir_at = header + sum(len(s) for s in strips)
-    n = len(entries) + 2
-    arrays_at = dir_at + 2 + n * 12 + 4
-
-    offsets, at = [], header
-    for s in strips:
-        offsets.append(at)
-        at += len(s)
-    counts = [len(s) for s in strips]
-
-    out = bytearray(b"MM\x00\x2a" if big_endian else b"II\x2a\x00")
-    out += struct.pack(end + "I", dir_at)
-    for s in strips:
-        out += s
-
-    def field(tag: int, kind: int, count: int, value: int) -> bytes:
-        code = {1: "B", 3: "H", 4: "I"}[kind]
-        raw = struct.pack(end + code, value)
-        return struct.pack(end + "HHI", tag, kind, count) + raw + b"\x00" * (4 - len(raw))
-
-    off_kind, off_code = 4, "I"
-    cnt_kind, cnt_code = (3, "H") if short_counts else (4, "I")
-    body_arrays = b""
-    all_entries = list(entries)
-    if len(strips) == 1:
-        all_entries += [(273, off_kind, 1, offsets[0]), (279, cnt_kind, 1, counts[0])]
-    else:
-        all_entries += [(273, off_kind, len(strips), arrays_at),
-                        (279, cnt_kind, len(strips), arrays_at + 4 * len(strips))]
-        body_arrays = (struct.pack(end + f"{len(strips)}{off_code}", *offsets)
-                       + struct.pack(end + f"{len(strips)}{cnt_code}", *counts))
-    all_entries.sort()
-
-    out += struct.pack(end + "H", len(all_entries))
-    for tag, kind, count, value in all_entries:
-        out += field(tag, kind, count, value)
-    out += struct.pack(end + "I", 0)
-    out += body_arrays
-    return bytes(out)
-
-
-def _apply_float_predictor(raw: bytes, end: str, width: int, bits: int) -> bytes:
-    per = bits // 8
-    rows = np.frombuffer(raw, dtype=np.uint8).reshape(-1, width * per)
-    out = []
-    for row in rows:
-        samples = row.reshape(width, per)
-        planes = samples[:, ::-1].T if end == "<" else samples.T
-        flat = planes.reshape(-1).astype(np.uint8)
-        out.append(np.diff(np.concatenate([[0], flat]).astype(np.int16)).astype(np.uint8))
-    return bytes(np.concatenate(out).tobytes())
-
-
-HEIGHTS = np.array([[10.5, 11.0, 11.5], [12.0, 12.5, 13.0]], dtype="<f4")
+from ninanatur.geo.tiff_codec import lzw
 
 
 def test_a_plain_little_endian_float_raster() -> None:
@@ -171,6 +45,19 @@ def test_lzw_with_the_floating_point_predictor() -> None:
     assert raster.values.max() == pytest.approx(13.0)
 
 
+@pytest.mark.parametrize("data", [
+    b"\x00" * 200_000,
+    bytes(range(256)) * 400,
+    np.random.default_rng(17).integers(0, 8, 60_000, dtype=np.uint8).tobytes(),
+], ids=["a long run", "a sweep that fills the table", "noise"])
+def test_codes_widen_where_libtiff_widens_them(data: bytes) -> None:
+    """Every earlier test fitted in nine-bit codes, so the early-change rule —
+    the part the codec's docstring calls the one everybody gets wrong — had never
+    been crossed here. It was on 2026-09-11, and it was the test's encoder that
+    had it wrong: it widened one code before libtiff does."""
+    assert lzw(_lzw_encode(data)) == data
+
+
 def test_strip_counts_may_be_shorts_while_offsets_are_longs() -> None:
     """Brandenburg does exactly this in one file. Reading both as longs gave
     plausible-looking garbage lengths and nine times too many values."""
@@ -194,61 +81,6 @@ def test_an_unreadable_file_says_so_rather_than_guessing() -> None:
 
 
 # --- packaging and layout --------------------------------------------------
-
-def _tiled(values: np.ndarray, tile: int = 128, big_endian: bool = False) -> bytes:
-    """A tiled TIFF, padded out to whole tiles the way the format requires."""
-    end = ">" if big_endian else "<"
-    height, width = values.shape
-    bits = values.dtype.itemsize * 8
-    across = (width + tile - 1) // tile
-    down = (height + tile - 1) // tile
-
-    blocks: list[bytes] = []
-    for ty in range(down):
-        for tx in range(across):
-            block = np.zeros((tile, tile), dtype=values.dtype)
-            rows = min(tile, height - ty * tile)
-            cols = min(tile, width - tx * tile)
-            block[:rows, :cols] = values[
-                ty * tile : ty * tile + rows, tx * tile : tx * tile + cols
-            ]
-            blocks.append(block.astype(end + values.dtype.str[1:]).tobytes())
-
-    entries = [
-        (256, 3, 1, width), (257, 3, 1, height), (258, 3, 1, bits),
-        (259, 3, 1, 1), (277, 3, 1, 1), (322, 3, 1, tile), (323, 3, 1, tile),
-        (339, 3, 1, 3 if values.dtype.kind == "f" else 1),
-    ]
-    header = 8
-    dir_at = header + sum(len(b) for b in blocks)
-    n = len(entries) + 2
-    arrays_at = dir_at + 2 + n * 12 + 4
-
-    offsets, at = [], header
-    for b in blocks:
-        offsets.append(at)
-        at += len(b)
-    counts = [len(b) for b in blocks]
-
-    out = bytearray(b"MM\x00\x2a" if big_endian else b"II\x2a\x00")
-    out += struct.pack(end + "I", dir_at)
-    for b in blocks:
-        out += b
-
-    all_entries = [*entries,
-                   (324, 4, len(blocks), arrays_at),
-                   (325, 4, len(blocks), arrays_at + 4 * len(blocks))]
-    all_entries.sort()
-    out += struct.pack(end + "H", len(all_entries))
-    for tag, kind, count, value in all_entries:
-        code = {1: "B", 3: "H", 4: "I"}[kind]
-        raw = struct.pack(end + code, value)
-        out += struct.pack(end + "HHI", tag, kind, count) + raw + b"\x00" * (4 - len(raw))
-    out += struct.pack(end + "I", 0)
-    out += struct.pack(end + f"{len(blocks)}I", *offsets)
-    out += struct.pack(end + f"{len(blocks)}I", *counts)
-    return bytes(out)
-
 
 def test_a_tiled_raster_is_reassembled_in_the_right_order() -> None:
     """Sachsen-Anhalt's shape, and the shape of every Cloud-Optimised GeoTIFF —

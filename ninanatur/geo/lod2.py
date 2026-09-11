@@ -21,6 +21,9 @@ from dataclasses import dataclass
 from io import BytesIO
 from xml.etree import ElementTree
 
+from defusedxml import DefusedXmlException
+from defusedxml.ElementTree import iterparse
+
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.projection import LatLon, to_metres
 from ninanatur.geo.utm import to_latlon
@@ -49,9 +52,17 @@ ADV_ROOFS: dict[str, Roof] = {
     "9999": Roof.OTHER,      # Sonstiges
 }
 
+#: The largest tile seen is 38 MB (Cologne). Four times that is still a tile;
+#: anything beyond it is not one, and is refused before a byte of it is parsed.
+MAX_TILE_BYTES = 150_000_000
+
 _NS = {"bldg": "http://www.opengis.net/citygml/building/1.0",
        "gml": "http://www.opengis.net/gml"}
 _POS = re.compile(r"[-\d.eE+]+")
+
+
+class Lod2Error(ValueError):
+    """A tile this reader will not read."""
 
 
 @dataclass(frozen=True)
@@ -110,19 +121,32 @@ def buildings_from(document: bytes) -> list[Lod2Building]:
     An element missing a height or a roof type is skipped rather than defaulted —
     a building made of parts is exactly that case, and its parts are picked up on
     their own.
+
+    **Only a tile is read as a tile** (Wave 20, feature 8). Parsed with
+    `defusedxml`, which refuses a DTD, entity declarations and anything external:
+    a survey tile carries none of them, and the standard library would have
+    expanded whatever a hostile one declared. Nothing larger than
+    `MAX_TILE_BYTES` is parsed at all. Every refusal is a `Lod2Error`, and the
+    caller keeps the garden's assumed heights.
     """
+    if len(document) > MAX_TILE_BYTES:
+        raise Lod2Error(f"a {len(document) / 1e6:.0f} MB answer is not a tile")
     found: list[Lod2Building] = []
-    for _event, element in ElementTree.iterparse(BytesIO(document), events=("end",)):
-        if not (element.tag.endswith("}Building") or element.tag.endswith("}BuildingPart")):
-            continue
-        building = _one(element)
-        if building is not None:
-            found.append(building)
-            # Only cleared once it has been read. A part ends before its parent,
-            # and clearing it early would leave the parent no geometry to find —
-            # which does not arise today, because a parent with parts carries no
-            # roof of its own and is skipped, but would the moment one did.
-            element.clear()
+    try:
+        for _event, element in iterparse(BytesIO(document), events=("end",), forbid_dtd=True):
+            if not (element.tag.endswith("}Building") or element.tag.endswith("}BuildingPart")):
+                continue
+            building = _one(element)
+            if building is not None:
+                found.append(building)
+                # Only cleared once it has been read. A part ends before its
+                # parent, and clearing it early would leave the parent no
+                # geometry to find — which does not arise today, because a
+                # parent with parts carries no roof of its own and is skipped,
+                # but would the moment one did.
+                element.clear()
+    except (DefusedXmlException, ElementTree.ParseError) as refused:
+        raise Lod2Error(f"not a tile this reader will read: {refused}") from refused
     return found
 
 
@@ -237,6 +261,8 @@ def in_garden_frame(
 
 __all__ = [
     "ADV_ROOFS",
+    "Lod2Error",
+    "MAX_TILE_BYTES",
     "Lod2Building",
     "buildings_from",
     "in_garden_frame",
