@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account, require_account
 from ninanatur.api.deps import get_connection
+from ninanatur.api.origin import same_origin
 from ninanatur.api.schemas import (
     BedOut,
     GardenCreate,
@@ -104,7 +105,8 @@ def to_out(garden: Garden) -> GardenOut:
     )
 
 
-@router.post("", response_model=GardenCreated, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=GardenCreated, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(same_origin)])
 def create(
     payload: GardenCreate,
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
@@ -208,7 +210,9 @@ def set_soil(
 
 
 
-@router.post("/{token}/claim", response_model=GardenOut)
+# No body, so no CORS preflight: the one route here a sister site on w3rth.de
+# could have made a logged-in visitor call. See `api/origin.py`.
+@router.post("/{token}/claim", response_model=GardenOut, dependencies=[Depends(same_origin)])
 def claim(
     token: str,
     account: Annotated[Account, Depends(require_account)],

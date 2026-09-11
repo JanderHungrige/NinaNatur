@@ -6,6 +6,10 @@ visitor rather than the proxy.
 The API has had no rate limiting since Wave 3, which was defensible while the
 only credential was a 32-byte share token. It stops being defensible the moment
 a person chooses a password.
+
+Every route here that changes something checks where the request came from
+(`api/origin.py`): the cookie's `SameSite=Lax` lets pages on the other w3rth.de
+projects through, because to a browser they are the same site.
 """
 from __future__ import annotations
 
@@ -17,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
+from ninanatur.api.origin import same_origin
 from ninanatur.api.schemas import (
     AccountOut,
     Credentials,
@@ -24,18 +29,32 @@ from ninanatur.api.schemas import (
     OwnedGardens,
     Registration,
 )
-from ninanatur.auth.passwords import hash_password, verify_password
-from ninanatur.auth.sessions import COOKIE_NAME, Account, account_for, issue, revoke
+from ninanatur.auth.passwords import hash_password, needs_rehash, verify_password
+from ninanatur.auth.sessions import (
+    COOKIE_NAME,
+    SESSION_DAYS,
+    Account,
+    account_for,
+    issue,
+    revoke,
+)
 from ninanatur.web.logs import network_of, security_event, short_hash
 
 router = APIRouter(prefix="/api/v1", tags=["accounts"])
 
-# Said where the choice is made, not discovered later.
+# Said where the choice is made, not discovered later — and only what exists.
+# There is no password reset. The address is stored unverified, and a reset
+# mailed to an address nobody confirmed hands the account to whoever typed it:
+# verification comes first, whenever a reset is built (Wave 20, feature 9). The
+# note used to promise a reset with an e-mail, and there was none.
 NO_EMAIL_NOTE = (
     "Ohne E-Mail-Adresse kann dein Passwort nicht zurückgesetzt werden. "
     "Vergisst du es, ist der Zugang verloren."
 )
-EMAIL_NOTE = "Mit deiner E-Mail-Adresse lässt sich das Passwort zurücksetzen."
+EMAIL_NOTE = (
+    "Deine E-Mail-Adresse ist gespeichert, aber noch nicht bestätigt. Zurücksetzen "
+    "lässt sich das Passwort damit noch nicht — vergisst du es, ist der Zugang verloren."
+)
 
 # The one answer both a wrong password and an unknown user get, so the login
 # form is not a username oracle.
@@ -57,7 +76,7 @@ def _set_cookie(response: Response, request: Request, token: str) -> None:
         # Lax rather than Strict: a share link followed from someone's message
         # must still find the session, and this is not a state-changing GET.
         samesite="lax",
-        max_age=60 * 60 * 24 * 30,
+        max_age=SESSION_DAYS * 24 * 60 * 60,
         path="/",
     )
 
@@ -78,7 +97,8 @@ def require_account(
     return account
 
 
-@router.post("/accounts", response_model=AccountOut, status_code=status.HTTP_201_CREATED)
+@router.post("/accounts", response_model=AccountOut, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(same_origin)])
 def register(
     payload: Registration,
     request: Request,
@@ -110,7 +130,7 @@ def register(
     )
 
 
-@router.post("/sessions", response_model=AccountOut)
+@router.post("/sessions", response_model=AccountOut, dependencies=[Depends(same_origin)])
 def log_in(
     payload: Credentials,
     request: Request,
@@ -131,6 +151,13 @@ def log_in(
                        account=short_hash(payload.username))
         raise HTTPException(status_code=401, detail=BAD_LOGIN)
 
+    if needs_rehash(row["password_hash"]):
+        # The parameters travel with the hash so that they can be raised; this is
+        # where a raised parameter reaches an existing account — the one moment
+        # the password itself is in hand. It was never called until Wave 20.
+        conn.execute("UPDATE account SET password_hash = ? WHERE account_id = ?",
+                     (hash_password(payload.password), row["account_id"]))
+        conn.commit()
     token = issue(conn, int(row["account_id"]))
     _set_cookie(response, request, token)
     return AccountOut(
@@ -140,7 +167,8 @@ def log_in(
     )
 
 
-@router.delete("/sessions", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/sessions", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(same_origin)])
 def log_out(
     request: Request,
     response: Response,
