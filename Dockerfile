@@ -19,7 +19,7 @@ RUN npm run build
 
 
 # --- python deps --------------------------------------------------------------
-FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285 AS build
+FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6 AS build
 
 WORKDIR /build
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
@@ -33,7 +33,7 @@ RUN pip install --prefix=/install --require-hashes -r requirements.txt \
 
 
 # --- runtime ------------------------------------------------------------------
-FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285 AS runtime
+FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6 AS runtime
 
 # Baked at build time: the container carries neither git nor .mdd, so the
 # version cannot be derived at runtime — an unset value would show "dev" on a
