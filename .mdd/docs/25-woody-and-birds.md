@@ -17,7 +17,7 @@ source_files:
   - ninanatur/garden/store.py
   - ninanatur/solar/shading.py
   - ninanatur/api/filters.py
-  - ninanatur/api/planning.py
+  - ninanatur/api/suggestions.py
   - frontend/src/components/SuggestionList.tsx
 routes:
   - GET /api/v1/plants/{taxon_id}

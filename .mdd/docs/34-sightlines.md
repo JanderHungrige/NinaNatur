@@ -9,7 +9,7 @@ depends_on: [27-object-labelling]
 relates: [12-bed-light, 32-object-heights]
 source_files:
   - ninanatur/garden/sightlines.py
-  - ninanatur/api/planning.py
+  - ninanatur/api/sightlines.py
   - ninanatur/ingest/db.py
   - frontend/src/components/Sightlines.tsx
   - frontend/src/components/CanvasScene.tsx

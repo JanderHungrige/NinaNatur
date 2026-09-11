@@ -18,6 +18,7 @@ import sqlite3
 from dataclasses import dataclass
 
 from ninanatur.garden.models import Garden
+from ninanatur.garden.objects import ROOFED
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.lod2 import Lod2Building
 from ninanatur.geo.measure import height_of, looks_contaminated
@@ -52,6 +53,18 @@ OVERLAP_STEP_M = 0.5
 #: nowhere near each other.
 IMPLAUSIBLE_M = 15.0
 
+#: The kinds measured here: the ones with a roof.
+#:
+#: Everything else a garden holds is ground — the outline, a lawn, a street — or
+#: stands without being a building. A tree found by the canopy pass and accepted
+#: is stored as `measured`, so this module used to measure it again on every
+#: recompute: against the survey, where overhanging a house hands it that
+#: house's roof, and against the laser surface as though its crown were one.
+BUILDINGS = frozenset(kind.value for kind in ROOFED)
+
+#: min x, min y, max x, max y.
+Box = tuple[float, float, float, float]
+
 
 @dataclass(frozen=True)
 class Measurement:
@@ -76,15 +89,19 @@ def measure(
 
     Returns nothing for a building the user has spoken about: `height_source`
     of `user` is a decision, not a default, and re-measuring it would undo a
-    correction somebody made on purpose.
+    correction somebody made on purpose. And nothing for what is not a
+    building: see `BUILDINGS`.
     """
+    boxed = _boxed(surveyed)
     found: list[Measurement] = []
     for obstacle in garden.obstacles:
+        if obstacle.kind not in BUILDINGS:
+            continue
         if obstacle.height_source == HeightSource.USER.value:
             continue
         if not obstacle.footprint or len(obstacle.footprint) < 3:
             continue
-        from_survey = _from_survey(obstacle, surveyed)
+        from_survey = _from_survey(obstacle, boxed)
         from_raster = _from_surface(obstacle, surface)
         best = _reconcile(from_survey, from_raster)
         if best is not None:
@@ -123,7 +140,7 @@ def _reconcile(
 
 
 def _from_survey(
-    obstacle: object, surveyed: list[Lod2Building] | None
+    obstacle: object, boxed: list[tuple[Lod2Building, Box]]
 ) -> Measurement | None:
     """The official 3D model, matched by position.
 
@@ -134,15 +151,21 @@ def _from_survey(
     measured this building against its own ground plan and states its accuracy,
     where the raster route is a percentile over an outline somebody drew in OSM.
     """
-    if not surveyed:
+    if not boxed:
         return None
     drawn = [(float(p[0]), float(p[1])) for p in getattr(obstacle, "footprint", [])]
     points = _sample(drawn)
     if not points:
         return None
+    reach = _box(points)
     best = None
     best_share = MATCH_OVERLAP
-    for candidate in surveyed:
+    for candidate, box in boxed:
+        # A sample can only be inside an outline whose box holds it, so a
+        # building whose box misses every sample cannot match. One box test
+        # instead of a polygon test per sample, and a tile holds 2,601 of them.
+        if not _overlaps(box, reach):
+            continue
         share = _covered(points, candidate.outline)
         if share > best_share:
             best, best_share = candidate, share
@@ -212,6 +235,22 @@ def apply(conn: sqlite3.Connection, found: list[Measurement]) -> int:
     return changed
 
 
+def _boxed(surveyed: list[Lod2Building] | None) -> list[tuple[Lod2Building, Box]]:
+    """Each surveyed building with the box around it — worked out once per
+    garden rather than once per building drawn on it."""
+    return [(b, _box(b.outline)) for b in surveyed or [] if len(b.outline) >= 3]
+
+
+def _box(points: list[tuple[float, float]]) -> Box:
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _overlaps(a: Box, b: Box) -> bool:
+    return a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
+
+
 def _sample(footprint: list[tuple[float, float]]) -> list[tuple[float, float]]:
     """Points spread over a footprint, for measuring how much of it is covered."""
     if len(footprint) < 3:
@@ -249,6 +288,7 @@ def _inside(polygon: list[tuple[float, float]], x: float, y: float) -> bool:
 
 
 __all__ = [
+    "BUILDINGS",
     "IMPLAUSIBLE_M",
     "MATCH_OVERLAP",
     "Measurement",

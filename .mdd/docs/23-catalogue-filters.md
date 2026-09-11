@@ -9,7 +9,7 @@ depends_on: [21-german-names]
 relates: [22-species-info, 24-month-suggestions]
 source_files:
   - ninanatur/api/search.py
-  - ninanatur/api/planning.py
+  - ninanatur/api/suggestions.py
   - ninanatur/api/schemas.py
   - ninanatur/api/candidates.py
   - ninanatur/api/filters.py
