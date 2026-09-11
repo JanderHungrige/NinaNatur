@@ -260,6 +260,43 @@ decisions shape the features:
   token-shaped segment anywhere, an incoming request id echoed and on its
   access line. Seventeen tests in `tests/test_logs.py`, three more in
   `tests/test_deploy_config.py`.
+- **2026-09-11 — feature 7, locked and signed.** Measured first: `pyproject.toml`
+  named only lower bounds and there was no lockfile, so CI tested whatever PyPI
+  served that minute and the image, built in another job, installed whatever it
+  served a minute later; nothing was audited; every GitHub Action and both base
+  images hung on a tag their owners can move; Dependabot was off; `.dockerignore`
+  excluded no `.env` — and the frontend stage copies its whole directory, where
+  Vite bakes `VITE_*` values from a `.env` into the public bundle;
+  `auto-deploy.sh` pruned, after every roll, the image it had just replaced —
+  the only one it could have gone back to — and nothing waited for the health
+  check; the container ran with Docker's defaults. Now: universal, hashed uv
+  locks (`requirements.txt` for the image, `requirements-dev.txt` for CI — the
+  same versions plus the tools), installed with `--require-hashes` in both
+  places; `pip-audit` on what ships and `npm audit --omit=dev` on the bundle as
+  CI gates, both clean; Actions pinned to commits within their current majors,
+  base images to digests; Dependabot on for pip, npm, Actions and Docker,
+  proposing into `dev-deployment`, with pull requests now tested and never
+  built. The deploy script keeps the image it replaces as `:<tag>-previous`,
+  gives a new one 150 s to report healthy, rolls back one that does not and
+  remembers it so the next tick does not flap back to it, and logs every roll
+  with its digest — tested against a recording stand-in for `docker`, trialled
+  on the host while holding the real deploy lock. The container runs read-only
+  with a 256 MB tmpfs on `/tmp`, every capability dropped, no-new-privileges,
+  1 GB of memory and no swap beyond it, 256 pids and a CPU weight rather than a
+  quota — measured first (it writes only to `/tmp`; peak 223 MiB) and trialled
+  on the preview before it was committed. The preview's and production's images
+  contain exactly the locked versions. The new deploy script's first real roll,
+  production to V0.19.128: healthy eleven seconds after start, the build named by
+  digest in `deploy/.state/deploy.log`, and the image it replaced kept as
+  `:main-previous` — where the old script would have pruned it. Dependabot's
+  first ten proposals then showed two gaps, closed the same day: a pull request
+  skipped the image build entirely, so a base-image or build-action bump passed
+  on the test job alone — pull requests now build and never push; and a new
+  Python in the base image can never pass by itself, because the lock is
+  compiled for one interpreter — base images now get new digests, not new
+  interpreters, and all Python pins move in one pull request. Branch protection is the owner's decision
+  and still open. Twenty-five tests across `tests/test_supply_chain.py`,
+  `tests/test_auto_deploy.py` and `tests/test_container_hardening.py`.
 
 ## Features
 
@@ -272,7 +309,7 @@ decisions shape the features:
 | 4 | a-copy-of-everything | — | complete (off-host copy: owner) | — |
 | 5 | busy-not-broken | — | complete | 2 |
 | 6 | what-the-log-knows | — | complete | 3 |
-| 7 | locked-and-signed | — | planned | 0 |
+| 7 | locked-and-signed | — | complete (branch protection: owner) | 0 |
 | 8 | parsers-that-refuse | — | planned | 2 |
 | 9 | sessions-that-end | — | planned | 3 |
 | 10 | faster-where-it-is-felt | — | planned | 5 |
