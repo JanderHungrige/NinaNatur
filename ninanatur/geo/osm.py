@@ -1,5 +1,7 @@
 """Address search and building outlines from OpenStreetMap.
 
+Streets are in `osm_streets.py`; the Overpass fetch both use is here.
+
 Both Nominatim and Overpass are free services run for the community, and this
 project is a guest on them. Requests go through the ingest HTTP layer — cached
 on disk, delayed, retried — and carry a User-Agent that says who is calling,
@@ -13,7 +15,7 @@ from typing import Any, Protocol
 
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surroundings import OsmBuilding
-from ninanatur.ingest.http import get_json
+from ninanatur.ingest.http import HttpError, get_json
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse"
@@ -58,6 +60,31 @@ def search_address(query: str, *, fetch: Fetch = get_json, limit: int = 5) -> li
     ]
 
 
+def overpass_complete(raw: Any) -> bool:
+    """Whether Overpass finished the query it was asked.
+
+    When it gives up — out of time, out of memory — it still answers HTTP 200,
+    with whatever elements it had and a `remark` saying `runtime error`. Taken
+    at its word that is "no buildings here", and cached it stayed that way for
+    good. It is a failure to fetch, and is reported as one.
+    """
+    if not isinstance(raw, dict):
+        return True  # malformed is handled where it is read; this asks one thing
+    return "runtime error" not in str(raw.get("remark") or "")
+
+
+def fetch_overpass(url: str, params: dict[str, Any] | None = None) -> Any:
+    """The live fetch: an incomplete answer is refused before it can be cached."""
+    return get_json(url, params, accept=overpass_complete)
+
+
+def complete_or_fail(raw: Any) -> Any:
+    """The same refusal for an answer that came through a fetch of its own."""
+    if not overpass_complete(raw):
+        raise HttpError(f"Overpass gave up on the query: {raw.get('remark')}")
+    return raw
+
+
 def _overpass_query(south: float, west: float, north: float, east: float) -> str:
     # `out center` gives one point per element without the node list, which is a
     # fraction of the payload and all the shading model needs.
@@ -81,10 +108,10 @@ def _overpass_query(south: float, west: float, north: float, east: float) -> str
 
 
 def buildings_in(
-    south: float, west: float, north: float, east: float, *, fetch: Fetch = get_json
+    south: float, west: float, north: float, east: float, *, fetch: Fetch = fetch_overpass
 ) -> list[OsmBuilding]:
     """Buildings whose centre lies in the box."""
-    raw = fetch(OVERPASS, {"data": _overpass_query(south, west, north, east)})
+    raw = complete_or_fail(fetch(OVERPASS, {"data": _overpass_query(south, west, north, east)}))
     if not isinstance(raw, dict):
         return []
     found: list[OsmBuilding] = []
@@ -202,93 +229,3 @@ def state_at(lat: float, lon: float, *, fetch: Fetch = get_json) -> str | None:
     # A city-state. The ISO code is the only field that names it.
     iso = address.get("ISO3166-2-lvl4")
     return ISO_STATES.get(str(iso)) if iso else None
-
-
-#: Rough carriageway widths in metres, by `highway` value.
-#:
-#: Rough on purpose: OSM records a width for almost nothing, and a plan needs a
-#: plausible line rather than a surveyed one. A recorded `width` always wins.
-STREET_WIDTHS: dict[str, float] = {
-    "footway": 1.5,
-    "path": 1.5,
-    "cycleway": 2.0,
-    "track": 3.0,
-    "service": 3.5,
-    "living_street": 5.0,
-    "residential": 6.0,
-    "unclassified": 6.0,
-    "tertiary": 7.0,
-    "secondary": 8.0,
-    "primary": 10.0,
-}
-
-DEFAULT_STREET_WIDTH_M = 5.0
-
-
-@dataclass(frozen=True)
-class OsmStreet:
-    """A way, as a centreline and a width — which is what an `element` stores."""
-
-    osm_id: int
-    name: str | None
-    centreline: list[LatLon]
-    width_m: float
-
-
-def _street_query(south: float, west: float, north: float, east: float) -> str:
-    # `out geom` rather than `out center`: a street is a line, and its shape is
-    # the whole of what makes it useful on a plan. Buildings ask for centres
-    # precisely because their shape is not needed there.
-    kinds = "|".join(STREET_WIDTHS)
-    return (
-        f"[out:json][timeout:40];"
-        f'way["highway"~"^({kinds})$"]({south},{west},{north},{east});'
-        f"out geom;"
-    )
-
-
-def streets_in(
-    south: float, west: float, north: float, east: float, *, fetch: Fetch = get_json
-) -> list[OsmStreet]:
-    """Ways in the box, as centrelines.
-
-    Overpass is a free service with no SLA, the same standing as Nominatim. A
-    bad answer is no streets rather than an exception: the garden still has to
-    be made.
-    """
-    raw = fetch(OVERPASS, {"data": _street_query(south, west, north, east)})
-    if not isinstance(raw, dict):
-        return []
-
-    found: list[OsmStreet] = []
-    for element in raw.get("elements", []):
-        geometry = element.get("geometry") or []
-        # Two points are the fewest that make a line. Overpass answers what it
-        # has, and a street without one is not a street.
-        if len(geometry) < 2:
-            continue
-        tags = {str(k): str(v) for k, v in (element.get("tags") or {}).items()}
-        found.append(
-            OsmStreet(
-                osm_id=int(element.get("id", 0)),
-                # Most ways have no name. Drawing only the named ones would
-                # leave the lane the garden sits on off the plan.
-                name=tags.get("name"),
-                centreline=[
-                    LatLon(lat=float(p["lat"]), lon=float(p["lon"])) for p in geometry
-                ],
-                width_m=_street_width(tags),
-            )
-        )
-    return found
-
-
-def _street_width(tags: dict[str, str]) -> float:
-    recorded = tags.get("width")
-    if recorded is not None:
-        try:
-            return float(recorded)
-        except ValueError:
-            # "ca. 6 m" and friends. A guess beats refusing to draw the street.
-            pass
-    return STREET_WIDTHS.get(tags.get("highway", ""), DEFAULT_STREET_WIDTH_M)

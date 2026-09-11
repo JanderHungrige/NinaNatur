@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ninanatur.geo.osm import streets_in
+from ninanatur.geo.osm_streets import streets_in
 from ninanatur.geo.projection import LatLon
 
 

@@ -10,20 +10,25 @@ same shape as plant data.
 """
 from __future__ import annotations
 
+import logging
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 from urllib.parse import quote
 
-from ninanatur.ingest.http import get_json
+from ninanatur.ingest.http import HttpError, get_json
 
 # Wikipedia text is CC-BY-SA 4.0. Attribution and a link back are conditions of
 # use, not decoration, and a cached copy does not become ours.
 LICENCE = "CC-BY-SA-4.0"
 
+log = logging.getLogger(__name__)
+
 SUMMARY_URL = "https://{lang}.wikipedia.org/api/rest_v1/page/summary/{title}"
 LANGUAGES = ("de", "en")
+#: (connect, read). A plant list waits on this; seconds, not a minute.
+WIKIPEDIA_TIMEOUT: tuple[float, float] = (3.0, 8.0)
 
 # A hit is stable for a long time; a miss is not. Remembering "no article"
 # forever would freeze a gap Wikipedia may close next week, while re-asking on
@@ -42,8 +47,20 @@ class WikipediaClient:
     """Live Wikipedia REST summaries."""
 
     def summary(self, title: str, language: str) -> dict[str, Any] | None:
+        """The summary, or None when there is no article in this language.
+
+        A 404 is an answer — *no article* — and is what lets the caller try the
+        next language and remember the miss. Any other failure still raises: an
+        outage says nothing about whether the page exists. A page load waits on
+        this, so it gets seconds, not the minute an ingest run may take.
+        """
         url = SUMMARY_URL.format(lang=language, title=quote(title.replace(" ", "_")))
-        result = get_json(url)
+        try:
+            result = get_json(url, timeout=WIKIPEDIA_TIMEOUT)
+        except HttpError as failed:
+            if failed.status == 404:
+                return None
+            raise
         return result if isinstance(result, dict) else None
 
 
@@ -166,6 +183,10 @@ def species_info(
         try:
             payload = lookup.summary(str(row["canonical_name"]), language)
         except Exception:  # noqa: BLE001 - any failure degrades to "no info"
+            # Not stored: an outage is not a missing article, and remembering
+            # it as one would hide the species' page for two weeks.
+            log.warning("Wikipedia summary for taxon %s (%s) failed", taxon_id, language,
+                        exc_info=True)
             return None
         if payload is None:
             continue

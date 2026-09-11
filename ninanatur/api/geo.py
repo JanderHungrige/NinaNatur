@@ -33,7 +33,8 @@ from ninanatur.garden.store import (
     load_garden,
 )
 from ninanatur.geo.orthophotos import by_state
-from ninanatur.geo.osm import buildings_in, search_address, state_at, streets_in
+from ninanatur.geo.osm import buildings_in, search_address, state_at
+from ninanatur.geo.osm_streets import streets_in
 from ninanatur.geo.projection import LatLon, bounding_box_of, centroid, to_metres
 from ninanatur.geo.surroundings import MARGIN_M, NeighbourhoodKind, surroundings_from
 

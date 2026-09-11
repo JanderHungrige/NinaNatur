@@ -200,7 +200,7 @@ def test_a_garden_from_the_map_gets_the_streets_around_it(
     """The map knows the street and the plan did not show it. It is drawn so
     somebody looking at the plan knows which way round it is."""
     from ninanatur.api import geo as geo_routes
-    from ninanatur.geo.osm import OsmStreet
+    from ninanatur.geo.osm_streets import OsmStreet
     from ninanatur.geo.projection import LatLon
 
     monkeypatch.setattr(geo_routes, "buildings_in", lambda *a, **k: [])
