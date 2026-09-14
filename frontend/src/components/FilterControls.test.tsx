@@ -6,7 +6,7 @@ import { FilterControls } from './FilterControls';
 
 function setup(filters: SuggestionFilters = {}) {
   const onChange = vi.fn();
-  render(<FilterControls filters={filters} onChange={onChange} disabled={false} />);
+  render(<FilterControls filters={filters} onChange={onChange} busy={false} />);
   return onChange;
 }
 
@@ -51,5 +51,20 @@ describe('FilterControls', () => {
     expect((screen.getByLabelText('Blühmonat') as HTMLSelectElement).value).toBe('3');
     expect((screen.getByLabelText('Höhe') as HTMLSelectElement).value).toBe('1');
     expect((screen.getByLabelText('Wuchsform') as HTMLSelectElement).value).toBe('shrub');
+  });
+
+  it('keeps its fields in reach while a request runs, and ignores them', () => {
+    // Doc 90, as the element form does (doc 88, rule 11): a field disabled
+    // under the keyboard's focus throws the focus to the page.
+    const onChange = vi.fn();
+    render(<FilterControls filters={{}} onChange={onChange} busy />);
+    const month = screen.getByLabelText('Blühmonat') as HTMLSelectElement;
+    month.focus();
+    expect(month.disabled).toBe(false);
+    expect(month.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.change(month, { target: { value: '6' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Gehölze ausblenden/ }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(document.body);
   });
 });

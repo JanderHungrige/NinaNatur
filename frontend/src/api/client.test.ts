@@ -76,6 +76,14 @@ describe('NinaNaturClient', () => {
     expect(vi.mocked(spy).mock.calls[0]?.[0]).toContain('%2F');
   });
 
+  it('asks for fifty suggestions for a bed unless told otherwise', async () => {
+    // Doc 90: the list shows a window of them; the route allows a hundred.
+    const spy = respondWith({ bed_id: 1, items: [], woody: [] });
+    const client = new NinaNaturClient({ fetch: spy });
+    await client.bedSuggestions('tok', 1);
+    expect(String(vi.mocked(spy).mock.calls[0]?.[0])).toContain('limit=50');
+  });
+
   it('omits undefined query parameters rather than sending "undefined"', async () => {
     const spy = respondWith({ total: 0, limit: 50, offset: 0, items: [] });
     const client = new NinaNaturClient({ fetch: spy });

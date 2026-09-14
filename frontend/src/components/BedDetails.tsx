@@ -102,12 +102,6 @@ export function BedDetails({ garden, bed, controller, busy }: Props) {
         />
       ) : null}
 
-      <FilterControls filters={filters} onChange={suggestions.changeFilters} disabled={busy} />
-      <FilterBar
-        filters={filters}
-        counts={loaded?.filters ?? {}}
-        onChange={suggestions.changeFilters}
-      />
       {loaded !== null ? (
         <SuggestionList
           includeTrees={filters.includeTrees !== false}
@@ -115,6 +109,19 @@ export function BedDetails({ garden, bed, controller, busy }: Props) {
           onPlant={suggestions.plant}
           onShowInfo={suggestions.showInfo}
           busy={busy}
+          filters={
+            <>
+              <FilterBar
+                filters={filters}
+                counts={loaded.filters ?? {}}
+                onChange={suggestions.changeFilters}
+              />
+              <details className="filters-disclosure">
+                <summary>Filter</summary>
+                <FilterControls filters={filters} onChange={suggestions.changeFilters} busy={busy} />
+              </details>
+            </>
+          }
         />
       ) : (
         <section className="panel" aria-labelledby="suggestions-waiting">
