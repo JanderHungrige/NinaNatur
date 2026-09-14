@@ -71,9 +71,10 @@ export function InspectorPanels({ garden, controller, account, busy }: Props) {
 }
 
 /**
- * Where the focus goes when the view changes (doc 88): to the new view's heading
- * if it was in the details — or was lost with the view it was in — and nowhere
- * if it was anywhere else. Choosing on the plan never pulls the keyboard off it.
+ * A change of view (doc 88). The new view opens at its top, and the focus goes
+ * to its heading
+ * if it was in the details, or was lost with the view it was in, and nowhere if
+ * it was anywhere else: choosing on the plan never pulls the keyboard off it.
  */
 function useViewFocus(view: RefObject<HTMLDivElement | null>, key: string): void {
   const shown = useRef(key);
@@ -83,6 +84,10 @@ function useViewFocus(view: RefObject<HTMLDivElement | null>, key: string): void
     shown.current = key;
     const root = view.current;
     if (root === null) return;
+    // The details scroll in themselves, and the last view's offset opened the
+    // next one partway down, its heading out of sight (preview, V0.20.158).
+    const scroller = root.closest<HTMLElement>('.inspector');
+    if (scroller !== null) scroller.scrollTop = 0;
     const active = document.activeElement;
     const lost = active === null || active === document.body || !active.isConnected;
     if (!lost && !root.contains(active)) return;
