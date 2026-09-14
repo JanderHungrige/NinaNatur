@@ -106,3 +106,33 @@ def test_text_fields_are_large_enough_that_ios_does_not_zoom(narrow: str) -> Non
 def test_the_toast_drops_from_the_top_where_nothing_covers_it(narrow: str) -> None:
     toast = _rule(narrow, ".status-toast")
     assert "top:" in toast and "bottom: auto" in toast
+
+
+PLAN_HINT_MAKES_WAY = (
+    r"\.workspace:is\(\[data-sheet='half'\],\s*\[data-sheet='full'\]\)\s+\.plan-hint\s*\{[^}]*"
+    r"display:\s*none"
+)
+
+
+def test_the_plan_shows_between_its_own_controls_when_the_sheet_rises(narrow: str) -> None:
+    """Measured on the preview (V0.20.176) with an iPhone 11 Pro's window: at
+    60 % the plan's stage was 153 px, and its controls in two rows and its hint
+    in two lines lay over nearly all of it, the patches just planted included.
+    The controls keep to one row, without the top margin every button carries,
+    and the hint makes way once the sheet rises."""
+    row = _rule(narrow, ".workspace .canvas-controls__row")
+    assert "flex-wrap: nowrap" in row and "overflow-x: auto" in row
+    assert "margin: 0" in _rule(narrow, ".workspace .canvas-controls__row button")
+    assert re.search(PLAN_HINT_MAKES_WAY, narrow), "the hint still lies over a raised sheet's plan"
+
+
+def test_the_toast_leaves_the_headers_buttons_free(narrow: str) -> None:
+    """A toast stays five to fifteen seconds, and across the top of a phone it
+    lay over undo and Menü (V0.20.176): the moment a planting might be undone.
+    It keeps to the left, and a toast that is not a problem lets a touch
+    through to what is under it."""
+    toast = _rule(narrow, ".status-toast")
+    assert "right: auto" in toast
+    assert re.search(r"max-width:\s*calc\(100vw - [\d.]+rem\)", toast)
+    passing = _rule(narrow, ".status-toast--shown:not(.status-toast--problem)")
+    assert "pointer-events: none" in passing

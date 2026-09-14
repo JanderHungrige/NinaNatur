@@ -2542,9 +2542,34 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   /* iOS zooms into a field under 16 px, and the zoomed page no longer fits. */
   input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: max(1rem, 16px); }
 
-  /* From the top, where neither the sheet nor the bar can lie over it. */
-  .status-toast { top: 0.5rem; bottom: auto; transform: translateY(-0.5rem); }
+  /* From the top, where neither the sheet nor the bar can lie over it — and to
+     the left, clear of undo and Menü: a toast stays five to fifteen seconds,
+     and it lay over both just when a planting might be undone. One that is not
+     a problem lets a touch through to whatever it covers. */
+  .status-toast {
+    top: 0.5rem;
+    bottom: auto;
+    left: 0.5rem;
+    right: auto;
+    margin: 0;
+    max-width: calc(100vw - 8.5rem);
+    transform: translateY(-0.5rem);
+  }
   .status-toast--shown { transform: none; }
+  .status-toast--shown:not(.status-toast--problem) { pointer-events: none; }
+
+  /* The plan stays visible between its own controls. At 60 % its stage was
+     153 px, and its controls in two rows and its hint in two lines lay over
+     nearly all of it: one row, without the top margin every button carries,
+     scrolling sideways while a shape is drawn, and the hint gone while the
+     sheet is raised. */
+  .workspace .canvas-controls__row { flex-wrap: nowrap; gap: 0.3rem; overflow-x: auto; }
+  .workspace .canvas-controls__row button { flex: none; margin: 0; padding: 0.2rem 0.5rem; font-size: 0.85rem; }
+  .workspace .canvas-controls__scale { flex: none; padding: 0 0.15rem; font-size: 0.75rem; white-space: nowrap; }
+  .workspace:is([data-sheet='half'], [data-sheet='full']) .plan-hint { display: none; }
+
+  /* A phone's panels need less air around them than a column's. */
+  .inspector .panel { padding: 0.9rem; }
 }
 
 @media (width < 66rem) and (prefers-reduced-motion: reduce) {
