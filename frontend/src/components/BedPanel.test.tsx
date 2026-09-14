@@ -100,6 +100,16 @@ describe('BedPanel', () => {
   });
 });
 
+describe('BedPanel — a garden without beds', () => {
+  it('names the next step: a shape from the tools', () => {
+    // Doc 92: "Noch keine Beete angelegt." said what is missing and not how.
+    render(<BedPanel garden={{ ...garden(), beds: [] }} selectedBedId={null} onSelectBed={vi.fn()} />);
+    const step = screen.getByText(/Noch keine Beete/);
+    expect(step.className).toBe('next-step');
+    expect(step.textContent).toMatch(/Werkzeug/);
+  });
+});
+
 // The tests for "Beet hinzufügen" and "Hindernis hinzufügen" stood here. Both
 // forms predate drawing: they were the only way to put anything on a plan
 // before Wave 11, and by Wave 12 they were the slower way to do what a drag

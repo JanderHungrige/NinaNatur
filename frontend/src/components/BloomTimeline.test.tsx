@@ -73,7 +73,8 @@ describe('BloomTimeline', () => {
     render(<BloomTimeline timeline={empty} forage onToggleForage={vi.fn()} busy={false} />);
     expect(screen.queryByRole('heading')).toBeNull();
     expect(screen.queryByRole('checkbox')).toBeNull();
-    expect(screen.getByText(/Sobald ein Beet bepflanzt ist/)).toBeDefined();
+    // Doc 92: what to do, not only what will appear.
+    expect(screen.getByText(/Wähle ein Beet und pflanze/)).toBeDefined();
   });
 
   it('labels coverage as a share of the best month', () => {

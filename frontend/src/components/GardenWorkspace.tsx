@@ -5,6 +5,7 @@ import { useGarden } from '../garden/useGarden';
 import { useRemembered } from '../useRemembered';
 import type { Status } from '../useStatus';
 import type { Snap } from '../workspace/sheet';
+import { useShortcutHelp } from '../workspace/useShortcutHelp';
 import type { AccountInfo } from './AccountPanel';
 import { BloomPlayer } from './BloomPlayer';
 import { BloomTimeline } from './BloomTimeline';
@@ -12,6 +13,7 @@ import { GardenId } from './GardenId';
 import { Inspector } from './Inspector';
 import { InspectorPanels } from './InspectorPanels';
 import { PlanArea } from './PlanArea';
+import { ShortcutHelp } from './ShortcutHelp';
 import { SiteHeader, type SiteProps } from './SiteHeader';
 import { TimelineDock } from './TimelineDock';
 import { ToolRail } from './ToolRail';
@@ -66,6 +68,7 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
   const [dockOpenNarrow, setDockOpenNarrow] = useRemembered('ninanatur.dock.open.narrow', false);
   const columns = useMatches(WORKSPACE_QUERY);
   const [snap, setSnap] = useState<Snap>('peek');
+  const help = useShortcutHelp();
   const workspace = useRef<HTMLElement>(null);
   const month = suggestions.filters.floweringMonth ?? null;
 
@@ -89,15 +92,26 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
         {...header}
         busy={status.busy}
         more={
-          <button
-            type="button"
-            className="header-link"
-            aria-pressed={light.shadeOn}
-            disabled={derived.lightMap === null}
-            onClick={() => light.toggleShade(!light.shadeOn)}
-          >
-            {'Sonne & Schatten'}
-          </button>
+          <>
+            <button
+              type="button"
+              className="header-link"
+              aria-pressed={light.shadeOn}
+              disabled={derived.lightMap === null}
+              onClick={() => light.toggleShade(!light.shadeOn)}
+            >
+              {'Sonne & Schatten'}
+            </button>
+            <button
+              type="button"
+              className="header-link"
+              aria-haspopup="dialog"
+              aria-keyshortcuts="?"
+              onClick={help.show}
+            >
+              Tastenkürzel
+            </button>
+          </>
         }
       >
         {/* The page's title. Hidden, because the fold beside it already shows the name. */}
@@ -164,6 +178,8 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
           />
         ) : null}
       </TimelineDock>
+
+      <ShortcutHelp open={help.open} onClose={help.hide} />
     </>
   );
 }
