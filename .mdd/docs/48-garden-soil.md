@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-12
 wave_status: complete
 depends_on: [47-panel-order]
-relates: [12-bed-light, 32-object-heights, 45-relabel-and-skin]
+relates: [12-bed-light, 32-object-heights, 45-relabel-and-skin, 89-three-steps-in]
 source_files:
   - ninanatur/ingest/schema.py
   - ninanatur/ingest/migrations.py
@@ -34,6 +34,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "Moisture cannot be read from any soil map; it stays a question."
+  - "Since doc 89 (Wave 23, 2026-09-14) the question is the first of three steps in the garden's details until it is answered, and one line with ändern afterwards (doc 88)."
 ---
 
 # Ask the soil once, and let a bed differ

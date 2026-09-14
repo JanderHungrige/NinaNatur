@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 7e35c1c8
+hash: b2d4ac50
 ---
 
 # Wave 23: The plan is the page
@@ -173,13 +173,43 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   3's new rail tool cannot outgrow the floor unnoticed. In production as
   V0.20.164, its stylesheet carrying the row's floor.
 
+- **2026-09-14 — feature 3, three steps in** (doc 89). A garden that is not set
+  up opens on three steps in its details — soil, shade, a first bed — read from
+  the garden and gone once all three are done; the owner chose prompts in the
+  details over an overlay. The empty insect score and the empty bloom year are
+  one line each that names the next step, *Standpunkt* is the rail's seventh
+  tool, found trees are dashed crowns on the plan with *N gefundene Bäume* among
+  its controls, and claiming a garden for an account sits in the header's ID
+  fold. Measured on the preview in Chromium (V0.20.167). On a garden made for
+  the check: all three steps open and no sun panel; *Beet zeichnen* armed
+  *Vieleck*, four clicks and *Fertig* drew a bed, which the details then showed;
+  back in the garden the bed's step was done; *Schatten berechnen* computed the
+  map, ticked its step and brought the sun panel; answering the soil made the
+  steps disappear and left *Boden: lehmig, frisch* as one line. On the stage 1
+  garden: the empty bloom year is one line in a 26 px body where it was 163;
+  *Standpunkt* armed from the rail and a click on the plan placed the viewpoint,
+  put the tool down and put the answer above the details; the plan drew 6 found
+  trees as crowns, and *6 gefundene Bäume*, with a bed selected, brought back
+  the garden's details with the card's heading focused. With seven tools the
+  rail's floor is 20rem, and with one species planted the plan's stage measured
+  304 px of 720 (42.2 %). Found on the way: at 1280×600 the page was 628 px
+  tall, because the bloom year's visually hidden table caption, absolutely
+  positioned far down the dock's scrolled body, had the page as its containing
+  block and escaped the panel. The details and the dock's body are positioned
+  now, and on V0.20.168 the page is exactly the window's height at 600, 720, 800
+  and 900. The console holds only the account check's 401; the claim needs a
+  signed-in account and was checked in vitest only. Thirty-one new tests and a
+  stylesheet guard: `FirstSteps`, `CanopyMarks`, `CanvasControls`,
+  `GardenCanvas.viewpoint`, `App.start`, additions to `GardenId`, `CanopyBox`,
+  `InsectScore` and `BloomTimeline`, and `tests/test_workspace_layout.py`.
+
 ## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | complete | — |
 | 1 | a-workspace-not-a-page | docs/87-a-workspace-not-a-page.md | complete | 0 |
 | 2 | what-the-selection-shows | docs/88-what-the-selection-shows.md | complete | 1 |
-| 3 | three-steps-in | docs/89-three-steps-in.md | in_progress | 2 |
+| 3 | three-steps-in | docs/89-three-steps-in.md | complete | 2 |
 | 4 | a-list-that-fits-a-window | — | planned | 2 |
 | 5 | a-sheet-from-below | — | planned | 2 |
 | 6 | one-panel-one-style | — | planned | 1 |
