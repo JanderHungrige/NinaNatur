@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 2150a952
+hash: bf5ef52b
 ---
 
 # Wave 23: The plan is the page
@@ -156,6 +156,22 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   together. Fifty new tests in vitest and one in pytest; the popover's eight
   tests and the anchoring's six went with them, and eleven moved into
   `ElementForm.test.tsx`.
+
+- **2026-09-14 — stage 1 in production.** Features 1 and 2 went to production
+  together as V0.20.161, its bundle carrying the workspace, the view headings,
+  *Zurück zum Garten*, *Beet bearbeiten* and the fresh-patch mark. Measuring the
+  planted state before recording it found the plan short of its share: with one
+  species planted the bloom year filled the dock's 40vh, and the plan's stage
+  measured 260 px of 720 (36 %), 286 of 800 and 346 of 900 on the preview
+  (V0.20.159); at 600 px the plan's row, held up by the tool rail, ran 94 px
+  under the dock. Doc 87 had counted the dock and forgotten the header, the
+  preview band and the dock's own bar. The plan's row now keeps `max(40vh +
+  1rem, 18rem)` and the dock gives way: on the preview (V0.20.162) the stage
+  measured 288 px of 720, 320 of 800 and 360 of 900 — 40 % each — and 272 of
+  600, the plan inside its row every time and the page never scrolling. A guard
+  computes the rail's height from the stylesheet and the tool count, so feature
+  3's new rail tool cannot outgrow the floor unnoticed. In production as
+  V0.20.164, its stylesheet carrying the row's floor.
 
 ## Features
 | # | Feature | Doc | Status | Depends on |
