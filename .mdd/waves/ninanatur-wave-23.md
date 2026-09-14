@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 603bce28
+hash: 9c7c0c0f
 ---
 
 # Wave 23: The plan is the page
@@ -98,11 +98,40 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   `GardenCanvas.stage.test.tsx`, `StatusToast.test.tsx` and
   `tests/test_plan_stage.py`.
 
+- **2026-09-14 — feature 1, a workspace, not a page** (doc 87). `App.tsx` went
+  from 1,459 lines to 256: everything about one garden now lives in `useGarden`
+  — `useDerived`, `useSuggestions`, `useClipboard`, `useElements`, `useGeometry`,
+  `useLight` — inside a workspace keyed by the garden's token, so nothing of one
+  garden carries into the next, and `App` takes its client as a prop and has
+  flow tests at last. At 66rem and wider the garden is the window: header, tool
+  rail, plan, details and a dock for the bloom year, and only the details and
+  the dock scroll. Measured on the preview (V0.20.155) by DOM at 1280×720: the
+  page is exactly 720 px tall with nothing sideways; one banner, main,
+  complementary and contentinfo; columns 56 / 872 / 352 px, the plan 50.4 % of
+  the window. With a bed chosen the details hold 28 suggestions in 8,754 px and
+  the page stays 720 px; scrolled to their end, the window stays at the top.
+  At 1440×900 the wide view widened the details from 352 to 480 px without the
+  page scrolling, and was remembered; on a 375×812 phone the workspace stacks
+  rail, plan, details and dock with nothing sideways. Found on the way: the
+  rail's hidden tool names had no offsets and sat over the next tool, so a
+  click aimed at one name armed its neighbour — they are pinned inside their
+  own buttons now; and a garden made from the map had what the map measured
+  overwritten by the plainer "geladen", so the workspace is told what to say.
+  The Browser pane listed the rail's six buttons without names. Chrome's own
+  tree, read over CDP, named them from the hidden text all along — the commit
+  that added `aria-label` blames Chrome and is wrong — and the label now makes
+  both trees agree (V0.20.156). The Browser pane's Enter arrives with an empty
+  key, so a native Enter on a tool was not exercised; a real ArrowDown, click
+  and Escape were. Not released on its own: features 1 and 2 go to production
+  together. Thirty-six new tests: `App.test.tsx`, `ToolRail.test.tsx`,
+  `TimelineDock.test.tsx`, `Inspector.test.tsx`, `useRemembered.test.ts` and
+  `tests/test_workspace_layout.py`.
+
 ## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | complete | — |
-| 1 | a-workspace-not-a-page | docs/87-a-workspace-not-a-page.md | in_progress | 0 |
+| 1 | a-workspace-not-a-page | docs/87-a-workspace-not-a-page.md | complete | 0 |
 | 2 | what-the-selection-shows | — | planned | 1 |
 | 3 | three-steps-in | — | planned | 2 |
 | 4 | a-list-that-fits-a-window | — | planned | 2 |

@@ -70,9 +70,10 @@ function stepFrom(key: string, index: number): number | null {
  * running request would throw the keyboard out of the toolbar; they are marked
  * `aria-disabled` and ignore presses instead.
  *
- * Each tool is named by `aria-label`. Chrome gave these buttons no name from
- * the visually hidden text alone, though jsdom computed one; the label carries
- * the same words the tooltip shows on hover and focus.
+ * Each tool is also named by `aria-label`, in the words its tooltip shows on
+ * hover and focus. Chrome's own tree names the buttons from the hidden text as
+ * well (read over CDP); the label is for trees that leave clipped text out, as
+ * the Browser pane's does, so that every reader gets the same name.
  */
 export function ToolRail({ active, onPick, busy, orientation }: Props) {
   const armed = Math.max(0, RAIL_TOOLS.findIndex((t) => t.tool === active));

@@ -28,10 +28,10 @@ describe('ToolRail', () => {
     ]);
   });
 
-  it('names every tool with a label the browser keeps, and keeps the tooltip out of it', () => {
-    // Measured on the preview (V0.20.155): Chrome's accessibility tree gave these
-    // six buttons no name at all from the visually hidden text alone, though
-    // jsdom computed one. The label carries the same words the tooltip shows.
+  it('names every tool by aria-label too, and keeps the tooltip out of the name', () => {
+    // A tree that leaves clipped text out — the Browser pane's, on V0.20.155 —
+    // listed these six buttons without a name. Chrome's own tree named them from
+    // the hidden text; the label makes every tree agree, in the tooltip's words.
     rail();
     expect(tools().map((b) => b.getAttribute('aria-label'))).toEqual([
       'Auswählen', 'Rechteck', 'Kreis', 'Dreieck', 'Vieleck', 'Freihand',
