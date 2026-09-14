@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 3bf87e62
+hash: 922470a2
 ---
 
 # Wave 23: The plan is the page
@@ -313,6 +313,17 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   tests and seven stylesheet guards: `shortcuts`, `useShortcutHelp`,
   `ShortcutHelp`, `App.help`, additions to `BedPanel` and `BloomTimeline`, and
   `tests/test_one_style.py`.
+
+- **2026-09-14 — the smoke test the acceptance names.**
+  `frontend/e2e/smoke.e2e.ts` (Playwright 1.63.0, `npm run test:e2e`) makes a
+  garden of its own on the preview — one bed on fresh loam, fifty suggestions —
+  and at 1280×720 and at 375×812 chooses the bed, plants the first suggestion
+  and finds its patch on the plan with nothing over it. At every step it reads
+  the page's scroll, which must stay 0, the page's height, never above the
+  window's, and the plan's share of the window's height, never below 40 %; then
+  it deletes the garden. Both windows passed on V0.20.180. It runs by hand
+  against a deployed site; whether it runs in CI is the owner's to decide, as
+  the wave left it.
 
 ## Features
 | # | Feature | Doc | Status | Depends on |

@@ -21,6 +21,7 @@ test_files:
   - frontend/src/components/GardenCanvas.stage.test.tsx
   - frontend/src/components/StatusToast.test.tsx
   - tests/test_plan_stage.py
+  - frontend/e2e/smoke.e2e.ts
 data_flow: reads-existing
 last_synced: 2026-09-14
 status: complete
@@ -33,6 +34,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "The sticky plan column (rule 4) was the stopgap until the workspace: doc 87 replaced both columns, and its guards moved to tests/test_workspace_layout.py."
+  - "Since Wave 23's acceptance (2026-09-14) a Playwright smoke test, frontend/e2e/smoke.e2e.ts, measures the page's scroll, its height and the plan's share of the window through the core loop at 1280×720 and 375×812, on a garden it makes and deletes on the preview. It runs by hand (npm run test:e2e); whether it runs in CI is the owner's decision."
 ---
 
 # 86 — The Plan That Stayed a Strip
