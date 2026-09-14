@@ -170,8 +170,10 @@ None. The same client calls, from new places.
    `aria-disabled` and ignore presses instead of being `disabled`, because a
    disabled button cannot hold focus and would throw it out of the toolbar. Each
    tool is named by an `aria-label` carrying the words its tooltip shows on hover
-   and on focus: measured in Chrome on the preview, visually hidden text alone
-   gave the buttons no name at all, though jsdom computed one.
+   and on focus. Chrome's own accessibility tree, read over CDP, names the
+   buttons from the visually hidden text as well; the Browser pane's tree, which
+   leaves clipped text out, listed them without names, and the label makes the
+   two agree.
 6. **Escape still puts the tool down and drops the selection** (doc 49). The
    canvas's listener is untouched; the rail only shows the tool it is given.
 7. **The armed tool says what to do,** in a polite live region over the plan's
