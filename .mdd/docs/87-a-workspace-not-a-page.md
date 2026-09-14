@@ -56,6 +56,7 @@ known_issues:
   - "Component and hook bodies longer than 50 lines remain, as everywhere in the frontend (GardenCanvas is the precedent); the callbacks inside them stay under 50."
   - "The Browser pane sends Enter with an empty key, so a native Enter on a rail tool was not exercised there; a real ArrowDown, click and Escape were (preview, V0.20.155)."
   - "On a 375×812 phone the preview band and the header take 336 px above the rail — feature 5's to fix."
+  - "Rule 10 first relied on the dock body's 40vh alone, and forgot the header, the preview band and the dock's own bar. With one species planted the bloom year filled the body, and the plan's stage measured 260 px of 720 (36 %), 286 of 800 and 346 of 900 on the preview (V0.20.159); at 600 px the plan's row, held up by the tool rail, ran 94 px under the dock. Released that way in V0.20.161, and fixed by the row's own floor right after."
 ---
 
 # 87 — A Workspace, Not a Page
@@ -148,9 +149,8 @@ None. The same client calls, from new places.
 
 1. **Nothing but a panel scrolls** at 66rem and wider. The app is the window's
    height (`100vh`, then `100dvh`), the body's padding is dropped while the
-   workspace is open, the plan's row and column are `minmax(0, 1fr)`, and the
-   inspector and the dock's body scroll in themselves with
-   `overscroll-behavior: contain`.
+   workspace is open, the plan's column is `minmax(0, 1fr)`, and the inspector
+   and the dock's body scroll in themselves with `overscroll-behavior: contain`.
 2. **The workspace only opens when the plan keeps 40rem.** Rail 3.5rem +
    inspector 22rem + plan 40rem: the three columns start at 66rem, and the wide
    inspector (30rem) only at 74rem. Widening the window must never narrow the
@@ -191,9 +191,12 @@ None. The same client calls, from new places.
 10. **The dock holds the bloom year.** `BloomPlayer` is always there;
     `BloomTimeline` sits in a body that folds away under its heading, whose
     button *Jahreslauf* carries `aria-expanded` and `aria-controls` — not
-    *Blühjahr*, which is already the heading of the table inside it. The body is at most 40vh
-    and scrolls itself, so the plan keeps at least 40 % of the window with the
-    dock open. Open by default, and the choice is remembered.
+    *Blühjahr*, which is already the heading of the table inside it. The body is
+    at most 40vh and scrolls itself. What keeps the plan at least 40 % of the
+    window is its own row, not the dock: the row grows from nothing and keeps
+    `max(40vh + 1rem, 18rem)` — 40vh and its padding, or the whole tool rail —
+    and the dock gives way beneath it. Open by default, and the choice is
+    remembered.
 11. **The front door does not change:** no workspace, the landing in its own
     `main`, the film behind it.
 12. **No new file is over 300 lines,** and `App.tsx` drops from 1,459 lines to
