@@ -28,6 +28,19 @@ describe('ToolRail', () => {
     ]);
   });
 
+  it('names every tool with a label the browser keeps, and keeps the tooltip out of it', () => {
+    // Measured on the preview (V0.20.155): Chrome's accessibility tree gave these
+    // six buttons no name at all from the visually hidden text alone, though
+    // jsdom computed one. The label carries the same words the tooltip shows.
+    rail();
+    expect(tools().map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Auswählen', 'Rechteck', 'Kreis', 'Dreieck', 'Vieleck', 'Freihand',
+    ]);
+    for (const tool of tools()) {
+      expect(tool.querySelector('.tool-rail__label')?.getAttribute('aria-hidden')).toBe('true');
+    }
+  });
+
   it('is one stop in the tab order: the armed tool, or Auswählen when none is', () => {
     rail('circle');
     expect(tools().filter((b) => b.tabIndex === 0).map((b) => b.textContent?.trim())).toEqual([

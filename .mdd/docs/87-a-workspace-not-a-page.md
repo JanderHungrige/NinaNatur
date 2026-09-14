@@ -42,8 +42,8 @@ test_files:
   - tests/test_plan_stage.py
 data_flow: mixed
 last_synced: 2026-09-14
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [workspace, layout, landmarks, toolbar, keyboard, state, refactor, accessibility]
 path: Workspace/Shell
@@ -54,6 +54,8 @@ known_issues:
   - "Deferred to feature 6: the dock shows the bloom year's table rather than the compact month strip plan 05 drew, and the day slider and the sun map's legend stay in the player and the shade switch."
   - "Deferred to feature 5: below 66rem the workspace is a stacked page, and text inputs are 0.9rem — iOS zooms into anything under 16 px."
   - "Component and hook bodies longer than 50 lines remain, as everywhere in the frontend (GardenCanvas is the precedent); the callbacks inside them stay under 50."
+  - "The Browser pane sends Enter with an empty key, so a native Enter on a rail tool was not exercised there; a real ArrowDown, click and Escape were (preview, V0.20.155)."
+  - "On a 375×812 phone the preview band and the header take 336 px above the rail — feature 5's to fix."
 ---
 
 # 87 — A Workspace, Not a Page
@@ -167,7 +169,9 @@ None. The same client calls, from new places.
    tool down, as pressing the armed tool again does. While busy the tools are
    `aria-disabled` and ignore presses instead of being `disabled`, because a
    disabled button cannot hold focus and would throw it out of the toolbar. Each
-   tool's name is its own text, shown beside the icon on hover and on focus.
+   tool is named by an `aria-label` carrying the words its tooltip shows on hover
+   and on focus: measured in Chrome on the preview, visually hidden text alone
+   gave the buttons no name at all, though jsdom computed one.
 6. **Escape still puts the tool down and drops the selection** (doc 49). The
    canvas's listener is untouched; the rail only shows the tool it is given.
 7. **The armed tool says what to do,** in a polite live region over the plan's
