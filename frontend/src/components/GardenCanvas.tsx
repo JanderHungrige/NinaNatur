@@ -119,7 +119,7 @@ export function GardenCanvas({
   onMoveObstacle,
   onReshapeObstacle,
 }: Props) {
-  const { view, setView, surface, zoom } = useViewport(size);
+  const { view, setView, surface, stage, zoom } = useViewport(size);
 
   const sun = useSunReadout(sunMap?.map, view, surface);
 
@@ -297,8 +297,9 @@ export function GardenCanvas({
 
       {/* Its own positioning context, because the readout is placed in pixels
           from the *drawing*'s top left and the controls row above it is not
-          part of that measurement. */}
-      <div className="canvas-stage">
+          part of that measurement. And the box that is measured: its height
+          comes from the page, never from the drawing inside it (doc 86). */}
+      <div className="canvas-stage" ref={stage}>
       {sun.readout !== null && (
         <div
           className="sun-readout"
