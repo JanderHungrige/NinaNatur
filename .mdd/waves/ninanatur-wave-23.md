@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 69ff1870
+hash: 2150a952
 ---
 
 # Wave 23: The plan is the page
@@ -127,12 +127,42 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   `TimelineDock.test.tsx`, `Inspector.test.tsx`, `useRemembered.test.ts` and
   `tests/test_workspace_layout.py`.
 
+- **2026-09-14 — feature 2, what the selection shows** (doc 88). The details
+  show one thing at a time — the garden while nothing is selected, or the bed,
+  the element or the patch that is — and what is selected is one picked id, read
+  against the garden on every render, so the plan, the element list and the
+  details can no longer disagree. Five pieces of state did: a bed chosen in the
+  list lost its handles, an element chosen after a bed left the bed marked, and
+  Escape left the bed selected for planting. The element menu became the element
+  form in the details. Measured on the preview in Chromium with real keys at
+  1280×720 (V0.20.159): with nothing selected the details hold 1,486 px, where
+  every panel at once had been 1,962 px. Enter on the bed on the plan shows the
+  bed with its handles and 28 suggestions in 7,480 px, Chrome's own tree calls
+  the bed pressed, and the focus stays on the plan. The same bed chosen in the
+  element list gets the same selection, handles included, and the focus moves to
+  the bed's heading. Escape goes back to the garden from the plan and from the
+  details; an element chosen after the bed leaves only the element pressed;
+  Shift+F10 and a right-click put the focus in the form's *Art*, and on the bed
+  the form unfolds for it while the suggestions load; Escape typed into a text
+  field leaves the selection alone. *Pflanzen* marked the new patch on the plan,
+  the mark was gone three seconds later, the details moved by 7 px and the page
+  not at all. Found on the way: a patch chosen after planting opened its view
+  190 px down with its heading out of sight, because the details kept the last
+  view's offset — a new view now opens at its top; *Pflanzen* is `disabled`
+  while its request runs and drops the keyboard's focus to the page, handed to
+  feature 4; and the dock grows by 103 px when the bloom year gains its first
+  plant. On a 375×812 phone nothing goes sideways. The console holds only the
+  account check's expected 401. Stage 1 — features 1 and 2 — goes to production
+  together. Fifty new tests in vitest and one in pytest; the popover's eight
+  tests and the anchoring's six went with them, and eleven moved into
+  `ElementForm.test.tsx`.
+
 ## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | complete | — |
 | 1 | a-workspace-not-a-page | docs/87-a-workspace-not-a-page.md | complete | 0 |
-| 2 | what-the-selection-shows | docs/88-what-the-selection-shows.md | in_progress | 1 |
+| 2 | what-the-selection-shows | docs/88-what-the-selection-shows.md | complete | 1 |
 | 3 | three-steps-in | — | planned | 2 |
 | 4 | a-list-that-fits-a-window | — | planned | 2 |
 | 5 | a-sheet-from-below | — | planned | 2 |
@@ -263,6 +293,11 @@ Tests: fifty suggestions render fewer than thirty rows; keyboard navigation
 through the virtual list reaches every item; the *Pflanzen* button of row forty
 is reachable without page scroll.
 
+Found in feature 2 (preview, V0.20.158): *Pflanzen* is `disabled` while its
+request runs, so pressing it from the keyboard drops the focus to the page. The
+compact rows keep their buttons focusable and `aria-disabled` while busy, as the
+element form does (doc 88, rule 11).
+
 ### 5. a-sheet-from-below
 
 On a phone the plan is full screen; the inspector is a **bottom sheet** with
@@ -310,8 +345,10 @@ Answered by the owner on 2026-09-14, before any of it was built:
 - **Tools left, details right**, as every editor does.
 - **The start is an empty inspector with prompts** (feature 3), not an overlay.
 
-Still open: whether the inspector is resized by a drag handle or offers two
-fixed widths — feature 1 decides it and records why.
+Decided in feature 1 (doc 87, rule 9): two fixed widths — 22rem, and 30rem on
+request from 74rem — rather than a drag handle. The range plan 05 named is too
+narrow to be worth a gesture, and a toggle is one keyboard stop whose state a
+screen reader can name.
 
 ## Deliberately not in this wave
 
