@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: b6878a93
+hash: bac1be2d
 ---
 
 # Wave 23: The plan is the page
@@ -72,11 +72,36 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
 | `App.tsx` | **1 455 lines** against a 300-line rule; the wave is the moment to split it |
 | Load waterfall on open (eight sequential awaits) | fixed by Wave 20 (plan 01, O2) before this wave starts |
 
-## Features
+## Progress
 
+- **2026-09-14 — feature 0, the plan that stayed a strip** (doc 86). The loop
+  is broken where it closed: `useViewport` measures the stage the drawing sits
+  in, the stage takes its height from the page — `clamp(16rem, 75vh, 75cqi)` —
+  and the drawing fills it, so nothing drawn can change what is measured. A zero
+  or non-finite measurement is ignored and a real one is taken exactly: a floor
+  under a real box would letterbox the drawing and move every click, so the
+  floor is the stage's 16rem instead. Above the two-column breakpoint the plan's
+  column is sticky and scrolls itself. The status line is a toast whose live
+  region is always in the page, and a failure stays until it is closed.
+  Measured on the preview (V0.20.151) by DOM, since the Browser pane cannot
+  capture the plan: at 1280×720 the drawing and its stage are one 840×540 box
+  and the viewBox has their shape (0.6429); scrolled 700 px, the plan column
+  holds at 16 px with the plan wholly in view; opened in a 1280×300 window the
+  plan stops at 256 px instead of collapsing, and grown to 1280×900 without a
+  reload it follows to 630 px with the viewBox at 0.75; on a 375×812 phone,
+  one column, nothing sticky, a 343×257 plan and no sideways scroll. The pane
+  was hidden, which holds a resize and a transition back until the page gets a
+  frame; waiting for one showed both arrive. In production as V0.20.152, the
+  live bundle carrying the stage, the plan column and the toast. The Playwright
+  smoke test the acceptance names is not written yet: the workspace it measures
+  is feature 1's. Thirteen new tests: `canvas/viewportSize.test.ts`,
+  `GardenCanvas.stage.test.tsx`, `StatusToast.test.tsx` and
+  `tests/test_plan_stage.py`.
+
+## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | in_progress | — |
+| 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | complete | — |
 | 1 | a-workspace-not-a-page | — | planned | 0 |
 | 2 | what-the-selection-shows | — | planned | 1 |
 | 3 | three-steps-in | — | planned | 2 |
