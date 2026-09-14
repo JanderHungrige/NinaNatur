@@ -96,6 +96,25 @@ describe('App — asking about an element, and where the focus goes', () => {
     expect(viewHeading()?.textContent).toBe('Gartenhaus');
     expect(document.activeElement).toBe(viewHeading());
   });
+
+  it('opens a new view at its top, whatever the last one was scrolled to', async () => {
+    // Measured on the preview (V0.20.158): a patch chosen after planting from
+    // the suggestions opened 190 px down, its heading out of sight. The details
+    // scroll in themselves, and they kept the last view's offset.
+    await open();
+    fireEvent.click(bedOnPlan());
+    let top = 844;
+    Object.defineProperty(details(), 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (value: number) => {
+        top = value;
+      },
+    });
+    fireEvent.click(onPlan('[data-planting-id="11"]'));
+    expect(viewHeading()?.textContent).toBe('Salvia pratensis');
+    expect(top).toBe(0);
+  });
 });
 
 describe('App — changing things from the details', () => {
