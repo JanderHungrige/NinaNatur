@@ -118,7 +118,7 @@ UI
 ├── Canvas  26-drawing-canvas  complete
 └── Entry  30-landing-and-garden-id  complete
 Workspace
-├── Inspector  88-what-the-selection-shows  in_progress
+├── Inspector  88-what-the-selection-shows  complete
 ├── Plan  86-the-plan-that-stayed-a-strip  complete
 └── Shell  87-a-workspace-not-a-page  complete
 ```
@@ -308,7 +308,7 @@ graph TD
     47_panel_order --> 87_a_workspace_not_a_page
     49_drawing_focus --> 87_a_workspace_not_a_page
     52_element_list --> 87_a_workspace_not_a_page
-    88_what_the_selection_shows["88-what-the-selection-shows"]:::in_progress
+    88_what_the_selection_shows["88-what-the-selection-shows"]:::complete
     87_a_workspace_not_a_page --> 88_what_the_selection_shows
     49_drawing_focus --> 88_what_the_selection_shows
     51_element_context_menu --> 88_what_the_selection_shows

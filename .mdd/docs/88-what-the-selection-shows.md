@@ -48,15 +48,19 @@ test_files:
   - frontend/src/testing/appFixtures.tsx
 data_flow: mixed
 last_synced: 2026-09-14
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [inspector, selection, router, focus, keyboard, accessibility, refactor]
 path: Workspace/Inspector
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Pflanzen, Entfernen and Eintragen in the rehung panels still use `disabled` while a request runs, so pressing one from the keyboard drops the focus to the page — measured after Pflanzen on the preview (V0.20.158). The element form does not; feature 4 rebuilds the suggestion rows the same way."
+  - "The dock grows when the bloom year gains its first plant: at 1280×720 the details lost 103 px of height when the first plant arrived. Within doc 87's 40vh; feature 6's month strip is meant to give the dock one height."
+  - "Below 66rem the details are part of the page, so choosing on the plan does not bring them into view — feature 5's sheet."
+  - "GardenCanvas (380 lines) and CanvasScene (383 lines) were over the 300-line rule before this feature; it added a prop to each and an attribute to the scene."
 ---
 
 # 88 — What the Selection Shows
@@ -192,6 +196,9 @@ None. The same client calls, from new places.
    was in the details, or was lost because the control holding it went with the
    old view, it moves to the new view's heading. Anywhere else — on the plan,
    above all — it stays: choosing on the plan never pulls the keyboard away.
+   Either way the new view opens at its top. The details scroll in themselves,
+   and keeping the last view's offset opened a patch's view 190 px down after
+   planting from the suggestions, its heading out of sight (preview, V0.20.158).
 10. **Saving says so, and stays.** After *Übernehmen* the form stays and the
     toast says "<Art> gespeichert." *Abbrechen* leaves an element, back to the
     garden, and folds a bed's form away.
