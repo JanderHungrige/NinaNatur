@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 644ce698
+hash: 084713c6
 ---
 
 # Wave 23: The plan is the page
@@ -236,6 +236,13 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   guards: `window`, `months`, `MonthStrip`, `SuggestionRow`, `SuggestionWindow`,
   `App.list`, additions to `SuggestionList`, `FilterControls` and the client,
   and `tests/test_workspace_layout.py`.
+
+- **2026-09-14 — stage 2 in production.** Features 3 and 4 went to production
+  together as V0.20.173 (merge 1d1f1c2), with the fixes their measurements found
+  on the preview: the hidden caption that stretched the page, and a suggestion
+  list taller than its details whose fit badges were cut. CI on main passed, and
+  production serves the stylesheet measured on the preview as V0.20.171
+  (`index-1BDQlzqN.css`).
 
 ## Features
 | # | Feature | Doc | Status | Depends on |
