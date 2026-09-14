@@ -155,7 +155,7 @@ describe('App — changing things from the details', () => {
     const planted = richGarden({ beds: [bed({ plantings: [planting(), sambucus] })] });
     await open({ plant: vi.fn(async () => planted) });
     fireEvent.click(bedOnPlan());
-    fireEvent.click(await within(details()).findByRole('button', { name: 'Pflanzen' }));
+    fireEvent.click(await within(details()).findByRole('button', { name: 'Sambucus nigra pflanzen' }));
     await waitFor(() =>
       expect(onPlan('[data-planting-id="12"]').classList.contains('cluster--fresh')).toBe(true),
     );

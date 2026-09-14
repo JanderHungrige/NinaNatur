@@ -1,8 +1,9 @@
 import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
-import type { GardenOut, LightMap, Terrain } from '../api/client';
+import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Point, Viewport } from '../canvas/viewport';
 import { bedName } from '../plural';
+import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
 import { ReliefMap } from './ReliefMap';
 import { type MapMode, SunMap } from './SunMap';
@@ -52,6 +53,8 @@ interface Props {
   terrain?: Terrain | null | undefined;
   /** One frame of a day's shadows, while the day is being played. */
   shadows?: number[][][] | undefined;
+  /** Trees the surface model found, marked where they stand (doc 89). */
+  canopies?: CanopySuggestion[] | undefined;
 }
 
 const BY_KIND = new Map(KINDS.map((k) => [k.kind, k]));
@@ -165,6 +168,7 @@ export function CanvasScene({
   sunMap,
   terrain,
   shadows,
+  canopies = [],
   armed = false,
   onAskWhatItIs,
   onGrabElement,
@@ -339,6 +343,9 @@ export function CanvasScene({
         {sunMap !== undefined && (
           <SunMap map={sunMap.map} mode={sunMap.mode} />
         )}
+
+        {/* Found trees where they stand (doc 89): a mark over the plan, never a target. */}
+        <CanopyMarks trees={canopies} />
 
         {/* One moment of one day, over everything: while it plays, where the
             shadow is *now* is the only question being asked. */}

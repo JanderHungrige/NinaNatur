@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
-import type { GardenOut, LightMap, Terrain } from '../api/client';
+import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { MapMode } from './SunMap';
 import { elementById } from '../canvas/elements';
@@ -58,8 +58,12 @@ interface Props {
   shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
-  /** Placing one: a second thing a click on the plan can mean, so it is a mode. */
+  /** Placing one, while the rail's Standpunkt is armed (doc 89). */
   onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
+  /** Trees the surface model found, marked where they stand (doc 89). */
+  canopies?: CanopySuggestion[] | undefined;
+  /** The plan's "N gefundene Bäume": show their card. */
+  onShowFoundTrees?: (() => void) | undefined;
   /** The shape tool that is armed, if any. A drag then draws instead of panning. */
   tool?: Tool | null;
   onDrawShape?: ((shape: DrawnShape) => void) | undefined;
@@ -112,6 +116,8 @@ export function GardenCanvas({
   shadows,
   viewpoint = null,
   onPlaceViewpoint,
+  canopies,
+  onShowFoundTrees,
   selectedObstacleId = null,
   onResizeObstacle,
   tool = null,
@@ -127,7 +133,8 @@ export function GardenCanvas({
 
   const sun = useSunReadout(sunMap?.map, view, surface);
 
-  const [placing, setPlacing] = useState(false);
+  // Placing a viewpoint is the rail's Standpunkt (doc 89), not a mode of the plan's own.
+  const placing = tool === 'viewpoint';
   const spacing = gridSpacing(view);
   const elementDrag = useElementDrag({
     view,
@@ -266,7 +273,8 @@ export function GardenCanvas({
     addVertex: polygon.add,
     placing,
     onPlaceViewpoint,
-    onViewpointPlaced: () => setPlacing(false),
+    // Placed once, the tool is put down, as the button used to switch itself off.
+    onViewpointPlaced: () => onCancelTool?.(),
   });
 
   return (
@@ -285,10 +293,8 @@ export function GardenCanvas({
           onCancel={cancel}
           onUndo={polygon.undo}
           onRedo={polygon.redo}
-          placing={onPlaceViewpoint === undefined ? undefined : placing}
-          onPlaceViewpoint={
-            onPlaceViewpoint === undefined ? undefined : () => setPlacing((p) => !p)
-          }
+          foundTrees={canopies?.length ?? 0}
+          onShowFoundTrees={onShowFoundTrees}
         />
       )}
 
@@ -335,6 +341,7 @@ export function GardenCanvas({
           selectedBedId={selectedBedId}
           draft={points}
           viewpoint={viewpoint}
+          canopies={canopies}
           onSelectBed={onSelectBed}
           onSelectObstacle={onSelectObstacle}
           clusters={shown}

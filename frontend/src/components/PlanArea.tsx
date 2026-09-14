@@ -43,6 +43,8 @@ export function PlanArea({ garden, controller }: Props) {
         shadows={light.day?.frames[light.frame]?.polygons ?? undefined}
         viewpoint={light.viewpoint}
         onPlaceViewpoint={light.lookFrom}
+        canopies={derived.canopies}
+        onShowFoundTrees={controller.showFoundTrees}
         tool={elements.tool}
         onDrawShape={elements.drawShape}
         onDrawTrace={elements.drawTrace}

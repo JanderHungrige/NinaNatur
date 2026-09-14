@@ -63,4 +63,13 @@ describe('CanopyBox', () => {
 
     expect(onAccept).not.toHaveBeenCalled();
   });
+
+  it('takes the focus when the plan asks for the found trees, and says it has', () => {
+    // Doc 89: "N gefundene Bäume" on the plan shows this card, and from the
+    // keyboard showing it means the focus lands on it.
+    const onFocusTaken = vi.fn();
+    show([tree()], { takeFocus: true, onFocusTaken });
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Bäume in der Nähe' }));
+    expect(onFocusTaken).toHaveBeenCalledTimes(1);
+  });
 });

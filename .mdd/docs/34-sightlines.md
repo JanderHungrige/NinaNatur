@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-9
 wave_status: complete
 depends_on: [27-object-labelling]
-relates: [12-bed-light, 32-object-heights]
+relates: [12-bed-light, 32-object-heights, 89-three-steps-in]
 source_files:
   - ninanatur/garden/sightlines.py
   - ninanatur/api/sightlines.py
@@ -34,7 +34,8 @@ integration_contracts:
     note: an answer resting on an estimated height says so — the same rule as a filter reporting what it dropped
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 89 (Wave 23, 2026-09-14) the viewpoint is placed with the rail's Standpunkt tool; the plan's own placing mode and its button among the plan's controls are gone."
 sister_projects: []
 ---
 

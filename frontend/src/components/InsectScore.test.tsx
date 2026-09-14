@@ -97,6 +97,16 @@ describe('InsectScore', () => {
     expect(screen.queryByRole('table')).toBeNull();
   });
 
+  it('is one line naming the next step, not a panel, while nothing is planted', () => {
+    // Doc 89: a heading and a paragraph for "nothing yet" was a panel spent on
+    // waiting, in a view that has other things to show.
+    const s = score({ is_empty: true, plantings_total: 0, score: 0 });
+    render(<InsectScore score={s} improvements={null} {...noop} />);
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.queryByRole('region')).toBeNull();
+    expect(screen.getByText(/Wähle ein Beet/)).toBeDefined();
+  });
+
   it('offers additions with their reason and resulting score', () => {
     render(<InsectScore score={score()} improvements={improvements()} {...noop} />);
     expect(screen.getByText(/schließt die Lücke im April und Mai/)).toBeDefined();

@@ -4,7 +4,10 @@ import type { SuggestionFilters } from '../api/client';
 interface Props {
   filters: SuggestionFilters;
   onChange: (next: SuggestionFilters) => void;
-  disabled: boolean;
+  /** A request is running. The fields stay in reach and their changes are
+   *  ignored: a field disabled under the keyboard's focus throws the focus to
+   *  the page (doc 90, as doc 88 rule 11). */
+  busy: boolean;
 }
 
 const MONTHS = [
@@ -36,12 +39,14 @@ const FORMS: Array<[string, string]> = [
  * Split from FilterBar so each stays readable: this is what the user can ask
  * for, FilterBar is what they asked for and what it cost them.
  */
-export function FilterControls({ filters, onChange, disabled }: Props) {
+export function FilterControls({ filters, onChange, busy }: Props) {
   /** Choosing the empty option removes the filter rather than setting a blank. */
   const set = <K extends keyof SuggestionFilters>(
     key: K,
     value: SuggestionFilters[K] | undefined,
   ) => {
+    // Ignored, the field left as it was: every field here is controlled.
+    if (busy) return;
     const next = { ...filters };
     if (value === undefined) {
       delete next[key];
@@ -57,7 +62,7 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
         Blühmonat
         <select
           value={filters.floweringMonth ?? ''}
-          disabled={disabled}
+          aria-disabled={busy || undefined}
           onChange={(e) =>
             set('floweringMonth', e.target.value === '' ? undefined : Number(e.target.value))
           }
@@ -75,7 +80,7 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
         Höhe
         <select
           value={filters.heightMax ?? ''}
-          disabled={disabled}
+          aria-disabled={busy || undefined}
           onChange={(e) =>
             set('heightMax', e.target.value === '' ? undefined : Number(e.target.value))
           }
@@ -93,7 +98,7 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
         Blütenfarbe
         <select
           value={filters.colour ?? ''}
-          disabled={disabled}
+          aria-disabled={busy || undefined}
           onChange={(e) => set('colour', e.target.value === '' ? undefined : e.target.value)}
         >
           <option value="">beliebig</option>
@@ -109,7 +114,7 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
         Wuchsform
         <select
           value={filters.growthForm ?? ''}
-          disabled={disabled}
+          aria-disabled={busy || undefined}
           onChange={(e) => set('growthForm', e.target.value === '' ? undefined : e.target.value)}
         >
           <option value="">beliebig</option>
@@ -128,7 +133,7 @@ export function FilterControls({ filters, onChange, disabled }: Props) {
         <input
           type="checkbox"
           checked={filters.includeTrees === false}
-          disabled={disabled}
+          aria-disabled={busy || undefined}
           onChange={(e) => set('includeTrees', e.target.checked ? false : undefined)}
         />
         Gehölze ausblenden

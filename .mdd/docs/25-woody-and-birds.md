@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-6
 wave_status: complete
 depends_on: [17-insect-groups]
-relates: [18-insect-score, 16-nativeness]
+relates: [18-insect-score, 16-nativeness, 90-a-list-that-fits-a-window]
 source_files:
   - ninanatur/ingest/db.py
   - ninanatur/ingest/sources/birds_de.py
@@ -38,7 +38,8 @@ integration_contracts:
     note: counts are per clade; the insect score reads insects and is unchanged by adding birds
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 90 (Wave 23, 2026-09-14) the woody plants keep their heading in a window of their own, and room and birds are a third line in every row of a window where any row has them."
 sister_projects: []
 ---
 

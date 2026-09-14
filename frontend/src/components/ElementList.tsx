@@ -76,7 +76,7 @@ export function ElementList({ garden, selectedId, onSelect, onDelete }: Props) {
       <h2 id="elements-heading">Gezeichnete Objekte</h2>
       {rows.length === 0 ? (
         <p className="hint">
-          Noch nichts gezeichnet. Wähle oben eine Form und zieh sie im Plan auf.
+          Noch nichts gezeichnet. Wähle in der Werkzeugleiste eine Form und zieh sie im Plan auf.
         </p>
       ) : (
         <ul className="element-list__rows">

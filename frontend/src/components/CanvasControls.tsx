@@ -11,8 +11,10 @@ interface Props {
   onCancel: () => void;
   onUndo: () => void;
   onRedo: () => void;
-  placing?: boolean | undefined;
-  onPlaceViewpoint?: (() => void) | undefined;
+  /** How many trees the surface model found beside the garden (doc 89). */
+  foundTrees?: number | undefined;
+  /** Shows their card in the details. */
+  onShowFoundTrees?: (() => void) | undefined;
 }
 
 function points(n: number): string {
@@ -25,6 +27,10 @@ function points(n: number): string {
  * Zoom is here as buttons and not only as a wheel gesture: a wheel-only zoom
  * locks out anyone without a wheel or trackpad, and anyone whose hands do not
  * do precise scrolls. The wheel is the shortcut; these are the control.
+ *
+ * Placing a viewpoint is not here any more: it is a way of using the plan, so it
+ * is the rail's Standpunkt (doc 89). The found trees are, because they are what
+ * the plan marks.
  */
 export function CanvasControls({
   gridSpacingM,
@@ -39,8 +45,8 @@ export function CanvasControls({
   onCancel,
   onUndo,
   onRedo,
-  placing,
-  onPlaceViewpoint,
+  foundTrees = 0,
+  onShowFoundTrees,
 }: Props) {
   return (
     <div className="canvas-controls">
@@ -69,15 +75,11 @@ export function CanvasControls({
           </>
         ) : null}
 
-        {onPlaceViewpoint !== undefined && (
-          <button
-            type="button"
-            aria-pressed={placing === true}
-            onClick={onPlaceViewpoint}
-          >
-            {placing === true ? 'Standpunkt: klicke in den Plan' : 'Standpunkt setzen'}
+        {foundTrees > 0 && onShowFoundTrees !== undefined ? (
+          <button type="button" className="canvas-controls__trees" onClick={onShowFoundTrees}>
+            {foundTrees === 1 ? '1 gefundener Baum' : `${foundTrees} gefundene Bäume`}
           </button>
-        )}
+        ) : null}
 
         <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Rückgängig">
           ↶

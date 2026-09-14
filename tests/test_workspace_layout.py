@@ -134,6 +134,69 @@ def test_the_plan_keeps_its_share_when_the_dock_is_full(css: str) -> None:
     assert "min-height: 0" in body and "overflow-y: auto" in body
 
 
+def test_hidden_text_stays_inside_the_panel_that_scrolls(css: str) -> None:
+    """Visually hidden text is positioned absolutely. In a panel that scrolls
+    but is not positioned itself, its containing block is the page, so it
+    escapes the panel and stretches the document. Measured on the preview
+    (V0.20.167) with one species planted at 1280×600: the bloom year's hidden
+    table caption, far down the dock's scrolled body, made the page 628 px tall.
+    """
+    for selector in (".inspector", ".timeline-dock__body"):
+        _, rule = _where(css, selector)
+        assert "position: relative" in rule, f"{selector} lets hidden text out"
+
+
+def _top_level(css: str, selector: str) -> str:
+    """The body of the rule for `selector` outside any @media block."""
+    found = re.search(rf"^{re.escape(selector)}\s*\{{([^}}]*)\}}", css, re.M)
+    assert found is not None, f"no top-level rule for {selector}"
+    return found.group(1)
+
+
+def test_the_suggestions_scroll_in_a_window_of_their_own(css: str) -> None:
+    """Doc 90: fifty suggestions are a window in the details, not a page.
+
+    The window scrolls in itself and is positioned, so the rows it places and
+    the hidden text in them stay inside. Every row has one height: that is how
+    the window knows which rows are in view without measuring each of them.
+
+    It is never taller than the details it stands in. Measured on the preview
+    (V0.20.170) with one species planted at 1280×720: the details were 320 px
+    and the window 394, and with its scrolling contained, the wheel over it
+    stopped at the list's end and never reached the rest of the details. So the
+    details are a size container, the window's height is bounded by theirs, and
+    the wheel goes on to the details when the list ends; the details keep their
+    own scrolling to themselves, so the page still never moves.
+    """
+    window = _top_level(css, ".suggestion-window")
+    for declaration in ("position: relative", "overflow-y: auto"):
+        assert declaration in window, declaration
+    bound = re.search(r"max-height:\s*min\([\d.]+rem,\s*([\d.]+)cqh\)", window)
+    assert bound is not None, "the window's height is not bounded by the details'"
+    assert float(bound.group(1)) <= 100
+    # A window that contains its own scrolling keeps the wheel from the details.
+    assert "overscroll-behavior" not in window
+    _, inspector = _where(css, ".inspector")
+    assert "container-type: size" in inspector, "the details are not a size container"
+    for selector in (".suggestion-row", ".suggestion-row--extra"):
+        rule = _top_level(css, selector)
+        assert re.search(r"(?<![-\w])height:\s*[\d.]+rem", rule), f"{selector} sets no height"
+
+
+def test_a_row_cuts_its_colour_before_its_fit(css: str) -> None:
+    """Doc 90: the fit badge names what does not suit the place, so it is never cut.
+
+    Measured on the preview (V0.20.170) in the details' 22rem: 11 of 58 badges
+    were cut ("Licht p…"), every one beside "Farbe unbekannt", which 47 of the
+    58 rows say. The colour's word and an unknown bloom time give way instead.
+    """
+    assert re.search(r"flex:\s*none", _top_level(css, ".suggestion-row__fit"))
+    assert "min-width: 0" in _top_level(css, ".suggestion-row__colour")
+    for selector in (".suggestion-row__colour-word", ".month-strip__unknown"):
+        rule = _top_level(css, selector)
+        assert "text-overflow: ellipsis" in rule and "min-width: 0" in rule, selector
+
+
 def test_a_fresh_patch_holds_still_for_reduced_motion(css: str) -> None:
     """Doc 88: *Pflanzen* marks the patch with a pulse, and with a still ring for
     anyone who asked for less motion."""

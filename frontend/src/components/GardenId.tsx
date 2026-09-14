@@ -6,6 +6,8 @@ interface Props {
   /** Rounded to 0.1° before it was ever stored — about 11 km. */
   latitude: number;
   longitude: number;
+  /** Claiming the garden for the account signed in; absent while nobody is (doc 89). */
+  onClaim?: (() => void) | undefined;
 }
 
 type CopyState = 'idle' | 'copied' | 'failed';
@@ -21,7 +23,7 @@ type CopyState = 'idle' | 'copied' | 'failed';
  * fragment — never a query parameter — so it reaches neither the server's access
  * log nor a third party's referrer header.
  */
-export function GardenId({ token, name, latitude, longitude }: Props) {
+export function GardenId({ token, name, latitude, longitude, onClaim }: Props) {
   const [state, setState] = useState<CopyState>('idle');
 
   const copy = () => {
@@ -65,6 +67,13 @@ export function GardenId({ token, name, latitude, longitude }: Props) {
         {state === 'copied' && ' Kopiert.'}
         {state === 'failed' && ' Konnte nicht kopieren — markiere die ID und kopiere sie selbst.'}
       </p>
+      {/* An action on the whole garden, so it sits with the garden's id rather
+          than among its details (doc 89). */}
+      {onClaim !== undefined ? (
+        <button type="button" className="link-button garden-id__claim" onClick={onClaim}>
+          Diesen Garten meinem Konto zuordnen
+        </button>
+      ) : null}
       </div>
     </details>
   );

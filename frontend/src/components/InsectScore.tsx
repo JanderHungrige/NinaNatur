@@ -16,15 +16,14 @@ const ORIGIN_LABEL: Record<string, string> = {
 
 /** A verdict a reader can argue with, not a number to take on faith. */
 export function InsectScore({ score, improvements, onApply, busy }: Props) {
+  // One line, not a panel (doc 89): a heading over "nothing yet" was a panel
+  // spent on waiting, and the line names the step that ends the wait.
   if (score.is_empty) {
     return (
-      <section className="panel" aria-labelledby="score-heading">
-        <h2 id="score-heading">Insektenwert</h2>
-        <p className="empty">
-          Noch nichts gepflanzt. Sobald Arten im Beet stehen, steht hier, wie viel
-          sie Insekten bieten — und was am meisten brächte.
-        </p>
-      </section>
+      <p className="next-step">
+        <span className="next-step__what">Insektenwert</span> Noch nichts gepflanzt.{' '}
+        <span aria-hidden="true">→</span> Wähle ein Beet und pflanze die erste Art.
+      </p>
     );
   }
 

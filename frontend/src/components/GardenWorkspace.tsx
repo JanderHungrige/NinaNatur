@@ -72,6 +72,7 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
           name={garden.name}
           latitude={garden.latitude}
           longitude={garden.longitude}
+          onClaim={account !== null ? elements.claim : undefined}
         />
         <button
           type="button"
@@ -102,7 +103,7 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
         />
         <PlanArea garden={garden} controller={controller} />
         <Inspector wide={wide} onWide={setWide}>
-          <InspectorPanels garden={garden} controller={controller} account={account} busy={status.busy} />
+          <InspectorPanels garden={garden} controller={controller} busy={status.busy} />
         </Inspector>
       </main>
 
