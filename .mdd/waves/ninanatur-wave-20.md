@@ -3,11 +3,11 @@ id: ninanatur-wave-20
 title: "Wave 20: Nothing here is worse than it looks"
 initiative: ninanatur
 initiative_version: 24
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-19
 demo_state: "Ein geschriebener Prüfbericht über Web- und Anwendungssicherheit, jede Feststellung mit dem Ort im Code und einem Reproduktionsweg; die Befunde behoben und durch Tests festgehalten, die den Angriff selbst versuchen. Die Abhängigkeiten sind auf bekannte Schwachstellen geprüft, und CI bricht ab, wenn eine neue dazukommt. Die Datenbank hat eine Sicherung, die jede Nacht läuft und deren Rückspielen geprobt ist."
 created: 2026-09-07
-hash: b8250b0e
+hash: c930f097
 ---
 
 # Wave 20: Nothing here is worse than it looks
@@ -459,6 +459,18 @@ decisions shape the features:
   on. The raw finding list stays local. What is still the owner's — branch
   protection, a host firewall behind the bridge-only binding, a host-wide log
   default — is named as this file already names it.
+- **2026-09-14 — closed, by the owner's decision.** The acceptance was checked
+  before closing rather than assumed: the whole suite, gates included, passed
+  again on `main` (1,232 tests), and each gate had already been shown failing on
+  a seeded regression (feature 0); the direct ports stay closed behind the
+  bridge-only binding (feature 1); a restore from the host copy was drilled on
+  both deployments (feature 4), and the owner's Mac has pulled a fresh copy
+  every morning since — the latest on 2026-09-14; the report is doc 85. Left open
+  on purpose, because they are the owner's rather than this wave's: branch
+  protection on `main`, the Dependabot pull requests, a host firewall, the
+  host-wide Docker log default and a privacy-policy line on IP retention.
+  Closing it moves the header to V0.20.x from the next image build; this record
+  touches only `.mdd`, which CI does not build.
 
 ## Features
 
