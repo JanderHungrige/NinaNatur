@@ -56,7 +56,11 @@ export function BedPanel({
 
       <h3>Beete</h3>
       {garden.beds.length === 0 ? (
-        <p className="hint">Noch keine Beete angelegt.</p>
+        // An empty panel names its next step (doc 92).
+        <p className="next-step">
+          Noch keine Beete. <span aria-hidden="true">→</span> Wähle eine Form aus den Werkzeugen und
+          zeichne das erste Beet in den Plan.
+        </p>
       ) : (
         <ul className="bed-list">
           {garden.beds.map((bed) => (

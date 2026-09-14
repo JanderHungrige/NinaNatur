@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-23
 wave_status: active
 depends_on: [88-what-the-selection-shows, 87-a-workspace-not-a-page, 48-garden-soil, 34-sightlines, 84-what-else-is-standing-there]
-relates: [53-account-in-header, 30-landing-and-garden-id, 65-the-shade-switch]
+relates: [53-account-in-header, 30-landing-and-garden-id, 65-the-shade-switch, 92-one-panel-one-style]
 source_files:
   - frontend/src/components/FirstSteps.tsx
   - frontend/src/components/GardenDetails.tsx
@@ -54,6 +54,7 @@ security_read_sites: []
 known_issues:
   - "Six of the new tests pass before the change, on purpose: each is the negative or the guard beside a positive test that fails — no claim offered while nobody is signed in; an armed Standpunkt takes the click from the shapes, and nothing is placed while no tool is armed (doc 49, kept); the plan's controls carry no viewpoint button, and no trees when none were found; and a garden that is set up shows no steps."
   - "Claiming a garden needs a signed-in account, and none is created on the preview: the claim in the header's fold was checked in vitest only."
+  - "Since doc 92 (Wave 23, 2026-09-14) the garden's list of beds and the bloom year name a next step when they are empty, as the insect score already did."
 ---
 
 # 89 — Three Steps In
