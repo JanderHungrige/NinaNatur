@@ -40,6 +40,8 @@ export function GardenId({ token, name, latitude, longitude }: Props) {
     // was taking the top of the sidebar for a string nobody reads.
     <details className="panel garden-id">
       <summary className="garden-id__summary">{name} — ID und Infos</summary>
+      {/* One body under the fold, so the header can open it as a dropdown (doc 87). */}
+      <div className="garden-id__body">
       <div className="garden-id__row">
         {/* Selectable text, so it stays usable when the copy button cannot. */}
         <code className="garden-id__token">{token}</code>
@@ -63,6 +65,7 @@ export function GardenId({ token, name, latitude, longitude }: Props) {
         {state === 'copied' && ' Kopiert.'}
         {state === 'failed' && ' Konnte nicht kopieren — markiere die ID und kopiere sie selbst.'}
       </p>
+      </div>
     </details>
   );
 }

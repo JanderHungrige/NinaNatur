@@ -114,26 +114,9 @@ def test_obstacle_rule_declares_no_fill() -> None:
     assert "fill" not in rule.group(1)
 
 
-def test_the_second_column_only_appears_when_both_fit() -> None:
-    """Widening the window must never make the plan narrower.
-
-    It did: the sidebar is 22rem, and the second column arrived at 60rem. One
-    pixel past the breakpoint the plan dropped from 902 px to 527 — the user
-    saw it as the app deciding the window had got smaller. Two columns are only
-    worth it once the plan still gets a usable width.
-    """
-    css = STYLESHEET.read_text(encoding="utf-8")
-    sidebar = re.search(r"\.layout \{[^}]*minmax\([^,]+, ([\d.]+)rem\)", css, re.S)
-    breakpoint_ = re.search(r"@media \(max-width: ([\d.]+)rem\)\s*\{\s*\.layout", css)
-    assert sidebar is not None and breakpoint_ is not None
-
-    #: What the plan needs before a second column beats a single one.
-    plan_minimum_rem = 40.0
-    gap_rem = 1.5
-    needed = float(sidebar.group(1)) + gap_rem + plan_minimum_rem
-    assert float(breakpoint_.group(1)) >= needed, (
-        f"two columns start at {breakpoint_.group(1)}rem but need {needed}rem"
-    )
+# The breakpoint guard for the two columns moved to tests/test_workspace_layout.py
+# with the workspace that replaced them (Wave 23, doc 87): the plan must still
+# never get narrower when the window gets wider.
 
 
 def test_the_landing_page_is_not_squeezed_into_the_garden_sidebar() -> None:

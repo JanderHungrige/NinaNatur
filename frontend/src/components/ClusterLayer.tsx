@@ -19,6 +19,9 @@ export const SWATCH: Record<string, string> = {
 interface Props {
   clusters: Cluster[];
   selectedPlantingId?: number | null;
+  /** A patch that was just planted, marked for a moment so the plan shows where
+   *  the plant went (doc 88). */
+  freshPlantingId?: number | null;
   onSelectCluster?: ((plantingId: number) => void) | undefined;
   onGrabCluster?: ((plantingId: number, event: React.PointerEvent) => void) | undefined;
   /** The grid's current spacing in metres. Text is sized from it so a label
@@ -43,6 +46,7 @@ interface Props {
 export function ClusterLayer({
   clusters,
   selectedPlantingId = null,
+  freshPlantingId = null,
   onSelectCluster,
   onGrabCluster,
   spacing = 1,
@@ -58,11 +62,13 @@ export function ClusterLayer({
           key={cluster.plantingId}
           data-testid={`cluster-${cluster.plantingId}`}
           data-planting-id={cluster.plantingId}
-          className={
-            cluster.plantingId === selectedPlantingId
-              ? 'cluster cluster--selected'
-              : 'cluster'
-          }
+          className={[
+            'cluster',
+            cluster.plantingId === selectedPlantingId ? 'cluster--selected' : '',
+            cluster.plantingId === freshPlantingId ? 'cluster--fresh' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           role={onSelectCluster === undefined ? undefined : 'button'}
           tabIndex={onSelectCluster === undefined ? undefined : 0}
           aria-label={cluster.name}

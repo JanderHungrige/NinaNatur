@@ -141,33 +141,205 @@ body {
   color: var(--ink-muted); font-size: 0.8rem;
 }
 
-.layout {
+/* --- The workspace (Wave 23, doc 87) -------------------------------------- */
+
+/* Narrow first: one column in which the page scrolls, as before — except that
+   the plan comes before the details rather than after them. Feature 5 turns
+   this into a sheet. */
+.workspace {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace__plan {
+  position: relative;
+  min-width: 0;
+}
+
+.plan-hint {
+  margin: 0.4rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+.inspector {
   display: grid;
   gap: 1.5rem;
-  /* The sidebar gives ground before the plan does: at the old fixed 22rem it
-     took its full width first and left the drawing whatever remained. */
-  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
-  align-items: start;
+  align-content: start;
+  min-width: 0;
 }
 
-/* One column until both fit. At the old 60rem the second column arrived while
-   the plan still had no room for it, so one pixel of extra window took 375 px
-   off the drawing — which reads exactly like the app deciding the window has
-   got smaller. */
-@media (max-width: 72rem) {
-  .layout { grid-template-columns: minmax(0, 1fr); }
+/* The wide view is offered only where the window has room for it (74rem). */
+.inspector__bar { display: none; }
+.inspector__width { margin: 0; }
+.inspector__width[aria-pressed='true'] { font-weight: 600; }
+
+/* One view at a time, chosen by the selection (doc 88), spaced as the panels
+   were when they all stood here at once. */
+.inspector__view {
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+  min-width: 0;
+}
+.inspector__subject {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+}
+.inspector__title { margin: 0; font-size: 1.3rem; }
+.inspector__detail { margin: 0; }
+.inspector__back,
+.inspector__action { margin: 0; justify-self: start; }
+
+/* A view's heading takes the focus from code when the view changes under the
+   keyboard. The ring shows when the keyboard is what moved it. */
+[data-view-heading]:focus { outline: none; }
+[data-view-heading]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-/* Two columns: the plan stays in view while the left one scrolls (doc 86).
-   Never taller than the window, and scrolling itself when the bloom year and
-   the score run past the fold — a sticky box taller than the window would hide
-   its own end. Starts just above the breakpoint where the second column does. */
-@media (min-width: 72.0625rem) {
-  .column--plan {
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
+/* The garden's soil once it has been said: one line, the question behind it. */
+.soil-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+.soil-line__value { margin: 0; }
+
+.timeline-dock { margin-top: 1.5rem; }
+.timeline-dock__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.timeline-dock__heading { margin: 0; font-size: 1rem; }
+.timeline-dock .bloom-player { margin: 0; }
+.timeline-dock__body > .panel { border: 0; padding: 0.5rem 0 0; background: none; }
+/* A display rule on the body would otherwise win over its `hidden` attribute. */
+.timeline-dock__body[hidden] { display: none; }
+
+.timeline-dock__toggle {
+  margin: 0;
+  padding: 0.2rem 0.4rem;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.timeline-dock__toggle::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 0.35rem;
+  transition: transform 120ms ease;
+}
+.timeline-dock__toggle[aria-expanded='true']::before { transform: rotate(90deg); }
+
+/* The workspace proper: the window's height, and nothing scrolls but a panel.
+   Rail 3.5rem + details 22rem + a plan that still gets 40rem. Widening the
+   window must never narrow the plan — the lesson the two columns taught, when
+   one pixel past their breakpoint took the drawing from 902 px to 527. */
+@media (min-width: 66rem) {
+  body:has(.app--workspace) {
+    padding: 0;
+  }
+  .app--workspace {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .app--workspace > .site-header {
+    margin: 0;
+    padding: 0.45rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+    grid-template-columns: 3.5rem minmax(0, 1fr) 22rem;
+  }
+  .workspace__plan {
+    min-width: 0;
+    min-height: 0;
+    padding: 0.5rem;
+  }
+  .workspace .canvas-wrap {
+    position: relative;
+    height: 100%;
+  }
+  .workspace .canvas-stage {
+    height: 100%;
+  }
+  .workspace .canvas-controls {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 3;
+    max-width: calc(100% - 1rem);
+    padding: 0.25rem 0.45rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+  }
+  .workspace .plan-hint {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 3;
+    max-width: calc(100% - 2rem);
+    margin: 0;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+    pointer-events: none;
+  }
+  .inspector {
+    min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.75rem;
+    border-left: 1px solid var(--line);
+  }
+  .tool-rail {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-right: 1px solid var(--line);
+  }
+  .tool-rail__tool:hover .tool-rail__label,
+  .tool-rail__tool:focus-visible .tool-rail__label {
+    top: 50%;
+    left: calc(100% + 0.4rem);
+    transform: translateY(-50%);
+  }
+  .timeline-dock {
+    margin: 0;
+    padding: 0.35rem 1rem;
+    border-top: 1px solid var(--line);
+  }
+  .timeline-dock__body {
+    max-height: 40vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (min-width: 74rem) {
+  .inspector__bar {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .workspace--wide {
+    grid-template-columns: 3.5rem minmax(0, 1fr) 30rem;
   }
 }
 
@@ -294,8 +466,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .status-toast__close { flex: none; margin: 0; padding: 0.2rem 0.65rem; }
 
 /* ---- wave 4: timeline and suggestions ---- */
-
-.column { display: grid; gap: 1.5rem; align-content: start; min-width: 0; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0;
@@ -1070,24 +1240,78 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* --- Drawing tools (Wave 11, feature 43) ---------------------------------- */
 
-.shape-tools__row {
+/* The rail (Wave 23, doc 87): icons, each named by its own text — hidden but
+   read, and shown beside the icon on hover and on keyboard focus. */
+.tool-rail {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
+  gap: 0.25rem;
 }
 
-.shape-tool {
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-raised);
+.tool-rail__tool {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
 }
 
-.shape-tool:hover:not(:disabled) { border-color: var(--leaf); }
-.shape-tool[aria-pressed='true'] { border-color: var(--leaf); background: var(--leaf-alt); }
+.tool-rail__tool:hover { border-color: var(--line); }
+.tool-rail__tool[aria-pressed='true'] {
+  border-color: var(--leaf);
+  background: color-mix(in srgb, var(--leaf) 16%, transparent);
+}
+.tool-rail__tool[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
+
+.tool-rail__icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Pinned inside its own button. Without offsets its 1-px box sat below it, over
+   the next tool, where anything that places a name by its box — a magnifier
+   following focus, a click aimed at the name — lands on the wrong tool. */
+.tool-rail__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tool-rail__tool:hover .tool-rail__label,
+.tool-rail__tool:focus-visible .tool-rail__label {
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  color: var(--ink);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
 
 /* The rubber band while a shape is being dragged out. */
 .shape-preview {
@@ -1154,20 +1378,14 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* --- Saying what a thing is, at the thing (Wave 12, feature 51) ----------- */
 
-.element-menu {
-  position: fixed;
-  z-index: 20;
+/* In the details since Wave 23 (doc 88): a panel beside the plan, no longer a
+   popover over it. */
+.element-form {
   display: grid;
   gap: 0.35rem;
-  min-width: 15rem;
-  padding: 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-raised);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
 }
 
-.element-menu__actions {
+.element-form__actions {
   display: flex;
   gap: 0.75rem;
   align-items: center;
@@ -1211,12 +1429,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .element-list__what { font-weight: 600; }
 .element-list__label { color: var(--ink-muted); min-width: 0; }
 .element-list__area { color: var(--ink-muted); font-size: 0.85rem; }
-
-.element-menu__subject {
-  margin: 0 0 0.35rem;
-  font-weight: 600;
-  color: var(--ink);
-}
 
 /* The landing page gets the whole width, not the garden grid's sidebar. */
 .landing-shell {
@@ -1278,6 +1490,25 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 @media (max-width: 40rem) {
   .account-drawer { margin-inline: 0; max-width: 100%; }
   .account-bar__note { max-width: 100%; }
+}
+
+/* In a garden the drawers open over the workspace: a workspace that is the
+   window's height has nowhere to push them to (doc 87). */
+.app--workspace .account-drawer {
+  position: fixed;
+  top: 3.75rem;
+  right: 1rem;
+  z-index: 19;
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
 }
 
 /* --- What is standing in this bed ---------------------------------------- */
@@ -1469,6 +1700,16 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .header-link:hover {
   color: var(--ink);
   border-color: var(--leaf);
+}
+
+/* In a garden the name, undo and the sun map sit together at the left; the
+   feedback link and the account keep to the right edge. */
+.app--workspace .site-header { justify-content: flex-start; gap: 0.6rem; }
+.app--workspace .header-link--feedback { margin-left: auto; }
+.header-link[aria-pressed='true'] {
+  color: var(--ink);
+  border-color: var(--leaf);
+  background: color-mix(in srgb, var(--leaf) 14%, transparent);
 }
 
 .feedback { display: grid; gap: 0.7rem; width: 100%; }
@@ -1812,6 +2053,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   }
   .living__bokeh { opacity: 0.2; }
   .status-toast { transition: none; }
+  .timeline-dock__toggle::before { transition: none; }
+  .cluster--fresh .cluster__reach { animation: none; }
 }
 
 /* --- The gardens an account has claimed ---------------------------------- */
@@ -1894,6 +2137,20 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   vector-effect: non-scaling-stroke;
 }
 
+/* Where "Pflanzen" just put the plant (doc 88): a ring that pulses twice and
+   fades, so the plan answers "where did it go" without the details moving. */
+.cluster--fresh .cluster__reach {
+  stroke: var(--leaf);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  animation: cluster-arrived 1.2s ease-out 2;
+}
+
+@keyframes cluster-arrived {
+  from { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke-opacity: 1; }
+  to { fill: color-mix(in srgb, var(--leaf) 8%, transparent); stroke-opacity: 0.4; }
+}
+
 /* Shape-following, and in pixels via non-scaling-stroke: `outline` on an SVG
    node draws the bounding box, and a 3px outline once came out three metres
    wide because the viewBox is in metres. */
@@ -1923,7 +2180,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .cluster-tag__info text { fill: var(--leaf); font-weight: 700; }
 .cluster-tag__info:hover circle { fill: color-mix(in srgb, var(--leaf) 18%, var(--bg-raised)); }
 
-.element-menu__danger {
+.element-form__danger {
   padding: 0.4rem 0.8rem;
   border: 1px solid #a8442f;
   border-radius: var(--radius);
@@ -1932,7 +2189,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   cursor: pointer;
 }
 
-.element-menu__warning {
+.element-form__warning {
   border-left: 3px solid #a8442f;
   padding-left: 0.6rem;
   color: var(--ink);
@@ -1954,39 +2211,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: 0.85rem;
 }
 
-/* --- Two halves of the work (Wave 15) ------------------------------------ */
-
-.tabs__row {
-  display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--line);
-}
-
-.tabs__tab {
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background: none;
-  color: var(--ink-muted);
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.tabs__tab[aria-selected='true'] {
-  border-color: var(--line);
-  background: var(--bg-raised);
-  color: var(--ink);
-  /* Sits on the line rather than under it, so the open tab and its panel read
-     as one surface. */
-  margin-bottom: -1px;
-}
-
-.tabs__hint { margin: 0.5rem 0 0; }
-
-[role='tabpanel'] { display: grid; gap: 1.5rem; }
-[role='tabpanel'][hidden] { display: none; }
-
 /* The garden's id, folded away. A credential somebody needs once, not a
    heading to plan a garden under. */
 .garden-id__summary { cursor: pointer; font-weight: 600; }
@@ -1994,3 +2218,30 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .garden-id__facts { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.8rem; margin: 0.75rem 0 0; }
 .garden-id__facts dt { color: var(--ink-muted); }
 .garden-id__facts dd { margin: 0; }
+
+/* In the workspace header the fold is a pill, and what it opens drops down over
+   the plan rather than pushing the workspace down (doc 87). */
+.site-header .garden-id {
+  position: relative;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+}
+.site-header .garden-id__summary {
+  max-width: 20rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+.site-header .garden-id__body {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 19;
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+}

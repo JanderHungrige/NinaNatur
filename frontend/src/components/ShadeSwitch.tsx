@@ -14,6 +14,9 @@ interface Props {
   onMonth: (month: number | null) => void;
   onRebuild: () => void;
   busy: boolean;
+  /** False in the workspace, whose header is the switch (doc 87): two controls
+   *  for one state disagree the moment one of them is disabled. */
+  showToggle?: boolean | undefined;
 }
 
 /** March to October, the window the whole light model works in. */
@@ -64,7 +67,7 @@ function whenText(iso: string): string {
  * to be there before the first map exists.
  */
 export function ShadeSwitch({
-  map, terrain, on, mode, month, onToggle, onMode, onMonth, onRebuild, busy,
+  map, terrain, on, mode, month, onToggle, onMode, onMonth, onRebuild, busy, showToggle = true,
 }: Props) {
   return (
     <section className="panel shade-switch" aria-labelledby="shade-heading">
@@ -90,6 +93,7 @@ export function ShadeSwitch({
         )}
       </div>
 
+      {showToggle && (
       <label className="shade-switch__toggle">
         <input
           type="checkbox"
@@ -99,6 +103,7 @@ export function ShadeSwitch({
         />
         Über dem Plan anzeigen
       </label>
+      )}
 
       {map === null ? (
         <p className="hint">

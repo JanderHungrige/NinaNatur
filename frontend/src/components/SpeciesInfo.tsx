@@ -22,6 +22,12 @@ interface Props {
   canonicalName: string;
   onClose: () => void;
   /**
+   * Whether it brings itself to the reader, scrolled into view and focused.
+   * Not as the details of a selected patch (doc 88): those already stand beside
+   * the plan, and the plan is where the keyboard was.
+   */
+  takeFocus?: boolean;
+  /**
    * How to fetch the article. Injected rather than reached for, like every other
    * boundary in this project: a module-level client binds `globalThis.fetch` at
    * import time, which makes the component untestable without stubbing globals
@@ -44,6 +50,7 @@ export function SpeciesInfo({
   onClose,
   colourNote,
   load = defaultLoad,
+  takeFocus = true,
 }: Props) {
   const [info, setInfo] = useState<SpeciesInfoOut | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'failed'>('loading');
@@ -59,6 +66,7 @@ export function SpeciesInfo({
    * problem and no scrollbar to notice it with.
    */
   useEffect(() => {
+    if (!takeFocus) return;
     // Optional call: jsdom has no scrollIntoView, and neither has every browser
     // this might run in.
     // 'center' and no smoothing: 'nearest' does the least it can get away
@@ -66,7 +74,7 @@ export function SpeciesInfo({
     // indistinguishable from no scroll at all.
     panel.current?.scrollIntoView?.({ block: 'center' });
     panel.current?.focus();
-  }, [taxonId]);
+  }, [taxonId, takeFocus]);
 
   useEffect(() => {
     let cancelled = false;

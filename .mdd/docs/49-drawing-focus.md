@@ -6,17 +6,18 @@ initiative: ninanatur
 wave: ninanatur-wave-12
 wave_status: complete
 depends_on: [43-shape-tools]
-relates: [50-polygon-closing]
+relates: [50-polygon-closing, 88-what-the-selection-shows]
 source_files:
   - frontend/src/components/CanvasScene.tsx
   - frontend/src/components/GardenCanvas.tsx
-  - frontend/src/App.tsx
+  - frontend/src/canvas/useEscapeKey.ts
 routes: []
 models: []
 test_files:
   - frontend/src/components/GardenCanvas.focus.test.tsx
+  - frontend/src/canvas/useEscapeKey.test.ts
 data_flow: reads-existing
-last_synced: 2026-08-31
+last_synced: 2026-09-14
 status: complete
 phase: all
 mdd_version: 11
@@ -25,7 +26,8 @@ path: Canvas/Focus
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 88 (Wave 23, 2026-09-14) Escape typed into a text field — a text or number input, a textarea, an editable element — belongs to that field: the details show the selection, and dropping it would take the half-typed field away with its view. From anywhere else Escape still puts the tool down, clears the draft and drops the selection, and that now includes a bed selected for planting, which used to stay selected."
 ---
 
 # An armed tool takes the click

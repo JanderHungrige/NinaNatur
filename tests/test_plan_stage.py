@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 
 STYLESHEET = Path("frontend/src/styles.css")
-APP = Path("frontend/src/App.tsx")
 
 
 @pytest.fixture(scope="module")
@@ -51,21 +50,8 @@ def test_the_stage_can_size_by_its_own_width(css: str) -> None:
     assert any("container-type: inline-size" in body for body in _rules(css, ".canvas-wrap"))
 
 
-def test_the_plan_column_stays_in_view_only_when_there_are_two(css: str) -> None:
-    """Sticky in a single column would pin the plan over the forms around it."""
-    one_column_below = re.search(r"@media \(max-width: ([\d.]+)rem\)\s*\{\s*\.layout", css)
-    assert one_column_below is not None
-    sticky = re.search(
-        r"@media \(min-width: ([\d.]+)rem\)\s*\{\s*\.column--plan\s*\{([^}]*)\}", css
-    )
-    assert sticky is not None, "no sticky rule for the plan column"
-    assert float(sticky.group(1)) > float(one_column_below.group(1))
-    assert "position: sticky" in sticky.group(2)
-    assert "overflow-y: auto" in sticky.group(2), "a column taller than the window hides its end"
-
-
-def test_the_markup_names_the_plan_column() -> None:
-    assert 'className="column column--plan"' in APP.read_text(encoding="utf-8")
+# The sticky plan column was stage 0's stopgap. The workspace replaced the
+# columns (Wave 23, doc 87); its guards are in tests/test_workspace_layout.py.
 
 
 def test_the_status_toast_floats_and_holds_still_for_reduced_motion(css: str) -> None:
