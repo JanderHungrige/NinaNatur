@@ -43,12 +43,23 @@ export function fakeClient(
 
 export type FakeClient = ReturnType<typeof fakeClient>;
 
-/** jsdom has no matchMedia; the player and the rail both ask it. */
-export function stubMatchMedia(): void {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: false, media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+/** A matchMedia that answers each query as `matches` decides. */
+function mediaAnswering(matches: (query: string) => boolean) {
+  return (query: string) => ({
+    matches: matches(query), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
     addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
-  }));
+  });
+}
+
+/** jsdom has no matchMedia; the player and the workspace both ask it. Answering
+ *  no to everything is a narrow window: the sheet of doc 91. */
+export function stubMatchMedia(): void {
+  vi.stubGlobal('matchMedia', mediaAnswering(() => false));
+}
+
+/** A window at least 66rem wide: the workspace of doc 87, with no sheet. */
+export function stubWideLayout(): void {
+  vi.stubGlobal('matchMedia', mediaAnswering((query) => query.includes('min-width: 66rem')));
 }
 
 export function resetApp(): void {

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useGarden } from '../garden/useGarden';
 import { useRemembered } from '../useRemembered';
 import type { Status } from '../useStatus';
+import type { Snap } from '../workspace/sheet';
 import type { AccountInfo } from './AccountPanel';
 import { BloomPlayer } from './BloomPlayer';
 import { BloomTimeline } from './BloomTimeline';
@@ -15,7 +16,8 @@ import { SiteHeader, type SiteProps } from './SiteHeader';
 import { TimelineDock } from './TimelineDock';
 import { ToolRail } from './ToolRail';
 
-/** Where the three columns start: rail, a 40rem plan, and the details (doc 87). */
+/** Where the three columns start: rail, a 40rem plan, and the details (doc 87).
+ *  Below it the details are a sheet from below (doc 91). */
 const WORKSPACE_QUERY = '(min-width: 66rem)';
 
 /** Whether a media query matches now, and again whenever that changes. */
@@ -52,19 +54,52 @@ interface Props {
  *
  * Mounted with the garden's token as its key, so a different garden is a new
  * mount and nothing of the last one — selection, filters, tool, undo — carries
- * over.
+ * over. Nor does the sheet's height on a narrow window: every garden opens with
+ * the details resting at a quarter (doc 91).
  */
 export function GardenWorkspace({ client, garden, setGarden, status, header, account, greeting }: Props) {
   const controller = useGarden(client, garden, setGarden, status, greeting);
   const { derived, elements, light, suggestions } = controller;
   const [wide, setWide] = useRemembered('ninanatur.inspector.wide', false);
   const [dockOpen, setDockOpen] = useRemembered('ninanatur.dock.open', true);
-  const vertical = useMatches(WORKSPACE_QUERY);
+  // A phone's year starts folded: open, its table would lie over the plan.
+  const [dockOpenNarrow, setDockOpenNarrow] = useRemembered('ninanatur.dock.open.narrow', false);
+  const columns = useMatches(WORKSPACE_QUERY);
+  const [snap, setSnap] = useState<Snap>('peek');
+  const workspace = useRef<HTMLElement>(null);
   const month = suggestions.filters.floweringMonth ?? null;
+
+  // A drag in progress goes straight to the stylesheet, so a moving finger
+  // re-renders nothing; the plan waits for the height the drag comes to rest at.
+  const onDrag = useCallback((fraction: number | null) => {
+    const element = workspace.current;
+    if (element === null) return;
+    if (fraction === null) {
+      element.style.removeProperty('--sheet-drag');
+      delete element.dataset.dragging;
+    } else {
+      element.style.setProperty('--sheet-drag', String(fraction));
+      element.dataset.dragging = '';
+    }
+  }, []);
 
   return (
     <>
-      <SiteHeader {...header} busy={status.busy}>
+      <SiteHeader
+        {...header}
+        busy={status.busy}
+        more={
+          <button
+            type="button"
+            className="header-link"
+            aria-pressed={light.shadeOn}
+            disabled={derived.lightMap === null}
+            onClick={() => light.toggleShade(!light.shadeOn)}
+          >
+            {'Sonne & Schatten'}
+          </button>
+        }
+      >
         {/* The page's title. Hidden, because the fold beside it already shows the name. */}
         <h1 className="sr-only">{garden.name}</h1>
         <GardenId
@@ -83,33 +118,29 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
         >
           ↶
         </button>
-        <button
-          type="button"
-          className="header-link"
-          aria-pressed={light.shadeOn}
-          disabled={derived.lightMap === null}
-          onClick={() => light.toggleShade(!light.shadeOn)}
-        >
-          {'Sonne & Schatten'}
-        </button>
       </SiteHeader>
 
-      <main id="main" className={wide ? 'workspace workspace--wide' : 'workspace'}>
+      <main
+        id="main"
+        ref={workspace}
+        className={wide ? 'workspace workspace--wide' : 'workspace'}
+        data-sheet={columns ? undefined : snap}
+      >
         <ToolRail
           active={elements.tool}
           onPick={elements.setTool}
           busy={status.busy}
-          orientation={vertical ? 'vertical' : 'horizontal'}
+          orientation={columns ? 'vertical' : 'horizontal'}
         />
         <PlanArea garden={garden} controller={controller} />
-        <Inspector wide={wide} onWide={setWide}>
+        <Inspector wide={wide} onWide={setWide} sheet={columns ? undefined : { snap, onSnap: setSnap, onDrag }}>
           <InspectorPanels garden={garden} controller={controller} busy={status.busy} />
         </Inspector>
       </main>
 
       <TimelineDock
-        open={dockOpen}
-        onToggle={setDockOpen}
+        open={columns ? dockOpen : dockOpenNarrow}
+        onToggle={columns ? setDockOpen : setDockOpenNarrow}
         player={
           <BloomPlayer
             month={month}
