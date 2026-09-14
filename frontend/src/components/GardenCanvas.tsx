@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import type { GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
@@ -15,6 +15,7 @@ import { useSunReadout } from '../canvas/useSunReadout';
 import { useCanvasGestures } from '../canvas/useCanvasGestures';
 import { useFreehandStroke } from '../canvas/useFreehandStroke';
 import { useShapeBand } from '../canvas/useShapeBand';
+import { useEscapeKey } from '../canvas/useEscapeKey';
 import type { DrawnShape, Tool } from '../canvas/shapes';
 import type { Point } from '../canvas/viewport';
 import { gridSpacing, viewBox } from '../canvas/viewport';
@@ -44,6 +45,8 @@ interface Props {
   /** Every planting as a patch, ready to draw. */
   clusters?: Cluster[] | undefined;
   selectedPlantingId?: number | null;
+  /** A patch that was just planted, marked for a moment (doc 88). */
+  freshPlantingId?: number | null;
   onSelectCluster?: ((plantingId: number) => void) | undefined;
   /** Dragging a patch to another spot in its bed. */
   onMoveCluster?: ((plantingId: number, to: { x: number; y: number }) => void) | undefined;
@@ -100,6 +103,7 @@ export function GardenCanvas({
   onSelectObstacle,
   clusters,
   selectedPlantingId = null,
+  freshPlantingId = null,
   onSelectCluster,
   onMoveCluster,
   onShowClusterInfo,
@@ -246,16 +250,9 @@ export function GardenCanvas({
   const points = polygon.points;
 
 
-  useEffect(() => {
-    // Always listening: Escape clears a selection too, and a selection can
-    // outlive every drawing mode.
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') cancel();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [cancel]);
+  // Always listening: Escape clears a selection too, and a selection can
+  // outlive every drawing mode. Typed into a text field it is the field's (doc 88).
+  useEscapeKey(cancel);
 
 
   const gestures = useCanvasGestures({
@@ -342,6 +339,8 @@ export function GardenCanvas({
           onSelectObstacle={onSelectObstacle}
           clusters={shown}
           selectedPlantingId={selectedPlantingId}
+          freshPlantingId={freshPlantingId}
+          selectedObstacleId={selectedObstacleId}
           onSelectCluster={onSelectCluster}
           onGrabCluster={clusterDrag.grab}
           onShowClusterInfo={onShowClusterInfo}

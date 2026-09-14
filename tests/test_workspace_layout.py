@@ -92,6 +92,19 @@ def test_the_dock_leaves_the_plan_its_share(css: str) -> None:
     assert "overflow-y: auto" in dock
 
 
+def test_a_fresh_patch_holds_still_for_reduced_motion(css: str) -> None:
+    """Doc 88: *Pflanzen* marks the patch with a pulse, and with a still ring for
+    anyone who asked for less motion."""
+    assert re.search(r"\.cluster--fresh[^{]*\{[^}]*animation:", css), "no pulse"
+    reduced = r"@media \(prefers-reduced-motion: reduce\) \{(.*?)^\}"
+    blocks = re.findall(reduced, css, re.S | re.M)
+    assert blocks, "the sheet has no reduced-motion block"
+    stopped = r"\.cluster--fresh[^{]*\{[^}]*animation:\s*none"
+    assert any(re.search(stopped, block) for block in blocks), (
+        "the pulse keeps running under prefers-reduced-motion"
+    )
+
+
 def test_the_tabs_are_gone() -> None:
     """Zeichnen and Säen were two ends of one loop; the inspector replaces them."""
     assert not (SRC / "components" / "Tabs.tsx").exists()

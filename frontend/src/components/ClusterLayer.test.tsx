@@ -44,6 +44,16 @@ describe('ClusterLayer', () => {
     expect(container.querySelectorAll('.bloom-dot')).toHaveLength(4);
   });
 
+  it('marks a patch that was just planted, and only that one', () => {
+    // Doc 88: after "Pflanzen" the plan shows where the plant went, and the
+    // details beside it do not have to move.
+    const { container } = show([cluster(), cluster({ plantingId: 2 })], { freshPlantingId: 2 });
+    const fresh = (id: number) =>
+      container.querySelector(`[data-planting-id="${id}"]`)?.classList.contains('cluster--fresh');
+    expect(fresh(2)).toBe(true);
+    expect(fresh(1)).toBe(false);
+  });
+
   it('paints a flowering patch in its colour and a resting one in grey', () => {
     const { container } = show([cluster(), cluster({ plantingId: 2, colour: null })]);
     const dots = [...container.querySelectorAll('.bloom-dot')];

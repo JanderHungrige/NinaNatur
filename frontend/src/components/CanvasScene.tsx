@@ -17,6 +17,8 @@ interface Props {
   viewpoint?: { x: number; y: number } | null;
   onSelectBed: (bedId: number) => void;
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
+  /** The element selected, said on the plan as the selected bed is (doc 88). */
+  selectedObstacleId?: number | null;
   /** A drawing tool is armed: the plan takes the click, not what is under it.
    *  Without this the first click to draw selects the garden-wide bed and the
    *  page scrolls away to the suggestions, so the tool looks like it needs two
@@ -39,6 +41,7 @@ interface Props {
    *  for the month being shown. */
   clusters?: Cluster[] | undefined;
   selectedPlantingId?: number | null;
+  freshPlantingId?: number | null;
   onSelectCluster?: ((plantingId: number) => void) | undefined;
   onGrabCluster?: ((plantingId: number, event: React.PointerEvent) => void) | undefined;
   onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
@@ -152,8 +155,10 @@ export function CanvasScene({
   viewpoint = null,
   onSelectBed,
   onSelectObstacle,
+  selectedObstacleId = null,
   clusters = [],
   selectedPlantingId = null,
+  freshPlantingId = null,
   onSelectCluster,
   onGrabCluster,
   onShowClusterInfo,
@@ -285,6 +290,11 @@ export function CanvasScene({
                   ? undefined
                   : 'button'
               }
+              aria-pressed={
+                onSelectObstacle === undefined || armed || isGround(item.kind)
+                  ? undefined
+                  : item.obstacle_id === selectedObstacleId
+              }
               aria-label={obstacleLabel(item)}
               aria-hidden={isGround(item.kind) ? true : undefined}
               onClick={
@@ -346,6 +356,7 @@ export function CanvasScene({
         <ClusterLayer
           clusters={clusters}
           selectedPlantingId={selectedPlantingId}
+          freshPlantingId={freshPlantingId}
           onSelectCluster={onSelectCluster}
           onGrabCluster={onGrabCluster}
           spacing={spacing}

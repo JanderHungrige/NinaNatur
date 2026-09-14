@@ -175,6 +175,47 @@ body {
 .inspector__width { margin: 0; }
 .inspector__width[aria-pressed='true'] { font-weight: 600; }
 
+/* One view at a time, chosen by the selection (doc 88), spaced as the panels
+   were when they all stood here at once. */
+.inspector__view {
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+  min-width: 0;
+}
+.inspector__subject {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+}
+.inspector__title { margin: 0; font-size: 1.3rem; }
+.inspector__detail { margin: 0; }
+.inspector__back,
+.inspector__action { margin: 0; justify-self: start; }
+
+/* A view's heading takes the focus from code when the view changes under the
+   keyboard. The ring shows when the keyboard is what moved it. */
+[data-view-heading]:focus { outline: none; }
+[data-view-heading]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The garden's soil once it has been said: one line, the question behind it. */
+.soil-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+.soil-line__value { margin: 0; }
+
 .timeline-dock { margin-top: 1.5rem; }
 .timeline-dock__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
 .timeline-dock__heading { margin: 0; font-size: 1rem; }
@@ -1337,20 +1378,14 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* --- Saying what a thing is, at the thing (Wave 12, feature 51) ----------- */
 
-.element-menu {
-  position: fixed;
-  z-index: 20;
+/* In the details since Wave 23 (doc 88): a panel beside the plan, no longer a
+   popover over it. */
+.element-form {
   display: grid;
   gap: 0.35rem;
-  min-width: 15rem;
-  padding: 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-raised);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
 }
 
-.element-menu__actions {
+.element-form__actions {
   display: flex;
   gap: 0.75rem;
   align-items: center;
@@ -1394,12 +1429,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .element-list__what { font-weight: 600; }
 .element-list__label { color: var(--ink-muted); min-width: 0; }
 .element-list__area { color: var(--ink-muted); font-size: 0.85rem; }
-
-.element-menu__subject {
-  margin: 0 0 0.35rem;
-  font-weight: 600;
-  color: var(--ink);
-}
 
 /* The landing page gets the whole width, not the garden grid's sidebar. */
 .landing-shell {
@@ -2025,6 +2054,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   .living__bokeh { opacity: 0.2; }
   .status-toast { transition: none; }
   .timeline-dock__toggle::before { transition: none; }
+  .cluster--fresh .cluster__reach { animation: none; }
 }
 
 /* --- The gardens an account has claimed ---------------------------------- */
@@ -2107,6 +2137,20 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   vector-effect: non-scaling-stroke;
 }
 
+/* Where "Pflanzen" just put the plant (doc 88): a ring that pulses twice and
+   fades, so the plan answers "where did it go" without the details moving. */
+.cluster--fresh .cluster__reach {
+  stroke: var(--leaf);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  animation: cluster-arrived 1.2s ease-out 2;
+}
+
+@keyframes cluster-arrived {
+  from { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke-opacity: 1; }
+  to { fill: color-mix(in srgb, var(--leaf) 8%, transparent); stroke-opacity: 0.4; }
+}
+
 /* Shape-following, and in pixels via non-scaling-stroke: `outline` on an SVG
    node draws the bounding box, and a 3px outline once came out three metres
    wide because the viewBox is in metres. */
@@ -2136,7 +2180,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .cluster-tag__info text { fill: var(--leaf); font-weight: 700; }
 .cluster-tag__info:hover circle { fill: color-mix(in srgb, var(--leaf) 18%, var(--bg-raised)); }
 
-.element-menu__danger {
+.element-form__danger {
   padding: 0.4rem 0.8rem;
   border: 1px solid #a8442f;
   border-radius: var(--radius);
@@ -2145,7 +2189,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   cursor: pointer;
 }
 
-.element-menu__warning {
+.element-form__warning {
   border-left: 3px solid #a8442f;
   padding-left: 0.6rem;
   color: var(--ink);

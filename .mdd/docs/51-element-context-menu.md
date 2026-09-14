@@ -6,17 +6,19 @@ initiative: ninanatur
 wave: ninanatur-wave-12
 wave_status: complete
 depends_on: [45-relabel-and-skin]
-relates: [52-element-list]
+relates: [52-element-list, 88-what-the-selection-shows]
 source_files:
-  - frontend/src/components/ElementMenu.tsx
+  - frontend/src/components/ElementForm.tsx
+  - frontend/src/components/ElementDetails.tsx
   - frontend/src/components/CanvasScene.tsx
-  - frontend/src/App.tsx
+  - frontend/src/garden/useSelection.ts
 routes: []
 models: [element]
 test_files:
-  - frontend/src/components/ElementMenu.test.tsx
+  - frontend/src/components/ElementForm.test.tsx
+  - frontend/src/App.details.test.tsx
 data_flow: writes-existing
-last_synced: 2026-08-31
+last_synced: 2026-09-14
 status: complete
 phase: all
 mdd_version: 11
@@ -25,7 +27,8 @@ path: Canvas/Menu
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Superseded in part by doc 88 (Wave 23, 2026-09-14): the menu is now the element form in the details beside the plan. Right-click, Shift+F10 and the context-menu key select the element and move the focus into the form; the anchoring, the outside click and Escape went with the popover, and an armed tool still suppresses all of it."
 ---
 
 # Saying what a thing is, at the thing

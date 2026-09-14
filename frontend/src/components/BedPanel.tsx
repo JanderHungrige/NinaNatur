@@ -10,7 +10,7 @@ interface Props {
 
 
 /** A rectangle is enough to place a bed by keyboard; the canvas is the faster path. */
-function lightText(bed: GardenOut['beds'][number]): string {
+export function lightText(bed: GardenOut['beds'][number]): string {
   // Unknown renders as unknown — never as 0 h, at any layer.
   if (bed.sun_hours === null || bed.ellenberg_l === null) {
     return 'noch nicht berechnet';
@@ -45,7 +45,10 @@ export function BedPanel({
 
   return (
     <div className="panel">
-      <h2>{garden.name}</h2>
+      {/* The garden view's heading, focused when the details change view (doc 88). */}
+      <h2 tabIndex={-1} data-view-heading>
+        {garden.name}
+      </h2>
       <p className="hint">
         Standort {garden.latitude}°, {garden.longitude}° · {bedCount(garden.beds.length)} ·{' '}
         {obstacleCount(garden.obstacles.length)}

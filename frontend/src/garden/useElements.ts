@@ -1,29 +1,10 @@
 import { useCallback, useState } from 'react';
 
 import type { GardenOut, NinaNaturClient } from '../api/client';
-import { elementById } from '../canvas/elements';
 import type { DrawnShape, Tool } from '../canvas/shapes';
-import { areaOf } from '../components/ElementList';
+import { labelOf } from '../kinds';
 import type { UndoEntry } from '../useUndoStack';
 import type { Status } from '../useStatus';
-
-/** The context menu, and which element it is asking about. */
-export interface Asking {
-  id: number;
-  kind: string;
-  label: string | null;
-  area: number;
-  plantings: number;
-  shape: string;
-  roof: string;
-  eavesM: number | null;
-  height: number | null;
-  width: number | null;
-  soilType: string | null;
-  moisture: string | null;
-  heightAboveGround: number;
-  at: { x: number; y: number };
-}
 
 type NewObstacle = {
   kind: string;
@@ -38,10 +19,17 @@ type NewObstacle = {
 
 type ElementChanges = Parameters<NinaNaturClient['editObstacle']>[2];
 
+/** What drawing needs of the selection: to select what was just drawn, and to
+ *  let go of what is deleted (doc 88). */
+interface Selecting {
+  selectElement: (id: number) => void;
+  clear: () => void;
+}
+
 /**
- * Drawing elements and saying what they are: the armed tool, the element being
- * edited, the menu asking about one, and every call that adds, names or removes
- * something (doc 87).
+ * Drawing elements and saying what they are: the armed tool, and every call that
+ * adds, names or removes something (docs 87, 88). Which element is selected is
+ * the selection's, not this hook's.
  */
 export function useElements(
   client: NinaNaturClient,
@@ -50,37 +38,33 @@ export function useElements(
   status: Status,
   refresh: () => Promise<void>,
   remember: (entry: UndoEntry) => void,
+  selecting: Selecting,
 ) {
   const { run, setStatus } = status;
+  const { selectElement, clear } = selecting;
   const token = garden.share_token;
   /** The tool the rail has armed. Null is the ordinary state: a plan the user
    *  can click without placing anything. */
   const [tool, setTool] = useState<Tool | null>(null);
-  const [selectedObstacleId, setSelectedObstacleId] = useState<number | null>(null);
-  const [asking, setAsking] = useState<Asking | null>(null);
-
-  const editObstacleById = useCallback(
-    (obstacleId: number) => {
-      // Beds too. They are elements of kind `bed`, and refusing to select one
-      // here is the other half of why a bed could not be reshaped.
-      if (elementById(garden, obstacleId) === null) return;
-      setSelectedObstacleId(obstacleId);
-    },
-    [garden],
-  );
 
   const addBed = useCallback(
     async (bed: { name: string; polygon: number[][]; soil_type: string; moisture: string }) => {
+      const before = new Set(garden.beds.map((b) => b.bed_id));
       await run('Beet hinzufügen', async () => {
         // Re-render from the server's answer rather than local optimism: only the
         // server can compute light, and guessing it here would show a number the
         // data does not support.
-        setGarden(await client.addBed(token, bed));
+        const updated = await client.addBed(token, bed);
+        setGarden(updated);
+        // What was just drawn is selected (doc 88), so the next thing the details
+        // show is the bed to plant in.
+        const fresh = updated.beds.find((b) => !before.has(b.bed_id));
+        if (fresh !== undefined) selectElement(fresh.bed_id);
         await refresh();
         setStatus(`Beet ${bed.name} hinzugefügt.`);
       });
     },
-    [client, token, run, setGarden, refresh, setStatus],
+    [client, token, garden, run, setGarden, refresh, setStatus, selectElement],
   );
 
   /** A polygon drawn on the plan becomes a bed with a placeholder name and the
@@ -107,7 +91,7 @@ export function useElements(
         // Select what was just placed, so the handles are already on it.
         const fresh = updated.obstacles.find((o) => !before.has(o.obstacle_id));
         if (fresh !== undefined) {
-          setSelectedObstacleId(fresh.obstacle_id);
+          selectElement(fresh.obstacle_id);
           const id = fresh.obstacle_id;
           remember({
             label: 'Zeichnen',
@@ -122,7 +106,7 @@ export function useElements(
         setStatus(`Hindernis gesetzt. Sonnenstunden jetzt: ${lit}.`);
       });
     },
-    [client, token, garden, run, setGarden, setStatus, remember],
+    [client, token, garden, run, setGarden, setStatus, remember, selectElement],
   );
 
   /** A drawn shape becomes an element with no kind yet: `other` and no height,
@@ -173,57 +157,27 @@ export function useElements(
   /** Remove one element, from wherever it was asked for. */
   const deleteElement = useCallback(
     (id: number) => {
-      setAsking(null);
-      setSelectedObstacleId(null);
+      clear();
       void run('Objekt löschen', async () => {
         setGarden(await client.deleteObstacle(token, id));
         await refresh();
       });
     },
-    [client, token, run, setGarden, refresh],
+    [client, token, run, setGarden, refresh, clear],
   );
 
-  const askWhatItIs = useCallback(
-    (id: number, at: { x: number; y: number }) => {
-      const found =
-        garden.obstacles.find((o) => o.obstacle_id === id) ?? garden.beds.find((b) => b.bed_id === id);
-      if (found === undefined) return;
-      const outline = 'footprint' in found ? found.footprint : found.polygon;
-      setAsking({
-        id,
-        kind: 'kind' in found ? found.kind : 'bed',
-        label: found.label,
-        area: areaOf(outline),
-        plantings: 'plantings' in found ? found.plantings.length : 0,
-        shape: 'shape' in found ? found.shape : 'polygon',
-        roof: 'roof' in found ? found.roof : 'unknown',
-        // Only one of a bed and an obstacle has eaves, so the narrowing has to
-        // be explicit rather than a `??`.
-        eavesM: 'eaves_m' in found && typeof found.eaves_m === 'number' ? found.eaves_m : null,
-        height: 'height' in found ? found.height : null,
-        width: 'width' in found ? found.width : null,
-        soilType: 'soil_type' in found ? found.soil_type : null,
-        moisture: 'moisture' in found ? found.moisture : null,
-        heightAboveGround: 'height_above_ground' in found ? found.height_above_ground : 0,
-        at,
-      });
-    },
-    [garden],
-  );
-
-  /** The element menu's answer. Closed only once it worked: closing first left
-   *  nothing on screen after a failure but the shape looking as it had. */
+  /** The element form's answer, for the element it was about. The form stays
+   *  where it is, so the toast is what says it worked (doc 88). */
   const saveElement = useCallback(
-    (changes: ElementChanges) => {
-      if (asking === null) return;
-      const target = asking.id;
+    (id: number, changes: ElementChanges) => {
       void run('Speichern', async () => {
-        setGarden(await client.editObstacle(token, target, changes));
+        setGarden(await client.editObstacle(token, id, changes));
         await refresh();
-        setAsking(null);
+        const kind = typeof changes.kind === 'string' ? changes.kind : null;
+        setStatus(`${kind === null ? 'Objekt' : labelOf(kind)} gespeichert.`);
       });
     },
-    [client, token, asking, run, setGarden, refresh],
+    [client, token, run, setGarden, refresh, setStatus],
   );
 
   const saveGardenSoil = useCallback(
@@ -245,16 +199,10 @@ export function useElements(
   return {
     tool,
     setTool,
-    selectedObstacleId,
-    setSelectedObstacleId,
-    asking,
-    setAsking,
-    editObstacleById,
     drawBed,
     drawShape,
     drawTrace,
     deleteElement,
-    askWhatItIs,
     saveElement,
     saveGardenSoil,
     claim,

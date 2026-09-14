@@ -100,7 +100,7 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
           busy={status.busy}
           orientation={vertical ? 'vertical' : 'horizontal'}
         />
-        <PlanArea garden={garden} controller={controller} busy={status.busy} />
+        <PlanArea garden={garden} controller={controller} />
         <Inspector wide={wide} onWide={setWide}>
           <InspectorPanels garden={garden} controller={controller} account={account} busy={status.busy} />
         </Inspector>
