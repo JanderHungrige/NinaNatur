@@ -261,9 +261,12 @@ body {
     padding: 0.45rem 1rem;
     border-bottom: 1px solid var(--line);
   }
+  /* The plan's row keeps 40 % of the window and its padding — or the whole
+     tool rail, if that is more — however full the dock is. It grows from
+     nothing rather than from its content, and the dock gives way below it. */
   .workspace {
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 1 1 0;
+    min-height: max(calc(40vh + 1rem), 18rem);
     gap: 0;
     grid-template-columns: 3.5rem minmax(0, 1fr) 22rem;
   }
@@ -322,11 +325,16 @@ body {
     transform: translateY(-50%);
   }
   .timeline-dock {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     margin: 0;
     padding: 0.35rem 1rem;
     border-top: 1px solid var(--line);
   }
+  .timeline-dock__bar { flex: none; }
   .timeline-dock__body {
+    min-height: 0;
     max-height: 40vh;
     overflow-y: auto;
     overscroll-behavior: contain;
