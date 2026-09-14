@@ -16,16 +16,18 @@ function rail(
 
 const tools = (): HTMLElement[] => screen.getAllByRole('button');
 
+const NAMES = ['Auswählen', 'Rechteck', 'Kreis', 'Dreieck', 'Vieleck', 'Freihand', 'Standpunkt'];
+
 describe('ToolRail', () => {
   it('is a toolbar that says which way it runs', () => {
     expect(rail(null, false, 'vertical').toolbar.getAttribute('aria-orientation')).toBe('vertical');
   });
 
   it('names every tool by the words it shows, in the order they stand', () => {
+    // Doc 89 added Standpunkt, last: placing a viewpoint is a way of using the
+    // plan, as drawing on it is.
     rail();
-    expect(tools().map((b) => b.textContent?.trim())).toEqual([
-      'Auswählen', 'Rechteck', 'Kreis', 'Dreieck', 'Vieleck', 'Freihand',
-    ]);
+    expect(tools().map((b) => b.textContent?.trim())).toEqual(NAMES);
   });
 
   it('names every tool by aria-label too, and keeps the tooltip out of the name', () => {
@@ -33,9 +35,7 @@ describe('ToolRail', () => {
     // listed these six buttons without a name. Chrome's own tree named them from
     // the hidden text; the label makes every tree agree, in the tooltip's words.
     rail();
-    expect(tools().map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Auswählen', 'Rechteck', 'Kreis', 'Dreieck', 'Vieleck', 'Freihand',
-    ]);
+    expect(tools().map((b) => b.getAttribute('aria-label'))).toEqual(NAMES);
     for (const tool of tools()) {
       expect(tool.querySelector('.tool-rail__label')?.getAttribute('aria-hidden')).toBe('true');
     }
@@ -50,7 +50,7 @@ describe('ToolRail', () => {
 
   it('moves along the rail with the arrow keys, and to its ends with Home and End', () => {
     rail();
-    const [select, rect, circle, , , freehand] = tools();
+    const [select, rect, circle, , , , standpoint] = tools();
     select!.focus();
     fireEvent.keyDown(select!, { key: 'ArrowDown' });
     expect(document.activeElement).toBe(rect);
@@ -62,15 +62,16 @@ describe('ToolRail', () => {
     fireEvent.keyDown(circle!, { key: 'ArrowUp' });
     expect(document.activeElement).toBe(rect);
     fireEvent.keyDown(rect!, { key: 'End' });
-    expect(document.activeElement).toBe(freehand);
-    fireEvent.keyDown(freehand!, { key: 'Home' });
+    expect(document.activeElement).toBe(standpoint);
+    fireEvent.keyDown(standpoint!, { key: 'Home' });
     expect(document.activeElement).toBe(select);
   });
 
   it('arms the tool that is pressed', () => {
     const { onPick } = rail();
     fireEvent.click(screen.getByRole('button', { name: 'Rechteck' }));
-    expect(onPick).toHaveBeenCalledWith('rect');
+    fireEvent.click(screen.getByRole('button', { name: 'Standpunkt' }));
+    expect(onPick.mock.calls).toEqual([['rect'], ['viewpoint']]);
   });
 
   it('shows the armed tool as pressed, and puts it down from Auswählen or from itself', () => {
@@ -96,6 +97,7 @@ describe('ToolRail', () => {
   it('says what the armed tool expects, and what to do when none is armed', () => {
     expect(hintFor('polygon')).toMatch(/Ecke für Ecke/);
     expect(hintFor('freehand')).toMatch(/In einem Zug/);
+    expect(hintFor('viewpoint')).toMatch(/wo du stehst/);
     expect(hintFor(null)).toMatch(/Wähle eine Form/);
   });
 });

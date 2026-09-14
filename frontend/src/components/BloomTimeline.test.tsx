@@ -66,6 +66,16 @@ describe('BloomTimeline', () => {
     expect(screen.getByText(/Noch nichts gepflanzt/)).toBeDefined();
   });
 
+  it('is one line naming the next step, without a checkbox that weighs nothing', () => {
+    // Doc 89: in the dock under the plan, a heading, a checkbox and a paragraph
+    // for an empty year took 163 px of the window.
+    const empty = timeline({ is_empty: true, plantings_total: 0, gaps: [] });
+    render(<BloomTimeline timeline={empty} forage onToggleForage={vi.fn()} busy={false} />);
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.getByText(/Sobald ein Beet bepflanzt ist/)).toBeDefined();
+  });
+
   it('labels coverage as a share of the best month', () => {
     // An unlabelled 0.44 invites the reader to invent a unit.
     render(<BloomTimeline timeline={timeline()} forage onToggleForage={vi.fn()} busy={false} />);

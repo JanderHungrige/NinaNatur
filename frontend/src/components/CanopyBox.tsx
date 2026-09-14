@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 import type { CanopySuggestion } from '../api/client';
 
 interface Props {
@@ -5,6 +7,9 @@ interface Props {
   onAccept: (suggestionId: number) => void;
   onDismiss: (suggestionId: number) => void;
   busy: boolean;
+  /** Asked for from the plan's "N gefundene Bäume" (doc 89): the heading takes the focus. */
+  takeFocus?: boolean | undefined;
+  onFocusTaken?: (() => void) | undefined;
 }
 
 /**
@@ -22,12 +27,31 @@ interface Props {
  * Dismissing is as prominent as accepting. A list where refusing is the harder
  * click is a list that gets accepted by exhaustion.
  */
-export function CanopyBox({ suggestions, onAccept, onDismiss, busy }: Props) {
+export function CanopyBox({
+  suggestions,
+  onAccept,
+  onDismiss,
+  busy,
+  takeFocus = false,
+  onFocusTaken,
+}: Props) {
+  const heading = useRef<HTMLHeadingElement | null>(null);
+
+  // The plan marks the trees and counts them; this card is where they are
+  // answered, so showing it from the plan brings the keyboard here too.
+  useEffect(() => {
+    if (!takeFocus) return;
+    heading.current?.focus();
+    onFocusTaken?.();
+  }, [takeFocus, onFocusTaken]);
+
   if (suggestions.length === 0) return null;
 
   return (
     <section className="panel canopy-box" aria-labelledby="canopy-heading">
-      <h2 id="canopy-heading">Bäume in der Nähe</h2>
+      <h2 id="canopy-heading" ref={heading} tabIndex={-1}>
+        Bäume in der Nähe
+      </h2>
       <p className="hint">
         Aus Laserdaten gemessen — {suggestions.length === 1 ? 'einer' : 'welche'}, die
         noch nicht im Plan {suggestions.length === 1 ? 'steht' : 'stehen'}. Die Art

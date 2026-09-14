@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useUndoShortcut, useUndoStack } from '../useUndoStack';
@@ -12,7 +12,7 @@ import { useSelection } from './useSelection';
 import { useSuggestions } from './useSuggestions';
 
 /**
- * Everything about one open garden (docs 87, 88).
+ * Everything about one open garden (docs 87, 88, 89).
  *
  * Lives in a workspace keyed by the garden's token, so opening another garden
  * starts every piece of this from nothing: the selection, the filters, the armed
@@ -32,7 +32,7 @@ export function useGarden(
 ) {
   const { remember, undo, depth } = useUndoStack();
   const chosen = useSelection(garden);
-  const { selection, ids } = chosen;
+  const { selection, ids, clear } = chosen;
   const derived = useDerived(client, garden, setGarden, status, greeting);
   const elements = useElements(client, garden, setGarden, status, derived.refresh, remember, chosen);
   const suggestions = useSuggestions(client, garden, setGarden, status, derived, ids.bedId);
@@ -67,6 +67,15 @@ export function useGarden(
    *  module-level one (doc 88). Stable, because SpeciesInfo's effect depends on it. */
   const speciesInfo = useCallback((taxonId: number) => client.speciesInfo(taxonId), [client]);
 
+  /** The plan's "N gefundene Bäume" (doc 89): back to the garden's details, where
+   *  the card takes the focus once it is showing. */
+  const [treesAsked, setTreesAsked] = useState(false);
+  const showFoundTrees = useCallback(() => {
+    clear();
+    setTreesAsked(true);
+  }, [clear]);
+  const treesShown = useCallback(() => setTreesAsked(false), []);
+
   return {
     derived,
     elements,
@@ -79,11 +88,14 @@ export function useGarden(
     selectElement: chosen.selectElement,
     selectPlanting: chosen.selectPlanting,
     /** Escape, and every way back to the garden: nothing selected. */
-    clearSelection: chosen.clear,
+    clearSelection: clear,
     askAbout: chosen.askAbout,
     askedFor: chosen.askedFor,
     focusTaken: chosen.focusTaken,
     speciesInfo,
+    showFoundTrees,
+    treesAsked,
+    treesShown,
     undo: undoLast,
     undoDepth: depth,
   };

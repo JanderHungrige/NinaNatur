@@ -10,7 +10,8 @@
  */
 import type { Point } from './viewport';
 
-export type Tool = 'rect' | 'circle' | 'triangle' | 'polygon' | 'freehand';
+/** Placing where one stands is a tool too (doc 89): it takes the click as the others do. */
+export type Tool = 'rect' | 'circle' | 'triangle' | 'polygon' | 'freehand' | 'viewpoint';
 
 /** Below this a drag is a mis-click, not a request for a tiny shape. */
 export const MIN_DRAG_M = 0.25;

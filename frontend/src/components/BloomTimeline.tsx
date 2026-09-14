@@ -54,6 +54,18 @@ export function BloomTimeline({
   selectedMonth = null,
   onSelectMonth,
 }: Props) {
+  // One line, not a panel (doc 89): in the dock under the plan, a heading, a
+  // checkbox that weighs nothing and a paragraph took 163 px for an empty year.
+  if (timeline.is_empty) {
+    return (
+      <p className="next-step">
+        <span className="next-step__what">Blühjahr</span> Noch nichts gepflanzt.{' '}
+        <span aria-hidden="true">→</span> Sobald ein Beet bepflanzt ist, steht hier, in
+        welchen Monaten dein Garten blüht.
+      </p>
+    );
+  }
+
   const gapMonths = new Set(timeline.gaps.flatMap((gap) => gap.months));
 
   /** A toggle: the click that says "show me April" is the one used to undo it. */
@@ -83,14 +95,7 @@ export function BloomTimeline({
           : 'Ein Monat zählt, wenn überhaupt etwas blüht — rein optisch.'}
       </p>
 
-      {timeline.is_empty ? (
-        <p className="empty">
-          Noch nichts gepflanzt. Wähle unten einen Vorschlag für ein Beet aus —
-          danach zeigt diese Ansicht, in welchen Monaten dein Garten etwas trägt
-          und wo Lücken bleiben.
-        </p>
-      ) : (
-        <>
+      <>
           <table className="timeline">
             <caption className="sr-only">
               Blühdeckung pro Monat, als Anteil des besten Monats dieses Gartens
@@ -168,8 +173,7 @@ export function BloomTimeline({
           ) : (
             <p className="hint">Keine Lücke zwischen März und Oktober.</p>
           )}
-        </>
-      )}
+      </>
     </section>
   );
 }

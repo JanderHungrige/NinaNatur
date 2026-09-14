@@ -3,7 +3,6 @@ import { type RefObject, useLayoutEffect, useRef } from 'react';
 import type { GardenOut } from '../api/client';
 import { viewKey } from '../garden/selection';
 import type { GardenController } from '../garden/useGarden';
-import type { AccountInfo } from './AccountPanel';
 import { BedDetails } from './BedDetails';
 import { ElementDetails } from './ElementDetails';
 import { GardenDetails } from './GardenDetails';
@@ -13,7 +12,6 @@ import { Sightlines } from './Sightlines';
 interface Props {
   garden: GardenOut;
   controller: GardenController;
-  account: AccountInfo | null;
   busy: boolean;
 }
 
@@ -25,7 +23,7 @@ interface Props {
  * it is, because it answers the last thing done on the plan rather than what is
  * selected.
  */
-export function InspectorPanels({ garden, controller, account, busy }: Props) {
+export function InspectorPanels({ garden, controller, busy }: Props) {
   const { selection, light } = controller;
   const view = useRef<HTMLDivElement | null>(null);
   useViewFocus(view, viewKey(selection));
@@ -37,7 +35,7 @@ export function InspectorPanels({ garden, controller, account, busy }: Props) {
       ) : null}
 
       {selection.kind === 'none' ? (
-        <GardenDetails garden={garden} controller={controller} account={account} busy={busy} />
+        <GardenDetails garden={garden} controller={controller} busy={busy} />
       ) : null}
       {selection.kind === 'bed' ? (
         <BedDetails
