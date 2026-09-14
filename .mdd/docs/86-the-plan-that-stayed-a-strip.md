@@ -31,7 +31,8 @@ path: Workspace/Plan
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "The sticky plan column (rule 4) was the stopgap until the workspace: doc 87 replaced both columns, and its guards moved to tests/test_workspace_layout.py."
 ---
 
 # 86 — The Plan That Stayed a Strip
