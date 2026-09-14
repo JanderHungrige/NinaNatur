@@ -28,15 +28,18 @@ test_files:
   - frontend/src/components/BloomTimeline.test.tsx
 data_flow: reads-existing
 last_synced: 2026-09-14
-status: in_progress
-phase: 2
+status: complete
+phase: all
 mdd_version: 11
 tags: [design-tokens, panels, typography, keyboard, accessibility, empty-states]
 path: Workspace/Style
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Measured in Chromium only. There a click on the help's words keeps the focus in the dialog (V0.20.179); where a browser leaves it on the page's body, the window's guard keeps the keys from the page, and vitest covers that (ShortcutHelp)."
+  - "Counted by radius, padding, border and background, the details still draw three kinds of box for the garden and two for a bed (V0.20.179): each panel keeps its own padding, and the list of what is drawn and the suggestion window are rows."
+  - "The help's list is written by hand: a key the code starts to answer shows in it only once workspace/shortcuts.ts names it too."
 ---
 
 # 92 — One Panel, One Style
@@ -184,7 +187,9 @@ Nothing new. The help is static text.
 
 ## Known Issues
 
-(none yet)
+- Measured in Chromium only. There a click on the help's words keeps the focus in the dialog (V0.20.179); where a browser leaves it on the page's body, the window's guard keeps the keys from the page, and vitest covers that (ShortcutHelp).
+- Counted by radius, padding, border and background, the details still draw three kinds of box for the garden and two for a bed (V0.20.179): each panel keeps its own padding, and the list of what is drawn and the suggestion window are rows.
+- The help's list is written by hand: a key the code starts to answer shows in it only once workspace/shortcuts.ts names it too.
 
 ## Bugs
 

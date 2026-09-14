@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-23
 wave_status: active
 depends_on: [87-a-workspace-not-a-page, 88-what-the-selection-shows, 90-a-list-that-fits-a-window]
-relates: [53-account-in-header, 30-landing-and-garden-id, 29-bloom-playback, 86-the-plan-that-stayed-a-strip]
+relates: [53-account-in-header, 30-landing-and-garden-id, 29-bloom-playback, 86-the-plan-that-stayed-a-strip, 92-one-panel-one-style]
 source_files:
   - frontend/src/workspace/sheet.ts
   - frontend/src/workspace/useInertOutside.ts
@@ -40,6 +40,7 @@ known_issues:
   - "The plan has no pinch zoom on a phone: zoom is the plus and minus buttons, as it was before this feature."
   - "In a 375 px window the plan's controls are wider than their one row: on V0.20.177 redo stands half out of view and the row scrolls sideways. Feature 6's type scale is to size them."
   - "At a quarter in a 375×635 window a garden name of two lines shows only its first line (V0.20.177, the preview's test garden); the name of a bed, an object or a species shows whole."
+  - "Since doc 92 (Wave 23, 2026-09-14) a phone's plan controls take the scales' smallest steps and fit their one row on V0.20.179, with nothing past its end: 335 px of content, where 350 had run past a 341 px row."
 ---
 
 # 91 — A Sheet From Below

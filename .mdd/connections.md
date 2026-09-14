@@ -1,7 +1,7 @@
 ---
 generated: 2026-09-14
-doc_count: 92
-connection_count: 109
+doc_count: 93
+connection_count: 111
 overlap_count: 106
 ---
 
@@ -123,7 +123,8 @@ Workspace
 ├── Inspector  90-a-list-that-fits-a-window  complete
 ├── Plan  86-the-plan-that-stayed-a-strip  complete
 ├── Sheet  91-a-sheet-from-below  complete
-└── Shell  87-a-workspace-not-a-page  complete
+├── Shell  87-a-workspace-not-a-page  complete
+└── Style  92-one-panel-one-style  complete
 ```
 
 ## Dependency Graph
@@ -331,6 +332,9 @@ graph TD
     87_a_workspace_not_a_page --> 91_a_sheet_from_below
     88_what_the_selection_shows --> 91_a_sheet_from_below
     90_a_list_that_fits_a_window --> 91_a_sheet_from_below
+    92_one_panel_one_style["92-one-panel-one-style"]:::complete
+    87_a_workspace_not_a_page --> 92_one_panel_one_style
+    91_a_sheet_from_below --> 92_one_panel_one_style
     classDef complete fill:#00e5cc,color:#000
     classDef in_progress fill:#ffaa00,color:#000
     classDef draft fill:#888,color:#fff
@@ -356,9 +360,9 @@ graph TD
 - `frontend/src/canvas/useEscapeKey.ts` — 49-drawing-focus, 88-what-the-selection-shows
 - `frontend/src/canvas/viewport.ts` — 26-drawing-canvas, 86-the-plan-that-stayed-a-strip
 - `frontend/src/components/BedDetails.tsx` — 88-what-the-selection-shows, 90-a-list-that-fits-a-window
-- `frontend/src/components/BedPanel.tsx` — 11-garden-canvas, 15-timeline-ui, 39-element-stamps, 47-panel-order, 73-which-way-does-it-fall, 88-what-the-selection-shows
+- `frontend/src/components/BedPanel.tsx` — 11-garden-canvas, 15-timeline-ui, 39-element-stamps, 47-panel-order, 73-which-way-does-it-fall, 88-what-the-selection-shows, 92-one-panel-one-style
 - `frontend/src/components/BedPlantings.tsx` — 61-planting-clusters, 89-three-steps-in
-- `frontend/src/components/BloomTimeline.tsx` — 15-timeline-ui, 24-month-suggestions, 89-three-steps-in
+- `frontend/src/components/BloomTimeline.tsx` — 15-timeline-ui, 24-month-suggestions, 89-three-steps-in, 92-one-panel-one-style
 - `frontend/src/components/CanopyBox.tsx` — 84-what-else-is-standing-there, 89-three-steps-in
 - `frontend/src/components/CanvasControls.tsx` — 26-drawing-canvas, 40-freehand-shapes, 89-three-steps-in
 - `frontend/src/components/CanvasScene.tsx` — 26-drawing-canvas, 27-object-labelling, 29-bloom-playback, 34-sightlines, 41-garden-style, 49-drawing-focus, 51-element-context-menu, 56-bloom-dots, 65-the-shade-switch, 88-what-the-selection-shows, 89-three-steps-in
@@ -371,7 +375,7 @@ graph TD
 - `frontend/src/components/GardenDetails.tsx` — 52-element-list, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/GardenId.tsx` — 30-landing-and-garden-id, 87-a-workspace-not-a-page, 89-three-steps-in
 - `frontend/src/components/GardenSymbols.tsx` — 41-garden-style, 58-painted-plan, 59-osm-streets
-- `frontend/src/components/GardenWorkspace.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in, 91-a-sheet-from-below
+- `frontend/src/components/GardenWorkspace.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in, 91-a-sheet-from-below, 92-one-panel-one-style
 - `frontend/src/components/InsectScore.tsx` — 20-score-ui, 89-three-steps-in
 - `frontend/src/components/Inspector.tsx` — 87-a-workspace-not-a-page, 91-a-sheet-from-below
 - `frontend/src/components/InspectorPanels.tsx` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
@@ -393,7 +397,7 @@ graph TD
 - `frontend/src/kinds.ts` — 39-element-stamps, 41-garden-style, 45-relabel-and-skin, 59-osm-streets
 - `frontend/src/map/tiles.ts` — 31-map-selection, 33-imagery-objects
 - `frontend/src/plural.ts` — 11-garden-canvas, 20-score-ui, 24-month-suggestions, 26-drawing-canvas
-- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below
+- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style
 - `ninanatur/api/accounts.py` — 35-accounts, 36-claim-gardens, 85-nothing-worse-than-it-looks
 - `ninanatur/api/bloom_year.py` — 18-insect-score, 19-swap-suggestions, 20-score-ui, 29-bloom-playback
 - `ninanatur/api/candidates.py` — 23-catalogue-filters, 62-manual-colours
