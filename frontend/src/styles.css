@@ -338,7 +338,10 @@ body {
     background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
     pointer-events: none;
   }
+  /* Positioned, so absolutely placed hidden text scrolls with the panel rather
+     than escaping it and stretching the page. */
   .inspector {
+    position: relative;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -368,6 +371,7 @@ body {
   }
   .timeline-dock__bar { flex: none; }
   .timeline-dock__body {
+    position: relative;
     min-height: 0;
     max-height: 40vh;
     overflow-y: auto;

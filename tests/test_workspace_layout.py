@@ -134,6 +134,18 @@ def test_the_plan_keeps_its_share_when_the_dock_is_full(css: str) -> None:
     assert "min-height: 0" in body and "overflow-y: auto" in body
 
 
+def test_hidden_text_stays_inside_the_panel_that_scrolls(css: str) -> None:
+    """Visually hidden text is positioned absolutely. In a panel that scrolls
+    but is not positioned itself, its containing block is the page, so it
+    escapes the panel and stretches the document. Measured on the preview
+    (V0.20.167) with one species planted at 1280×600: the bloom year's hidden
+    table caption, far down the dock's scrolled body, made the page 628 px tall.
+    """
+    for selector in (".inspector", ".timeline-dock__body"):
+        _, rule = _where(css, selector)
+        assert "position: relative" in rule, f"{selector} lets hidden text out"
+
+
 def test_a_fresh_patch_holds_still_for_reduced_motion(css: str) -> None:
     """Doc 88: *Pflanzen* marks the patch with a pulse, and with a still ring for
     anyone who asked for less motion."""
