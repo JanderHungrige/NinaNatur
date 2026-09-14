@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-23
 wave_status: active
 depends_on: [87-a-workspace-not-a-page, 49-drawing-focus, 51-element-context-menu, 52-element-list]
-relates: [48-garden-soil, 47-panel-order, 11-garden-canvas, 90-a-list-that-fits-a-window]
+relates: [48-garden-soil, 47-panel-order, 11-garden-canvas, 90-a-list-that-fits-a-window, 91-a-sheet-from-below]
 source_files:
   - frontend/src/garden/selection.ts
   - frontend/src/garden/useSelection.ts
@@ -62,6 +62,7 @@ known_issues:
   - "Below 66rem the details are part of the page, so choosing on the plan does not bring them into view — feature 5's sheet."
   - "GardenCanvas (380 lines) and CanvasScene (383 lines) were over the 300-line rule before this feature; it added a prop to each and an attribute to the scene."
   - "Since doc 90 (Wave 23, 2026-09-14) the suggestion rows' + and the filter fields stay focusable and aria-disabled while a request runs. Entfernen (BedPlantings) and Eintragen (ExistingPlanting) still use disabled."
+  - "Since doc 91 (Wave 23, 2026-09-14) below 66rem the details are a sheet from below that rests at a quarter, where the name of whatever is chosen on the plan shows at once."
 ---
 
 # 88 — What the Selection Shows

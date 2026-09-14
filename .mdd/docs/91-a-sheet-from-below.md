@@ -27,15 +27,19 @@ test_files:
   - tests/test_narrow_workspace.py
 data_flow: reads-existing
 last_synced: 2026-09-14
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [workspace, mobile, bottom-sheet, accessibility, focus, layout]
 path: Workspace/Sheet
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "A flick is not measured on the preview: the DevTools protocol's round trips make every drag slow, and on V0.20.176 a flick meant for 90 per cent rested at 60. vitest covers it (SheetHandle, sheet)."
+  - "The plan has no pinch zoom on a phone: zoom is the plus and minus buttons, as it was before this feature."
+  - "In a 375 px window the plan's controls are wider than their one row: on V0.20.177 redo stands half out of view and the row scrolls sideways. Feature 6's type scale is to size them."
+  - "At a quarter in a 375×635 window a garden name of two lines shows only its first line (V0.20.177, the preview's test garden); the name of a bed, an object or a species shows whole."
 ---
 
 # 91 — A Sheet From Below
@@ -169,7 +173,10 @@ Nothing new. `inert` removes interaction; it grants none.
 
 ## Known Issues
 
-(none yet)
+- A flick is not measured on the preview: the DevTools protocol's round trips make every drag slow, and on V0.20.176 a flick meant for 90 per cent rested at 60. vitest covers it (SheetHandle, sheet).
+- The plan has no pinch zoom on a phone: zoom is the plus and minus buttons, as it was before this feature.
+- In a 375 px window the plan's controls are wider than their one row: on V0.20.177 redo stands half out of view and the row scrolls sideways. Feature 6's type scale is to size them.
+- At a quarter in a 375×635 window a garden name of two lines shows only its first line (V0.20.177, the preview's test garden); the name of a bed, an object or a species shows whole.
 
 ## Bugs
 

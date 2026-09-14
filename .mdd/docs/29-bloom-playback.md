@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-7
 wave_status: complete
 depends_on: [26-drawing-canvas]
-relates: [24-month-suggestions, 15-timeline-ui]
+relates: [24-month-suggestions, 15-timeline-ui, 91-a-sheet-from-below]
 source_files:
   - ninanatur/api/bloom_year.py
   - ninanatur/api/schemas.py
@@ -33,7 +33,8 @@ integration_contracts:
     note: unrecorded colour is its own state, never a colour that could be mistaken for an answer
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 91 (Wave 23, 2026-09-14) on a narrow window the year is a strip above the tool bar, folded until opened, and its table opens upward over the details."
 sister_projects: []
 ---
 

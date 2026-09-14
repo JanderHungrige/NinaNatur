@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-13
 wave_status: complete
 depends_on: [36-accounts]
-relates: [54-one-way-in, 30-landing-and-garden-id]
+relates: [54-one-way-in, 30-landing-and-garden-id, 91-a-sheet-from-below]
 source_files:
   - frontend/src/components/AccountBar.tsx
   - frontend/src/App.tsx
@@ -25,7 +25,8 @@ path: Landing/Account
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 91 (Wave 23, 2026-09-14) on a narrow window a garden's header keeps the account and the feedback button behind Menü; the front door's header is unchanged."
 ---
 
 # Signing in, where sites put it
