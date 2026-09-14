@@ -1239,8 +1239,13 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   stroke-linejoin: round;
 }
 
+/* Pinned inside its own button. Without offsets its 1-px box sat below it, over
+   the next tool, where anything that places a name by its box — a magnifier
+   following focus, a click aimed at the name — lands on the wrong tool. */
 .tool-rail__label {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;

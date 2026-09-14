@@ -69,6 +69,10 @@ function stepFrom(key: string, index: number): number | null {
  * Busy does not disable the tools. A disabled button cannot hold focus, so every
  * running request would throw the keyboard out of the toolbar; they are marked
  * `aria-disabled` and ignore presses instead.
+ *
+ * Each tool is named by `aria-label`. Chrome gave these buttons no name from
+ * the visually hidden text alone, though jsdom computed one; the label carries
+ * the same words the tooltip shows on hover and focus.
  */
 export function ToolRail({ active, onPick, busy, orientation }: Props) {
   const armed = Math.max(0, RAIL_TOOLS.findIndex((t) => t.tool === active));
@@ -101,6 +105,7 @@ export function ToolRail({ active, onPick, busy, orientation }: Props) {
           }}
           type="button"
           className="tool-rail__tool"
+          aria-label={label}
           aria-pressed={tool === active}
           aria-disabled={busy || undefined}
           tabIndex={index === current ? 0 : -1}
@@ -111,7 +116,9 @@ export function ToolRail({ active, onPick, busy, orientation }: Props) {
           <svg className="tool-rail__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d={icon} />
           </svg>
-          <span className="tool-rail__label">{label}</span>
+          <span className="tool-rail__label" aria-hidden="true">
+            {label}
+          </span>
         </button>
       ))}
     </div>
