@@ -549,20 +549,75 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .gap-list { margin: 0.75rem 0 0; padding-left: 1.1rem; color: var(--ink); font-size: 0.88rem; }
 
-.suggestion-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
-.suggestion {
-  display: grid; gap: 0.3rem;
-  grid-template-columns: minmax(0, 1fr) auto; align-items: center;
-  padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 8px;
+/* A bed's suggestions as a window (Wave 23, doc 90). The header stays above the
+   rows and only the rows scroll, inside the window and never the page. Every
+   row of a window has one height: that is how it knows which rows are in view. */
+.suggestions__header { display: grid; gap: 0.35rem; margin-bottom: 0.6rem; }
+.suggestions__header > h2,
+.suggestions__header > p,
+.suggestions__header .filter-bar__empty,
+.suggestions__header .filter-controls { margin: 0; }
+.suggestions__header > h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.filters-disclosure > summary { width: fit-content; cursor: pointer; font-size: 0.85rem; color: var(--ink-muted); }
+.filters-disclosure > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.filters-disclosure[open] > summary { margin-bottom: 0.5rem; }
+
+.suggestion-window {
+  position: relative;
+  max-height: min(26rem, 55vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
-.suggestion__main { grid-column: 1; min-width: 0; }
-.suggestion__name { display: block; font-weight: 560; }
-.suggestion__fit { display: block; color: var(--ink-muted); font-size: 0.78rem; }
-.suggestion__meta {
-  grid-column: 1; display: flex; gap: 0.75rem;
-  color: var(--ink-muted); font-size: 0.76rem;
+.suggestion-window__list { position: relative; margin: 0; padding: 0; list-style: none; }
+
+.suggestion-row {
+  position: absolute; left: 0; right: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1.75rem 1.25rem;
+  column-gap: 0.5rem; align-items: center;
+  height: 3.75rem; padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--line); overflow: hidden;
 }
-.suggestion button { grid-column: 2; grid-row: 1 / span 2; margin: 0; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+.suggestion-row--extra { grid-template-rows: 1.75rem 1.25rem 1.25rem; height: 5rem; }
+.suggestion-row:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.suggestion-row__name {
+  grid-column: 1; grid-row: 1; justify-self: start; max-width: 100%;
+  margin: 0; padding: 0; border: 0; border-radius: 0; background: none;
+  color: var(--ink); text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.suggestion-row__name:hover { text-decoration: underline; }
+.suggestion-row__plant {
+  grid-column: 2; grid-row: 1;
+  min-width: 2.25rem; height: 1.6rem; margin: 0; padding: 0 0.6rem;
+  font-size: 1.05rem; line-height: 1;
+}
+.suggestion-row__plant[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
+.suggestion-row__traits,
+.suggestion-row__extra {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+  overflow: hidden; white-space: nowrap; color: var(--ink-muted); font-size: 0.76rem;
+}
+.suggestion-row__traits { grid-row: 2; }
+.suggestion-row__extra { grid-row: 3; }
+.suggestion-row__colour { display: inline-flex; flex: none; align-items: center; gap: 0.3rem; }
+.suggestion-row__dot { flex: none; width: 0.65rem; height: 0.65rem; }
+.suggestion-row__dot circle { fill: var(--line); stroke: var(--ink-muted); stroke-width: 1; }
+.suggestion-row__dot--unknown circle { fill: none; stroke-dasharray: 2 1.5; }
+.suggestion-row__fit {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  padding: 0 0.4rem; border: 1px solid var(--line); border-radius: 999px;
+}
+.suggestion-row__fit--borderline,
+.suggestion-row__fit--unsuitable { border-color: var(--warn); color: var(--ink); }
+.suggestion-row__birds { color: var(--leaf); font-weight: 600; }
+.suggestion-row__space { font-style: italic; }
+
+.month-strip { display: inline-grid; flex: none; grid-template-columns: repeat(12, 0.3rem); gap: 1px; }
+.month-strip__cell { height: 0.6rem; border-radius: 1px; background: var(--line); }
+.month-strip__cell--on { background: var(--leaf); }
+.month-strip__unknown { flex: none; }
 
 /* ---- wave 5: the insect score ---- */
 
@@ -604,13 +659,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .swaps summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 /* ---- wave 6: species info ---- */
-
-.suggestion__actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 0.4rem; align-items: center; }
-.icon-button {
-  margin: 0; padding: 0.3rem 0.6rem; font-size: 0.8rem; font-weight: 500;
-  background: transparent; color: var(--ink-muted); border-color: var(--line);
-}
-.icon-button:hover { color: var(--ink); border-color: var(--ink-muted); }
 
 .info-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .info-panel__head h2 { margin: 0; }
@@ -739,16 +787,6 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .timeline tr.is-chosen td {
   background: var(--bg);
-}
-
-.suggestion__birds {
-  color: var(--leaf);
-  font-weight: 600;
-}
-
-.suggestion__space {
-  color: var(--ink-muted);
-  font-style: italic;
 }
 
 /* --- Wave 7: the drawing surface -------------------------------------- */

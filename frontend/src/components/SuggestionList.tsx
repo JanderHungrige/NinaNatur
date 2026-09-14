@@ -1,8 +1,8 @@
-import { colourLabel } from '../colours';
-import type { BedSuggestions } from '../api/client';
-import { birds } from '../plural';
+import { type ReactNode, useLayoutEffect, useRef } from 'react';
 
-type Suggestion = BedSuggestions['items'][number];
+import type { BedSuggestions } from '../api/client';
+import { focusLost, holdsFocus } from '../suggestions/focus';
+import { SuggestionWindow } from './SuggestionWindow';
 
 interface Props {
   suggestions: BedSuggestions | null;
@@ -13,47 +13,36 @@ interface Props {
    *  whether what it shows came from there or from the gardener. */
   onShowInfo: (taxonId: number, name: string, colour: string | null) => void;
   busy: boolean;
+  /** The filters — what is chosen, and the fields to choose with — in the
+   *  list's header, above the rows (doc 90, rule 7). */
+  filters?: ReactNode;
 }
 
-const BAND_LABEL: Record<string, string> = {
-  optimal: 'optimal',
-  suitable: 'passend',
-  borderline: 'grenzwertig',
-  unsuitable: 'ungeeignet',
-};
+/** "1.234 passende Arten", or how many of them the list holds when it holds
+ *  fewer: the window ends at fifty, and its header should not promise the rest. */
+function listed(shown: number, total: number): string {
+  const all = total.toLocaleString('de-DE');
+  if (shown >= total) return `${all} passende ${total === 1 ? 'Art' : 'Arten'}`;
+  return shown === 1 ? `Die passendste von ${all} Arten` : `Die ${shown} passendsten von ${all} Arten`;
+}
 
-/** The colour, and whose word it is.
- *
- * The gardener's own answer wins over the catalogue's — they looked at the
- * plant — but it says so, because a value the user typed and a value from GIFT
- * are not the same kind of fact and this app cites every number it shows.
+/**
+ * A bed's suggestions (doc 90): a header that says what is listed and holds the
+ * filters, the rows as a window that scrolls in itself, and the woody plants
+ * under their own heading in a window of their own (doc 25).
  */
-function describeColour(item: Suggestion): string {
-  if (item.observed_colour != null) return `${colourLabel(item.observed_colour)} (von dir)`;
-  if (item.flower_colour === null) return 'Farbe unbekannt';
-  return colourLabel(item.flower_colour);
-}
+export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo, busy, filters }: Props) {
+  const section = useRef<HTMLElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const hadFocus = holdsFocus(section.current);
 
-/** "Licht optimal · Feuchte grenzwertig" — why this plant, in words. */
-function describeFit(axes: Suggestion['fit']['axes']): string {
-  const names: Record<string, string> = {
-    ellenberg_l: 'Licht',
-    ellenberg_m: 'Feuchte',
-    ellenberg_n: 'Nährstoffe',
-    ellenberg_r: 'pH',
-  };
-  return Object.entries(axes)
-    .map(([axis, fit]) => `${names[axis] ?? axis} ${BAND_LABEL[fit.band] ?? fit.band}`)
-    .join(' · ');
-}
+  // A list that goes away takes the focus with it: a bed's only woody
+  // suggestion, planted. The heading catches it. A row that only left its list
+  // is caught by its window, whose effect runs before this one.
+  useLayoutEffect(() => {
+    if (hadFocus && focusLost()) heading.current?.focus();
+  });
 
-export function SuggestionList({
-  suggestions,
-  includeTrees,
-  onPlant,
-  onShowInfo,
-  busy,
-}: Props) {
   if (suggestions === null) {
     return (
       <section className="panel">
@@ -63,77 +52,35 @@ export function SuggestionList({
     );
   }
 
-  const row = (item: Suggestion) => (
-    <li key={item.taxon_id} className="suggestion">
-      <div className="suggestion__main">
-        <span className="suggestion__name">{item.canonical_name}</span>
-        <span className="suggestion__fit">{describeFit(item.fit.axes)}</span>
-      </div>
-      <div className="suggestion__meta">
-        {/* Unknown stays unknown, at the last layer as at every other. */}
-        <span>{describeColour(item)}</span>
-        <span>
-          {item.flowering_start_month !== null && item.flowering_end_month !== null
-            ? `Blüte ${item.flowering_start_month}–${item.flowering_end_month}`
-            : 'Blühzeit unbekannt'}
-        </span>
-        {/* Shown only when there is something to show. A "0 Vogelarten" on every
-            herbaceous plant is noise, and on a species GloBI holds no records
-            for at all it would be a claim the data cannot support. */}
-        {item.bird_partners !== null && item.bird_partners > 0 && (
-          <span className="suggestion__birds">{birds(item.bird_partners)} als Nahrung</span>
-        )}
-        {/* Priced, not hidden. A tree in a small bed is a decision the user is
-            entitled to make, once they can see what it would actually take. */}
-        {item.fits_bed === false && item.space_m2 !== null && (
-          <span className="suggestion__space">braucht ~{Math.round(item.space_m2)} m²</span>
-        )}
-      </div>
-      <div className="suggestion__actions">
-        <button
-          type="button"
-          className="icon-button"
-          aria-label={`Informationen zu ${item.canonical_name}`}
-          onClick={() =>
-            onShowInfo(item.taxon_id, item.canonical_name, item.flower_colour)
-          }
-        >
-          Info
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void onPlant(item.taxon_id, item.canonical_name)}
-        >
-          Pflanzen
-        </button>
-      </div>
-    </li>
-  );
-
+  const rows = { busy, onPlant, onShowInfo };
   const showsBirds = [...suggestions.items, ...suggestions.woody].some(
     (i) => (i.bird_partners ?? 0) > 0,
   );
 
   return (
-    <section className="panel" aria-labelledby="suggestions-heading">
-      <h2 id="suggestions-heading">Vorschläge für {suggestions.bed_name}</h2>
-      <p className="hint">
-        {suggestions.total} passende Arten, gewertet nach den Standortwerten dieses
-        Beetes.{' '}
-        {includeTrees
-          ? 'Gehölze stehen weiter unten in einer eigenen Liste.'
-          : 'Bäume und Sträucher sind ausgeblendet.'}
-      </p>
-      {showsBirds && (
+    <section ref={section} className="panel suggestions" aria-labelledby="suggestions-heading">
+      <div className="suggestions__header">
+        <h2 id="suggestions-heading" ref={heading} tabIndex={-1}>
+          Vorschläge für {suggestions.bed_name}
+        </h2>
         <p className="hint">
-          „Als Nahrung“ zählt Vogelarten, für die erfasst ist, dass sie diese
-          Pflanze fressen — meist Früchte oder Samen. Die Zahl steht neben dem
-          Insektenwert, nicht darin.
+          {listed(suggestions.items.length, suggestions.total)}, gewertet nach den
+          Standortwerten dieses Beetes.{' '}
+          {includeTrees
+            ? 'Gehölze stehen weiter unten in einer eigenen Liste.'
+            : 'Bäume und Sträucher sind ausgeblendet.'}
         </p>
-      )}
+        {filters}
+        {showsBirds && (
+          <p className="hint">
+            „Als Nahrung“ zählt Vogelarten, für die erfasst ist, dass sie diese
+            Pflanze fressen — meist Früchte oder Samen. Die Zahl steht neben dem
+            Insektenwert, nicht darin.
+          </p>
+        )}
+      </div>
 
-      <ul className="suggestion-list">{suggestions.items.map(row)}</ul>
+      <SuggestionWindow items={suggestions.items} label="Vorschläge" {...rows} />
 
       {suggestions.woody.length > 0 && (
         <>
@@ -145,9 +92,7 @@ export function SuggestionList({
             gepflanztes Gehölz verschattet anschließend sein Beet und die
             Nachbarbeete, und die Vorschläge dort ändern sich entsprechend.
           </p>
-          <ul className="suggestion-list suggestion-list--woody">
-            {suggestions.woody.map(row)}
-          </ul>
+          <SuggestionWindow items={suggestions.woody} label="Gehölze" {...rows} />
         </>
       )}
     </section>

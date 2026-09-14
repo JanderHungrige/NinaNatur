@@ -344,13 +344,13 @@ export class NinaNaturClient {
     });
   }
 
-  /** Suggestions for one bed, ranked against its own conditions. */
+  /** Suggestions for one bed, ranked against its own conditions; fifty unless asked (doc 90). */
   async bedSuggestions(
     token: string,
     bedId: number,
     options: { limit?: number } & SuggestionFilters = {},
   ): Promise<BedSuggestions> {
-    const params = new URLSearchParams({ limit: String(options.limit ?? 20) });
+    const params = new URLSearchParams({ limit: String(options.limit ?? 50) });
     // Only what the user actually chose is sent. An omitted filter and a filter
     // left at its default are the same request, so the server's defaults stay
     // the single source of truth and the URL says what was asked.

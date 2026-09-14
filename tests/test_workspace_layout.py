@@ -146,6 +146,34 @@ def test_hidden_text_stays_inside_the_panel_that_scrolls(css: str) -> None:
         assert "position: relative" in rule, f"{selector} lets hidden text out"
 
 
+def _top_level(css: str, selector: str) -> str:
+    """The body of the rule for `selector` outside any @media block."""
+    found = re.search(rf"^{re.escape(selector)}\s*\{{([^}}]*)\}}", css, re.M)
+    assert found is not None, f"no top-level rule for {selector}"
+    return found.group(1)
+
+
+def test_the_suggestions_scroll_in_a_window_of_their_own(css: str) -> None:
+    """Doc 90: fifty suggestions are a window in the details, not a page.
+
+    The window scrolls in itself and keeps its scrolling to itself, and it is
+    positioned, so the rows it places and the hidden text in them stay inside.
+    Every row has one height: that is how the window knows which rows are in
+    view without measuring each of them.
+    """
+    window = _top_level(css, ".suggestion-window")
+    for declaration in (
+        "position: relative",
+        "overflow-y: auto",
+        "overscroll-behavior: contain",
+        "max-height:",
+    ):
+        assert declaration in window, declaration
+    for selector in (".suggestion-row", ".suggestion-row--extra"):
+        rule = _top_level(css, selector)
+        assert re.search(r"(?<![-\w])height:\s*[\d.]+rem", rule), f"{selector} sets no height"
+
+
 def test_a_fresh_patch_holds_still_for_reduced_motion(css: str) -> None:
     """Doc 88: *Pflanzen* marks the patch with a pulse, and with a still ring for
     anyone who asked for less motion."""

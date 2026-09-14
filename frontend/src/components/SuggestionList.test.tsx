@@ -148,4 +148,48 @@ describe('SuggestionList', () => {
     expect(screen.getByText('gelb (von dir)')).toBeDefined();
     expect(screen.queryByText('Farbe unbekannt')).toBeNull();
   });
+
+  it('says when the list holds the best of a longer ranking', () => {
+    // The window ends at fifty: "1.234 passende Arten" above it would promise the rest.
+    show({
+      suggestions: suggestions({
+        total: 1234,
+        items: [item(), item({ taxon_id: 2, canonical_name: 'Salvia pratensis' })],
+      }),
+    });
+    expect(screen.getByText(/Die 2 passendsten von 1\.234 Arten/)).toBeDefined();
+  });
+
+  it('holds the filters in its own header, above the rows', () => {
+    // Doc 90: the chips stay above the list, which scrolls without them.
+    show({ filters: <p>Filterzeile</p> });
+    const header = document.querySelector('.suggestions__header');
+    expect(header?.textContent).toMatch(/Filterzeile/);
+    const list = screen.getByRole('list', { name: 'Vorschläge' });
+    expect(header?.compareDocumentPosition(list)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('gives the woody plants a window of their own under their heading', () => {
+    show({
+      suggestions: suggestions({
+        woody: [item({ taxon_id: 9, canonical_name: 'Salix caprea' })],
+        woody_total: 1,
+      }),
+    });
+    const woody = screen.getByRole('list', { name: 'Gehölze' });
+    expect(woody.textContent).toMatch(/Salix caprea/);
+  });
+
+  it('gives the focus to its heading when the list holding it goes away', () => {
+    // A bed's only woody suggestion, once planted, takes its list with it.
+    const props = { includeTrees: true, onPlant: vi.fn(), onShowInfo: vi.fn(), busy: false };
+    const withWoody = suggestions({
+      woody: [item({ taxon_id: 9, canonical_name: 'Salix caprea' })],
+      woody_total: 1,
+    });
+    const { rerender } = render(<SuggestionList suggestions={withWoody} {...props} />);
+    screen.getByRole('button', { name: 'Salix caprea pflanzen' }).focus();
+    rerender(<SuggestionList suggestions={suggestions()} {...props} />);
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Vorschläge für Hecke' }));
+  });
 });

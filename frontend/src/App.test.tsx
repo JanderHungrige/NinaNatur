@@ -100,7 +100,7 @@ describe('App — failures are said', () => {
     });
     await openWorkspace(client);
     fireEvent.click(bedButton());
-    fireEvent.click(await screen.findByRole('button', { name: 'Pflanzen' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Sambucus nigra pflanzen' }));
     await screen.findByText('Pflanzen fehlgeschlagen: Netzwerkfehler');
     expect(screen.getByRole('button', { name: 'Schließen' })).toBeDefined();
   });
