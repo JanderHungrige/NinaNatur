@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-23
 wave_status: active
 depends_on: [88-what-the-selection-shows, 23-catalogue-filters, 25-woody-and-birds, 15-timeline-ui]
-relates: [24-month-suggestions, 22-species-info, 87-a-workspace-not-a-page, 91-a-sheet-from-below]
+relates: [24-month-suggestions, 22-species-info, 87-a-workspace-not-a-page, 91-a-sheet-from-below, 92-one-panel-one-style]
 source_files:
   - frontend/src/suggestions/window.ts
   - frontend/src/suggestions/months.ts
@@ -48,6 +48,7 @@ known_issues:
   - "frontend/src/api/client.ts was 591 lines before this feature, over the 300-line limit. The one change here, the default limit, leaves it at 591; splitting it by concern is a task of its own."
   - "With one species planted at 1280×720 the details are 320 px and the list's window 294: 3.7 rows of 80 px at a time, reached by scrolling the details past the bed's own panels and the list's header first (V0.20.171)."
   - "Since doc 91 (Wave 23, 2026-09-14) the details are a size container on a narrow window too, so the suggestion window is never taller than the sheet it stands in."
+  - "Since doc 92 (Wave 23, 2026-09-14) the suggestion window's line and radius come from the stylesheet's one row look, and its rows' small text is the type scale's smallest step, 0.78rem."
 ---
 
 # 90 — A List That Fits a Window

@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 3ab57e86
+hash: 922470a2
 ---
 
 # Wave 23: The plan is the page
@@ -280,6 +280,51 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   `SheetHandle`, `SiteHeader`, `App.sheet`, additions to `Inspector`, and
   `tests/test_narrow_workspace.py`.
 
+- **2026-09-14 — feature 6, one panel, one style** (doc 92). The stylesheet
+  names a space scale, a type scale and a small radius as custom properties. It
+  declares the panel's box once for every box drawn as one, where nine other
+  rules had repeated it whole, and a line with the small radius once for what
+  sits inside a panel, where seven rules had it. Every font size between 0.7 and
+  1.25rem is one of five steps, and the panels' spacing comes from the scale.
+  Measured on the preview in Chromium at 1280×720, before (V0.20.177) and after
+  (V0.20.179): the garden in the details went from seven sizes of text to four,
+  and a bed from eight to six. Counted by radius, padding, border and
+  background, the garden still draws three kinds of box and a bed two: each
+  panel keeps its own padding, and the list of what is drawn now takes a row's 8
+  px radius instead of a panel's 12. `?` did nothing before. On V0.20.180, over
+  a chosen bed, it opens *Tastenkürzel* as a modal dialog over the plan with the
+  focus on *Schließen*: 19 shortcuts in five groups. Escape closed it with
+  *Südbeet* still chosen and the focus back on the bed, and so did Escape after
+  a click on the help's words. *Tastenkürzel* in the header names `?` and has
+  the focus back once the help closes. In an iPhone 11 Pro's window the help is
+  337 px wide, what a key does stands under the key, and after *Schließen* the
+  focus is on *Menü*, which had folded the button away. A phone's plan controls
+  ran 9 px past their 341 px row in 13.6px text; in 12.48px they take 335 px and
+  nothing stands past the end. On a garden made for the check and deleted after
+  it, a garden without beds says to choose a shape from the tools and draw the
+  first bed, and its empty bloom year says to choose a bed and plant. Found on
+  the way: a first count by eye found six copies of the panel's box, and the
+  guard's parser nine, one of them for stamps nothing renders, which went with
+  `.empty`; and the preview band's rule stood nested inside `:root`. A browser
+  may also leave the focus on the page's body after a click on the help's words,
+  from where an Escape would have reached the page. Chromium kept it in the
+  dialog (V0.20.179), so the guard for the others — while the help is open, a
+  key from outside it stops at the window — is covered by vitest. Nineteen new
+  tests and seven stylesheet guards: `shortcuts`, `useShortcutHelp`,
+  `ShortcutHelp`, `App.help`, additions to `BedPanel` and `BloomTimeline`, and
+  `tests/test_one_style.py`.
+
+- **2026-09-14 — the smoke test the acceptance names.**
+  `frontend/e2e/smoke.e2e.ts` (Playwright 1.63.0, `npm run test:e2e`) makes a
+  garden of its own on the preview — one bed on fresh loam, fifty suggestions —
+  and at 1280×720 and at 375×812 chooses the bed, plants the first suggestion
+  and finds its patch on the plan with nothing over it. At every step it reads
+  the page's scroll, which must stay 0, the page's height, never above the
+  window's, and the plan's share of the window's height, never below 40 %; then
+  it deletes the garden. Both windows passed on V0.20.180. It runs by hand
+  against a deployed site; whether it runs in CI is the owner's to decide, as
+  the wave left it.
+
 ## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
@@ -289,7 +334,7 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
 | 3 | three-steps-in | docs/89-three-steps-in.md | complete | 2 |
 | 4 | a-list-that-fits-a-window | docs/90-a-list-that-fits-a-window.md | complete | 2 |
 | 5 | a-sheet-from-below | docs/91-a-sheet-from-below.md | complete | 2 |
-| 6 | one-panel-one-style | — | planned | 1 |
+| 6 | one-panel-one-style | docs/92-one-panel-one-style.md | complete | 1 |
 
 Four stages, and the first one ships alone:
 
