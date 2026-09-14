@@ -50,4 +50,19 @@ describe('ShortcutHelp', () => {
     expect(heard).not.toHaveBeenCalled();
     window.removeEventListener('keydown', heard);
   });
+
+  it('keeps the page from hearing a key while it is open, even with the focus outside it', () => {
+    // A click on the help's words leaves the focus on the page's body, and the
+    // Escape that closes the help from there would clear the selection too.
+    const heard = vi.fn();
+    window.addEventListener('keydown', heard);
+    const { rerender } = render(<ShortcutHelp open onClose={vi.fn()} />);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true });
+    expect(heard).not.toHaveBeenCalled();
+    rerender(<ShortcutHelp open={false} onClose={vi.fn()} />);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(heard).toHaveBeenCalledTimes(1);
+    window.removeEventListener('keydown', heard);
+  });
 });

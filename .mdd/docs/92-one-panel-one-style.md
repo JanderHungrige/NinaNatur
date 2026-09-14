@@ -78,8 +78,8 @@ space or a size.
 - **`workspace/useShortcutHelp.ts`** opens the help on `?`, remembers where the
   focus was, and gives it back.
 - **`ShortcutHelp`** is a native `<dialog>`, opened modal. jsdom has no
-  `showModal`, so the component falls back to `open`. No key pressed inside it
-  reaches the page.
+  `showModal`, so the component falls back to `open`. No key pressed while it
+  is open reaches the page.
 - **`GardenWorkspace`** puts *Tastenkürzel* in the header's `more` slot and
   renders the dialog.
 - **`BedPanel` and `BloomTimeline`** each name a next step in their empty
@@ -144,9 +144,9 @@ None.
    - **Where the focus goes.** When the help closes, the focus returns to where
      it was. If that can no longer take it, because the menu it was in has
      closed, the focus goes to that menu's button.
-   - **Keys inside it.** No key pressed in it reaches the page. There, Escape
-     would clear the selection and Ctrl+Z would undo a change hidden behind the
-     help.
+   - **Keys while it is open.** No key reaches the page, wherever the focus has
+     gone. There, Escape would clear the selection and Ctrl+Z would undo a
+     change hidden behind the help.
    - **What it lists.** Only what the code answers, grouped by where it applies.
      It says that ⌘ stands for Strg on a Mac, and that keys typed into a field
      belong to the field.
