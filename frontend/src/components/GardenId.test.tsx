@@ -14,6 +14,24 @@ function show(copy?: (text: string) => Promise<void>) {
   );
 }
 
+describe('GardenId — claiming the garden (doc 89)', () => {
+  it('offers to claim the garden for the account signed in', () => {
+    // An action on the whole garden, so it sits beside the garden's id rather
+    // than among its details.
+    const onClaim = vi.fn();
+    render(
+      <GardenId token="abc123" name="Südgarten" latitude={52.5} longitude={13.4} onClaim={onClaim} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Diesen Garten meinem Konto zuordnen' }));
+    expect(onClaim).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers no claim while nobody is signed in', () => {
+    show();
+    expect(screen.queryByRole('button', { name: /Konto zuordnen/ })).toBeNull();
+  });
+});
+
 describe('GardenId', () => {
   it('shows the id, because it is the only way back', () => {
     show();

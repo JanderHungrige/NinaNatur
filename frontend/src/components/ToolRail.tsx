@@ -41,6 +41,12 @@ export const RAIL_TOOLS: readonly RailTool[] = [
     hint: 'In einem Zug ziehen — der Plan glättet die Linie.',
     icon: 'M3 17c3-7 5-7 7-2.5s4 4 6-2.5 3.5-5 5-2.5',
   },
+  {
+    tool: 'viewpoint',
+    label: 'Standpunkt',
+    hint: 'Klicke in den Plan, wo du stehst. Die Details sagen dann, was du von dort siehst.',
+    icon: 'M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z M12 9a3 3 0 1 0 0.01 0z',
+  },
 ];
 
 /** What the armed tool expects of the next gesture, or how to start when none is armed. */

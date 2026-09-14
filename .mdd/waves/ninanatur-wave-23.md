@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: bf5ef52b
+hash: 7e35c1c8
 ---
 
 # Wave 23: The plan is the page
@@ -179,7 +179,7 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
 | 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | complete | — |
 | 1 | a-workspace-not-a-page | docs/87-a-workspace-not-a-page.md | complete | 0 |
 | 2 | what-the-selection-shows | docs/88-what-the-selection-shows.md | complete | 1 |
-| 3 | three-steps-in | — | planned | 2 |
+| 3 | three-steps-in | docs/89-three-steps-in.md | in_progress | 2 |
 | 4 | a-list-that-fits-a-window | — | planned | 2 |
 | 5 | a-sheet-from-below | — | planned | 2 |
 | 6 | one-panel-one-style | — | planned | 1 |

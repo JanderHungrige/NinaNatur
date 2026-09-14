@@ -40,8 +40,8 @@ export function BedPlantings({ bed, onRemove, onShowInfo, busy }: Props) {
 
       {planted.length === 0 ? (
         <p className="hint">
-          Noch nichts gepflanzt. Wähle unten einen Vorschlag — oder trage oben
-          ein, was schon da ist.
+          Noch nichts gepflanzt. Wähle unten einen Vorschlag — oder trage ganz
+          unten ein, was schon da ist.
         </p>
       ) : (
         <>
