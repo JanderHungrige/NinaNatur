@@ -18,8 +18,13 @@ STYLESHEET = Path("frontend/src/styles.css")
 # in the sheet, it would stop the sheet falling back to its resting height.
 SET_INLINE = frozenset({"--fill", "--sheet-drag"})
 
-# Not a colour, so it needs no dark-mode counterpart.
-NOT_A_COLOUR = frozenset({"--radius", "--bar", "--sheet-at"})
+# Not a colour, so it needs no dark-mode counterpart: sizes, and the scales of
+# space and type (doc 92).
+NOT_A_COLOUR = frozenset({
+    "--radius", "--radius-sm", "--bar", "--sheet-at",
+    "--space-1", "--space-2", "--space-3", "--space-4", "--space-5", "--space-6",
+    "--text-xs", "--text-sm", "--text-md", "--text-base", "--text-lg",
+})
 
 
 @pytest.fixture(scope="module")

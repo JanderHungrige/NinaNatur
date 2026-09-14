@@ -56,12 +56,13 @@ export function BloomTimeline({
 }: Props) {
   // One line, not a panel (doc 89): in the dock under the plan, a heading, a
   // checkbox that weighs nothing and a paragraph took 163 px for an empty year.
+  // It names what to do, not only what will appear (doc 92).
   if (timeline.is_empty) {
     return (
       <p className="next-step">
         <span className="next-step__what">Blühjahr</span> Noch nichts gepflanzt.{' '}
-        <span aria-hidden="true">→</span> Sobald ein Beet bepflanzt ist, steht hier, in
-        welchen Monaten dein Garten blüht.
+        <span aria-hidden="true">→</span> Wähle ein Beet und pflanze eine Art, dann steht
+        hier, in welchen Monaten dein Garten blüht.
       </p>
     );
   }
