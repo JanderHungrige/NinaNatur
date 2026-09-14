@@ -31,8 +31,8 @@ function Keys({ keys }: { keys: readonly Chord[] }) {
  *
  * Native, so the browser holds the focus inside it and the page behind it
  * inert; jsdom has no `showModal`, so there it is merely open. No key pressed
- * in it reaches the page: the page's Escape would clear the selection, and its
- * Ctrl+Z take back a change nobody can see behind the help.
+ * while it is open reaches the page: the page's Escape would clear the
+ * selection, and its Ctrl+Z take back a change nobody can see behind the help.
  */
 export function ShortcutHelp({ open, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -45,7 +45,15 @@ export function ShortcutHelp({ open, onClose }: Props) {
     if (typeof element.showModal === 'function') element.showModal();
     else element.setAttribute('open', '');
     close.current?.focus();
+    // A key from outside the dialog stops at the window. The focus can be out
+    // there while the help is open: a browser may leave it on the page's body
+    // after a click on the help's words. Keys from inside stop at onKeyDown.
+    const hold = (event: Event) => {
+      if (!(event.target instanceof Node && element.contains(event.target))) event.stopPropagation();
+    };
+    window.addEventListener('keydown', hold, true);
     return () => {
+      window.removeEventListener('keydown', hold, true);
       if (typeof element.close === 'function') element.close();
     };
   }, [open]);
