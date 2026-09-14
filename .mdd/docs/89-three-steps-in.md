@@ -43,8 +43,8 @@ test_files:
   - tests/test_workspace_layout.py
 data_flow: mixed
 last_synced: 2026-09-14
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [onboarding, empty-states, sightlines, canopy, account, workspace]
 path: Workspace/Inspector
@@ -53,6 +53,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "Six of the new tests pass before the change, on purpose: each is the negative or the guard beside a positive test that fails — no claim offered while nobody is signed in; an armed Standpunkt takes the click from the shapes, and nothing is placed while no tool is armed (doc 49, kept); the plan's controls carry no viewpoint button, and no trees when none were found; and a garden that is set up shows no steps."
+  - "Claiming a garden needs a signed-in account, and none is created on the preview: the claim in the header's fold was checked in vitest only."
 ---
 
 # 89 — Three Steps In

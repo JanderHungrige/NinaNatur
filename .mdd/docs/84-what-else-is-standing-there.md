@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-19
 wave_status: active
 depends_on: [80-which-models-and-whose, 81-a-house-with-a-measured-height]
-relates: [66-a-tree-is-not-a-wall]
+relates: [66-a-tree-is-not-a-wall, 89-three-steps-in]
 source_files:
   - ninanatur/geo/canopy.py
   - ninanatur/garden/canopies_found.py
@@ -36,6 +36,7 @@ known_issues:
   - "No species, and none is available: a found tree falls to the canopy model's broadleaf-in-leaf default."
   - "Only states with a fine surface model can find trees at all — Baden-Württemberg's 5 m is refused, and the five states with no service find nothing."
   - "Like everything in this wave, it looks at the garden's rounded location. See tests/test_anchor_precision.py."
+  - "Since doc 89 (Wave 23, 2026-09-14) the plan marks each found tree's crown as a dashed ring and counts them among its controls; the card stays where one is accepted or refused."
 ---
 
 # What Else Is Standing There

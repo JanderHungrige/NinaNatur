@@ -57,6 +57,7 @@ known_issues:
   - "The Browser pane sends Enter with an empty key, so a native Enter on a rail tool was not exercised there; a real ArrowDown, click and Escape were (preview, V0.20.155)."
   - "On a 375×812 phone the preview band and the header take 336 px above the rail — feature 5's to fix."
   - "Rule 10 first relied on the dock body's 40vh alone, and forgot the header, the preview band and the dock's own bar. With one species planted the bloom year filled the body, and the plan's stage measured 260 px of 720 (36 %), 286 of 800 and 346 of 900 on the preview (V0.20.159); at 600 px the plan's row, held up by the tool rail, ran 94 px under the dock. Released that way in V0.20.161, and fixed by the row's own floor right after."
+  - "The panels that scroll were not positioned, so absolutely positioned hidden text inside them had the page as its containing block: at 1280×600 with a planted garden the bloom year's hidden table caption made the page 628 px tall (preview, V0.20.167). Positioned since Wave 23 feature 3, with a guard."
 ---
 
 # 87 — A Workspace, Not a Page

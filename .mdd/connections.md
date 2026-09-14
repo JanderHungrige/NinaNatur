@@ -119,7 +119,7 @@ UI
 └── Entry  30-landing-and-garden-id  complete
 Workspace
 ├── Inspector  88-what-the-selection-shows  complete
-├── Inspector  89-three-steps-in  in_progress
+├── Inspector  89-three-steps-in  complete
 ├── Plan  86-the-plan-that-stayed-a-strip  complete
 └── Shell  87-a-workspace-not-a-page  complete
 ```
@@ -314,7 +314,7 @@ graph TD
     49_drawing_focus --> 88_what_the_selection_shows
     51_element_context_menu --> 88_what_the_selection_shows
     52_element_list --> 88_what_the_selection_shows
-    89_three_steps_in["89-three-steps-in"]:::in_progress
+    89_three_steps_in["89-three-steps-in"]:::complete
     88_what_the_selection_shows --> 89_three_steps_in
     87_a_workspace_not_a_page --> 89_three_steps_in
     48_garden_soil --> 89_three_steps_in
