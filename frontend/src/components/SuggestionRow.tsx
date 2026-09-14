@@ -120,6 +120,7 @@ export function SuggestionRow(props: Props) {
   const eaten = birdsFor(item);
   const colour = item.observed_colour ?? item.flower_colour;
   const swatch = colour != null ? SWATCH[colour] : undefined;
+  const colourWords = describeColour(item);
 
   return (
     <li
@@ -140,7 +141,8 @@ export function SuggestionRow(props: Props) {
         {item.canonical_name}
       </button>
       <span className="suggestion-row__traits">
-        <span className="suggestion-row__colour">
+        {/* The word gives way before the fit badge does; its whole stays in the title. */}
+        <span className="suggestion-row__colour" title={colourWords}>
           <svg
             className={colour == null ? 'suggestion-row__dot suggestion-row__dot--unknown' : 'suggestion-row__dot'}
             viewBox="0 0 10 10"
@@ -148,7 +150,7 @@ export function SuggestionRow(props: Props) {
           >
             <circle cx="5" cy="5" r="4" style={swatch !== undefined ? { fill: swatch } : undefined} />
           </svg>
-          {describeColour(item)}
+          <span className="suggestion-row__colour-word">{colourWords}</span>
         </span>
         <MonthStrip start={item.flowering_start_month} end={item.flowering_end_month} />
         {fit !== null ? (

@@ -339,9 +339,12 @@ body {
     pointer-events: none;
   }
   /* Positioned, so absolutely placed hidden text scrolls with the panel rather
-     than escaping it and stretching the page. */
+     than escaping it and stretching the page. A size container, so the
+     suggestion list is never taller than the details it stands in (doc 90);
+     nothing inside is fixed-positioned, which the containment would pin here. */
   .inspector {
     position: relative;
+    container-type: size;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -562,11 +565,13 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .filters-disclosure > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .filters-disclosure[open] > summary { margin-bottom: 0.5rem; }
 
+/* Never taller than the details it stands in (a size container in the
+   workspace), so the whole window can be brought into view; and the wheel goes
+   on to the details when the list ends. */
 .suggestion-window {
   position: relative;
-  max-height: min(26rem, 55vh);
+  max-height: min(26rem, 100cqh);
   overflow-y: auto;
-  overscroll-behavior: contain;
   border: 1px solid var(--line);
   border-radius: 8px;
 }
@@ -601,12 +606,15 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 }
 .suggestion-row__traits { grid-row: 2; }
 .suggestion-row__extra { grid-row: 3; }
-.suggestion-row__colour { display: inline-flex; flex: none; align-items: center; gap: 0.3rem; }
+/* The colour's word and an unknown bloom time give way; the fit badge never
+   does, because it names what does not suit the place. */
+.suggestion-row__colour { display: inline-flex; flex: 0 1 auto; min-width: 0; align-items: center; gap: 0.3rem; }
+.suggestion-row__colour-word { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .suggestion-row__dot { flex: none; width: 0.65rem; height: 0.65rem; }
 .suggestion-row__dot circle { fill: var(--line); stroke: var(--ink-muted); stroke-width: 1; }
 .suggestion-row__dot--unknown circle { fill: none; stroke-dasharray: 2 1.5; }
 .suggestion-row__fit {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  flex: none;
   padding: 0 0.4rem; border: 1px solid var(--line); border-radius: 999px;
 }
 .suggestion-row__fit--borderline,
@@ -617,7 +625,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .month-strip { display: inline-grid; flex: none; grid-template-columns: repeat(12, 0.3rem); gap: 1px; }
 .month-strip__cell { height: 0.6rem; border-radius: 1px; background: var(--line); }
 .month-strip__cell--on { background: var(--leaf); }
-.month-strip__unknown { flex: none; }
+.month-strip__unknown { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- wave 5: the insect score ---- */
 

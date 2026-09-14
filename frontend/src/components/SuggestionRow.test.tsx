@@ -48,7 +48,7 @@ describe('SuggestionRow', () => {
   it('names the species, and says its colour in German beside a dot', () => {
     row({ item: item({ flower_colour: 'brown' }) });
     expect(screen.getByText('Sambucus nigra')).toBeDefined();
-    expect(screen.getByText('braun')).toBeDefined();
+    expect(screen.getByText('braun').closest('.suggestion-row__colour')?.getAttribute('title')).toBe('braun');
     expect(document.querySelector('.suggestion-row__dot')).not.toBeNull();
     expect(document.querySelector('.suggestion-row__dot--unknown')).toBeNull();
   });
@@ -56,8 +56,11 @@ describe('SuggestionRow', () => {
   it('draws an unknown colour as a neutral dot, and says so', () => {
     // Doc 15: a suggestion without a colour shows neutral, with a label.
     row({ item: item({ flower_colour: null }) });
-    expect(screen.getByText('Farbe unbekannt')).toBeDefined();
+    const word = screen.getByText('Farbe unbekannt');
     expect(document.querySelector('.suggestion-row__dot--unknown')).not.toBeNull();
+    // The word gives way beside a long fit badge; the whole of it is still there to point at.
+    expect(word.classList.contains('suggestion-row__colour-word')).toBe(true);
+    expect(word.closest('.suggestion-row__colour')?.getAttribute('title')).toBe('Farbe unbekannt');
   });
 
   it('marks the gardener’s own colour as theirs', () => {

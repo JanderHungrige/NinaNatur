@@ -130,7 +130,11 @@ None changed. `client.bedSuggestions` asks for `limit=50` by default instead of
    its weakest axis ("Feuchte grenzwertig", or "optimal"), with every axis in
    its title and for a screen reader. Third line, in every row of a window where
    any row needs one: "braucht ~N m²" when it does not fit the bed, and the
-   birds recorded eating it (doc 25).
+   birds recorded eating it (doc 25). **The badge is never cut**: it names what
+   does not suit the place. Beside it the colour's word and an unknown bloom
+   time give way, and the colour's whole word stays in its title. Before this
+   rule, on V0.20.170 in the details' 22rem, 11 of 58 badges were cut ("Licht
+   p…"), every one beside "Farbe unbekannt", which 47 of the 58 rows say.
 6. ***+* stays in reach while its request runs**: `aria-disabled`, presses
    ignored, the focus kept (doc 88, rule 11 — the handoff from feature 2). The
    filter fields in the header do the same: changing one runs a request, and a
@@ -142,9 +146,15 @@ None changed. `client.bedSuggestions` asks for `limit=50` by default instead of
    above the rows; the inputs behind *Filter*. Only the rows scroll, so the
    header never scrolls away from the list it describes.
 8. **The woody list keeps its own heading** (doc 25), in its own window.
-9. **The window scrolls in itself** — `max-height`, `overflow-y: auto`,
-   `overscroll-behavior: contain`, positioned so the rows it places and the
-   hidden text in them stay inside (doc 89's lesson).
+9. **The window scrolls in itself, and is never taller than the details it
+   stands in.** `overflow-y: auto`, positioned so the rows it places and the
+   hidden text in them stay inside (doc 89's lesson), and at most
+   `min(26rem, 100cqh)`, the details being a size container in the workspace.
+   The wheel goes on to the details when the list ends; the details keep their
+   own scrolling to themselves, so the page still never moves. Before this
+   rule, on V0.20.170 with one species planted at 1280×720, the details were
+   320 px and the window 394, and a window that contained its own scrolling
+   kept the wheel from the rest of the details.
 10. **Planting keeps the list where it was.** Rows are keyed by species, so the
     refetch after *+* leaves the window's scroll where it was. The server leaves
     a planted species out of its bed's suggestions (`exclude_planted`), so the
