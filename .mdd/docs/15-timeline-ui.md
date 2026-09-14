@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-4
 wave_status: complete
 depends_on: [13-bed-suggestions, 14-bloom-timeline]
-relates: [11-garden-canvas]
+relates: [11-garden-canvas, 90-a-list-that-fits-a-window]
 source_files:
   - frontend/src/api/client.ts
   - frontend/src/api/types.ts
@@ -35,7 +35,8 @@ satisfies_contracts:
     status: done
     verified_at: "frontend/src/App.tsx:44"
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 90 (Wave 23, 2026-09-14) a suggestion's colour is a dot beside its word, unknown a dashed dot and Farbe unbekannt, and its flowering months are a strip of twelve named in words; unknown stays unknown."
 sister_projects: []
 ---
 

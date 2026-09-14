@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-6
 wave_status: complete
 depends_on: [21-german-names]
-relates: [23-catalogue-filters]
+relates: [23-catalogue-filters, 90-a-list-that-fits-a-window]
 source_files:
   - ninanatur/data/species_info.py
   - ninanatur/ingest/db.py
@@ -35,7 +35,8 @@ integration_contracts:
     note: every response carries its licence and a link back — CC-BY-SA is not optional, and a cached copy does not become ours
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 90 (Wave 23, 2026-09-14) a suggestion's name is the button that opens this panel (Informationen zu …); the separate Info button is gone."
 sister_projects: []
 ---
 
