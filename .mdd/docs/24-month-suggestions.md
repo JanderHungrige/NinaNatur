@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-6
 wave_status: complete
 depends_on: [23-catalogue-filters]
-relates: [15-timeline-ui, 19-swap-suggestions]
+relates: [15-timeline-ui, 19-swap-suggestions, 90-a-list-that-fits-a-window]
 source_files:
   - frontend/src/components/BloomTimeline.tsx
   - frontend/src/components/SuggestionList.tsx
@@ -29,7 +29,8 @@ integration_contracts:
     note: the month filter is the same one the filter bar shows and can remove — one filter, two ways in
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 90 (Wave 23, 2026-09-14) each suggestion shows its flowering months as a strip of twelve, wrapping across the new year as the server does, and named in words for a screen reader."
 sister_projects: []
 ---
 

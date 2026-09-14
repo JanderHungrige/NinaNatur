@@ -36,8 +36,8 @@ test_files:
   - tests/test_workspace_layout.py
 data_flow: mixed
 last_synced: 2026-09-14
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [suggestions, virtual-list, keyboard, filters, accessibility, workspace]
 path: Workspace/Inspector
@@ -46,6 +46,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "frontend/src/api/client.ts was 591 lines before this feature, over the 300-line limit. The one change here, the default limit, leaves it at 591; splitting it by concern is a task of its own."
+  - "With one species planted at 1280×720 the details are 320 px and the list's window 294: 3.7 rows of 80 px at a time, reached by scrolling the details past the bed's own panels and the list's header first (V0.20.171)."
 ---
 
 # 90 — A List That Fits a Window
@@ -159,8 +160,10 @@ None changed. `client.bedSuggestions` asks for `limit=50` by default instead of
     refetch after *+* leaves the window's scroll where it was. The server leaves
     a planted species out of its bed's suggestions (`exclude_planted`), so the
     row that was pressed is gone: the focus goes to the row that takes its
-    place. A list that goes away entirely — a bed's only woody suggestion,
-    planted — hands the focus to the list's heading.
+    place. When the planting fills the dock, the details shrink, the window
+    with them, and the focused row stays in view. A list that goes away
+    entirely — a bed's only woody suggestion, planted — hands the focus to
+    the list's heading.
 11. **No new file is over 300 lines.**
 
 ## Data Flow
@@ -191,6 +194,7 @@ bound of 100.
 - `frontend/src/api/client.ts` was 591 lines before this feature, over the
   300-line limit. The one change here, the default limit, leaves it at 591;
   splitting it by concern is a task of its own.
+- With one species planted at 1280×720 the details are 320 px and the list's window 294: 3.7 rows of 80 px at a time, reached by scrolling the details past the bed's own panels and the list's header first (V0.20.171).
 
 ## Bugs
 

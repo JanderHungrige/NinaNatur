@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-6
 wave_status: complete
 depends_on: [21-german-names]
-relates: [22-species-info, 24-month-suggestions]
+relates: [22-species-info, 24-month-suggestions, 90-a-list-that-fits-a-window]
 source_files:
   - ninanatur/api/search.py
   - ninanatur/api/suggestions.py
@@ -38,7 +38,8 @@ integration_contracts:
     note: filters report what they excluded and why; a filter never silently empties the catalogue
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 90 (Wave 23, 2026-09-14) the chips and the fields are the suggestion list's header, the fields behind a Filter disclosure, and the fields stay focusable and aria-disabled while a request runs."
 sister_projects: []
 ---
 

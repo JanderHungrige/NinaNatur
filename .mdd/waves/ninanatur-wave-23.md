@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: c1771a8b
+hash: 644ce698
 ---
 
 # Wave 23: The plan is the page
@@ -203,6 +203,40 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   `GardenCanvas.viewpoint`, `App.start`, additions to `GardenId`, `CanopyBox`,
   `InsectScore` and `BloomTimeline`, and `tests/test_workspace_layout.py`.
 
+- **2026-09-14 — feature 4, a list that fits a window** (doc 90). A bed's
+  suggestions are a window in its details: fifty compact rows — the name, which
+  opens what is known about the species, *+*, the colour, the flowering months
+  as a strip, a fit badge naming the weakest axis, room and birds — with only
+  the rows in view in the document, one tab stop across all of them, the filters
+  in the list's own header and the woody plants in a window of their own. The
+  client asks for fifty suggestions instead of twenty; the ranking is untouched.
+  Measured on the preview in Chromium (V0.20.171) on the stage 1 garden at
+  1280×720: *Die 50 passendsten von 2.549 Arten*; the arrow keys walked all
+  fifty in order with at most 16 rows in the document, and the page never
+  scrolled; row forty's *+* was reached with seven Page Downs, four arrows and
+  two Tabs, inside the window and the viewport. Pressing it kept the focus on it
+  while the request ran; *Matricaria chamomilla* left the list (2,549 matches,
+  then 2,548), and the focus went to *Saxifraga adscendens*, which took its
+  place. The bloom year the planting gave the dock shrank the details from 516
+  to 320 px and the window from 414 to 294, and the focused row stayed in view.
+  Choosing *blüht im Juni* in the header kept the focus on the field (1,160
+  matches), and taking the chip off handed it to the list's heading. Chrome
+  names the lists *Vorschläge* and *Gehölze*, a row's button *Saxifraga
+  adscendens pflanzen* and its strip *Blüte Juni bis August*. With a bed chosen
+  the details hold 2,261 px, where they held 7,480 (V0.20.159). Found on the
+  way, on V0.20.170: with one species planted the details were 320 px and the
+  window 394, and its contained scrolling kept the wheel from the rest of the
+  details; and in the details' 22rem 11 of 58 fit badges were cut, every one
+  beside *Farbe unbekannt*, which 47 of the 58 rows say. The details are a size
+  container now, the window is at most their height and lets the wheel go on to
+  them, and the colour's word gives way before the badge does: on V0.20.171,
+  with the dock full, the window is 294 px in 320 px of details, the wheel over
+  it moved the details from 716 to 1694 px once the list had ended, no badge is
+  cut, and eleven colour words are. Fifty-eight new tests and two stylesheet
+  guards: `window`, `months`, `MonthStrip`, `SuggestionRow`, `SuggestionWindow`,
+  `App.list`, additions to `SuggestionList`, `FilterControls` and the client,
+  and `tests/test_workspace_layout.py`.
+
 ## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
@@ -210,7 +244,7 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
 | 1 | a-workspace-not-a-page | docs/87-a-workspace-not-a-page.md | complete | 0 |
 | 2 | what-the-selection-shows | docs/88-what-the-selection-shows.md | complete | 1 |
 | 3 | three-steps-in | docs/89-three-steps-in.md | complete | 2 |
-| 4 | a-list-that-fits-a-window | docs/90-a-list-that-fits-a-window.md | in_progress | 2 |
+| 4 | a-list-that-fits-a-window | docs/90-a-list-that-fits-a-window.md | complete | 2 |
 | 5 | a-sheet-from-below | — | planned | 2 |
 | 6 | one-panel-one-style | — | planned | 1 |
 

@@ -120,7 +120,7 @@ UI
 Workspace
 ├── Inspector  88-what-the-selection-shows  complete
 ├── Inspector  89-three-steps-in  complete
-├── Inspector  90-a-list-that-fits-a-window  in_progress
+├── Inspector  90-a-list-that-fits-a-window  complete
 ├── Plan  86-the-plan-that-stayed-a-strip  complete
 └── Shell  87-a-workspace-not-a-page  complete
 ```
@@ -321,7 +321,7 @@ graph TD
     48_garden_soil --> 89_three_steps_in
     34_sightlines --> 89_three_steps_in
     84_what_else_is_standing_there --> 89_three_steps_in
-    90_a_list_that_fits_a_window["90-a-list-that-fits-a-window"]:::in_progress
+    90_a_list_that_fits_a_window["90-a-list-that-fits-a-window"]:::complete
     88_what_the_selection_shows --> 90_a_list_that_fits_a_window
     23_catalogue_filters --> 90_a_list_that_fits_a_window
     25_woody_and_birds --> 90_a_list_that_fits_a_window
