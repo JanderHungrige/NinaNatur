@@ -222,4 +222,30 @@ describe('SpeciesInfo — reaching the reader', () => {
       expect(document.activeElement?.classList.contains('info-panel')).toBe(true),
     );
   });
+
+  it('stays out of the way as the details of a selected patch', async () => {
+    // Doc 88. There it is already beside the plan, and the plan is where the
+    // keyboard was: neither the scroll nor the focus moves.
+    const seen: unknown[] = [];
+    Element.prototype.scrollIntoView = function scroll(this: Element, arg?: unknown) {
+      seen.push(arg);
+    } as typeof Element.prototype.scrollIntoView;
+    const before = document.createElement('button');
+    document.body.append(before);
+    before.focus();
+
+    render(
+      <SpeciesInfo
+        taxonId={3}
+        canonicalName="Salvia pratensis"
+        onClose={vi.fn()}
+        load={async () => null}
+        takeFocus={false}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/keinen Wikipedia-Artikel/)).toBeDefined());
+    expect(document.activeElement).toBe(before);
+    expect(seen).toHaveLength(0);
+    before.remove();
+  });
 });

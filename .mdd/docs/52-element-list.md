@@ -6,16 +6,18 @@ initiative: ninanatur
 wave: ninanatur-wave-12
 wave_status: complete
 depends_on: [51-element-context-menu]
-relates: [47-panel-order]
+relates: [47-panel-order, 88-what-the-selection-shows]
 source_files:
   - frontend/src/components/ElementList.tsx
-  - frontend/src/App.tsx
+  - frontend/src/components/GardenDetails.tsx
+  - frontend/src/garden/useSelection.ts
 routes: []
 models: [element]
 test_files:
   - frontend/src/components/ElementList.test.tsx
+  - frontend/src/App.selection.test.tsx
 data_flow: reads-existing
-last_synced: 2026-08-31
+last_synced: 2026-09-14
 status: complete
 phase: all
 mdd_version: 11
@@ -24,7 +26,8 @@ path: Canvas/List
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 88 (Wave 23, 2026-09-14) the list stands in the garden's view of the details, shown while nothing is selected, and every other view has one button back to it. A row selects exactly what the plan selects, handles included — before, a bed chosen here was selected for planting and then lost its handles."
 ---
 
 # Everything drawn, as a list

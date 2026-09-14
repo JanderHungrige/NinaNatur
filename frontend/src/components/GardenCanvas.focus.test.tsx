@@ -136,3 +136,35 @@ describe('GardenCanvas — an armed tool takes the click', () => {
     expect(onSelectObstacle).not.toHaveBeenCalled();
   });
 });
+
+describe('GardenCanvas — what is selected, said on the plan', () => {
+  it('marks the selected element as pressed, and nothing else', () => {
+    // Doc 88. A selected bed said so and a selected element did not, so a
+    // screen reader heard only one of the two selections the plan could show.
+    const element = (id: number, x: number) =>
+      ({
+        obstacle_id: id, kind: 'shed', x, y: 0, shape: 'polygon', width: null,
+        constraint_hint: null, points: [[-1, -1], [1, -1], [1, 1], [-1, 1]], height: 2.4,
+        label: null, roof: 'unknown', eaves_m: null, height_source: 'user',
+        footprint: [[x - 1, -1], [x + 1, -1], [x + 1, 1], [x - 1, 1]],
+      }) as GardenOut['obstacles'][number];
+
+    render(
+      <GardenCanvas
+        garden={{ ...garden(), obstacles: [element(4, 5), element(6, -5)] }}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        onSelectObstacle={vi.fn()}
+        selectedObstacleId={4}
+        size={SIZE}
+        tool={null}
+      />,
+    );
+
+    expect(document.querySelector('[data-element-id="4"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('[data-element-id="6"]')?.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: /Gesamtfläche/ }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
+});

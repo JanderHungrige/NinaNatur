@@ -8,15 +8,19 @@ import { useDerived } from './useDerived';
 import { useElements } from './useElements';
 import { useGeometry } from './useGeometry';
 import { useLight } from './useLight';
+import { useSelection } from './useSelection';
 import { useSuggestions } from './useSuggestions';
 
 /**
- * Everything about one open garden (doc 87).
+ * Everything about one open garden (docs 87, 88).
  *
  * Lives in a workspace keyed by the garden's token, so opening another garden
  * starts every piece of this from nothing: the selection, the filters, the armed
  * tool, the day being watched, the undo stack. Before the split, going home reset
  * eight of thirty-six pieces of state and opening a garden reset none.
+ *
+ * The selection comes first, and the rest are handed it: the plan, the element
+ * list and the details read one selection, and no hook keeps its own piece.
  */
 export function useGarden(
   client: NinaNaturClient,
@@ -27,17 +31,20 @@ export function useGarden(
   greeting: string,
 ) {
   const { remember, undo, depth } = useUndoStack();
+  const chosen = useSelection(garden);
+  const { selection, ids } = chosen;
   const derived = useDerived(client, garden, setGarden, status, greeting);
-  const elements = useElements(client, garden, setGarden, status, derived.refresh, remember);
-  const suggestions = useSuggestions(
+  const elements = useElements(client, garden, setGarden, status, derived.refresh, remember, chosen);
+  const suggestions = useSuggestions(client, garden, setGarden, status, derived, ids.bedId);
+  const clipboard = useClipboard(
     client,
     garden,
     setGarden,
     status,
-    derived,
-    elements.setSelectedObstacleId,
+    derived.refresh,
+    suggestions,
+    selection,
   );
-  const clipboard = useClipboard(client, garden, setGarden, status, derived.refresh, suggestions);
   const geometry = useGeometry(client, garden, setGarden, status, remember);
   const light = useLight(
     client,
@@ -56,29 +63,9 @@ export function useGarden(
   }, [run, setStatus, undo]);
   useUndoShortcut(undoLast, true);
 
-  const { selectBed } = suggestions;
-  const { setSelectedObstacleId, editObstacleById, setAsking } = elements;
-
-  /** One selection, whichever way it was reached — the plan and the list
-   *  disagreeing about what is selected is the obvious way for two views onto
-   *  the same thing to go wrong (doc 52). */
-  const selectElement = useCallback(
-    (id: number) => {
-      if (garden.beds.some((b) => b.bed_id === id)) {
-        selectBed(id);
-        setSelectedObstacleId(null);
-      } else {
-        editObstacleById(id);
-      }
-    },
-    [garden, selectBed, setSelectedObstacleId, editObstacleById],
-  );
-
-  /** Escape drops whatever is selected, and the question the menu was asking. */
-  const clearSelection = useCallback(() => {
-    setSelectedObstacleId(null);
-    setAsking(null);
-  }, [setSelectedObstacleId, setAsking]);
+  /** The species article, through the workspace's client rather than a
+   *  module-level one (doc 88). Stable, because SpeciesInfo's effect depends on it. */
+  const speciesInfo = useCallback((taxonId: number) => client.speciesInfo(taxonId), [client]);
 
   return {
     derived,
@@ -87,10 +74,18 @@ export function useGarden(
     clipboard,
     geometry,
     light,
+    selection,
+    ids,
+    selectElement: chosen.selectElement,
+    selectPlanting: chosen.selectPlanting,
+    /** Escape, and every way back to the garden: nothing selected. */
+    clearSelection: chosen.clear,
+    askAbout: chosen.askAbout,
+    askedFor: chosen.askedFor,
+    focusTaken: chosen.focusTaken,
+    speciesInfo,
     undo: undoLast,
     undoDepth: depth,
-    selectElement,
-    clearSelection,
   };
 }
 

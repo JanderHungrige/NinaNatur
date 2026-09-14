@@ -1,20 +1,14 @@
+import { type RefObject, useLayoutEffect, useRef } from 'react';
+
 import type { GardenOut } from '../api/client';
+import { viewKey } from '../garden/selection';
 import type { GardenController } from '../garden/useGarden';
 import type { AccountInfo } from './AccountPanel';
-import { BedPanel } from './BedPanel';
-import { BedPlantings } from './BedPlantings';
-import { CanopyBox } from './CanopyBox';
-import { ColourNote } from './ColourNote';
-import { ElementList } from './ElementList';
-import { ExistingPlanting } from './ExistingPlanting';
-import { FilterBar } from './FilterBar';
-import { FilterControls } from './FilterControls';
-import { GardenSoil } from './GardenSoil';
-import { InsectScore } from './InsectScore';
-import { ShadeSwitch } from './ShadeSwitch';
+import { BedDetails } from './BedDetails';
+import { ElementDetails } from './ElementDetails';
+import { GardenDetails } from './GardenDetails';
+import { PlantingDetails } from './PlantingDetails';
 import { Sightlines } from './Sightlines';
-import { SpeciesInfo } from './SpeciesInfo';
-import { SuggestionList } from './SuggestionList';
 
 interface Props {
   garden: GardenOut;
@@ -24,111 +18,74 @@ interface Props {
 }
 
 /**
- * Everything the details hold, in one column (doc 87): the garden, its elements,
- * and the bed → species loop. Feature 2 (doc 88) makes the selection decide which
- * of these is shown; until then they stand in the order a garden is worked on.
+ * What the details show: the selection decides (doc 88).
+ *
+ * One view at a time — the garden while nothing is selected, or the bed, the
+ * element or the patch that is. A viewpoint's answer stands above whichever view
+ * it is, because it answers the last thing done on the plan rather than what is
+ * selected.
  */
 export function InspectorPanels({ garden, controller, account, busy }: Props) {
-  const { derived, elements, light, suggestions } = controller;
-  const { selectedBedId, infoFor, filters } = suggestions;
-  const recorded = (taxonId: number) => derived.resolvedColours[taxonId] ?? null;
-  const bed = garden.beds.find((b) => b.bed_id === selectedBedId);
+  const { selection, light } = controller;
+  const view = useRef<HTMLDivElement | null>(null);
+  useViewFocus(view, viewKey(selection));
 
   return (
-    <>
-      <GardenSoil
-        soilType={garden.soil_type}
-        moisture={garden.moisture}
-        onSave={elements.saveGardenSoil}
-        busy={busy}
-      />
-      {account !== null ? (
-        <button type="button" className="link-button" onClick={elements.claim}>
-          Diesen Garten meinem Konto zuordnen
-        </button>
-      ) : null}
+    <div className="inspector__view" ref={view}>
       {light.sightlines !== null ? (
         <Sightlines result={light.sightlines} onClear={light.clearSightlines} />
       ) : null}
-      <BedPanel garden={garden} selectedBedId={selectedBedId} onSelectBed={suggestions.selectBed} />
-      <CanopyBox
-        suggestions={derived.canopies}
-        busy={busy}
-        onAccept={derived.acceptCanopy}
-        onDismiss={derived.dismissCanopy}
-      />
-      <ShadeSwitch
-        map={derived.lightMap}
-        terrain={derived.terrain}
-        on={light.shadeOn}
-        mode={light.mapMode}
-        month={light.mapMonth}
-        onMonth={light.changeMonth}
-        onToggle={light.toggleShade}
-        onMode={light.setMapMode}
-        onRebuild={light.rebuild}
-        busy={busy}
-        showToggle={false}
-      />
-      <ElementList
-        garden={garden}
-        onDelete={elements.deleteElement}
-        selectedId={elements.selectedObstacleId ?? selectedBedId}
-        onSelect={controller.selectElement}
-      />
 
-      {bed !== undefined ? (
-        <>
-          <BedPlantings
-            bed={bed}
-            onRemove={suggestions.removePlanting}
-            onShowInfo={(taxonId, name) => suggestions.showInfo(taxonId, name, recorded(taxonId))}
-            busy={busy}
-          />
-          <ExistingPlanting
-            onAdd={suggestions.addExisting}
-            unidentified={garden.unidentified_plantings}
-            busy={busy}
-          />
-        </>
+      {selection.kind === 'none' ? (
+        <GardenDetails garden={garden} controller={controller} account={account} busy={busy} />
       ) : null}
-
-      <FilterControls filters={filters} onChange={suggestions.changeFilters} disabled={busy} />
-      <FilterBar
-        filters={filters}
-        counts={suggestions.suggestions?.filters ?? {}}
-        onChange={suggestions.changeFilters}
-      />
-      {infoFor !== null ? (
-        <SpeciesInfo
-          taxonId={infoFor.taxonId}
-          canonicalName={infoFor.name}
-          onClose={suggestions.closeInfo}
-          colourNote={
-            <ColourNote
-              recorded={infoFor.recorded}
-              noted={infoFor.noted}
-              busy={busy}
-              onNote={suggestions.noteColour}
-            />
-          }
-        />
-      ) : null}
-      <SuggestionList
-        includeTrees={filters.includeTrees !== false}
-        suggestions={suggestions.suggestions}
-        onPlant={suggestions.plant}
-        onShowInfo={suggestions.showInfo}
-        busy={busy}
-      />
-      {derived.score !== null ? (
-        <InsectScore
-          score={derived.score}
-          improvements={derived.improvements}
-          onApply={suggestions.applyChange}
+      {selection.kind === 'bed' ? (
+        <BedDetails
+          key={selection.bed.bed_id}
+          garden={garden}
+          bed={selection.bed}
+          controller={controller}
           busy={busy}
         />
       ) : null}
-    </>
+      {selection.kind === 'element' ? (
+        <ElementDetails
+          key={selection.element.obstacle_id}
+          element={selection.element}
+          controller={controller}
+          busy={busy}
+        />
+      ) : null}
+      {selection.kind === 'planting' ? (
+        <PlantingDetails
+          key={selection.planting.planting_id}
+          garden={garden}
+          planting={selection.planting}
+          bed={selection.bed}
+          controller={controller}
+          busy={busy}
+        />
+      ) : null}
+    </div>
   );
+}
+
+/**
+ * Where the focus goes when the view changes (doc 88): to the new view's heading
+ * if it was in the details — or was lost with the view it was in — and nowhere
+ * if it was anywhere else. Choosing on the plan never pulls the keyboard off it.
+ */
+function useViewFocus(view: RefObject<HTMLDivElement | null>, key: string): void {
+  const shown = useRef(key);
+
+  useLayoutEffect(() => {
+    if (shown.current === key) return;
+    shown.current = key;
+    const root = view.current;
+    if (root === null) return;
+    const active = document.activeElement;
+    const lost = active === null || active === document.body || !active.isConnected;
+    if (!lost && !root.contains(active)) return;
+    root.querySelector<HTMLElement>('[data-view-heading]')?.focus();
+  }, [view, key]);
 }
