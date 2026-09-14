@@ -14,10 +14,12 @@ import pytest
 STYLESHEET = Path("frontend/src/styles.css")
 
 # Custom properties set from TypeScript rather than declared in the sheet.
-SET_INLINE = frozenset({"--fill"})
+# `--sheet-drag` is a finger's height while it drags the sheet (doc 91): declared
+# in the sheet, it would stop the sheet falling back to its resting height.
+SET_INLINE = frozenset({"--fill", "--sheet-drag"})
 
 # Not a colour, so it needs no dark-mode counterpart.
-NOT_A_COLOUR = frozenset({"--radius"})
+NOT_A_COLOUR = frozenset({"--radius", "--bar", "--sheet-at"})
 
 
 @pytest.fixture(scope="module")
