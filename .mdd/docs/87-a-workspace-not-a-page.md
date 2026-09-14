@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-23
 wave_status: active
 depends_on: [86-the-plan-that-stayed-a-strip, 11-garden-canvas, 47-panel-order, 49-drawing-focus, 52-element-list]
-relates: [51-element-context-menu, 53-account-in-header, 65-the-shade-switch, 29-bloom-playback, 30-landing-and-garden-id, 90-a-list-that-fits-a-window]
+relates: [51-element-context-menu, 53-account-in-header, 65-the-shade-switch, 29-bloom-playback, 30-landing-and-garden-id, 90-a-list-that-fits-a-window, 91-a-sheet-from-below]
 source_files:
   - frontend/src/App.tsx
   - frontend/src/useStatus.ts
@@ -59,6 +59,7 @@ known_issues:
   - "Rule 10 first relied on the dock body's 40vh alone, and forgot the header, the preview band and the dock's own bar. With one species planted the bloom year filled the body, and the plan's stage measured 260 px of 720 (36 %), 286 of 800 and 346 of 900 on the preview (V0.20.159); at 600 px the plan's row, held up by the tool rail, ran 94 px under the dock. Released that way in V0.20.161, and fixed by the row's own floor right after."
   - "The panels that scroll were not positioned, so absolutely positioned hidden text inside them had the page as its containing block: at 1280×600 with a planted garden the bloom year's hidden table caption made the page 628 px tall (preview, V0.20.167). Positioned since Wave 23 feature 3, with a guard."
   - "Since doc 90 (Wave 23, 2026-09-14) the details are a size container, so the suggestion list is never taller than they are; nothing inside them may be fixed-positioned, which the containment would pin to them."
+  - "Since doc 91 (Wave 23, 2026-09-14) below 66rem the workspace is the window too: the details are a sheet from below, the tools a bar at the window's foot, and the dock, still the page's contentinfo, a strip above it."
 ---
 
 # 87 — A Workspace, Not a Page

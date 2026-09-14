@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 4fd1a118
+hash: 3ab57e86
 ---
 
 # Wave 23: The plan is the page
@@ -244,6 +244,42 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   production serves the stylesheet measured on the preview as V0.20.171
   (`index-1BDQlzqN.css`).
 
+- **2026-09-14 — feature 5, a sheet from below** (doc 91). Below 66rem the
+  garden is the window instead of a page: one header row with the rest behind
+  *Menü*, the plan filling what the details leave, the tools as a bar at the
+  window's foot, the year as a strip above it, and the details as a sheet from
+  below that rests at a quarter and rises to 60 or 90 %. The dock stays the
+  page's contentinfo, so its strip sits above the bar and not on the sheet as
+  the wave sketched. Before, on V0.20.171 in an iPhone 11 Pro's 375×635 window,
+  the garden was a page of 3,069 px with a header of 199 px; a bed tapped on the
+  plan filled details 832 px down, and the first *+* was 1,199 px of scrolling
+  away from the plan. Measured on the preview in Chromium (V0.20.177), same
+  window, touch: the page is the window (635 of 635 px), the header one row of
+  61 px, and at rest the plan's stage keeps 46.8 % (53 % at 375×812); a bed
+  tapped on the plan says *Südbeet* in the resting sheet; a slow drag of the
+  handle raised the sheet to 60 % (247 of 411 px), and three species planted
+  from there each left a patch seen on the plan with nothing over it; dragged to
+  90 %, the header, the plan, the tools and the year were inert and the focus in
+  the sheet, Escape brought it back to 60 % with *Südbeet* still shown, and End
+  on the handle took it up again. *Menü* opened over the plan with *Sonne &
+  Schatten*, *Rückmeldung* and *Anmelden* and closed at a touch outside; the
+  year's table opened upward from its strip and folded again; the seven tools
+  stood in a bar at the window's foot. At 1280×720 the wide workspace keeps doc
+  87's shape: no handle and no *Menü*, and with the species taken out again the
+  plan's stage holds 69.5 %. Found on the way: the first deploy stopped in CI,
+  where the full suite's stylesheet test found `--sheet-drag` used but never
+  declared — it is set inline, and declared it would keep the sheet from falling
+  back to its resting height; only the layout guards had been run locally. On
+  V0.20.176, at 60 % the plan's 153 px lay under its controls in two rows and
+  its hint in two lines, and a toast lay over undo and *Menü* for its five to
+  fifteen seconds. The controls keep to one row now (37 px), the hint makes way
+  while the sheet is raised, and the toast keeps to the left and lets a touch
+  through. A flick is not measured on the preview: the protocol's round trips
+  make every drag slow, and there the flick meant for 90 % rested at 60 %;
+  vitest covers it. Forty-three new tests and ten stylesheet guards: `sheet`,
+  `SheetHandle`, `SiteHeader`, `App.sheet`, additions to `Inspector`, and
+  `tests/test_narrow_workspace.py`.
+
 ## Features
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
@@ -252,7 +288,7 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
 | 2 | what-the-selection-shows | docs/88-what-the-selection-shows.md | complete | 1 |
 | 3 | three-steps-in | docs/89-three-steps-in.md | complete | 2 |
 | 4 | a-list-that-fits-a-window | docs/90-a-list-that-fits-a-window.md | complete | 2 |
-| 5 | a-sheet-from-below | docs/91-a-sheet-from-below.md | in_progress | 2 |
+| 5 | a-sheet-from-below | docs/91-a-sheet-from-below.md | complete | 2 |
 | 6 | one-panel-one-style | — | planned | 1 |
 
 Four stages, and the first one ships alone:

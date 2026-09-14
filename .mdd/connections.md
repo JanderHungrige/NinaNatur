@@ -122,7 +122,7 @@ Workspace
 ├── Inspector  89-three-steps-in  complete
 ├── Inspector  90-a-list-that-fits-a-window  complete
 ├── Plan  86-the-plan-that-stayed-a-strip  complete
-├── Sheet  91-a-sheet-from-below  in_progress
+├── Sheet  91-a-sheet-from-below  complete
 └── Shell  87-a-workspace-not-a-page  complete
 ```
 
@@ -327,7 +327,7 @@ graph TD
     23_catalogue_filters --> 90_a_list_that_fits_a_window
     25_woody_and_birds --> 90_a_list_that_fits_a_window
     15_timeline_ui --> 90_a_list_that_fits_a_window
-    91_a_sheet_from_below["91-a-sheet-from-below"]:::in_progress
+    91_a_sheet_from_below["91-a-sheet-from-below"]:::complete
     87_a_workspace_not_a_page --> 91_a_sheet_from_below
     88_what_the_selection_shows --> 91_a_sheet_from_below
     90_a_list_that_fits_a_window --> 91_a_sheet_from_below
