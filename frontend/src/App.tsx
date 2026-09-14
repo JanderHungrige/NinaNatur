@@ -60,6 +60,7 @@ import { SpeciesInfo } from './components/SpeciesInfo';
 import { FilterBar } from './components/FilterBar';
 import { FilterControls } from './components/FilterControls';
 import { SuggestionList } from './components/SuggestionList';
+import { StatusToast, type StatusMessage, type StatusTone } from './components/StatusToast';
 
 const client = new NinaNaturClient();
 
@@ -76,7 +77,13 @@ function tokenFromHash(): string | null {
 export function App() {
   const [garden, setGarden] = useState<GardenOut | null>(null);
   const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
-  const [status, setStatus] = useState('');
+  const [status, setStatusMessage] = useState<StatusMessage>({ text: '', tone: 'info', stamp: 0 });
+  /** Every message is a new one, even in the same words — see StatusToast. */
+  const setStatus = useCallback(
+    (text: string, tone: StatusTone = 'info') =>
+      setStatusMessage((previous) => ({ text, tone, stamp: previous.stamp + 1 })),
+    [],
+  );
   const [busy, setBusy] = useState(false);
   const [timeline, setTimeline] = useState<TimelineOut | null>(null);
   const [suggestions, setSuggestions] = useState<BedSuggestions | null>(null);
@@ -189,7 +196,7 @@ export function App() {
     try {
       await action();
     } catch (error) {
-      setStatus(`${label} fehlgeschlagen: ${(error as Error).message}`);
+      setStatus(`${label} fehlgeschlagen: ${(error as Error).message}`, 'problem');
     } finally {
       setBusy(false);
     }
@@ -1326,7 +1333,7 @@ export function App() {
               />
               </div>
             </div>
-            <div className="column">
+            <div className="column column--plan">
               <GardenCanvas
                 garden={garden}
                 selectedBedId={selectedBedId}
@@ -1450,10 +1457,10 @@ export function App() {
       </main>
 
       {/* Status is announced, not only shown — a colour change is invisible to a
-          screen reader and to anyone not looking at that part of the page. */}
-      <p className="status" role="status" aria-live="polite">
-        {status}
-      </p>
+          screen reader and to anyone not looking at that part of the page. And
+          shown where it can be seen: at the page's foot it was out of sight
+          whenever a list had been scrolled (doc 86). */}
+      <StatusToast message={status} />
     </div>
   );
 }

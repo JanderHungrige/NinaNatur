@@ -158,6 +158,19 @@ body {
   .layout { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Two columns: the plan stays in view while the left one scrolls (doc 86).
+   Never taller than the window, and scrolling itself when the bloom year and
+   the score run past the fold — a sticky box taller than the window would hide
+   its own end. Starts just above the breakpoint where the second column does. */
+@media (min-width: 72.0625rem) {
+  .column--plan {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
 .panel {
   min-width: 0;
   padding: 1.25rem;
@@ -214,8 +227,11 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .bed-button.is-selected { border-color: var(--leaf); background: color-mix(in srgb, var(--leaf) 12%, transparent); }
 .bed-button__light { color: var(--ink-muted); font-size: 0.82rem; white-space: nowrap; }
 
+/* The drawing fills its stage and never sizes it. With `height: auto` the
+   viewBox set this height, and the viewBox came from this height's own
+   measurement: one short frame and the plan stayed a 12 px strip (doc 86). */
 .canvas {
-  width: 100%; height: auto; max-height: 75vh;
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-raised);
 }
 /* Wave 7 moved the plan's viewBox into garden metres, so every length in here
@@ -246,7 +262,36 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   stroke-dasharray: 0.6 0.3;
 }
 
-.status { margin-top: 1rem; color: var(--ink-muted); font-size: 0.9rem; min-height: 1.4em; }
+/* What just happened, where it can be seen: over the page at the window's foot,
+   above the plan and below the element menu (z-index 20). Faded out rather than
+   removed, so the live region inside it is always there to be heard (doc 86). */
+.status-toast {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 1rem;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: fit-content;
+  max-width: min(36rem, calc(100vw - 2rem));
+  margin-inline: auto;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--ink);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+  font-size: 0.9rem;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.status-toast--shown { opacity: 1; transform: none; pointer-events: auto; }
+.status-toast--problem { border-left: 3px solid var(--warn); }
+.status-toast__text { margin: 0; }
+.status-toast__close { flex: none; margin: 0; padding: 0.2rem 0.65rem; }
 
 /* ---- wave 4: timeline and suggestions ---- */
 
@@ -496,11 +541,20 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* So the stage below can be sized by its own width (`cqi`). */
+  container-type: inline-size;
 }
 
 /* The plan alone, so the sun readout can be placed in pixels from *its* corner
    rather than from the controls row above it. */
-.canvas-stage { position: relative; display: flex; }
+.canvas-stage {
+  position: relative;
+  /* The plan's height is the page's to give (doc 86): three quarters of the
+     window, at most three quarters of the stage's own width, never under
+     16rem. The first line is for a browser without container units. */
+  height: clamp(16rem, 75vh, 40rem);
+  height: clamp(16rem, 75vh, 75cqi);
+}
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so
    it never sits under the thing being pointed at, and `pointer-events: none` so
@@ -1757,6 +1811,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
     animation: none;
   }
   .living__bokeh { opacity: 0.2; }
+  .status-toast { transition: none; }
 }
 
 /* --- The gardens an account has claimed ---------------------------------- */

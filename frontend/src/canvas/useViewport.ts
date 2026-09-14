@@ -3,12 +3,18 @@
  * takes it.
  *
  * Both effects here exist because of something found by looking at the running
- * app rather than by reasoning: an SVG that has not been laid out measures
- * zero, and a plain wheel over the canvas swallowed every page scroll.
+ * app rather than by reasoning: a box that has not been laid out measures zero,
+ * and a plain wheel over the canvas swallowed every page scroll.
+ *
+ * What is measured is the **stage** the drawing sits in, never the drawing. The
+ * drawing's height used to follow its viewBox, and the viewBox followed the
+ * drawing's measured height — one short measurement and the plan stayed a 12 px
+ * strip until a reload (doc 86). The stage takes its height from the page, so
+ * nothing drawn inside it can change what is measured.
  */
 import { useEffect, useRef, useState } from 'react';
 
-import { type Viewport, zoomAt } from './viewport';
+import { type Viewport, measuredView, zoomAt } from './viewport';
 
 const DEFAULT_SIZE = { widthPx: 800, heightPx: 600 };
 const ZOOM_STEP = 1.6;
@@ -21,19 +27,15 @@ export function useViewport(size?: { widthPx: number; heightPx: number } | undef
     ...(size ?? DEFAULT_SIZE),
   });
   const surface = useRef<SVGSVGElement | null>(null);
+  const stage = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (size !== undefined) return undefined;
-    const element = surface.current;
+    const element = stage.current;
     if (element === null || typeof ResizeObserver === 'undefined') return undefined;
     const measure = () => {
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
-      setView((current) =>
-        current.widthPx === rect.width && current.heightPx === rect.height
-          ? current
-          : { ...current, widthPx: rect.width, heightPx: rect.height },
-      );
+      const box = element.getBoundingClientRect();
+      setView((current) => measuredView(current, box));
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -81,5 +83,5 @@ export function useViewport(size?: { widthPx: number; heightPx: number } | undef
       ),
     );
 
-  return { view, setView, surface, zoom };
+  return { view, setView, surface, stage, zoom };
 }
