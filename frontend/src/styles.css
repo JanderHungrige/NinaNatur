@@ -2348,3 +2348,205 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   background: var(--bg-raised);
   box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
 }
+
+/* --- Wave 23: a sheet from below (doc 91) --------------------------------- */
+
+/* The header's menu belongs to a narrow garden only. On the front door and in
+   the wide workspace its button is not shown and its contents stand in the
+   row as they always did. Last in the sheet, so these win over the rules for
+   the same classes further up. */
+.site-header__menu { display: none; }
+.site-header__more { display: contents; }
+.site-header__version { display: none; }
+
+/* Below 66rem the garden is the window: the plan, the details as a sheet from
+   below with three heights, the year as a strip, and the tools as a bar at the
+   window's foot. Nothing scrolls but a panel. The heights are shares of
+   `main`, the space between the header and the year's strip; `--sheet-drag`
+   is a finger's height while it moves, and only the sheet follows it. */
+@media (width < 66rem) {
+  body:has(.app--workspace) { padding: 0; }
+  .app--workspace {
+    --bar: 3.25rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    padding-bottom: var(--bar);
+  }
+  .app--workspace > .preview-band { flex: none; padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+
+  .app--workspace > .site-header {
+    position: relative;
+    flex: none;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.35rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .app--workspace .brand__name,
+  .app--workspace .site-header > .badge { display: none; }
+  .app--workspace .site-header .garden-id { position: static; flex: 1 1 auto; min-width: 0; }
+  .app--workspace .site-header .garden-id__summary { max-width: none; }
+  .app--workspace .site-header .garden-id__body { left: 0.5rem; right: 0.5rem; width: auto; }
+  .app--workspace .site-header__menu { display: inline-flex; flex: none; }
+  .app--workspace .site-header__more {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    right: 0.5rem;
+    z-index: 19;
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+    width: min(18rem, calc(100vw - 1rem));
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+  }
+  .app--workspace .site-header__more:not([data-open='true']) { display: none; }
+  .app--workspace .site-header__version { display: block; margin: 0; color: var(--ink-muted); font-size: 0.8rem; }
+  .app--workspace .header-link--feedback { margin-left: 0; }
+
+  .workspace {
+    --sheet-at: 0.25;
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    display: block;
+    background: var(--bg);
+  }
+  .workspace[data-sheet='half'] { --sheet-at: 0.6; }
+  .workspace[data-sheet='full'] { --sheet-at: 0.9; }
+
+  .workspace__plan {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--sheet-at) * 100%);
+    min-height: 0;
+    padding: 0.35rem;
+  }
+  .workspace .canvas-wrap { position: relative; height: 100%; }
+  .workspace .canvas-stage { height: 100%; }
+  .workspace .canvas-controls {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.35rem;
+    z-index: 3;
+    max-width: calc(100% - 0.7rem);
+    padding: 0.2rem 0.35rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+  }
+  .workspace .plan-hint {
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    z-index: 3;
+    margin: 0;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+    font-size: 0.8rem;
+    pointer-events: none;
+  }
+
+  .inspector {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    height: calc(var(--sheet-drag, var(--sheet-at)) * 100%);
+    gap: 0.75rem;
+    container-type: size;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 0.75rem 0.75rem;
+    border-top: 1px solid var(--line);
+    border-radius: 1rem 1rem 0 0;
+    background: var(--bg);
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 12%);
+    transition: height 180ms ease;
+  }
+  .workspace[data-dragging] .inspector { transition: none; }
+  .sheet-handle {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    height: 1.75rem;
+    margin: 0 -0.75rem;
+    background: var(--bg);
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-handle:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .sheet-handle__grip { width: 2.5rem; height: 0.3rem; border-radius: 999px; background: var(--outline); }
+
+  .tool-rail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    height: var(--bar);
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 0.25rem;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .tool-rail__tool:hover .tool-rail__label,
+  .tool-rail__tool:focus-visible .tool-rail__label { top: auto; bottom: calc(100% + 0.3rem); }
+  .tool-rail__tool:first-child:hover .tool-rail__label,
+  .tool-rail__tool:first-child:focus-visible .tool-rail__label { left: 0; transform: none; }
+  .tool-rail__tool:last-child:hover .tool-rail__label,
+  .tool-rail__tool:last-child:focus-visible .tool-rail__label { left: auto; right: 0; transform: none; }
+
+  .timeline-dock {
+    position: relative;
+    z-index: 5;
+    flex: none;
+    margin: 0;
+    padding: 0.3rem 0.6rem;
+    border-top: 1px solid var(--line);
+    background: var(--bg-raised);
+  }
+  .timeline-dock__bar { flex-wrap: nowrap; gap: 0.5rem; overflow-x: auto; }
+  .timeline-dock .bloom-player button { margin: 0; padding: 0.3rem 0.6rem; }
+  .timeline-dock__body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    max-height: min(24rem, 50vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid var(--line);
+    background: var(--bg-raised);
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 12%);
+  }
+
+  /* At 90 % the rest of the page is inert: dimmed, so it does not look usable. */
+  .app--workspace :is(.site-header, .workspace__plan, .tool-rail, .timeline-dock)[inert] { opacity: 0.55; }
+
+  /* iOS zooms into a field under 16 px, and the zoomed page no longer fits. */
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: max(1rem, 16px); }
+
+  /* From the top, where neither the sheet nor the bar can lie over it. */
+  .status-toast { top: 0.5rem; bottom: auto; transform: translateY(-0.5rem); }
+  .status-toast--shown { transform: none; }
+}
+
+@media (width < 66rem) and (prefers-reduced-motion: reduce) {
+  .inspector { transition: none; }
+}

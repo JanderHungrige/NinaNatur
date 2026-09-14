@@ -1,8 +1,8 @@
 ---
 generated: 2026-09-14
-doc_count: 91
-connection_count: 106
-overlap_count: 104
+doc_count: 92
+connection_count: 109
+overlap_count: 106
 ---
 
 # Connections
@@ -122,6 +122,7 @@ Workspace
 ├── Inspector  89-three-steps-in  complete
 ├── Inspector  90-a-list-that-fits-a-window  complete
 ├── Plan  86-the-plan-that-stayed-a-strip  complete
+├── Sheet  91-a-sheet-from-below  in_progress
 └── Shell  87-a-workspace-not-a-page  complete
 ```
 
@@ -326,6 +327,10 @@ graph TD
     23_catalogue_filters --> 90_a_list_that_fits_a_window
     25_woody_and_birds --> 90_a_list_that_fits_a_window
     15_timeline_ui --> 90_a_list_that_fits_a_window
+    91_a_sheet_from_below["91-a-sheet-from-below"]:::in_progress
+    87_a_workspace_not_a_page --> 91_a_sheet_from_below
+    88_what_the_selection_shows --> 91_a_sheet_from_below
+    90_a_list_that_fits_a_window --> 91_a_sheet_from_below
     classDef complete fill:#00e5cc,color:#000
     classDef in_progress fill:#ffaa00,color:#000
     classDef draft fill:#888,color:#fff
@@ -366,8 +371,9 @@ graph TD
 - `frontend/src/components/GardenDetails.tsx` — 52-element-list, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/GardenId.tsx` — 30-landing-and-garden-id, 87-a-workspace-not-a-page, 89-three-steps-in
 - `frontend/src/components/GardenSymbols.tsx` — 41-garden-style, 58-painted-plan, 59-osm-streets
-- `frontend/src/components/GardenWorkspace.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in
+- `frontend/src/components/GardenWorkspace.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in, 91-a-sheet-from-below
 - `frontend/src/components/InsectScore.tsx` — 20-score-ui, 89-three-steps-in
+- `frontend/src/components/Inspector.tsx` — 87-a-workspace-not-a-page, 91-a-sheet-from-below
 - `frontend/src/components/InspectorPanels.tsx` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/Landing.tsx` — 30-landing-and-garden-id, 53-account-in-header, 54-one-way-in
 - `frontend/src/components/MapPicker.tsx` — 31-map-selection, 32-object-heights, 33-imagery-objects
@@ -375,6 +381,7 @@ graph TD
 - `frontend/src/components/PlanArea.tsx` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/ResizeHandles.tsx` — 39-element-stamps, 43-shape-tools
 - `frontend/src/components/ShadeSwitch.tsx` — 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is, 87-a-workspace-not-a-page
+- `frontend/src/components/SiteHeader.tsx` — 87-a-workspace-not-a-page, 91-a-sheet-from-below
 - `frontend/src/components/SpeciesInfo.tsx` — 22-species-info, 88-what-the-selection-shows
 - `frontend/src/components/SuggestionList.tsx` — 15-timeline-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 25-woody-and-birds, 90-a-list-that-fits-a-window
 - `frontend/src/components/ToolRail.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in
@@ -386,7 +393,7 @@ graph TD
 - `frontend/src/kinds.ts` — 39-element-stamps, 41-garden-style, 45-relabel-and-skin, 59-osm-streets
 - `frontend/src/map/tiles.ts` — 31-map-selection, 33-imagery-objects
 - `frontend/src/plural.ts` — 11-garden-canvas, 20-score-ui, 24-month-suggestions, 26-drawing-canvas
-- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window
+- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below
 - `ninanatur/api/accounts.py` — 35-accounts, 36-claim-gardens, 85-nothing-worse-than-it-looks
 - `ninanatur/api/bloom_year.py` — 18-insect-score, 19-swap-suggestions, 20-score-ui, 29-bloom-playback
 - `ninanatur/api/candidates.py` — 23-catalogue-filters, 62-manual-colours
