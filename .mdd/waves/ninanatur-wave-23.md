@@ -3,11 +3,11 @@ id: ninanatur-wave-23
 title: "Wave 23: The plan is the page"
 initiative: ninanatur
 initiative_version: 23
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 2e4e08fd
+hash: b6878a93
 ---
 
 # Wave 23: The plan is the page
@@ -76,7 +76,7 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | the-plan-that-stayed-a-strip | — | planned | — |
+| 0 | the-plan-that-stayed-a-strip | docs/86-the-plan-that-stayed-a-strip.md | in_progress | — |
 | 1 | a-workspace-not-a-page | — | planned | 0 |
 | 2 | what-the-selection-shows | — | planned | 1 |
 | 3 | three-steps-in | — | planned | 2 |
@@ -194,8 +194,8 @@ The sidebar loses its permanent residents:
   (*3 gefundene Bäume*) with a card in the inspector; *Konto zuordnen* moves to
   the header menu.
 
-Decided with the owner before building: the start as an empty inspector with
-prompts (recommended — no modal before the first look) or as an overlay.
+Decided with the owner on 2026-09-14: the start is an empty inspector with
+prompts — no modal before the first look — rather than an overlay.
 
 ### 4. a-list-that-fits-a-window
 
@@ -249,10 +249,15 @@ what makes the shell read as one thing rather than nine panels rehung.
 
 ## Open Research
 
-- Tabs removed entirely (recommended) or kept as inspector tabs?
-- Inspector right (reading order plan → details) or left (tools close to hand)?
-  Recommended: tools left, details right, as every editor does.
-- Resizable inspector: a drag handle, or two fixed widths?
+Answered by the owner on 2026-09-14, before any of it was built:
+
+- **The tabs go entirely.** The inspector follows the selection; *Zeichnen*
+  and *Säen* do not survive as inspector tabs either.
+- **Tools left, details right**, as every editor does.
+- **The start is an empty inspector with prompts** (feature 3), not an overlay.
+
+Still open: whether the inspector is resized by a drag handle or offers two
+fixed widths — feature 1 decides it and records why.
 
 ## Deliberately not in this wave
 

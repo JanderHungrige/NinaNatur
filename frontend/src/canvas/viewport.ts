@@ -98,9 +98,45 @@ export function gridSpacing(view: Viewport): number {
   return SPACINGS[SPACINGS.length - 1] as number;
 }
 
-/** The SVG viewBox for this window, in garden metres with y already flipped. */
+/** A box as `getBoundingClientRect` measures it. */
+export interface Measured {
+  width: number;
+  height: number;
+}
+
+/** The shape of a window nothing has measured yet: the old 800×600. */
+const UNMEASURED_SHAPE = 0.75;
+
+const isSize = (value: number): boolean => Number.isFinite(value) && value > 0;
+
+/**
+ * The view with a measured size in it, or the view unchanged when the
+ * measurement is not one.
+ *
+ * A box that has not been laid out — a background tab, a hidden panel — measures
+ * zero, and taking that as a size is how one bad frame used to become the plan's
+ * shape until the next reload. A real measurement is taken exactly, however
+ * short and wide: a view shaped unlike its box would letterbox the drawing and
+ * move every click off the metre it points at. An unchanged size hands back the
+ * same view, so React has nothing to redraw.
+ */
+export function measuredView(view: Viewport, box: Measured): Viewport {
+  if (!isSize(box.width) || !isSize(box.height)) return view;
+  if (box.width === view.widthPx && box.height === view.heightPx) return view;
+  return { ...view, widthPx: box.width, heightPx: box.height };
+}
+
+/**
+ * The SVG viewBox for this window, in garden metres with y already flipped.
+ *
+ * Exactly the shape of the stored size, so the drawing fills its box. Only a
+ * size that is not one falls back to 3:4: a viewBox with no height draws nothing,
+ * and one with no width divides by zero.
+ */
 export function viewBox(view: Viewport): string {
-  const heightM = (view.spanM * view.heightPx) / view.widthPx;
+  const shape =
+    isSize(view.widthPx) && isSize(view.heightPx) ? view.heightPx / view.widthPx : UNMEASURED_SHAPE;
+  const heightM = view.spanM * shape;
   const minX = view.centreX - view.spanM / 2;
   // SVG y grows down, so the top edge is the *northern* one negated.
   const minY = -(view.centreY + heightM / 2);
