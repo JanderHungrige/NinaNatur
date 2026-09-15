@@ -116,6 +116,11 @@ one-line way to be sure.
 
 - No file > 300 lines, no function > 50 lines.
 - `ruff check`, `mypy --strict`, `pytest` all clean before a commit.
+- In `frontend/`: `npx tsc --noEmit`, `npx vitest run` and `npm run build`
+  clean too — and every gate before every push, since CI runs all of them.
+- Sizes come from the stylesheet's scales: a font size between 0.7 and
+  1.25rem is a `var(--text-*)`, a panel's spacing a `var(--space-*)`, and a
+  box or a row joins the one rule that draws it (`tests/test_one_style.py`).
 - Tests assert behaviour, not execution. "It runs" is not a criterion.
 - Never swallow errors: log with context before re-raising.
 
