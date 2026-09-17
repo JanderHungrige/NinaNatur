@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 922470a2
+hash: 2b979c96
 ---
 
 # Wave 23: The plan is the page
@@ -324,6 +324,15 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   it deletes the garden. Both windows passed on V0.20.180. It runs by hand
   against a deployed site; whether it runs in CI is the owner's to decide, as
   the wave left it.
+
+- **2026-09-14 — stage 3 in production.** Features 5 and 6 went to production
+  together as V0.20.182 (merge 41f7d86), with what their measurements found on
+  the preview: the sheet's inline variable that the full suite caught in CI, the
+  plan kept in sight between its controls on a phone, the toast moved off undo
+  and *Menü*, and the window's guard that keeps every key from the page while
+  the shortcut help is open. The workspace's smoke test went with them. CI on
+  main passed, and production serves the stylesheet and the bundle measured on
+  the preview as V0.20.180 (`index-C2tOCCqE.css`, `index-BZpWFiOE.js`).
 
 ## Features
 | # | Feature | Doc | Status | Depends on |
