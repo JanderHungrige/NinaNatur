@@ -28,7 +28,7 @@ test_files:
   - frontend/src/components/MapPicker.test.tsx
   - frontend/src/components/MapPicker.phone.test.tsx
 data_flow: mixed
-last_synced: 2026-08-29
+last_synced: 2026-09-17
 status: complete
 phase: all
 mdd_version: 11
@@ -119,6 +119,9 @@ anything is fetched.
   supports, and feature 33's aerial backdrop is what makes that accurate.
 - **A building's footprint becomes a circle**, because the shading model is
   cylinders. It overstates a long building's shade at its ends.
+- **A finger on the map cannot scroll the page.** The map takes the gesture so
+  that it can be dragged, and on a 635 px phone it is 400 px of the page:
+  scrolling has to start beside it.
 
 ## Bugs
 
@@ -128,4 +131,4 @@ a name the module no longer imported.
 
 | ID | Description | Status | Fixed In | Reported | Fixed |
 |----|-------------|--------|----------|----------|-------|
-| B1 | On a phone the map picker sets corners far from the finger and cannot be panned by touch: the surface is never measured (640×400 assumed, 259 real at 375 px), so a tap is projected as if the map were 640 px wide and the outline SVG scales it down again | Open | - | 2026-09-17 | - |
+| B1 | On a phone the map picker sets corners far from the finger and cannot be panned by touch: the surface is never measured (640×400 assumed, 259 real at 375 px), so a tap is projected as if the map were 640 px wide and the outline SVG scales it down again | Completed | frontend/src/map/useMapSurface.ts:66 | 2026-09-17 | 2026-09-17 |
