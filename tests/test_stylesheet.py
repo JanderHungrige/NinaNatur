@@ -216,3 +216,18 @@ def test_a_checkbox_is_not_stretched_across_the_panel() -> None:
         and "checkbox" not in block.rsplit("}", 1)[-1]
     ]
     assert offenders == [], f"a full-width rule still catches tick boxes: {offenders}"
+
+
+def test_the_map_takes_the_finger_rather_than_the_page(css: str) -> None:
+    """Doc 31, B1: on the map a finger drags the map.
+
+    Without `touch-action: none` the browser scrolls the page under the finger
+    and the map never moves — which is what a phone did, since panning wanted
+    the right mouse button. And the surface is the width it is given rather than
+    a 640 px it is not: the projection measures this element, and a fixed width
+    would lie to it.
+    """
+    rule = re.search(r"^\.map-picker__surface \{([^}]*)\}", css, re.M)
+    assert rule is not None, "no .map-picker__surface rule"
+    assert "touch-action: none" in rule.group(1), "a finger on the map scrolls the page"
+    assert "width: 100%" in rule.group(1), "the surface's width is not the layout's to give"
