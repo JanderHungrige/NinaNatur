@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 import {
   ATTRIBUTION,
-  type Imagery,
-  imageryUrl,
   ATTRIBUTION_URL,
-  MAX_ZOOM,
-  MIN_ZOOM,
+  type Imagery,
   type LatLon,
   type MapView,
-  latLonToPixel,
+  MAX_ZOOM,
+  MIN_ZOOM,
   pixelToLatLon,
-  tileUrl,
-  tilesFor,
 } from '../map/tiles';
+import { useMapSurface } from '../map/useMapSurface';
+import { MapSurface } from './MapSurface';
 
 export interface Place {
   name: string;
@@ -43,6 +41,7 @@ const NEIGHBOURHOODS: Array<[string, string]> = [
   ['apartment', 'Mehrfamilienhäuser (~14 m)'],
 ];
 
+/** What the map is drawn at until the surface has been measured. */
 const DEFAULT_SIZE = { widthPx: 640, heightPx: 400 };
 const START_ZOOM = 18;
 
@@ -53,6 +52,10 @@ const START_ZOOM = 18;
  * already shows buildings and roads, it is open, and it needed no licence
  * research to start. Using it carries obligations, and the visible attribution
  * below is one of them — it is a condition of use, not a footer.
+ *
+ * The map is drawn by `MapSurface`, and how big it is and how it is dragged
+ * belong to `useMapSurface`: its size is measured rather than assumed, because
+ * everything on it is drawn in that box (doc 31, B1).
  */
 export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) {
   const [query, setQuery] = useState('');
@@ -69,8 +72,6 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
   const [look, setLook] = useState<{ lat: number; lon: number; zoom: number } | null>(
     null,
   );
-  const [panning, setPanning] = useState(false);
-  const panFrom = useRef<{ x: number; y: number; lat: number; lon: number } | null>(null);
   const [outline, setOutline] = useState<LatLon[]>([]);
   const [neighbourhood, setNeighbourhood] = useState('detached');
   const [problem, setProblem] = useState<string | null>(null);
@@ -80,12 +81,19 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
   const [moved, setMoved] = useState<string | null>(null);
   const [imagery, setImagery] = useState<Imagery | null>(null);
   const [aerial, setAerial] = useState(false);
-  const surface = useRef<HTMLDivElement | null>(null);
 
-  const box = size ?? DEFAULT_SIZE;
+  // The corners do not move with a drag: they are stored as coordinates, so
+  // they stay on the ground while the view slides underneath.
+  const surface = useMapSurface({
+    fallback: DEFAULT_SIZE,
+    size,
+    shown: centre !== null,
+    look,
+    onLook: (at) => setLook((current) => (current === null ? current : { ...current, ...at })),
+  });
   const view: MapView = look === null
-    ? { lat: 0, lon: 0, zoom: START_ZOOM, ...box }
-    : { ...look, ...box };
+    ? { lat: 0, lon: 0, zoom: START_ZOOM, ...surface.box }
+    : { ...look, ...surface.box };
 
   const find = () => {
     // Only when asked. A request per keystroke is how one gets blocked by a
@@ -113,55 +121,6 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
     void findImagery?.(place.lat, place.lon).then(setImagery).catch(() => setImagery(null));
   };
 
-  /**
-   * Right-drag moves the map.
-   *
-   * The right button because the left one is already how a corner is set, and
-   * asking somebody to put the drawing tool down before moving the paper is
-   * the sort of mode this picker has managed without.
-   *
-   * The corners do not move with it: they are stored as coordinates, so they
-   * stay on the ground while the view slides underneath.
-   */
-  const grabMap = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 2 || look === null) return;
-    event.preventDefault();
-    panFrom.current = { x: event.clientX, y: event.clientY, lat: look.lat, lon: look.lon };
-    setPanning(true);
-  };
-
-  useEffect(() => {
-    if (!panning) return undefined;
-    const onMove = (event: PointerEvent) => {
-      const from = panFrom.current;
-      if (from === null) return;
-      // Through the projection rather than by scaling degrees: a degree of
-      // longitude is not a degree of latitude, and at 52° it is not close.
-      setLook((current) => {
-        if (current === null) return current;
-        const at: MapView = { ...current, lat: from.lat, lon: from.lon, ...box };
-        const moved = pixelToLatLon(
-          {
-            x: box.widthPx / 2 - (event.clientX - from.x),
-            y: box.heightPx / 2 - (event.clientY - from.y),
-          },
-          at,
-        );
-        return { ...current, lat: moved.lat, lon: moved.lon };
-      });
-    };
-    const onUp = () => {
-      panFrom.current = null;
-      setPanning(false);
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    };
-  }, [panning, box.widthPx, box.heightPx]);
-
   const zoomBy = (by: number) => {
     setLook((current) =>
       current === null
@@ -171,8 +130,9 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
   };
 
   const addCorner = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (centre === null) return;
-    const rect = surface.current?.getBoundingClientRect();
+    // The click a browser sends at the end of a drag belongs to the drag.
+    if (surface.dragged() || centre === null) return;
+    const rect = surface.ref.current?.getBoundingClientRect();
     const at = { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
     setOutline((current) => [...current, pixelToLatLon(at, view)]);
     setProblem(null);
@@ -252,82 +212,26 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
       {centre !== null && (
         <>
           <p className="hint">
-            Klicke die Ecken deines Grundstücks. Was im Umkreis von 50 m steht und
-            hoch genug ist, um Schatten bis zu dir zu werfen, wird mit übernommen.
-            Mit der <strong>rechten Maustaste</strong> verschiebst du die Karte —
-            nützlich, wenn dein Grundstück keine eigene Adresse hat.
+            Tippe oder klicke die Ecken deines Grundstücks. Was im Umkreis von 50 m
+            steht und hoch genug ist, um Schatten bis zu dir zu werfen, wird mit
+            übernommen. Mit dem <strong>Finger</strong> — am Rechner mit der{' '}
+            <strong>rechten Maustaste</strong> — verschiebst du die Karte, nützlich,
+            wenn dein Grundstück keine eigene Adresse hat.
           </p>
 
-          <div className="map-picker__zoom">
-            <button
-              type="button"
-              aria-label="Herauszoomen"
-              disabled={busy || (look?.zoom ?? START_ZOOM) <= MIN_ZOOM}
-              onClick={() => zoomBy(-1)}
-            >
-              −
-            </button>
-            <button
-              type="button"
-              aria-label="Hineinzoomen"
-              disabled={busy || (look?.zoom ?? START_ZOOM) >= MAX_ZOOM}
-              onClick={() => zoomBy(1)}
-            >
-              +
-            </button>
-          </div>
-
-          <div
-            ref={surface}
-            data-testid="map-surface"
-            className="map-picker__surface"
-            style={{ width: box.widthPx, height: box.heightPx }}
-            onClick={addCorner}
-            onPointerDown={grabMap}
-            // Otherwise the browser's own menu opens in the middle of a pan.
-            onContextMenu={(event) => event.preventDefault()}
-          >
-            {aerial && imagery !== null ? (
-              <img
-                data-testid="map-aerial"
-                className="map-picker__aerial"
-                src={imageryUrl(imagery, view)}
-                alt=""
-                width={box.widthPx}
-                height={box.heightPx}
-              />
-            ) : (
-            <div data-testid="map-tiles" className="map-picker__tiles">
-              {tilesFor(view).map((tile) => (
-                <img
-                  key={`${tile.z}/${tile.x}/${tile.y}`}
-                  src={tileUrl(tile)}
-                  alt=""
-                  width={256}
-                  height={256}
-                  loading="lazy"
-                  style={{ left: tile.left, top: tile.top }}
-                />
-              ))}
-            </div>
-            )}
-            <svg className="map-picker__outline" viewBox={`0 0 ${box.widthPx} ${box.heightPx}`}>
-              {outline.length > 1 && (
-                <polygon
-                  points={outline
-                    .map((p) => {
-                      const px = latLonToPixel(p, view);
-                      return `${px.x},${px.y}`;
-                    })
-                    .join(' ')}
-                />
-              )}
-              {outline.map((p) => {
-                const px = latLonToPixel(p, view);
-                return <circle key={`${p.lat},${p.lon}`} cx={px.x} cy={px.y} r={4} />;
-              })}
-            </svg>
-          </div>
+          <MapSurface
+            surface={surface}
+            view={view}
+            outline={outline}
+            imagery={imagery}
+            aerial={aerial}
+            busy={busy}
+            zoom={look?.zoom ?? START_ZOOM}
+            onZoom={zoomBy}
+            onAddCorner={addCorner}
+            size={size}
+            height={DEFAULT_SIZE.heightPx}
+          />
 
           {imagery !== null && (
             <label className="map-picker__toggle">

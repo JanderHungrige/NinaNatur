@@ -12,7 +12,9 @@ source_files:
   - ninanatur/geo/osm.py
   - ninanatur/api/geo.py
   - frontend/src/map/tiles.ts
+  - frontend/src/map/useMapSurface.ts
   - frontend/src/components/MapPicker.tsx
+  - frontend/src/components/MapSurface.tsx
 routes:
   - GET /api/v1/geo/search
   - POST /api/v1/gardens/from-map
@@ -21,8 +23,10 @@ test_files:
   - tests/test_projection.py
   - tests/test_osm.py
   - tests/test_map_selection.py
+  - tests/test_stylesheet.py
   - frontend/src/map/tiles.test.ts
   - frontend/src/components/MapPicker.test.tsx
+  - frontend/src/components/MapPicker.phone.test.tsx
 data_flow: mixed
 last_synced: 2026-08-29
 status: complete
@@ -92,6 +96,14 @@ margin, **2** taken over. A 12 m house counts at 45 m, a 2 m fence only at 7.
 - **Germany only**, matching the catalogue. A search that happily found Ohio
   would produce a garden this product has no plants for.
 - **A polygon needs three points**, same rule as the drawing canvas.
+- **The map is drawn at the size the surface really has.** It is measured, and
+  the projection, the tiles, the aerial photo and the outline all use that one
+  box. A fixed 640 px lied to all four on anything narrower: on a phone the
+  surface is 259 px, and a tap set a corner 77 px from the finger (B1).
+- **A finger drags the map; a tap sets a corner.** Six pixels apart, and the
+  surface takes the gesture, so the page does not scroll under the finger
+  instead. A mouse keeps the right button for dragging, because its left one is
+  how a corner is set.
 
 ## Security
 
@@ -110,6 +122,10 @@ anything is fetched.
 
 ## Bugs
 
-(none — the two that appeared were in the tests' own fixtures: a building placed
-beyond the reach of its own height, and a monkeypatch pointed at a name the
-module no longer imported.)
+Before this one, the two that appeared were in the tests' own fixtures: a
+building placed beyond the reach of its own height, and a monkeypatch pointed at
+a name the module no longer imported.
+
+| ID | Description | Status | Fixed In | Reported | Fixed |
+|----|-------------|--------|----------|----------|-------|
+| B1 | On a phone the map picker sets corners far from the finger and cannot be panned by touch: the surface is never measured (640×400 assumed, 259 real at 375 px), so a tap is projected as if the map were 640 px wide and the outline SVG scales it down again | Open | - | 2026-09-17 | - |

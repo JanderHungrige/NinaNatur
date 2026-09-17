@@ -1072,11 +1072,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .map-picker__surface {
   position: relative;
   overflow: hidden;
-  max-width: 100%;
-  margin-top: 0.75rem;
+  /* The width is the layout's to give, and the projection measures this
+     element. A width of its own lied to the projection, the tiles, the photo
+     and the outline alike on any window narrower than it (doc 31, B1). */
+  width: 100%;
+  max-width: 640px;
+  margin-top: var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   cursor: crosshair;
+  /* A finger drags the map. Without this the page scrolls under it instead and
+     the map never moves. */
+  touch-action: none;
   background: var(--bg);
 }
 
