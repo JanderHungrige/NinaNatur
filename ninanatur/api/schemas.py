@@ -88,6 +88,12 @@ class ObstacleOut(BaseModel):
     #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'; null when nobody
     #: did — or, for a value stored before Wave 21, until the next recompute.
     eaves_source: str | None
+    #: The bearing the roof falls towards, as the survey read it (doc 94); null
+    #: when it has not, and the ridge is assumed to run along the long side.
+    roof_fall_deg: float | None
+    #: The pitch the model uses, from eaves, ridge and the span across the
+    #: ridge; null where it models the roof unpitched.
+    roof_pitch_deg: float | None
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

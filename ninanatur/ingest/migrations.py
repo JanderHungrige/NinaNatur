@@ -62,6 +62,8 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # Wave 21. Null on every existing row until the one-time backfill in
     # `one_time.roof_provenance` marks what the history makes certain.
     ("element", "eaves_source", "TEXT"),
+    # Wave 21. Null on every existing row: the next recompute measures it.
+    ("element", "roof_fall_deg", "REAL"),
 )
 
 

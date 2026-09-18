@@ -1440,6 +1440,10 @@ export interface components {
             points: number[][] | null;
             /** Roof */
             roof: string;
+            /** Roof Fall Deg */
+            roof_fall_deg: number | null;
+            /** Roof Pitch Deg */
+            roof_pitch_deg: number | null;
             /** Roof Source */
             roof_source: string;
             /** Shape */

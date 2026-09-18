@@ -43,7 +43,7 @@ test_files:
   - tests/test_roof_provenance.py
   - tests/test_roof_provenance_backfill.py
   - tests/test_kind_vocabulary.py
-  - frontend/src/components/ElementForm.test.tsx
+  - frontend/src/components/ElementForm.roof.test.tsx
   - frontend/src/heights.test.ts
   - frontend/src/garden/selection.test.ts
 data_flow: .mdd/audits/flow-where-the-roof-came-from-2026-09-18.md

@@ -115,6 +115,9 @@ class Element:
     #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'. None is nobody,
     #: and then the model puts them at three quarters of the ridge.
     eaves_source: str | None = None
+    #: The bearing the roof falls towards, from the survey (doc 94). None: the
+    #: ridge is assumed to run along the long side, and a pent is left flat.
+    roof_fall_deg: float | None = None
     label: str | None = None
 
     # --- what a planting site needs, null on everything else ----------------

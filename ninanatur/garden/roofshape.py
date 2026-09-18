@@ -9,13 +9,15 @@ shades its neighbours as if it were a block about halfway up its own rise; its
 own two pitches face opposite ways, and at 51°N a north pitch and a south pitch
 are not remotely the same place. One number cannot say that.
 
-**What is assumed, stated once.** The stored data is a footprint, a ridge
-height, an eaves height and a roof *type* — never a ridge direction. So the
-ridge is taken to run along the long axis of the footprint's smallest enclosing
-rectangle, which is what German houses overwhelmingly do and what anyone drawing
-a plan would expect. Where that assumption cannot be made honestly it is not
-made: a pent roof has one pitch and nothing in the data says which way it falls,
-so it is left unpitched rather than guessed at, and so are the shapes nobody has
+**What is measured, and what is assumed.** Where the survey has said which way
+a roof falls (`fall_deg`, doc 94), the ridge runs at right angles to that and
+the span is measured across it — and a pent roof, one plane, falls the way it
+was surveyed to. Where it has not, the ridge is taken to run along the long
+axis of the footprint's smallest enclosing rectangle. That was the only answer
+until Wave 21, and measured against the survey it turns the ridge by 45° or
+more on two thirds of city gables: a terraced house is deeper than it is wide,
+and its ridge runs parallel to the street. A pent without a surveyed fall is
+left unpitched rather than guessed at, and so are the shapes nobody has
 identified.
 """
 from __future__ import annotations
@@ -90,6 +92,7 @@ def surface_of(
     roof: Roof,
     height_m: float | None,
     eaves_m: float | None = None,
+    fall_deg: float | None = None,
 ) -> RoofSurface | None:
     """The roof over this footprint, or None when its height is unknown.
 
@@ -97,37 +100,83 @@ def surface_of(
     skipped by the shading model since Wave 8, and inventing a roof for it here
     would put a confident number on the map for the one building the model knows
     least about.
+
+    `fall_deg` is the bearing the survey says the roof falls towards (doc 94).
     """
     if height_m is None or len(footprint) < 3:
         return None
-    box = _oriented_box(footprint)
+    pitched = roof in (Roof.GABLE, Roof.HIP) or (roof is Roof.PENT and fall_deg is not None)
+    box = (_oriented_box(footprint) if fall_deg is None or not pitched
+           else _box_along(footprint, _unit(fall_deg + 90.0)))
     if box is None:
         return None
     centre, along, long_half, short_half = box
-
-    if roof not in (Roof.GABLE, Roof.HIP):
-        # Flat, pent, mixed, other, unknown. Only the first is genuinely a
-        # plane at one height; the rest are shapes whose fall this model cannot
-        # place, and an unpitched surface at the ridge is the same conservative
-        # answer `RISE_KEPT` already gives them for their shadow.
-        return RoofSurface(ridge=(centre, centre), span_m=0.0,
-                           eaves_m=height_m, ridge_m=height_m)
+    flat = RoofSurface(ridge=(centre, centre), span_m=0.0, eaves_m=height_m, ridge_m=height_m)
+    if not pitched:
+        # Flat, mixed, other, unknown, and a pent nobody surveyed. Only the
+        # first is genuinely a plane at one height; the rest are shapes whose
+        # fall this model cannot place, and an unpitched surface at the ridge is
+        # the same conservative answer `RISE_KEPT` gives them for their shadow.
+        return flat
 
     eaves = DEFAULT_EAVES_FRACTION * height_m if eaves_m is None else eaves_m
     eaves = max(0.0, min(eaves, height_m))
-    # A hip's ridge stops one span short of each end, which is what makes its
-    # ends slope. A gable's runs to the wall.
-    half = long_half if roof is Roof.GABLE else max(0.0, long_half - short_half)
-    ridge = (
-        (centre[0] - along[0] * half, centre[1] - along[1] * half),
-        (centre[0] + along[0] * half, centre[1] + along[1] * half),
-    )
-    surface = RoofSurface(ridge=ridge, span_m=short_half, eaves_m=eaves,
-                          ridge_m=height_m)
-    if surface.pitch_deg < MIN_PITCH_DEG:
-        return RoofSurface(ridge=(centre, centre), span_m=0.0,
-                           eaves_m=height_m, ridge_m=height_m)
-    return surface
+    if roof is Roof.PENT and fall_deg is not None:
+        # One plane: the ridge height along the upper edge, the eaves along the
+        # lower, and the whole depth to fall across.
+        down = _unit(fall_deg)
+        top = (centre[0] - down[0] * short_half, centre[1] - down[1] * short_half)
+        ridge = ((top[0] - along[0] * long_half, top[1] - along[1] * long_half),
+                 (top[0] + along[0] * long_half, top[1] + along[1] * long_half))
+        surface = RoofSurface(ridge=ridge, span_m=2.0 * short_half, eaves_m=eaves,
+                              ridge_m=height_m)
+    else:
+        # A hip's ridge stops one span short of each end, which is what makes
+        # its ends slope — down to a point, when the span is the longer way.
+        # A gable's runs to the wall.
+        half = long_half if roof is Roof.GABLE else max(0.0, long_half - short_half)
+        ridge = (
+            (centre[0] - along[0] * half, centre[1] - along[1] * half),
+            (centre[0] + along[0] * half, centre[1] + along[1] * half),
+        )
+        surface = RoofSurface(ridge=ridge, span_m=short_half, eaves_m=eaves,
+                              ridge_m=height_m)
+    return flat if surface.pitch_deg < MIN_PITCH_DEG else surface
+
+
+def pitch_of(
+    footprint: list[tuple[float, float]],
+    roof: Roof,
+    height_m: float | None,
+    eaves_m: float | None = None,
+    fall_deg: float | None = None,
+) -> float | None:
+    """The pitch the model uses, in degrees, to a tenth; None where it models the
+    roof unpitched. What the page shows beside the ridge (doc 94)."""
+    surface = surface_of(footprint, roof, height_m, eaves_m, fall_deg)
+    return None if surface is None or not surface.pitched else round(surface.pitch_deg, 1)
+
+
+def _unit(bearing: float) -> tuple[float, float]:
+    """A compass bearing as a unit vector on the garden's axes."""
+    return (math.sin(math.radians(bearing)), math.cos(math.radians(bearing)))
+
+
+def _box_along(
+    footprint: list[tuple[float, float]], along: tuple[float, float],
+) -> tuple[tuple[float, float], tuple[float, float], float, float]:
+    """Centre, the given axis, and the half-extents along it and across it.
+
+    The same shape `_oriented_box` returns, with the axis given rather than
+    found: a surveyed ridge, which need not run along the longer side.
+    """
+    ux, uy = along
+    ahead = [p[0] * ux + p[1] * uy for p in footprint]
+    across = [-p[0] * uy + p[1] * ux for p in footprint]
+    mid_ahead = (min(ahead) + max(ahead)) / 2
+    mid_across = (min(across) + max(across)) / 2
+    centre = (mid_ahead * ux - mid_across * uy, mid_ahead * uy + mid_across * ux)
+    return (centre, (ux, uy), (max(ahead) - min(ahead)) / 2, (max(across) - min(across)) / 2)
 
 
 def _oriented_box(
@@ -188,4 +237,4 @@ def _distance_to_segment(
     return math.hypot(point[0] - near[0], point[1] - near[1])
 
 
-__all__ = ["MIN_PITCH_DEG", "RoofSurface", "surface_of"]
+__all__ = ["MIN_PITCH_DEG", "RoofSurface", "pitch_of", "surface_of"]
