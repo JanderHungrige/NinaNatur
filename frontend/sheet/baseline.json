@@ -1,0 +1,42 @@
+{
+  "cells": {
+    "light/small-12": "453a9f7307b01c358cffb1bc2cf88d7cd833445c8bf89c3ef51c5b9943e54b07",
+    "light/small-40": "9bbe2a501da907fe4bac5ef8cc521638ceb6a9673c7687eaa55d166d45a813e8",
+    "light/small-120": "161b446c718ab11e1d81c957a38df027149fba79aac59f0bbe2d58003a672b75",
+    "light/small-40-sonne": "9712d4f56ed58204f6231d6d0dd8239c023832fe76c8816549402565a392da4f",
+    "light/farmyard-12": "20cadca73e853351912c942287fb67f952d2d648c223fd2e9ef102c096b113ad",
+    "light/farmyard-40": "15446e04de215d46cac9efa21a8554577910b3685a2382ade01d7d86329fe759",
+    "light/farmyard-120": "a5346f52eeee78e5a15d44e21cd194712f079d4c182f434e00780b57f1493cc6",
+    "light/farmyard-40-sonne": "0434f1a7f2f6c0ae355efb02058c1f57578ac87168d0fb2ae40fbbc9fc3e29be",
+    "light/city-12": "7d4af7199902d5a80ba47d7b3a13e430b93be40a93a15481ad4584a97f90c4db",
+    "light/city-40": "233c5963632492e1cd528a83be52873b509c6d4c8ac8267b2f571fb9e0424ab6",
+    "light/city-120": "268a79d21ac90ed060a842b2df1be6c517b89ed3087bd9d1bc2a842b454ffc10",
+    "light/city-40-sonne": "243451103f9a97b3a1c7720816eb2c4510b151e58738622d3812cc6e74136734",
+    "dark/small-12": "84037d668de6755671cf3a493b30d166a739194bd1a9a9bf02d27e0f88ce35b6",
+    "dark/small-40": "dbcff9ba93ef2ab2dde8c50b7f8a70c6430e9370ec23e10a6f3a49a9ce88d1f5",
+    "dark/small-120": "712fbc0c43f75b88294b0fcca18f5c2195391c4d6526ba772dc30241f25a4512",
+    "dark/small-40-sonne": "7e71a0ee12d2d04a9698102a7272ce1c667594bc922ac22ffae4932a6f66eed5",
+    "dark/farmyard-12": "52c7dc51d7eb7db75fb95418241d5c60a099dea99ba7f3718191904bcbf6bb2b",
+    "dark/farmyard-40": "6c0fc1f62b8e4f23585ff86d98cae840e79591ca376f7d8c4d08934335b91557",
+    "dark/farmyard-120": "332c0ff47e9ded5ad9cb59ac2ece70e8897bf57bf45894057f6ff973afc98f9a",
+    "dark/farmyard-40-sonne": "7c861e83681f16192b346b21f6382683e46cdf378f8b08a920c45102d0ac6f78",
+    "dark/city-12": "6f9d7a7ccce280de53871516c204ac926dd157da2d8687615e2e57aa760f35a3",
+    "dark/city-40": "e91b34f9c5f494a1e6b87a80f03c43e594e9684d4cd2b2d6a43f61ec41d69408",
+    "dark/city-120": "6fd789153b081d3d428d271933f7d46eaee40a746053242b3ffb9a6607fa5843",
+    "dark/city-40-sonne": "3ee53f8efc966c63a9dd1b5615504b5c56670957339c49773b24542dc0526b32"
+  },
+  "chromium": "153.0.8010.12",
+  "timing": {
+    "cell": "city-40",
+    "cpu_slowdown": 4,
+    "runs": [
+      46,
+      33,
+      36,
+      37,
+      35
+    ],
+    "median_ms": 36,
+    "machine": "darwin Apple M1"
+  }
+}

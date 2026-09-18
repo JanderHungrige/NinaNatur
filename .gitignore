@@ -44,6 +44,8 @@ frontend/dist/
 # The smoke test's traces and reports (Wave 23): they carry the fixture garden's
 # address, token included.
 frontend/test-results/
+# The plan's contact sheet (doc 95): images to look at, never committed.
+frontend/sheet-out/
 frontend/playwright-report/
 frontend/blob-report/
 # Built frontend copied in for the container image
