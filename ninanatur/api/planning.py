@@ -18,12 +18,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_bed, require_garden, to_out
-from ninanatur.api.schemas import (
-    ColourObservation,
-    GardenOut,
-    PlantingCreate,
-    PlantingPlacement,
-)
+from ninanatur.api.schemas import GardenOut
+from ninanatur.api.schemas_garden_in import ColourObservation, PlantingCreate, PlantingPlacement
 from ninanatur.data.names import resolve_one
 from ninanatur.garden.observations import record_colour
 from ninanatur.garden.plantings import add_planting, place_planting, remove_planting

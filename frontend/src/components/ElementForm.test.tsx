@@ -1,40 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
-import { ElementForm } from './ElementForm';
-
-type Props = Parameters<typeof ElementForm>[0];
-
-/** The form as the details show it: an element with no kind and no name yet. */
-function open(props: Partial<Props> = {}) {
-  const handlers = {
-    onSave: vi.fn(),
-    onDelete: vi.fn(),
-    onCancel: vi.fn(),
-    onFocusTaken: vi.fn(),
-  };
-  render(
-    <ElementForm
-      heading="Was ist das?"
-      kind="other"
-      label={null}
-      plantings={0}
-      shape="polygon"
-      roof="unknown"
-      eavesM={null}
-      height={null}
-      width={null}
-      soilType={null}
-      moisture={null}
-      heightAboveGround={0}
-      busy={false}
-      takeFocus={false}
-      {...handlers}
-      {...props}
-    />,
-  );
-  return handlers;
-}
+import { open } from '../testing/elementForm';
 
 describe('ElementForm', () => {
   it('is part of the details, not a dialog over the plan', () => {

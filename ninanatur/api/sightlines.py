@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
-from ninanatur.api.schemas import PlantingVisibility, SightlinesOut, ViewpointIn
+from ninanatur.api.schemas_map import PlantingVisibility, SightlinesOut, ViewpointIn
 from ninanatur.data.traits import resolve_trait
 from ninanatur.garden.models import Element, Garden, Planting
 from ninanatur.garden.objects import ObjectKind, casts_shadow

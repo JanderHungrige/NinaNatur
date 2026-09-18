@@ -1544,6 +1544,17 @@
             ],
             "title": "Eaves M"
           },
+          "eaves_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eaves Source"
+          },
           "footprint": {
             "items": {
               "items": {
@@ -1609,6 +1620,32 @@
             "title": "Roof",
             "type": "string"
           },
+          "roof_fall_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roof Fall Deg"
+          },
+          "roof_pitch_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roof Pitch Deg"
+          },
+          "roof_source": {
+            "title": "Roof Source",
+            "type": "string"
+          },
           "shape": {
             "title": "Shape",
             "type": "string"
@@ -1638,6 +1675,10 @@
           "kind",
           "roof",
           "eaves_m",
+          "roof_source",
+          "eaves_source",
+          "roof_fall_deg",
+          "roof_pitch_deg",
           "label",
           "height_source",
           "x",
@@ -1704,17 +1745,6 @@
               }
             ],
             "title": "Height"
-          },
-          "height_source": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Height Source"
           },
           "kind": {
             "anyOf": [
@@ -3147,7 +3177,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.19.90"
+    "version": "V0.20.190"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -4157,7 +4187,7 @@
     },
     "/api/v1/gardens/{token}/light": {
       "get": {
-        "description": "The stored map, or null when nothing has been drawn yet.\n\n`month` asks for one month instead of the season, computed on the spot and\nnot stored. March to October, the same window the whole light model uses:\na plant's December is not what decides where it can live, and a map of it\nwould drag every German garden into shade.",
+        "description": "The stored map, or null when nothing has been drawn yet.\n\n`month` asks for one month instead of the season, computed on the spot and\nnot stored. March to October, the same window the whole light model uses:\na plant's December is not what decides where it can live, and a map of it\nwould drag every German garden into shade.\n\nA month is a computation \u2014 about a quarter of a relight, seconds on a big\ngarden \u2014 so it takes a slot and counts against the visitor's limit like the\nother three, slot first. The stored season map is a read, never turned away.",
         "operationId": "light_map_api_v1_gardens__token__light_get",
         "parameters": [
           {
@@ -5406,7 +5436,7 @@
     },
     "/healthz": {
       "get": {
-        "description": "Liveness probe for the deploy cron and the reverse proxy.\n\nDeliberately dependency-free: it must answer while the app is otherwise\nbroken, or a failing deploy looks identical to a failing database.",
+        "description": "Liveness probe for the deploy cron and the reverse proxy.\n\nDeliberately dependency-free: it must answer while the app is otherwise\nbroken, or a failing deploy looks identical to a failing database. And\nasync, so it runs on the event loop rather than in the thread pool the\nexpensive computations fill \u2014 a busy app must not look like a dead one.",
         "operationId": "healthz_healthz_get",
         "responses": {
           "200": {

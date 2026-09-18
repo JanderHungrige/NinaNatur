@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 import type { FormValues } from '../garden/selection';
+import { eavesNote, roofNote } from '../heights';
 import { KINDS, PLANTING_KIND } from '../kinds';
-import { ROOFED, ROOFS } from '../roofs';
+import { ROOFED, ROOFS, ridgeNote } from '../roofs';
 
 interface Props extends FormValues {
   /** What the section asks. */
@@ -39,7 +40,11 @@ export function ElementForm({
   plantings,
   shape,
   roof,
+  roofSource,
+  roofFallDeg,
+  roofPitchDeg,
   eavesM,
+  eavesSource,
   height,
   width,
   soilType,
@@ -57,9 +62,12 @@ export function ElementForm({
   const box = useRef<HTMLElement | null>(null);
   const [chosen, setChosen] = useState(kind);
   const [text, setText] = useState(label ?? '');
-  const [tall, setTall] = useState(height === null ? '' : String(height));
+  // What the fields opened with, so that only what changed is sent (doc 93).
+  const tallAtStart = height === null ? '' : String(height);
+  const eavesAtStart = eavesM === null ? '' : String(eavesM);
+  const [tall, setTall] = useState(tallAtStart);
   const [roofShape, setRoofShape] = useState(roof);
-  const [eaves, setEaves] = useState(eavesM === null ? '' : String(eavesM));
+  const [eaves, setEaves] = useState(eavesAtStart);
   const [band, setBand] = useState(width === null ? '' : String(width));
   const [soil, setSoil] = useState(soilType ?? '');
   const [wet, setWet] = useState(moisture ?? '');
@@ -88,11 +96,13 @@ export function ElementForm({
       // Empty means "whatever the garden says", not "no soil".
       if (soil !== '') changes.soil_type = soil;
       if (wet !== '') changes.moisture = wet;
-    } else if (tall !== '') {
+    } else if (tall !== '' && tall !== tallAtStart) {
       changes.height = Number(tall);
     }
-    if (ROOFED.has(chosen)) {
-      changes.roof = roofShape;
+    // Only what was changed (doc 93). The server takes a value in the body as
+    // the gardener's word on it, and a rename is nobody's word on the roof.
+    if (ROOFED.has(chosen) && roofShape !== roof) changes.roof = roofShape;
+    if (ROOFED.has(chosen) && eaves !== eavesAtStart) {
       // Empty is "nobody has said", which is a value: it puts the building back
       // on the assumed eaves rather than on zero.
       changes.eaves_m = eaves === '' ? null : Number(eaves);
@@ -100,6 +110,17 @@ export function ElementForm({
     if (shape === 'line' && band !== '') changes.width = Number(band);
     onSave(changes);
   };
+
+  // Where the stored values came from. A note belongs to the value it describes:
+  // once the field is changed, the value is the gardener's and says nothing.
+  const ridge = tall === '' || !Number.isFinite(Number(tall)) ? null : Number(tall);
+  const roofSaid = roofShape === roof ? roofNote(roof, roofSource) : null;
+  // The ridge described the stored roof too: another shape chosen, it goes.
+  const ridgeSaid = roofShape === roof ? ridgeNote(roof, roofFallDeg, roofPitchDeg) : null;
+  const roofNotes = [roofSaid === null ? null : field('roof-said'),
+                     ridgeSaid === null ? null : field('ridge-said')]
+    .filter((id) => id !== null).join(' ');
+  const eavesSaid = eaves === eavesAtStart ? eavesNote(eavesM, eavesSource, ridge) : null;
 
   return (
     <section ref={box} className="panel element-form" aria-labelledby={field('heading')}>
@@ -123,18 +144,23 @@ export function ElementForm({
       {ROOFED.has(chosen) && (
         <>
           <label htmlFor={field('roof')}>Dachform</label>
-          <select id={field('roof')} value={roofShape} onChange={(e) => setRoofShape(e.target.value)}>
+          <select id={field('roof')} value={roofShape} onChange={(e) => setRoofShape(e.target.value)}
+                  aria-describedby={roofNotes === '' ? undefined : roofNotes}>
             {ROOFS.map(([value, words]) => (
               <option key={value} value={value}>{words}</option>
             ))}
           </select>
+          {roofSaid !== null && <p id={field('roof-said')} className="hint">{roofSaid}</p>}
+          {ridgeSaid !== null && <p id={field('ridge-said')} className="hint">{ridgeSaid}</p>}
           {/* Optional, and worth asking for: with the ridge it gives the pitch,
               and the pitch is what makes the north side of a roof darker than
               the south side. Without it the model assumes the eaves are three
               quarters of the way up. */}
           <label htmlFor={field('eaves')}>Traufhöhe (m)</label>
           <input id={field('eaves')} type="number" min="0" step="0.1" placeholder="geschätzt"
-                 value={eaves} onChange={(e) => setEaves(e.target.value)} />
+                 value={eaves} onChange={(e) => setEaves(e.target.value)}
+                 aria-describedby={eavesSaid === null ? undefined : field('eaves-said')} />
+          {eavesSaid !== null && <p id={field('eaves-said')} className="hint">{eavesSaid}</p>}
 
           {/* Said where the choice is made: the height came from the map and
               means the ridge, so a house without a shape shades as though its

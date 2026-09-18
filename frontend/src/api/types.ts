@@ -435,6 +435,10 @@ export interface paths {
          *     not stored. March to October, the same window the whole light model uses:
          *     a plant's December is not what decides where it can live, and a map of it
          *     would drag every German garden into shade.
+         *
+         *     A month is a computation — about a quarter of a relight, seconds on a big
+         *     garden — so it takes a slot and counts against the visitor's limit like the
+         *     other three, slot first. The stored season map is a read, never turned away.
          */
         get: operations["light_map_api_v1_gardens__token__light_get"];
         put?: never;
@@ -860,7 +864,9 @@ export interface paths {
          * @description Liveness probe for the deploy cron and the reverse proxy.
          *
          *     Deliberately dependency-free: it must answer while the app is otherwise
-         *     broken, or a failing deploy looks identical to a failing database.
+         *     broken, or a failing deploy looks identical to a failing database. And
+         *     async, so it runs on the event loop rather than in the thread pool the
+         *     expensive computations fill — a busy app must not look like a dead one.
          */
         get: operations["healthz_healthz_get"];
         put?: never;
@@ -1416,6 +1422,8 @@ export interface components {
             constraint_hint: string | null;
             /** Eaves M */
             eaves_m: number | null;
+            /** Eaves Source */
+            eaves_source: string | null;
             /** Footprint */
             footprint: number[][];
             /** Height */
@@ -1432,6 +1440,12 @@ export interface components {
             points: number[][] | null;
             /** Roof */
             roof: string;
+            /** Roof Fall Deg */
+            roof_fall_deg: number | null;
+            /** Roof Pitch Deg */
+            roof_pitch_deg: number | null;
+            /** Roof Source */
+            roof_source: string;
             /** Shape */
             shape: string;
             /** Width */
@@ -1454,8 +1468,6 @@ export interface components {
             eaves_m?: number | null;
             /** Height */
             height?: number | null;
-            /** Height Source */
-            height_source?: string | null;
             kind?: components["schemas"]["ObjectKind"] | null;
             /** Label */
             label?: string | null;

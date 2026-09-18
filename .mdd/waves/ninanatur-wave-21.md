@@ -3,11 +3,11 @@ id: ninanatur-wave-21
 title: "Wave 21: The roof, said properly"
 initiative: ninanatur
 initiative_version: 21
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-19
 demo_state: "Ein Haus aus dem Kartenimport kennt seine Traufhöhe, ohne dass jemand sie eintippt, und sagt woher; die Nordseite eines Satteldachs bekommt sichtbar weniger Sonne als die Südseite, weil die Neigung gemessen und nicht angenommen ist."
 created: 2026-09-07
-hash: d2ff046b
+hash: 7068c4fd
 ---
 
 # Wave 21: The roof, said properly
@@ -41,22 +41,77 @@ is the first thing here. A field was added to the element menu so somebody
 *can* type it — but a feature that only works when the user does homework is a
 feature most gardens will never see.
 
-## Scope, provisionally
+## What was already there (found 2026-09-18)
 
-- **Eaves from the survey, not from a fraction.** NRW's LoD2 already carries
-  labelled `GroundSurface` and `RoofSurface` polygons, and Wave 19 already
-  parses that file for heights. The eaves height is the lowest edge of the roof
-  surfaces — it is in the data this project is already downloading.
-- **And the ridge direction with it.** From the same surfaces. That removes the
-  long-axis assumption entirely for every building in NRW, and the roof type
-  becomes a measurement rather than a shape ratio.
-- **`building:levels` as the fallback** wherever OSM carries it; `eaves_from_levels`
-  exists already and is only used at import.
-- **Say which it is.** A measured eaves height and an assumed one must not look
-  alike, exactly as `height_source` already distinguishes a surveyed height from
-  a guessed one.
-- **The other eleven Bundesländer.** NRW is the only state whose LoD2 is
-  addressable by coordinate. What the rest can offer, if anything, is research.
+The eaves row of the table above was half answered before this wave was
+written. Wave 19's reader takes the eaves from the lowest edge of the roof
+surfaces (doc 82: 78 % of buildings give one, and pitched roofs land at 0.78 of
+the ridge), and a matched house stores it. What nothing does is say so: an
+eaves height from the survey, one from the storey count, one somebody typed and
+the ¾ assumption look exactly alike on the page. And the form that shows them
+sends every field back on save, so renaming a surveyed house marks its height
+as typed — after which no refresh measures it again.
+
+The ridge row is worse than it looked. Measured on 2026-09-18 against three
+cached NRW tiles (two in Köln, one in Wuppertal), comparing the ridge the roof
+faces say with the one `roofshape` assumes:
+
+| Gable parts | Ridge within 10° of the long axis | Turned by 45° or more |
+|---|---|---|
+| 1,725 | 610 (35 %) | **1,114 (65 %)** |
+
+The turned ones are typically narrow, deep footprints whose ridge runs parallel
+to the street — terraced houses — but not only: among footprints of 80–250 m²
+at least 1.3 times as long as wide, 197 of 351 are turned too. Their pitches,
+which the model calls north and south, face east and west. With the surveyed
+ridge the pitch the model derives from eaves, ridge height and span matches the
+surveyed faces to a median of 0.1°, against 6.9° with the assumed ridge (13.1°
+for the turned ones). For hip roofs the faces cancel each other out, and the
+roof's highest edge is the better reading: it finds a ridge on 44 of 46, and
+agrees with the faces on 99 % of the gables where both exist.
+
+## Features
+
+| # | Feature | Doc | Status | Depends on |
+|---|---------|-----|--------|------------|
+| 1 | where-the-roof-came-from | docs/93-where-the-roof-came-from.md | complete | — |
+| 2 | which-way-the-ridge-runs | docs/94-which-way-the-ridge-runs.md | complete | 1 |
+
+### 1. where-the-roof-came-from
+
+The eaves get their own provenance beside `height_source` and `roof_source`:
+surveyed, from the storey count, typed, or nobody has said — and then the page
+says that ¾ of the ridge is assumed. The gardener's word wins per value rather
+than per building: a typed roof shape or eaves height survives the next
+refresh even where the height was left to the survey. The form sends only what
+was changed, so saving a name never turns a measurement into an entry.
+`building:levels` stays the fallback at import, now labelled as one.
+
+### 2. which-way-the-ridge-runs
+
+The ridge direction comes from the survey: the highest edge of the roof for a
+gable or a hip, the fall of its faces for a pent. It is stored per building on
+the garden's own axes, and `roofshape` orients the pitches by it instead of by
+the long axis — and a pent roof whose fall is known is pitched at last, rather
+than left flat. The page says which way the ridge runs, the pitch that gives,
+and whether both were measured or assumed.
+
+## Scope, decided 2026-09-18
+
+The first draft of this wave (2026-09-07) listed five items. They became the
+two features above, except:
+
+- **The other eleven Bundesländer moved to Wave 25**, feature 3
+  (every-roof-in-the-country), which already calls itself the rest of this
+  wave. Plan 04 did the research on 2026-09-07; what is left is building
+  adapters, and that is Wave 25's subject.
+- **A roof as a shadow caster stays in Wave 26** (feature 5,
+  a-roof-casts-as-a-roof). This wave supplies its inputs; the shadow a house
+  throws on the garden is still the `RISE_KEPT` prism.
+
+## Open Research
+
+(none)
 
 ## Deliberately not in it
 

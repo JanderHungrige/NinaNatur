@@ -38,11 +38,14 @@ class ObstacleInput:
     height: float | None = None
     label: str | None = None
     height_source: str = "user"
+    #: 'user' | 'surveyed' | 'osm'. Where the shape came from (doc 93).
     roof_source: str = "user"
     #: 'flat' | 'gable' | 'hip' | 'pent' | 'unknown'. OSM's `height` is the
     #: ridge; without a shape the whole of it is treated as solid.
     roof: str = "unknown"
     eaves_m: float | None = None
+    #: 'user' | 'surveyed' | 'osm_levels', or None: nobody has said (doc 93).
+    eaves_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -109,6 +112,12 @@ class Element:
     roof: str = "unknown"
     #: Eaves height where it is known rather than assumed.
     eaves_m: float | None = None
+    #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'. None is nobody,
+    #: and then the model puts them at three quarters of the ridge.
+    eaves_source: str | None = None
+    #: The bearing the roof falls towards, from the survey (doc 94). None: the
+    #: ridge is assumed to run along the long side, and a pent is left flat.
+    roof_fall_deg: float | None = None
     label: str | None = None
 
     # --- what a planting site needs, null on everything else ----------------

@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.api.origin import same_origin
-from ninanatur.api.schemas import (
+from ninanatur.api.schemas_accounts import (
     AccountOut,
     Credentials,
     OwnedGarden,

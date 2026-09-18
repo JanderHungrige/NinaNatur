@@ -1,8 +1,8 @@
 ---
 generated: 2026-09-18
-doc_count: 93
-connection_count: 111
-overlap_count: 108
+doc_count: 95
+connection_count: 115
+overlap_count: 117
 ---
 
 # Connections
@@ -87,6 +87,8 @@ Map
 ├── Buildings  82-the-roof-it-actually-has  complete
 ├── Buildings  83-measured-surveyed-or-assumed  complete
 ├── Buildings  84-what-else-is-standing-there  complete
+├── Buildings  93-where-the-roof-came-from  complete
+├── Buildings  94-which-way-the-ridge-runs  complete
 ├── Surroundings  63-neighbours-from-the-plot  complete
 ├── Terrain  68-which-ground-and-whose  complete
 ├── Terrain  69-a-window-of-ground  complete
@@ -335,6 +337,12 @@ graph TD
     92_one_panel_one_style["92-one-panel-one-style"]:::complete
     87_a_workspace_not_a_page --> 92_one_panel_one_style
     91_a_sheet_from_below --> 92_one_panel_one_style
+    93_where_the_roof_came_from["93-where-the-roof-came-from"]:::complete
+    82_the_roof_it_actually_has --> 93_where_the_roof_came_from
+    83_measured_surveyed_or_assumed --> 93_where_the_roof_came_from
+    94_which_way_the_ridge_runs["94-which-way-the-ridge-runs"]:::complete
+    82_the_roof_it_actually_has --> 94_which_way_the_ridge_runs
+    93_where_the_roof_came_from --> 94_which_way_the_ridge_runs
     classDef complete fill:#00e5cc,color:#000
     classDef in_progress fill:#ffaa00,color:#000
     classDef draft fill:#888,color:#fff
@@ -352,7 +360,7 @@ graph TD
 - `deploy/install-cron.sh` — 02-web-shell, 77-one-cron-two-environments
 - `frontend/src/App.tsx` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 27-object-labelling, 29-bloom-playback, 30-landing-and-garden-id, 32-object-heights, 36-claim-gardens, 39-element-stamps, 47-panel-order, 53-account-in-header, 54-one-way-in, 57-delete-elements, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page
 - `frontend/src/api/client.ts` — 10-web-client, 15-timeline-ui, 35-accounts, 78-you-are-looking-at-the-preview, 90-a-list-that-fits-a-window
-- `frontend/src/api/types.ts` — 10-web-client, 15-timeline-ui
+- `frontend/src/api/types.ts` — 10-web-client, 15-timeline-ui, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/canvas/freehand.ts` — 40-freehand-shapes, 46-freehand-paths, 50-polygon-closing
 - `frontend/src/canvas/geometry.ts` — 26-drawing-canvas, 40-freehand-shapes, 56-bloom-dots
 - `frontend/src/canvas/handles.ts` — 39-element-stamps, 43-shape-tools
@@ -369,7 +377,7 @@ graph TD
 - `frontend/src/components/CanvasScene.tsx` — 26-drawing-canvas, 27-object-labelling, 29-bloom-playback, 34-sightlines, 41-garden-style, 49-drawing-focus, 51-element-context-menu, 56-bloom-dots, 65-the-shade-switch, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/ClusterLayer.tsx` — 61-planting-clusters, 88-what-the-selection-shows
 - `frontend/src/components/ElementDetails.tsx` — 51-element-context-menu, 88-what-the-selection-shows
-- `frontend/src/components/ElementForm.tsx` — 51-element-context-menu, 88-what-the-selection-shows
+- `frontend/src/components/ElementForm.tsx` — 51-element-context-menu, 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/components/ElementList.tsx` — 52-element-list, 83-measured-surveyed-or-assumed, 89-three-steps-in
 - `frontend/src/components/FilterControls.tsx` — 23-catalogue-filters, 90-a-list-that-fits-a-window
 - `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
@@ -390,26 +398,31 @@ graph TD
 - `frontend/src/components/SpeciesInfo.tsx` — 22-species-info, 88-what-the-selection-shows
 - `frontend/src/components/SuggestionList.tsx` — 15-timeline-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 25-woody-and-birds, 90-a-list-that-fits-a-window
 - `frontend/src/components/ToolRail.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in
+- `frontend/src/garden/selection.ts` — 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/garden/useClipboard.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows
 - `frontend/src/garden/useElements.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows
 - `frontend/src/garden/useGarden.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/garden/useSelection.ts` — 51-element-context-menu, 52-element-list, 88-what-the-selection-shows
 - `frontend/src/garden/useSuggestions.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows
+- `frontend/src/heights.ts` — 83-measured-surveyed-or-assumed, 93-where-the-roof-came-from
 - `frontend/src/kinds.ts` — 39-element-stamps, 41-garden-style, 45-relabel-and-skin, 59-osm-streets, 87-a-workspace-not-a-page
 - `frontend/src/map/tiles.ts` — 31-map-selection, 33-imagery-objects
 - `frontend/src/plural.ts` — 11-garden-canvas, 20-score-ui, 24-month-suggestions, 26-drawing-canvas
+- `frontend/src/roofs.ts` — 82-the-roof-it-actually-has, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style
+- `frontend/src/testing/gardens.ts` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/usePinch.ts` — 31-map-selection, 91-a-sheet-from-below
 - `ninanatur/api/accounts.py` — 35-accounts, 36-claim-gardens, 85-nothing-worse-than-it-looks
 - `ninanatur/api/bloom_year.py` — 18-insect-score, 19-swap-suggestions, 20-score-ui, 29-bloom-playback
 - `ninanatur/api/candidates.py` — 23-catalogue-filters, 62-manual-colours
+- `ninanatur/api/elements.py` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `ninanatur/api/filters.py` — 23-catalogue-filters, 25-woody-and-birds
-- `ninanatur/api/gardens.py` — 09-garden-api, 12-planting-model, 13-bed-suggestions, 14-bloom-timeline, 16-nativeness, 27-object-labelling, 36-claim-gardens, 48-garden-soil, 57-delete-elements, 85-nothing-worse-than-it-looks
-- `ninanatur/api/geo.py` — 31-map-selection, 33-imagery-objects, 59-osm-streets, 63-neighbours-from-the-plot
+- `ninanatur/api/gardens.py` — 09-garden-api, 12-planting-model, 13-bed-suggestions, 14-bloom-timeline, 16-nativeness, 27-object-labelling, 36-claim-gardens, 48-garden-soil, 57-delete-elements, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/api/geo.py` — 31-map-selection, 33-imagery-objects, 59-osm-streets, 63-neighbours-from-the-plot, 93-where-the-roof-came-from
 - `ninanatur/api/light.py` — 64-light-across-the-bed, 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is
 - `ninanatur/api/planning.py` — 28-existing-plantings, 61-planting-clusters
 - `ninanatur/api/plants.py` — 06-plants-api, 21-german-names, 22-species-info, 30-landing-and-garden-id
-- `ninanatur/api/schemas.py` — 06-plants-api, 09-garden-api, 12-planting-model, 13-bed-suggestions, 14-bloom-timeline, 18-insect-score, 19-swap-suggestions, 20-score-ui, 22-species-info, 23-catalogue-filters, 27-object-labelling, 28-existing-plantings, 29-bloom-playback, 32-object-heights, 37-object-footprints, 44-vertex-editing, 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks
+- `ninanatur/api/schemas.py` — 06-plants-api, 09-garden-api, 12-planting-model, 13-bed-suggestions, 14-bloom-timeline, 18-insect-score, 19-swap-suggestions, 20-score-ui, 22-species-info, 23-catalogue-filters, 27-object-labelling, 28-existing-plantings, 29-bloom-playback, 32-object-heights, 37-object-footprints, 44-vertex-editing, 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `ninanatur/api/search.py` — 06-plants-api, 13-bed-suggestions, 16-nativeness, 23-catalogue-filters
 - `ninanatur/api/sightlines.py` — 34-sightlines, 38-polygon-shadows
 - `ninanatur/api/suggestions.py` — 16-nativeness, 23-catalogue-filters, 25-woody-and-birds
@@ -421,29 +434,33 @@ graph TD
 - `ninanatur/data/traits.py` — 04-trait-resolve, 62-manual-colours
 - `ninanatur/feedback/issues.py` — 60-feedback-box, 79-feedback-knows-where-it-came-from
 - `ninanatur/garden/building_sync.py` — 83-measured-surveyed-or-assumed, 84-what-else-is-standing-there
-- `ninanatur/garden/elements.py` — 42-element-model, 57-delete-elements
+- `ninanatur/garden/element_edits.py` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/garden/elements.py` — 42-element-model, 57-delete-elements, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `ninanatur/garden/footprint.py` — 37-object-footprints, 42-element-model
-- `ninanatur/garden/lightgrid.py` — 64-light-across-the-bed, 67-sun-plant-in-a-shade-spot, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning
+- `ninanatur/garden/lightcells.py` — 64-light-across-the-bed, 94-which-way-the-ridge-runs
+- `ninanatur/garden/lightgrid.py` — 64-light-across-the-bed, 67-sun-plant-in-a-shade-spot, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 94-which-way-the-ridge-runs
 - `ninanatur/garden/lighting.py` — 64-light-across-the-bed, 66-a-tree-is-not-a-wall, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 73-which-way-does-it-fall
-- `ninanatur/garden/measured.py` — 83-measured-surveyed-or-assumed, 85-nothing-worse-than-it-looks
-- `ninanatur/garden/models.py` — 08-garden-model, 12-planting-model, 28-existing-plantings, 37-object-footprints, 42-element-model
+- `ninanatur/garden/measured.py` — 83-measured-surveyed-or-assumed, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/garden/models.py` — 08-garden-model, 12-planting-model, 28-existing-plantings, 37-object-footprints, 42-element-model, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `ninanatur/garden/objects.py` — 27-object-labelling, 37-object-footprints, 59-osm-streets
 - `ninanatur/garden/plantings.py` — 45-relabel-and-skin, 61-planting-clusters
 - `ninanatur/garden/roofs.py` — 64-light-across-the-bed, 82-the-roof-it-actually-has
+- `ninanatur/garden/roofshape.py` — 64-light-across-the-bed, 94-which-way-the-ridge-runs
 - `ninanatur/garden/sightlines.py` — 34-sightlines, 38-polygon-shadows
 - `ninanatur/garden/slopes.py` — 72-the-hill-that-eats-the-morning, 73-which-way-does-it-fall
-- `ninanatur/garden/store.py` — 08-garden-model, 12-planting-model, 25-woody-and-birds, 27-object-labelling, 28-existing-plantings, 37-object-footprints, 38-polygon-shadows, 44-vertex-editing, 45-relabel-and-skin, 48-garden-soil
-- `ninanatur/geo/lod2.py` — 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks
+- `ninanatur/garden/store.py` — 08-garden-model, 12-planting-model, 25-woody-and-birds, 27-object-labelling, 28-existing-plantings, 37-object-footprints, 38-polygon-shadows, 44-vertex-editing, 45-relabel-and-skin, 48-garden-soil, 93-where-the-roof-came-from
+- `ninanatur/geo/lod2.py` — 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks, 94-which-way-the-ridge-runs
 - `ninanatur/geo/osm.py` — 31-map-selection, 59-osm-streets, 63-neighbours-from-the-plot
 - `ninanatur/geo/projection.py` — 31-map-selection, 63-neighbours-from-the-plot
 - `ninanatur/geo/surroundings.py` — 32-object-heights, 63-neighbours-from-the-plot, 83-measured-surveyed-or-assumed
 - `ninanatur/geo/terrain.py` — 69-a-window-of-ground, 81-a-house-with-a-measured-height
 - `ninanatur/geo/terrain_store.py` — 69-a-window-of-ground, 70-the-horizon-ring
 - `ninanatur/geo/tiff.py` — 69-a-window-of-ground, 85-nothing-worse-than-it-looks
-- `ninanatur/ingest/db.py` — 01-trait-ingest, 08-garden-model, 12-planting-model, 17-insect-groups, 21-german-names, 22-species-info, 25-woody-and-birds, 27-object-labelling, 28-existing-plantings, 34-sightlines, 35-accounts, 37-object-footprints, 42-element-model
+- `ninanatur/ingest/db.py` — 01-trait-ingest, 08-garden-model, 12-planting-model, 17-insect-groups, 21-german-names, 22-species-info, 25-woody-and-birds, 27-object-labelling, 28-existing-plantings, 34-sightlines, 35-accounts, 37-object-footprints, 42-element-model, 93-where-the-roof-came-from
 - `ninanatur/ingest/http.py` — 01-trait-ingest, 69-a-window-of-ground, 85-nothing-worse-than-it-looks
-- `ninanatur/ingest/migrations.py` — 48-garden-soil, 62-manual-colours, 73-which-way-does-it-fall
-- `ninanatur/ingest/schema_user.py` — 60-feedback-box, 69-a-window-of-ground, 70-the-horizon-ring, 73-which-way-does-it-fall, 83-measured-surveyed-or-assumed
+- `ninanatur/ingest/migrations.py` — 48-garden-soil, 62-manual-colours, 73-which-way-does-it-fall, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/ingest/schema.py` — 48-garden-soil, 93-where-the-roof-came-from
+- `ninanatur/ingest/schema_user.py` — 60-feedback-box, 69-a-window-of-ground, 70-the-horizon-ring, 73-which-way-does-it-fall, 83-measured-surveyed-or-assumed, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `ninanatur/ingest/sources/eive.py` — 01-trait-ingest, 03-niche-fit
 - `ninanatur/ingest/sources/gbif.py` — 01-trait-ingest, 05-insect-checklist-de, 25-woody-and-birds
 - `ninanatur/ingest/sources/gift.py` — 01-trait-ingest, 66-a-tree-is-not-a-wall

@@ -22,7 +22,11 @@ function obstacle(
     height: 2,
     label: null,
     roof: 'unknown',
+    roof_source: 'user',
     eaves_m: null,
+    eaves_source: null,
+    roof_fall_deg: null,
+    roof_pitch_deg: null,
     height_source: 'user',
     footprint: [[-2, 1.5], [2, 1.5], [2, -1.5], [-2, -1.5]],
   };

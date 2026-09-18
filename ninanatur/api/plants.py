@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ninanatur.api.candidate_cache import candidate_set
 from ninanatur.api.candidates import OBSERVED_COLOUR
 from ninanatur.api.deps import get_connection
-from ninanatur.api.schemas import (
+from ninanatur.api.schemas_plants import (
     AxisFitOut,
     FilterCountsOut,
     FitOut,

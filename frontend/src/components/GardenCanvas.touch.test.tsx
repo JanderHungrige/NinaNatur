@@ -21,7 +21,9 @@ function obstacle(id: number, kind: string): GardenOut['obstacles'][number] {
     obstacle_id: id, kind, x: id === HOUSE ? -10 : 10, y: 10, shape: 'polygon',
     width: null, constraint_hint: null,
     points: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
-    height: kind === 'house' ? 7 : null, label: null, roof: 'unknown', eaves_m: null, height_source: 'user',
+    height: kind === 'house' ? 7 : null, label: null, roof: 'unknown', roof_source: 'user', eaves_m: null, eaves_source: null,
+    roof_fall_deg: null, roof_pitch_deg: null,
+    height_source: 'user',
     footprint: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
   };
 }
