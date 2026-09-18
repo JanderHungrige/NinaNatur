@@ -62,3 +62,6 @@ deploy/.state/
 
 # Build metadata: rewritten by every pip install -e ., never committed.
 *.egg-info/
+# Draft Sketch's style file (doc 97): pinned by assets/draft-sketch/source.json,
+# fetched by the converter, never committed.
+assets/draft-sketch/*.stylx

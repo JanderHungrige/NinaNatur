@@ -49,7 +49,7 @@ function coverage(item: Drawn): number {
  * thing there is, so it falls to the back on its own, and a small bed drawn on
  * a lawn stays visible without anybody special-casing either.
  */
-function surfacesFirst(items: Drawn[]): Drawn[] {
+export function surfacesFirst(items: Drawn[]): Drawn[] {
   const standing = (item: Drawn): number => {
     const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
     return BY_KIND.get(kind)?.standing === false ? 0 : 1;

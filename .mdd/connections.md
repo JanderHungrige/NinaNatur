@@ -1,8 +1,8 @@
 ---
 generated: 2026-09-18
-doc_count: 97
-connection_count: 120
-overlap_count: 118
+doc_count: 98
+connection_count: 122
+overlap_count: 125
 ---
 
 # Connections
@@ -37,6 +37,7 @@ Canvas
 ├── Style  58-painted-plan  complete
 ├── Style  95-look-before-you-argue  complete
 ├── Style  96-a-theme-is-a-thing  complete
+├── Style  97-draft-sketch-in-svg  complete
 └── Vertices  44-vertex-editing  complete
 Data
 ├── Colour  62-manual-colours  complete
@@ -352,6 +353,9 @@ graph TD
     95_look_before_you_argue --> 96_a_theme_is_a_thing
     41_garden_style --> 96_a_theme_is_a_thing
     58_painted_plan --> 96_a_theme_is_a_thing
+    97_draft_sketch_in_svg["97-draft-sketch-in-svg"]:::complete
+    96_a_theme_is_a_thing --> 97_draft_sketch_in_svg
+    95_look_before_you_argue --> 97_draft_sketch_in_svg
     classDef complete fill:#00e5cc,color:#000
     classDef in_progress fill:#ffaa00,color:#000
     classDef draft fill:#888,color:#fff
@@ -368,7 +372,8 @@ graph TD
 - `deploy/compose.app.yml` — 02-web-shell, 76-a-second-stack, 85-nothing-worse-than-it-looks
 - `deploy/install-cron.sh` — 02-web-shell, 77-one-cron-two-environments
 - `frontend/package.json` — 10-web-client, 95-look-before-you-argue
-- `frontend/src/App.tsx` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 27-object-labelling, 29-bloom-playback, 30-landing-and-garden-id, 32-object-heights, 36-claim-gardens, 39-element-stamps, 47-panel-order, 53-account-in-header, 54-one-way-in, 57-delete-elements, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page
+- `frontend/scripts/plan-sheet.mjs` — 95-look-before-you-argue, 97-draft-sketch-in-svg
+- `frontend/src/App.tsx` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 27-object-labelling, 29-bloom-playback, 30-landing-and-garden-id, 32-object-heights, 36-claim-gardens, 39-element-stamps, 47-panel-order, 53-account-in-header, 54-one-way-in, 57-delete-elements, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 97-draft-sketch-in-svg
 - `frontend/src/api/client.ts` — 10-web-client, 15-timeline-ui, 35-accounts, 78-you-are-looking-at-the-preview, 90-a-list-that-fits-a-window
 - `frontend/src/api/types.ts` — 10-web-client, 15-timeline-ui, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/canvas/freehand.ts` — 40-freehand-shapes, 46-freehand-paths, 50-polygon-closing
@@ -384,13 +389,13 @@ graph TD
 - `frontend/src/components/BloomTimeline.tsx` — 15-timeline-ui, 24-month-suggestions, 89-three-steps-in, 92-one-panel-one-style
 - `frontend/src/components/CanopyBox.tsx` — 84-what-else-is-standing-there, 89-three-steps-in
 - `frontend/src/components/CanvasControls.tsx` — 26-drawing-canvas, 40-freehand-shapes, 89-three-steps-in
-- `frontend/src/components/CanvasScene.tsx` — 26-drawing-canvas, 27-object-labelling, 29-bloom-playback, 34-sightlines, 41-garden-style, 49-drawing-focus, 51-element-context-menu, 56-bloom-dots, 65-the-shade-switch, 88-what-the-selection-shows, 89-three-steps-in, 96-a-theme-is-a-thing
+- `frontend/src/components/CanvasScene.tsx` — 26-drawing-canvas, 27-object-labelling, 29-bloom-playback, 34-sightlines, 41-garden-style, 49-drawing-focus, 51-element-context-menu, 56-bloom-dots, 65-the-shade-switch, 88-what-the-selection-shows, 89-three-steps-in, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg
 - `frontend/src/components/ClusterLayer.tsx` — 61-planting-clusters, 88-what-the-selection-shows
 - `frontend/src/components/ElementDetails.tsx` — 51-element-context-menu, 88-what-the-selection-shows
 - `frontend/src/components/ElementForm.tsx` — 51-element-context-menu, 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/components/ElementList.tsx` — 52-element-list, 83-measured-surveyed-or-assumed, 89-three-steps-in
 - `frontend/src/components/FilterControls.tsx` — 23-catalogue-filters, 90-a-list-that-fits-a-window
-- `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
+- `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 97-draft-sketch-in-svg
 - `frontend/src/components/GardenDetails.tsx` — 52-element-list, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/GardenId.tsx` — 30-landing-and-garden-id, 87-a-workspace-not-a-page, 89-three-steps-in
 - `frontend/src/components/GardenSymbols.tsx` — 41-garden-style, 58-painted-plan, 59-osm-streets
@@ -402,6 +407,7 @@ graph TD
 - `frontend/src/components/MapPicker.tsx` — 31-map-selection, 32-object-heights, 33-imagery-objects
 - `frontend/src/components/ObjectEditor.tsx` — 27-object-labelling, 39-element-stamps, 45-relabel-and-skin, 46-freehand-paths, 48-garden-soil
 - `frontend/src/components/PlanArea.tsx` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
+- `frontend/src/components/PlanObjects.tsx` — 96-a-theme-is-a-thing, 97-draft-sketch-in-svg
 - `frontend/src/components/ResizeHandles.tsx` — 39-element-stamps, 43-shape-tools
 - `frontend/src/components/ShadeSwitch.tsx` — 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is, 87-a-workspace-not-a-page
 - `frontend/src/components/SiteHeader.tsx` — 87-a-workspace-not-a-page, 91-a-sheet-from-below
@@ -419,9 +425,13 @@ graph TD
 - `frontend/src/map/tiles.ts` — 31-map-selection, 33-imagery-objects
 - `frontend/src/plural.ts` — 11-garden-canvas, 20-score-ui, 24-month-suggestions, 26-drawing-canvas
 - `frontend/src/roofs.ts` — 82-the-roof-it-actually-has, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
-- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style, 96-a-theme-is-a-thing
+- `frontend/src/sheet/main.tsx` — 95-look-before-you-argue, 97-draft-sketch-in-svg
+- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg
 - `frontend/src/testing/gardens.ts` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `frontend/src/themes/index.ts` — 96-a-theme-is-a-thing, 97-draft-sketch-in-svg
+- `frontend/src/themes/types.ts` — 96-a-theme-is-a-thing, 97-draft-sketch-in-svg
 - `frontend/src/usePinch.ts` — 31-map-selection, 91-a-sheet-from-below
+- `frontend/vite.config.ts` — 11-garden-canvas, 97-draft-sketch-in-svg
 - `ninanatur/api/accounts.py` — 35-accounts, 36-claim-gardens, 85-nothing-worse-than-it-looks
 - `ninanatur/api/bloom_year.py` — 18-insect-score, 19-swap-suggestions, 20-score-ui, 29-bloom-playback
 - `ninanatur/api/candidates.py` — 23-catalogue-filters, 62-manual-colours
@@ -478,6 +488,7 @@ graph TD
 - `ninanatur/solar/light.py` — 07-solar-geometry, 27-object-labelling
 - `ninanatur/solar/shading.py` — 07-solar-geometry, 25-woody-and-birds, 27-object-labelling, 38-polygon-shadows, 66-a-tree-is-not-a-wall, 71-buildings-stand-on-the-ground
 - `ninanatur/web/app.py` — 02-web-shell, 06-plants-api, 09-garden-api, 11-garden-canvas, 78-you-are-looking-at-the-preview, 85-nothing-worse-than-it-looks
+- `ninanatur/web/delivery.py` — 85-nothing-worse-than-it-looks, 97-draft-sketch-in-svg
 
 ## Warnings
 

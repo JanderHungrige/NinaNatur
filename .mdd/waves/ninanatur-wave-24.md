@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: dda1fcb1
+hash: 2c24120a
 ---
 
 # Wave 24: A drawing of a garden
@@ -86,7 +86,7 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 |---|---------|-----|--------|------------|
 | 0 | a-theme-is-a-thing | docs/96-a-theme-is-a-thing.md | complete | 1 |
 | 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
-| 2 | draft-sketch-in-svg | — | planned | 1 |
+| 2 | draft-sketch-in-svg | docs/97-draft-sketch-in-svg.md | complete | 1 |
 | 3 | what-the-style-has-not-drawn | — | planned | 2 |
 | 4 | paper-bleed-and-a-real-shadow | — | planned | 3 |
 | 5 | lettered-by-hand | — | planned | 2 |
@@ -140,6 +140,19 @@ from the `.stylx` alone — his source assets are not asked for.*
   repository and commercial use; credit *Zeichenstil nach Draft Sketch von Warren
   Davison, verwendet und angepasst mit seiner Erlaubnis*, with the assistance of
   Louis Hill (@NKYmapLAB) that his item credits.
+- **2026-09-18 — feature 2, Draft Sketch in SVG** (doc 97). His style as a
+  theme, derived from the pinned file by `python -m scripts.stylx_to_theme`
+  and checked byte for byte: 13 of his symbols as patterns and overlays, his
+  8 images shipped once (344 KB) and tinted in SVG. Where CIM is silent his own
+  style sheet decided: a tint multiplies, a linear ramp starts where its angle
+  points, a circular ramp's first colour is its rim, buildings carry ticks.
+  Drawn only on the preview by `?theme=draft-sketch`, as a chunk of its own
+  that production never fetches and would not serve (`assets/draft-sketch/`);
+  his credit on the plan whenever it is his style; `THIRD_PARTY.md` written.
+  Paint budget: 69 ms for the city at 40 m against Technisch's 36 — first
+  221 ms, until a pattern held one rect and its marks were recorded once.
+  Technisch's 24 cells as recorded. Known issues are the review's agenda:
+  no bleed yet, no buffered rims, levels of detail at his print ranges.
 
 ## What each one is
 

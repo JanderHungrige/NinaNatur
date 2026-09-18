@@ -22,10 +22,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI
+from starlette.exceptions import HTTPException
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
+
+from ninanatur.web.environment import environment
 
 #: Below this the header costs more than compression saves.
 MIN_BYTES = 1000
@@ -41,6 +44,11 @@ IMMUTABLE = "public, max-age=31536000, immutable"
 REVALIDATE = "no-cache"
 #: Where Vite puts what it hashes.
 HASHED = "assets/"
+#: Draft Sketch's chunk and images (doc 97), in a folder of their own
+#: (frontend/vite.config.ts). Handed out on the preview only: nothing of Warren
+#: Davison's is served in public before he has seen his style in the plan.
+PREVIEW_ONLY = "assets/draft-sketch/"
+PREVIEW = "dev"
 
 
 def compress(app: FastAPI) -> None:
@@ -52,6 +60,9 @@ class BuiltBundle(StaticFiles):
     """The built front end, each file saying how long it may be kept."""
 
     async def get_response(self, path: str, scope: Scope) -> Response:
+        if path.replace("\\", "/").lower().startswith(PREVIEW_ONLY) and environment() != PREVIEW:
+            # Not "forbidden": outside the preview there is nothing here to ask about.
+            raise HTTPException(status_code=404)
         response = await super().get_response(path, scope)
         # Only a file that was there. A 404 kept for a year would outlive the
         # deployment race that caused it.
@@ -73,4 +84,4 @@ def serve_bundle(app: FastAPI, directory: Path) -> bool:
     return True
 
 
-__all__ = ["IMMUTABLE", "REVALIDATE", "BuiltBundle", "compress", "serve_bundle"]
+__all__ = ["IMMUTABLE", "PREVIEW_ONLY", "REVALIDATE", "BuiltBundle", "compress", "serve_bundle"]

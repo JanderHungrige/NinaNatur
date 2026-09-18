@@ -4,6 +4,7 @@ import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
 import { usePlanTheme } from '../themes/context';
 import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
+import { DecorationLayer, useDecorations } from './PlanDecorations';
 import { PlanObjects } from './PlanObjects';
 import { ReliefMap } from './ReliefMap';
 import { type MapMode, SunMap } from './SunMap';
@@ -89,7 +90,9 @@ export function CanvasScene({
   dragOffset = null,
 }: Props) {
   const theme = usePlanTheme();
-  const lod = theme.lodAt(view.spanM / view.widthPx);
+  const metresPerPixel = view.spanM / view.widthPx;
+  const lod = theme.lodAt(metresPerPixel);
+  const decorations = useDecorations(garden, theme, lod, metresPerPixel);
   /** Shown where the pointer has it, saved where it is let go. */
   const shift = (id: number): string =>
     dragOffset !== null && dragOffset.id === id
@@ -132,10 +135,12 @@ export function CanvasScene({
           N ↑
         </text>
 
+        {decorations !== null && <DecorationLayer drawn={decorations} part="under" shift={shift} />}
         <PlanObjects garden={garden} theme={theme} lod={lod} selectedBedId={selectedBedId}
                      selectedObstacleId={selectedObstacleId} armed={armed}
                      onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle}
                      onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift} />
+        {decorations !== null && <DecorationLayer drawn={decorations} part="over" shift={shift} />}
 
         {sunMap !== undefined && (
           <SunMap map={sunMap.map} mode={sunMap.mode} />

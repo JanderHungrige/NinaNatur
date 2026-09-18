@@ -9,6 +9,9 @@
  *   npm run plan:sheet -- --update        both modes, recorded in sheet/baseline.json
  *   npm run plan:sheet -- --timing        the paint budget: the city at 40 m, CPU slowed ×4
  *   npm run plan:sheet -- --timing --update   …and recorded
+ *   npm run plan:sheet -- --theme draft-sketch [--dark] [--timing]
+ *                                         another theme, into sheet-out/<theme>/ — looked
+ *                                         at, never recorded: the record is Technisch's
  *
  * `--check` exits 1 naming every changed cell, and leaves its new image in
  * sheet-out/ to be looked at. The images are never committed; the record is.
@@ -45,6 +48,16 @@ const TIMING_RUNS = 5;
 const CPU_SLOWDOWN = 4;
 
 const flags = new Set(process.argv.slice(2));
+const themeAt = process.argv.indexOf('--theme');
+const THEME = themeAt > 0 ? (process.argv[themeAt + 1] ?? 'technisch') : 'technisch';
+const RECORDED = THEME === 'technisch';
+if (!RECORDED && (flags.has('--check') || flags.has('--update'))) {
+  console.error(`the record is Technisch's; ${THEME} is drawn to be looked at — drop --check and --update`);
+  process.exit(2);
+}
+// Draft Sketch changes its level of detail at 144 and 238 m across a cell (doc 97).
+const SHOWN = RECORDED ? COLUMNS : [...COLUMNS, { span: 200, sun: false, label: '200 m' }, { span: 400, sun: false, label: '400 m' }];
+const folder = (mode) => (RECORDED ? join(OUT, mode) : join(OUT, THEME, mode));
 const modes = flags.has('--check') || flags.has('--update') ? ['light', 'dark'] : [flags.has('--dark') ? 'dark' : 'light'];
 
 /** The sheet's own Vite, on its own port: another dev server may be running here. */
@@ -68,6 +81,7 @@ const cellName = (garden, column) => `${garden}-${column.span}${column.sun ? '-s
 
 async function load(page, garden, column) {
   const query = new URLSearchParams({ garden, span: String(column.span), sun: column.sun ? '1' : '0', w: String(WIDTH), h: String(HEIGHT) });
+  if (!RECORDED) query.set('theme', THEME);
   await page.goto(`${ORIGIN}/sheet.html?${query}`);
   await page.waitForFunction(() => document.body.dataset.ready === 'yes');
 }
@@ -76,22 +90,22 @@ async function load(page, garden, column) {
 async function renderMode(browser, mode) {
   const context = await browser.newContext({ colorScheme: mode, deviceScaleFactor: 1, viewport: { width: WIDTH + 40, height: HEIGHT + 40 } });
   const page = await context.newPage();
-  await mkdir(join(OUT, mode), { recursive: true });
+  await mkdir(folder(mode), { recursive: true });
   const rows = [];
   const hashes = {};
   for (const garden of GARDENS) {
     const cells = [];
-    for (const column of COLUMNS) {
+    for (const column of SHOWN) {
       await load(page, garden.id, column);
       const png = await page.locator('.sheet-cell').screenshot();
       const name = cellName(garden.id, column);
-      await writeFile(join(OUT, mode, `${name}.png`), png);
+      await writeFile(join(folder(mode), `${name}.png`), png);
       hashes[`${mode}/${name}`] = await pixelHash(page, png);
       cells.push({ png });
     }
     rows.push({ title: garden.title, cells });
   }
-  await writeFile(join(OUT, mode, 'sheet.png'), await composeSheet(page, { mode, rows, columns: COLUMNS }));
+  await writeFile(join(folder(mode), 'sheet.png'), await composeSheet(page, { mode, rows, columns: SHOWN }));
   await context.close();
   return hashes;
 }
@@ -129,7 +143,7 @@ async function main() {
     const hashes = {};
     if (!flags.has('--timing') || flags.has('--check') || flags.has('--update')) {
       for (const mode of modes) Object.assign(hashes, await renderMode(browser, mode));
-      console.log(`sheet written: ${modes.map((m) => join('sheet-out', m, 'sheet.png')).join(', ')}`);
+      console.log(`sheet written: ${modes.map((m) => join(folder(m), 'sheet.png')).join(', ')}`);
     }
     if (flags.has('--check')) {
       if (baseline.chromium && baseline.chromium !== browser.version()) {

@@ -15,6 +15,7 @@ import { usePinch } from '../usePinch';
 import { CanvasControls } from './CanvasControls';
 import { CanvasOverlays } from './CanvasOverlays';
 import { CanvasScene } from './CanvasScene';
+import { PlanCredit } from './PlanCredit';
 import type { GardenCanvasProps } from './GardenCanvasProps';
 
 /**
@@ -284,6 +285,7 @@ export function GardenCanvas({
           onGrab={onResizeObstacle === undefined ? null : grabHandle}
         />
       </svg>
+      <PlanCredit />
       </div>
     </div>
   );
