@@ -18,15 +18,8 @@ from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account, require_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.origin import same_origin
-from ninanatur.api.schemas import (
-    BedOut,
-    GardenCreate,
-    GardenCreated,
-    GardenOut,
-    GardenSoil,
-    ObstacleOut,
-    PlantingOut,
-)
+from ninanatur.api.schemas import BedOut, GardenCreated, GardenOut, ObstacleOut, PlantingOut
+from ninanatur.api.schemas_garden_in import GardenCreate, GardenSoil
 from ninanatur.auth.sessions import Account
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
@@ -94,7 +87,8 @@ def to_out(garden: Garden) -> GardenOut:
         obstacles=[
             ObstacleOut(
                 obstacle_id=o.obstacle_id, kind=o.kind, roof=o.roof,
-                eaves_m=o.eaves_m, label=o.label,
+                roof_source=o.roof_source, eaves_m=o.eaves_m,
+                eaves_source=o.eaves_source, label=o.label,
                 height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
                 width=o.width, points=o.points,
                 constraint_hint=o.constraint_hint, height=o.height,

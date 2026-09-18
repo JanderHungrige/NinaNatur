@@ -32,8 +32,12 @@ export interface FormValues {
   /** 'polygon' | 'circle' | 'line'. Only a line has a width to set. */
   shape: string;
   roof: string;
+  /** Where the shape came from: 'user' | 'surveyed' | 'osm' (doc 93). */
+  roofSource: string;
   /** Where the roof starts. Null is "nobody has said". */
   eavesM: number | null;
+  /** Who gave the eaves; null is nobody — or a value older than anybody's record. */
+  eavesSource: string | null;
   height: number | null;
   width: number | null;
   soilType: string | null;
@@ -107,7 +111,9 @@ export function formValues(item: Bed | Obstacle): FormValues {
       plantings: item.plantings.length,
       shape: item.shape,
       roof: 'unknown',
+      roofSource: 'user',
       eavesM: null,
+      eavesSource: null,
       height: null,
       width: item.width,
       soilType: item.soil_type,
@@ -121,7 +127,9 @@ export function formValues(item: Bed | Obstacle): FormValues {
     plantings: 0,
     shape: item.shape,
     roof: item.roof,
+    roofSource: item.roof_source,
     eavesM: item.eaves_m,
+    eavesSource: item.eaves_source,
     height: item.height,
     width: item.width,
     soilType: null,

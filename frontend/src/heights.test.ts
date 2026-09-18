@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HEIGHT_SOURCES, heightNote, isMeasured } from './heights';
+import { HEIGHT_SOURCES, eavesNote, heightNote, isMeasured, roofNote } from './heights';
 
 describe('heightNote', () => {
   it('says how a height was arrived at', () => {
@@ -44,5 +44,41 @@ describe('the vocabulary', () => {
     expect(Object.keys(HEIGHT_SOURCES).sort()).toEqual(
       ['measured', 'neighbourhood', 'osm_height', 'osm_levels', 'surveyed', 'user'],
     );
+  });
+});
+
+describe('roofNote — where a roof shape came from (doc 93)', () => {
+  it('names the survey and OpenStreetMap', () => {
+    expect(roofNote('gable', 'surveyed')).toBe('amtlich vermessen');
+    expect(roofNote('hip', 'osm')).toBe('aus OpenStreetMap');
+  });
+
+  it('says nothing about the gardener\'s own answer, or about no answer', () => {
+    expect(roofNote('gable', 'user')).toBeNull();
+    expect(roofNote('unknown', 'surveyed')).toBeNull();
+  });
+});
+
+describe('eavesNote — where an eaves height came from (doc 93)', () => {
+  it('uses the words the heights already use', () => {
+    expect(eavesNote(6.2, 'surveyed', 9.5)).toBe(heightNote('surveyed'));
+    expect(eavesNote(6, 'osm_levels', 9)).toBe(heightNote('osm_levels'));
+  });
+
+  it('says what is assumed when nobody gave them, with the number when it can', () => {
+    expect(eavesNote(null, null, 9)).toBe(
+      'Nicht bekannt: gerechnet wird mit drei Vierteln der Firsthöhe, 6,8 m',
+    );
+    expect(eavesNote(null, null, null)).toBe(
+      'Nicht bekannt: gerechnet wird mit drei Vierteln der Firsthöhe',
+    );
+  });
+
+  it('says nothing about the gardener\'s own number', () => {
+    expect(eavesNote(5, 'user', 9)).toBeNull();
+  });
+
+  it('owns up to a number whose origin nobody kept', () => {
+    expect(eavesNote(6.2, null, 9)).toBe('Herkunft nicht vermerkt');
   });
 });

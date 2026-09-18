@@ -10,10 +10,11 @@ import sqlite3
 
 import pytest
 
+from ninanatur.garden.element_edits import update_obstacle
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import add_planting
-from ninanatur.garden.store import create_garden, load_garden, update_obstacle
+from ninanatur.garden.store import create_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 
 

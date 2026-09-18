@@ -6,6 +6,7 @@ says how a database that predates them catches up.
 """
 from __future__ import annotations
 
+from ninanatur.ingest.schema_computed import COMPUTED_TABLES
 from ninanatur.ingest.schema_user import USER_TABLES
 
 CATALOGUE = """
@@ -179,4 +180,4 @@ CREATE TABLE IF NOT EXISTS source_run (
 
 # One script, two lifecycles. Applied together because a database needs both;
 # written apart so nobody has to guess which half a table belongs to.
-SCHEMA = CATALOGUE + USER_TABLES
+SCHEMA = CATALOGUE + USER_TABLES + COMPUTED_TABLES

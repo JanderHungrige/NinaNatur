@@ -19,13 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_bed, require_garden, to_out
-from ninanatur.api.schemas import (
-    BedCreate,
-    BedUpdate,
-    GardenOut,
-    ObstacleCreate,
-    ObstacleUpdate,
-)
+from ninanatur.api.schemas import GardenOut
+from ninanatur.api.schemas_garden_in import BedCreate, BedUpdate, ObstacleCreate, ObstacleUpdate
+from ninanatur.garden.element_edits import update_bed, update_obstacle
 from ninanatur.garden.elements import delete_element
 from ninanatur.garden.models import BedInput, ObstacleInput
 from ninanatur.garden.objects import (
@@ -34,13 +30,7 @@ from ninanatur.garden.objects import (
     default_shape,
     default_size,
 )
-from ninanatur.garden.store import (
-    add_bed,
-    add_obstacle,
-    load_garden,
-    update_bed,
-    update_obstacle,
-)
+from ninanatur.garden.store import add_bed, add_obstacle, load_garden
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
 
@@ -141,11 +131,16 @@ def edit_obstacle(
     changes = payload.model_dump(exclude_unset=True)
     if "kind" in changes and changes["kind"] is not None:
         changes["kind"] = str(changes["kind"])
-    # Typing a height is the user's word on it. Without this, correcting a
-    # building the map guessed at would leave every sightline through it
-    # marked as an assumption.
+    # Typing a value is the user's word on it (doc 93). The server says so,
+    # never the client: a source a client could name is a label anybody can
+    # forge. A shape of "weiß nicht" is still theirs to have left open — the
+    # survey may answer it — and emptied eaves are nobody's again.
     if changes.get("height") is not None:
-        changes.setdefault("height_source", "user")
+        changes["height_source"] = "user"
+    if changes.get("roof") is not None:
+        changes["roof_source"] = "user"
+    if "eaves_m" in changes:
+        changes["eaves_source"] = None if changes["eaves_m"] is None else "user"
     update_obstacle(conn, obstacle_id, **changes)
     return to_out(load_garden(conn, garden.garden_id))
 

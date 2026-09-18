@@ -77,7 +77,7 @@ def test_the_api_offers_exactly_the_shapes_the_model_knows() -> None:
     this once — the object editor kept offering "Gebäude" after the server had
     stopped knowing it, and a dropdown that writes a value the server rejects is
     a form that fails on save."""
-    from ninanatur.api.schemas import RoofShape
+    from ninanatur.api.schemas_garden_in import RoofShape
 
     assert {r.value for r in RoofShape} == {r.value for r in Roof}
 

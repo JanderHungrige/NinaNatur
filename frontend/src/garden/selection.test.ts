@@ -102,16 +102,22 @@ describe('formValues — where the element form starts', () => {
     });
     expect(formValues(raised)).toEqual({
       kind: 'bed', label: 'Hochbeet', plantings: 1, shape: 'polygon', roof: 'unknown',
-      eavesM: null, height: null, width: null, soilType: 'sand', moisture: 'dry',
-      heightAboveGround: 0.4,
+      roofSource: 'user', eavesM: null, eavesSource: null, height: null, width: null,
+      soilType: 'sand', moisture: 'dry', heightAboveGround: 0.4,
     });
   });
 
   it('reads an element: its height, its roof and its eaves', () => {
     expect(formValues(shed({ roof: 'gable', eaves_m: 1.9 }))).toEqual({
       kind: 'shed', label: 'Gartenhaus', plantings: 0, shape: 'polygon', roof: 'gable',
-      eavesM: 1.9, height: 2.4, width: null, soilType: null, moisture: null,
-      heightAboveGround: 0,
+      roofSource: 'user', eavesM: 1.9, eavesSource: null, height: 2.4, width: null,
+      soilType: null, moisture: null, heightAboveGround: 0,
     });
+  });
+
+  it('reads where the roof and the eaves came from (doc 93)', () => {
+    const values = formValues(shed({ roof_source: 'surveyed', eaves_m: 1.9, eaves_source: 'surveyed' }));
+    expect(values.roofSource).toBe('surveyed');
+    expect(values.eavesSource).toBe('surveyed');
   });
 });

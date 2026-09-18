@@ -14,12 +14,12 @@ import os
 import sqlite3
 from pathlib import Path
 
-from ninanatur.ingest.migrations import (
+from ninanatur.ingest.migrations import apply_column_migrations, relax_planting_taxon
+from ninanatur.ingest.one_time import (
     ELEMENT_RESET_KEY,
     RESET_KEY,
-    apply_column_migrations,
     move_observed_colours,
-    relax_planting_taxon,
+    roof_provenance,
     wave_10_reset,
     wave_11_reset,
 )
@@ -121,5 +121,10 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     moved = move_observed_colours(conn)
     if moved is not None:
         applied.append(moved)
+    # After the schema script too: it reads `eaves_source`, which a new database
+    # only has once the script has run.
+    marked = roof_provenance(conn)
+    if marked is not None:
+        applied.append(marked)
     conn.commit()
     return applied

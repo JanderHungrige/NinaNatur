@@ -217,7 +217,7 @@ def test_a_hand_entry_still_answers_where_nothing_else_does(
 def test_notes_made_before_the_change_are_carried_over(tmp_path: Path) -> None:
     """The notes somebody already made. Deciding where these belong by throwing
     them away would be a poor answer, and there are real gardens now."""
-    from ninanatur.ingest.migrations import COLOURS_MOVED_KEY, move_observed_colours
+    from ninanatur.ingest.one_time import COLOURS_MOVED_KEY, move_observed_colours
 
     db: sqlite3.Connection = connect(str(tmp_path / "g.sqlite"), same_thread=False)
     init_schema(db)
@@ -243,7 +243,7 @@ def test_notes_made_before_the_change_are_carried_over(tmp_path: Path) -> None:
 
 def test_the_move_runs_once(tmp_path: Path) -> None:
     """Run twice it would resurrect a note somebody has since taken back."""
-    from ninanatur.ingest.migrations import COLOURS_MOVED_KEY, move_observed_colours
+    from ninanatur.ingest.one_time import COLOURS_MOVED_KEY, move_observed_colours
 
     db: sqlite3.Connection = connect(str(tmp_path / "g.sqlite"), same_thread=False)
     init_schema(db)

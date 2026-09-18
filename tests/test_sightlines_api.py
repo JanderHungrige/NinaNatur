@@ -110,10 +110,14 @@ def test_an_answer_resting_on_a_guessed_height_says_so(client: TestClient) -> No
         json={"kind": "house", "x": 0.0, "y": 4.0, "shape": "rect",
               "width": 6.0, "depth": 2.0, "height": 7.0},
     ).json()["obstacles"][0]
-    client.patch(
-        f"/api/v1/gardens/{token}/obstacles/{obstacle['obstacle_id']}",
-        json={"height_source": "neighbourhood"},
+    # As the map import leaves it. Not through the API: since Wave 21 a caller
+    # cannot say where its own number came from (doc 93).
+    conn = app.dependency_overrides[get_connection]()
+    conn.execute(
+        "UPDATE element SET height_source = 'neighbourhood' WHERE element_id = ?",
+        (obstacle["obstacle_id"],),
     )
+    conn.commit()
     hidden = _by_name(_look(client, token), "Bodendecker")
     assert hidden["visible"] is False
     assert hidden["estimated"] is True
