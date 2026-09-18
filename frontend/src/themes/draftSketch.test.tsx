@@ -34,7 +34,7 @@ describe('the Draft Sketch theme', () => {
     for (const kind of KINDS) {
       if (isGround(kind.kind)) continue;
       for (const lod of ['near', 'mid', 'far'] as const) {
-        const fill = draftSketch.fill(kind.symbol, lod);
+        const fill = draftSketch.fill(kind.symbol, lod, kind.kind);
         expect(fill, `${kind.kind} at ${lod}`).toMatch(/^url\(#ds-[a-z0-9-]+\)$/);
         const id = fill!.slice(5, -1);
         expect(container.querySelector(`[id="${id}"]`), `${id} is not defined`).not.toBeNull();
@@ -48,13 +48,17 @@ describe('the Draft Sketch theme', () => {
     expect(draftSketch.lodAt(1)).toBe('far');
   });
 
-  it('draws its ink over the shapes and its shadows under them, and neither is a target', () => {
+  it('draws each shadow right beneath its shape, the ink over them all, and neither is a target', () => {
     const { container } = drawn();
-    const layers = [...container.querySelectorAll('g.canvas__shadows, g.canvas__objects, g.canvas__ink')];
-    expect(layers.map((g) => g.getAttribute('class'))).toEqual([
-      'canvas__shadows', 'canvas__objects', 'canvas__ink',
-    ]);
-    for (const layer of container.querySelectorAll('g.canvas__shadows, g.canvas__ink')) {
+    const layers = [...container.querySelectorAll('g.canvas__objects, g.canvas__ink')];
+    expect(layers.map((g) => g.getAttribute('class'))).toEqual(['canvas__objects', 'canvas__ink']);
+    const shadows = [...container.querySelectorAll('g.canvas__objects > .canvas__shadow')];
+    expect(shadows.length).toBeGreaterThan(0);
+    for (const shadow of shadows) {
+      // The shape it belongs to comes straight after it, so it falls on what lies beneath.
+      expect(shadow.nextElementSibling?.hasAttribute('data-element-id')).toBe(true);
+    }
+    for (const layer of [...shadows, container.querySelector('g.canvas__ink')!]) {
       expect(layer.getAttribute('pointer-events')).toBe('none');
       expect(layer.getAttribute('aria-hidden')).toBe('true');
     }

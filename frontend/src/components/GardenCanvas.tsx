@@ -16,6 +16,7 @@ import { CanvasControls } from './CanvasControls';
 import { CanvasOverlays } from './CanvasOverlays';
 import { CanvasScene } from './CanvasScene';
 import { PlanCredit } from './PlanCredit';
+import { PlanFurniture } from './PlanFurniture';
 import type { GardenCanvasProps } from './GardenCanvasProps';
 
 /**
@@ -285,8 +286,10 @@ export function GardenCanvas({
           onGrab={onResizeObstacle === undefined ? null : grabHandle}
         />
       </svg>
-      <PlanCredit />
+      <PlanFurniture metresPerPixel={view.spanM / view.widthPx} title={garden.name}
+                     updatedAt={garden.updated_at} />
       </div>
+      <PlanCredit />
     </div>
   );
 }

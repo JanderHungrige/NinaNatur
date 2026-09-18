@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: 2c24120a
+hash: 95ea8549
 ---
 
 # Wave 24: A drawing of a garden
@@ -87,7 +87,7 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 | 0 | a-theme-is-a-thing | docs/96-a-theme-is-a-thing.md | complete | 1 |
 | 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
 | 2 | draft-sketch-in-svg | docs/97-draft-sketch-in-svg.md | complete | 1 |
-| 3 | what-the-style-has-not-drawn | — | planned | 2 |
+| 3 | what-the-style-has-not-drawn | docs/98-what-the-style-has-not-drawn.md | complete | 2 |
 | 4 | paper-bleed-and-a-real-shadow | — | planned | 3 |
 | 5 | lettered-by-hand | — | planned | 2 |
 | 6 | the-switch-and-the-courtesy | — | planned | 0 |
@@ -153,6 +153,17 @@ from the `.stylx` alone — his source assets are not asked for.*
   221 ms, until a pattern held one rect and its marks were recorded once.
   Technisch's 24 cells as recorded. Known issues are the review's agenda:
   no bleed yet, no buffered rims, levels of detail at his print ranges.
+- **2026-09-18 — feature 3, what the style has not drawn** (doc 98). Roofs by
+  type from the server's own roof model (`roof_lines`: ridge, hips, a pent's
+  upper edge with a fall arrow), raised beds with a second edge and a shadow,
+  hedges hatched on the shaded side, shrubs as his Tree 2, fences and walls in
+  his Wood Fence and Brick Wall (a wall's fitted to its own faces), blooms as
+  dabs of his watercolour, the viewpoint in his ink, and a north arrow, a true
+  scale bar and a title block; his credit a caption beneath the plan. Each
+  shadow now falls beneath its own shape. Not drawn, named: conifers (no tree
+  carries its kind) and sightlines (no plan draws them). A fourth sheet garden
+  for other themes shows it all. Paint budget 85 ms against the 72 ms limit —
+  a stage-3 finding; 66 ms with production React against Technisch's 17.
 
 ## What each one is
 

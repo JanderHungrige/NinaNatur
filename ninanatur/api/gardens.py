@@ -24,7 +24,7 @@ from ninanatur.auth.sessions import Account
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.roofs import Roof
-from ninanatur.garden.roofshape import pitch_of
+from ninanatur.garden.roofshape import pitch_of, roof_lines
 from ninanatur.garden.store import (
     create_garden,
     delete_garden,
@@ -93,6 +93,11 @@ def to_out(garden: Garden) -> GardenOut:
                 eaves_source=o.eaves_source, roof_fall_deg=o.roof_fall_deg,
                 roof_pitch_deg=pitch_of(o.footprint, Roof(o.roof), o.height,
                                         o.eaves_m, o.roof_fall_deg),
+                roof_lines=[
+                    [[round(x, 3), round(y, 3)] for x, y in line]
+                    for line in roof_lines(o.footprint, Roof(o.roof), o.height,
+                                           o.eaves_m, o.roof_fall_deg)
+                ],
                 label=o.label,
                 height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
                 width=o.width, points=o.points,

@@ -55,8 +55,10 @@ if (!RECORDED && (flags.has('--check') || flags.has('--update'))) {
   console.error(`the record is Technisch's; ${THEME} is drawn to be looked at — drop --check and --update`);
   process.exit(2);
 }
-// Draft Sketch changes its level of detail at 144 and 238 m across a cell (doc 97).
+// Draft Sketch changes its level of detail at 144 and 238 m across a cell (doc 97),
+// and a fourth garden shows what the first three do not (doc 98).
 const SHOWN = RECORDED ? COLUMNS : [...COLUMNS, { span: 200, sun: false, label: '200 m' }, { span: 400, sun: false, label: '400 m' }];
+const ROWS = RECORDED ? GARDENS : [...GARDENS, { id: 'vocabulary', title: 'Musterblatt' }];
 const folder = (mode) => (RECORDED ? join(OUT, mode) : join(OUT, THEME, mode));
 const modes = flags.has('--check') || flags.has('--update') ? ['light', 'dark'] : [flags.has('--dark') ? 'dark' : 'light'];
 
@@ -93,7 +95,7 @@ async function renderMode(browser, mode) {
   await mkdir(folder(mode), { recursive: true });
   const rows = [];
   const hashes = {};
-  for (const garden of GARDENS) {
+  for (const garden of ROWS) {
     const cells = [];
     for (const column of SHOWN) {
       await load(page, garden.id, column);

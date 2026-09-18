@@ -27,6 +27,7 @@ function obstacle(
     eaves_source: null,
     roof_fall_deg: null,
     roof_pitch_deg: null,
+    roof_lines: [],
     height_source: 'user',
     footprint: [[-2, 1.5], [2, 1.5], [2, -1.5], [-2, -1.5]],
   };

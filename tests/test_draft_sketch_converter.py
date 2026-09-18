@@ -18,6 +18,9 @@ from pathlib import Path
 import pytest
 
 from scripts.draft_sketch import cim, emit, png
+from scripts.draft_sketch.layers import layers_of
+from scripts.draft_sketch.lines import line_overlays_of
+from scripts.draft_sketch.tiles import Images
 from scripts.stylx_to_theme import SOURCE, PinMismatch, generate, verified
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,7 +129,7 @@ def test_a_symbols_layers_are_read_top_first_with_what_they_need() -> None:
              "effects": [{"type": "CIMGeometricEffectMove", "offsetX": 6, "offsetY": -6}]},
         ],
     }
-    layers = cim.layers_of(symbol)
+    layers = layers_of(symbol)
     assert [layer.kind for layer in layers] == ["stroke", "scatter", "fill"]
     stroke, scatter, fill = layers
     assert stroke.width_pt == 2 and stroke.wave == cim.Wave(amplitude=1, period=18, seed=1)
@@ -138,7 +141,50 @@ def test_a_symbols_layers_are_read_top_first_with_what_they_need() -> None:
 
 def test_a_layer_it_does_not_draw_is_refused_by_name() -> None:
     with pytest.raises(ValueError, match="CIMCharacterMarker"):
-        cim.layers_of({"symbolLayers": [{"type": "CIMCharacterMarker", "enable": True}]})
+        layers_of({"symbolLayers": [{"type": "CIMCharacterMarker", "enable": True}]})
+
+
+def test_his_rings_and_serrations_are_read_as_what_they_are() -> None:
+    """His Tree 2 (doc 98): a stroke round the outline drawn smaller about its
+    middle, and marks along it that swell and shrink."""
+    wave = {"type": "CIMGeometricEffectWave", "amplitude": 8, "period": 8, "seed": 15}
+    symbol = {"symbolLayers": [
+        {"type": "CIMPictureMarker", "enable": True, "size": 1, "rotation": 90, "url": _picture(),
+         "tintColor": {"type": "CIMRGBColor", "values": [0, 0, 0, 100]},
+         "markerPlacement": {"type": "CIMMarkerPlacementAlongLineVariableSize",
+                             "placementTemplate": [8], "numberOfSizes": 4, "minZoom": 0.5,
+                             "maxZoom": 1.5, "seed": 13,
+                             "variationMethod": "IncreasingThenDecreasing"}},
+        {"type": "CIMSolidStroke", "enable": True, "width": 2,
+         "color": {"type": "CIMRGBColor", "values": [0, 0, 0, 100]},
+         "effects": [wave, {"type": "CIMGeometricEffectScale", "xScaleFactor": 0.6,
+                            "yScaleFactor": 0.6}]},
+    ]}
+    along, ring = layers_of(symbol)
+    assert along.kind == "along" and along.step_pt == (8, 0)
+    assert along.sizes == (0.5, 0.8333, 1.1667, 1.5, 1.1667, 0.8333)
+    assert ring.kind == "stroke" and ring.scale == 0.6
+
+
+def test_a_line_symbol_is_laid_along_a_line() -> None:
+    """His Wood Fence (doc 98): posts every 36 points, and his line."""
+    place = {"type": "CIMMarkerPlacementAlongLineSameSize", "placementTemplate": [36],
+             "offsetAlongLine": 5}
+    square = {"type": "CIMMarkerGraphic",
+              "geometry": {"rings": [[[-5, 5], [5, 5], [5, -5], [-5, -5], [-5, 5]]]},
+              "symbol": {"symbolLayers": [{"type": "CIMSolidFill",
+                                           "color": {"type": "CIMRGBColor",
+                                                     "values": [255, 255, 255, 100]}}]}}
+    symbol = {"symbolLayers": [
+        {"type": "CIMVectorMarker", "enable": True, "size": 6, "markerPlacement": place,
+         "frame": {"xmin": -5, "ymin": -5, "xmax": 5, "ymax": 5}, "markerGraphics": [square]},
+        {"type": "CIMSolidStroke", "enable": True, "width": 3,
+         "color": {"type": "CIMRGBColor", "values": [0, 0, 0, 100]}},
+    ]}
+    drawn, masks = line_overlays_of("ds-fence", layers_of(symbol), Images())
+    assert [o["kind"] for o in drawn] == ["line-ink", "line-boxes"]
+    assert drawn[1]["colour"] == "#ffffff" and drawn[1]["spacing"] == pytest.approx(3.175, abs=1e-3)
+    assert masks == set()
 
 
 def test_his_json_is_read_up_to_its_nul() -> None:
@@ -159,6 +205,8 @@ def test_the_symbols_file_names_whose_marks_it_holds_and_loads_nothing_inline() 
     assert 'id="ds-grass"' in source
     # A tint is his colour through the image's alpha.
     assert 'fill="#abcd66" mask="url(#ds-f08c1e65-mask)"' in source
+    # And every image is there by its key, for marks laid along a line.
+    assert "  'ds-f08c1e65': ds_f08c1e65," in source
     assert '<mask id="ds-f08c1e65-mask"' in source and 'mask-type="alpha"' in source
 
 

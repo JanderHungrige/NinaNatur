@@ -10,10 +10,13 @@
  */
 import ds_0b0e781b from './images/ds-0b0e781b.png';
 import ds_1bb4640e from './images/ds-1bb4640e.png';
+import ds_1eb5bff4 from './images/ds-1eb5bff4.png';
 import ds_1f0fe8f5 from './images/ds-1f0fe8f5.png';
+import ds_57481b74 from './images/ds-57481b74.png';
 import ds_67b90642 from './images/ds-67b90642.png';
 import ds_6c7f0598 from './images/ds-6c7f0598.png';
 import ds_9c8ef47c from './images/ds-9c8ef47c.png';
+import ds_d8f827fc from './images/ds-d8f827fc.png';
 import ds_df4f3810 from './images/ds-df4f3810.png';
 import ds_f08c1e65 from './images/ds-f08c1e65.png';
 
@@ -21,21 +24,42 @@ import ds_f08c1e65 from './images/ds-f08c1e65.png';
 export const IMAGES: readonly string[] = [
   ds_0b0e781b,
   ds_1bb4640e,
+  ds_1eb5bff4,
   ds_1f0fe8f5,
+  ds_57481b74,
   ds_67b90642,
   ds_6c7f0598,
   ds_9c8ef47c,
+  ds_d8f827fc,
   ds_df4f3810,
   ds_f08c1e65,
 ];
+
+/** His images by key, for marks laid along a line (doc 98). */
+export const IMAGE: Readonly<Record<string, string>> = {
+  'ds-0b0e781b': ds_0b0e781b,
+  'ds-1bb4640e': ds_1bb4640e,
+  'ds-1eb5bff4': ds_1eb5bff4,
+  'ds-1f0fe8f5': ds_1f0fe8f5,
+  'ds-57481b74': ds_57481b74,
+  'ds-67b90642': ds_67b90642,
+  'ds-6c7f0598': ds_6c7f0598,
+  'ds-9c8ef47c': ds_9c8ef47c,
+  'ds-d8f827fc': ds_d8f827fc,
+  'ds-df4f3810': ds_df4f3810,
+  'ds-f08c1e65': ds_f08c1e65,
+};
 
 /** His marks as markup: parsed by the browser in one go (see ../Defs.tsx). */
 export const SYMBOLS = `
 <mask id="ds-0b0e781b-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_0b0e781b}" width="1" height="1" preserveAspectRatio="none"/></mask>
 <mask id="ds-1bb4640e-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_1bb4640e}" width="1" height="1" preserveAspectRatio="none"/></mask>
+<mask id="ds-1eb5bff4-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_1eb5bff4}" width="1" height="1" preserveAspectRatio="none"/></mask>
 <mask id="ds-1f0fe8f5-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_1f0fe8f5}" width="1" height="1" preserveAspectRatio="none"/></mask>
+<mask id="ds-57481b74-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_57481b74}" width="1" height="1" preserveAspectRatio="none"/></mask>
 <mask id="ds-67b90642-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_67b90642}" width="1" height="1" preserveAspectRatio="none"/></mask>
 <mask id="ds-9c8ef47c-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_9c8ef47c}" width="1" height="1" preserveAspectRatio="none"/></mask>
+<mask id="ds-d8f827fc-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_d8f827fc}" width="1" height="1" preserveAspectRatio="none"/></mask>
 <mask id="ds-f08c1e65-mask" maskContentUnits="objectBoundingBox" mask-type="alpha"><image href="${ds_f08c1e65}" width="1" height="1" preserveAspectRatio="none"/></mask>
 <radialGradient id="ds-tree-near-ramp-0" cx="0.5" cy="0.5" r="0.5">
 <stop offset="0" stop-color="#728944"/>
@@ -51,6 +75,30 @@ export const SYMBOLS = `
 </linearGradient>
 <linearGradient id="ds-tree-far-ramp-0" x1="0.146" y1="0.146" x2="0.854" y2="0.854">
 <stop offset="0" stop-color="#b4d79e"/>
+<stop offset="0.95" stop-color="#5c8944" stop-opacity="0"/>
+</linearGradient>
+<radialGradient id="ds-shrub-near-ramp-0" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#5c8944"/>
+<stop offset="0.95" stop-color="#5c892f" stop-opacity="0.2"/>
+</radialGradient>
+<linearGradient id="ds-shrub-near-ramp-1" x1="0.146" y1="0.146" x2="0.854" y2="0.854">
+<stop offset="0" stop-color="#b0e58f" stop-opacity="0.85"/>
+<stop offset="0.95" stop-color="#5c8944" stop-opacity="0"/>
+</linearGradient>
+<radialGradient id="ds-shrub-mid-ramp-0" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#5c8944"/>
+<stop offset="0.95" stop-color="#5c892f" stop-opacity="0.2"/>
+</radialGradient>
+<linearGradient id="ds-shrub-mid-ramp-1" x1="0.146" y1="0.146" x2="0.854" y2="0.854">
+<stop offset="0" stop-color="#b0e58f" stop-opacity="0.85"/>
+<stop offset="0.95" stop-color="#5c8944" stop-opacity="0"/>
+</linearGradient>
+<radialGradient id="ds-shrub-far-ramp-0" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#5c8944"/>
+<stop offset="0.95" stop-color="#5c892f" stop-opacity="0.2"/>
+</radialGradient>
+<linearGradient id="ds-shrub-far-ramp-1" x1="0.146" y1="0.146" x2="0.854" y2="0.854">
+<stop offset="0" stop-color="#b0e58f" stop-opacity="0.85"/>
 <stop offset="0.95" stop-color="#5c8944" stop-opacity="0"/>
 </linearGradient>
 <pattern id="ds-building-near-tile" width="17.639" height="17.639" patternUnits="userSpaceOnUse">
@@ -208,6 +256,119 @@ export const SYMBOLS = `
 <rect width="17.778" height="21.167" fill="#183800" mask="url(#ds-tree-far-paper-mask)"/>
 </pattern>
 <pattern id="ds-tree-far" width="17.778" height="21.167" patternUnits="userSpaceOnUse"><rect width="17.778" height="21.167" fill="url(#ds-tree-far-tile)"/></pattern>
+<pattern id="ds-shrub-near-paper" width="8.889" height="7.056" patternUnits="userSpaceOnUse"><image href="${ds_6c7f0598}" width="8.889" height="7.056" preserveAspectRatio="none"/></pattern>
+<mask id="ds-shrub-near-paper-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="17.778" height="21.167" mask-type="alpha"><rect width="17.778" height="21.167" fill="url(#ds-shrub-near-paper)"/></mask>
+<pattern id="ds-shrub-near-sheet-1" width="5.926" height="21.167" patternUnits="userSpaceOnUse">
+<rect x="-0.583" y="0.128" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.512 1.319)"/>
+<rect x="5.342" y="0.128" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.438 1.319)"/>
+<rect x="-0.583" y="21.295" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.512 22.485)"/>
+<rect x="5.342" y="21.295" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.438 22.485)"/>
+<rect x="2.231" y="0.444" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.327 1.634)"/>
+<rect x="-2.704" y="-0.747" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -1.608 0.444)"/>
+<rect x="3.222" y="-0.747" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.317 0.444)"/>
+<rect x="-2.704" y="20.42" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -1.608 21.61)"/>
+<rect x="3.222" y="20.42" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.317 21.61)"/>
+<rect x="-0.804" y="1.167" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.291 2.358)"/>
+<rect x="5.121" y="1.167" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.217 2.358)"/>
+<rect x="2.33" y="0.984" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.425 2.175)"/>
+<rect x="-2.021" y="1.145" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -0.926 2.336)"/>
+<rect x="3.905" y="1.145" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 5 2.336)"/>
+<rect x="-0.513" y="3.488" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.582 4.679)"/>
+<rect x="5.413" y="3.488" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.508 4.679)"/>
+<rect x="2.535" y="3.829" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.63 5.019)"/>
+<rect x="2.884" y="3.189" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.979 4.379)"/>
+<rect x="-0.805" y="6.259" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.29 7.449)"/>
+<rect x="5.121" y="6.259" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.216 7.449)"/>
+<rect x="2.48" y="6.133" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.575 7.324)"/>
+<rect x="-1.438" y="6.015" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -0.343 7.206)"/>
+<rect x="4.488" y="6.015" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 5.583 7.206)"/>
+<rect x="0.78" y="8.034" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 1.875 9.224)"/>
+<rect x="1.387" y="8.142" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 2.482 9.332)"/>
+<rect x="-2.109" y="7.959" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -1.014 9.15)"/>
+<rect x="3.817" y="7.959" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.912 9.15)"/>
+<rect x="0.019" y="9.257" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 1.114 10.448)"/>
+<rect x="5.945" y="9.257" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 7.04 10.448)"/>
+<rect x="1.6" y="9.258" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 2.695 10.448)"/>
+<rect x="-2.451" y="8.656" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -1.356 9.847)"/>
+<rect x="3.475" y="8.656" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.57 9.847)"/>
+<rect x="0.524" y="11.891" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 1.619 13.081)"/>
+<rect x="2.827" y="11.684" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.922 12.875)"/>
+<rect x="-1.976" y="11.795" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -0.881 12.986)"/>
+<rect x="3.95" y="11.795" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 5.045 12.986)"/>
+<rect x="-0.829" y="13.581" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.266 14.772)"/>
+<rect x="5.097" y="13.581" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.192 14.772)"/>
+<rect x="1.756" y="12.619" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 2.851 13.81)"/>
+<rect x="-2.67" y="13.285" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 -1.575 14.475)"/>
+<rect x="3.256" y="13.285" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.351 14.475)"/>
+<rect x="-0.595" y="15.087" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.5 16.278)"/>
+<rect x="5.331" y="15.087" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.426 16.278)"/>
+<rect x="2.076" y="14.965" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.171 16.155)"/>
+<rect x="3.114" y="15.148" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.209 16.338)"/>
+<rect x="-0.63" y="16.581" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 0.465 17.772)"/>
+<rect x="5.296" y="16.581" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 6.391 17.772)"/>
+<rect x="1.264" y="16.833" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 2.359 18.023)"/>
+<rect x="3" y="17.381" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.095 18.571)"/>
+<rect x="0.789" y="-2.365" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 1.884 -1.174)"/>
+<rect x="0.789" y="18.802" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 1.884 19.992)"/>
+<rect x="2.3" y="-1.32" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.395 -0.129)"/>
+<rect x="2.3" y="19.847" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 3.395 21.038)"/>
+<rect x="2.941" y="18.325" width="2.19" height="2.381" fill="#267300" mask="url(#ds-1bb4640e-mask)" transform="rotate(-45 4.036 19.515)"/>
+</pattern>
+<pattern id="ds-shrub-near-sheet-2" width="17.778" height="7.056" patternUnits="userSpaceOnUse">
+<rect x="-0.353" y="1.646" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="17.425" y="1.646" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="1.932" y="1.04" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="4.367" y="-0.035" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="4.367" y="7.02" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="9.228" y="-0.125" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="9.228" y="6.931" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="10.86" y="0.462" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="10.86" y="7.518" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="12.921" y="0.547" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="14.798" y="1.336" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="-0.701" y="2.285" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="17.077" y="2.285" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="1.662" y="2.362" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="5.186" y="3.856" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="7.653" y="2.002" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="9.886" y="4.067" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="11.93" y="3.193" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="15.267" y="3.289" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="-0.069" y="-1.343" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="17.709" y="-1.343" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="-0.069" y="5.712" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="17.709" y="5.712" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="2.875" y="-1.441" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="2.875" y="5.614" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="6.44" y="-1.602" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="6.44" y="5.454" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="7.051" y="4.238" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="11.633" y="5.236" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="12.262" y="-0.744" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="12.262" y="6.311" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="-1.998" y="-1.255" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="15.78" y="-1.255" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="-1.998" y="5.801" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+<rect x="15.78" y="5.801" width="1.857" height="1.235" fill="#abcd66" mask="url(#ds-f08c1e65-mask)"/>
+</pattern>
+<pattern id="ds-shrub-near-tile" width="17.778" height="21.167" patternUnits="userSpaceOnUse">
+<rect width="17.778" height="21.167" fill="#183800" mask="url(#ds-shrub-near-paper-mask)"/>
+<rect width="17.778" height="21.167" fill="url(#ds-shrub-near-sheet-1)"/>
+<rect width="17.778" height="21.167" fill="url(#ds-shrub-near-sheet-2)"/>
+</pattern>
+<pattern id="ds-shrub-near" width="17.778" height="21.167" patternUnits="userSpaceOnUse"><rect width="17.778" height="21.167" fill="url(#ds-shrub-near-tile)"/></pattern>
+<pattern id="ds-shrub-mid-paper" width="8.889" height="7.056" patternUnits="userSpaceOnUse"><image href="${ds_6c7f0598}" width="8.889" height="7.056" preserveAspectRatio="none"/></pattern>
+<mask id="ds-shrub-mid-paper-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="17.778" height="21.167" mask-type="alpha"><rect width="17.778" height="21.167" fill="url(#ds-shrub-mid-paper)"/></mask>
+<pattern id="ds-shrub-mid-tile" width="17.778" height="21.167" patternUnits="userSpaceOnUse">
+<rect width="17.778" height="21.167" fill="#183800" mask="url(#ds-shrub-mid-paper-mask)"/>
+</pattern>
+<pattern id="ds-shrub-mid" width="17.778" height="21.167" patternUnits="userSpaceOnUse"><rect width="17.778" height="21.167" fill="url(#ds-shrub-mid-tile)"/></pattern>
+<pattern id="ds-shrub-far-paper" width="8.889" height="7.056" patternUnits="userSpaceOnUse"><image href="${ds_6c7f0598}" width="8.889" height="7.056" preserveAspectRatio="none"/></pattern>
+<mask id="ds-shrub-far-paper-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="17.778" height="21.167" mask-type="alpha"><rect width="17.778" height="21.167" fill="url(#ds-shrub-far-paper)"/></mask>
+<pattern id="ds-shrub-far-tile" width="17.778" height="21.167" patternUnits="userSpaceOnUse">
+<rect width="17.778" height="21.167" fill="#183800" mask="url(#ds-shrub-far-paper-mask)"/>
+</pattern>
+<pattern id="ds-shrub-far" width="17.778" height="21.167" patternUnits="userSpaceOnUse"><rect width="17.778" height="21.167" fill="url(#ds-shrub-far-tile)"/></pattern>
 <pattern id="ds-grass-paper" width="8.889" height="7.056" patternUnits="userSpaceOnUse"><image href="${ds_6c7f0598}" width="8.889" height="7.056" preserveAspectRatio="none"/></pattern>
 <mask id="ds-grass-paper-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="17.778" height="21.167" mask-type="alpha"><rect width="17.778" height="21.167" fill="url(#ds-grass-paper)"/></mask>
 <pattern id="ds-grass-sheet-1" width="17.778" height="21.167" patternUnits="userSpaceOnUse">

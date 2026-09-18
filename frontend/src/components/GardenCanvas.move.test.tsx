@@ -10,7 +10,7 @@ function element(): GardenOut['obstacles'][number] {
     width: null, constraint_hint: null,
     points: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
     height: null, label: null, roof: 'unknown', roof_source: 'user', eaves_m: null, eaves_source: null,
-    roof_fall_deg: null, roof_pitch_deg: null,
+    roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [],
     height_source: 'user',
     footprint: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
   };

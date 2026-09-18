@@ -4,7 +4,7 @@ import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
 import { usePlanTheme } from '../themes/context';
 import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
-import { DecorationLayer, useDecorations } from './PlanDecorations';
+import { InkLayer, beneathOf, useDecorations } from './PlanDecorations';
 import { PlanObjects } from './PlanObjects';
 import { ReliefMap } from './ReliefMap';
 import { type MapMode, SunMap } from './SunMap';
@@ -135,12 +135,12 @@ export function CanvasScene({
           N ↑
         </text>
 
-        {decorations !== null && <DecorationLayer drawn={decorations} part="under" shift={shift} />}
         <PlanObjects garden={garden} theme={theme} lod={lod} selectedBedId={selectedBedId}
                      selectedObstacleId={selectedObstacleId} armed={armed}
                      onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle}
-                     onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift} />
-        {decorations !== null && <DecorationLayer drawn={decorations} part="over" shift={shift} />}
+                     onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift}
+                     beneath={decorations === null ? undefined : beneathOf(decorations, shift)} />
+        {decorations !== null && <InkLayer drawn={decorations} shift={shift} />}
 
         {sunMap !== undefined && (
           <SunMap map={sunMap.map} mode={sunMap.mode} />

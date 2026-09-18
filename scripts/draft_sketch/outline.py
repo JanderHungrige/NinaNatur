@@ -33,14 +33,21 @@ Overlay = dict[str, Any]
 _TILED = ("paper", "scatter", "grains", "hatch")
 
 
-def _m(points: float) -> float:
+def metres(points: float) -> float:
+    """His points, as metres on the ground at the reference scale."""
     return round(points * POINT_M, 4)
 
 
-def _wave(wave: Wave | None) -> dict[str, float] | None:
+def wave_json(wave: Wave | None) -> dict[str, float] | None:
     if wave is None:
         return None
-    return {"amplitude": _m(wave.amplitude), "period": _m(wave.period), "seed": wave.seed}
+    return {"amplitude": metres(wave.amplitude), "period": metres(wave.period), "seed": wave.seed}
+
+
+def _scaled(layer: Layer) -> dict[str, float]:
+    """His Scale effect: the outline drawn again smaller, about its middle — the
+    rings inside his Tree 2. Left out where it is 1, as it nearly always is."""
+    return {} if layer.scale == 1.0 else {"scale": layer.scale}
 
 
 def _stroke(layer: Layer, images: Images) -> Overlay:
@@ -51,11 +58,11 @@ def _stroke(layer: Layer, images: Images) -> Overlay:
         raise ValueError("a stroke moved outside the shape")
     if layer.offset_pt < 0:
         return {"kind": "band", "colour": colour, "opacity": round(opacity * share, 3),
-                "width": _m(layer.width_pt), "inset": _m(-layer.offset_pt),
-                "wave": _wave(layer.wave)}
+                "width": metres(layer.width_pt), "inset": metres(-layer.offset_pt),
+                "wave": wave_json(layer.wave)}
     return {"kind": "ink", "colour": colour, "opacity": opacity,
-            "width": _m(layer.width_pt * share), "wave": _wave(layer.wave),
-            "dashes": [_m(d) for d in layer.dashes_pt] or None}
+            "width": metres(layer.width_pt * share), "wave": wave_json(layer.wave),
+            "dashes": [metres(d) for d in layer.dashes_pt] or None, **_scaled(layer)}
 
 
 def _ramp(gradient_id: str, layer: Layer) -> Gradient:
@@ -83,8 +90,8 @@ def _centre(layer: Layer, images: Images) -> tuple[Overlay, str]:
     height = layer.size_pt
     return ({"kind": "centre", "mask": f"{key}-mask",
              "colour": images.ink(layer.image, layer.colour),
-             "opacity": layer.colour.opacity, "width": _m(height * images.aspect(layer.image)),
-             "height": _m(height), "rotation": -layer.rotation}, key)
+             "opacity": layer.colour.opacity, "width": metres(height * images.aspect(layer.image)),
+             "height": metres(height), "rotation": -layer.rotation}, key)
 
 
 def _corners(layer: Layer, images: Images) -> Overlay:
@@ -93,18 +100,22 @@ def _corners(layer: Layer, images: Images) -> Overlay:
     Drawn as those lines — the image itself is not needed."""
     height = layer.size_pt
     return {"kind": "overshoot", "colour": images.ink(layer.image, layer.colour),
-            "opacity": layer.colour.opacity, "width": _m(height * images.coverage(layer.image)),
-            "length": _m(height * images.aspect(layer.image) / 2)}
+            "opacity": layer.colour.opacity, "width": metres(height * images.coverage(layer.image)),
+            "length": metres(height * images.aspect(layer.image) / 2)}
 
 
 def _ticks(layer: Layer, images: Images) -> Overlay:
-    """His small marks every few points along the outline, just inside it, at an
-    angle to it — drawn as the short strokes they are."""
+    """His small marks every few points along the outline, at an angle to it —
+    drawn as the short strokes they are. Where he varies their size, they
+    swell and shrink in his order (his Tree 2's serrations)."""
     height = layer.size_pt
+    varied = {"sizes": list(layer.sizes)} if layer.sizes else {}
     return {"kind": "ticks", "colour": images.ink(layer.image, layer.colour),
-            "opacity": layer.colour.opacity, "width": _m(height * images.coverage(layer.image)),
-            "length": _m(height * images.aspect(layer.image)), "spacing": _m(layer.step_pt[0]),
-            "inset": _m(abs(layer.offset_pt)), "angle": layer.rotation}
+            "opacity": layer.colour.opacity,
+            "width": metres(height * images.coverage(layer.image)),
+            "length": metres(height * images.aspect(layer.image)),
+            "spacing": metres(layer.step_pt[0]), "inset": metres(abs(layer.offset_pt)),
+            "angle": layer.rotation, **varied, **_scaled(layer)}
 
 
 def _tiled(layer: Layer) -> bool:
@@ -116,7 +127,8 @@ def _along(symbol_id: str, layer: Layer, images: Images, masks: set[str]) -> Ove
     """What one layer draws along the shape; None for a layer drawn elsewhere or left out."""
     if layer.kind == "fill":
         return {"kind": "shadow", "colour": layer.colour.hex, "opacity": layer.colour.opacity,
-                "dx": _m(layer.move_pt[0]), "dy": _m(layer.move_pt[1]), "wave": _wave(layer.wave)}
+                "dx": metres(layer.move_pt[0]), "dy": metres(layer.move_pt[1]),
+                "wave": wave_json(layer.wave)}
     if layer.kind == "stroke":
         return _stroke(layer, images)
     if layer.kind == "centre":
@@ -165,4 +177,4 @@ def overlays_of(symbol_id: str, layers: list[Layer], images: Images,
     return drawn, ramps, masks
 
 
-__all__ = ["Overlay", "overlays_of"]
+__all__ = ["Overlay", "metres", "overlays_of", "wave_json"]

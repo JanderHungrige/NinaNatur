@@ -12,6 +12,68 @@
   --plan-ground-stroke: transparent;
 }
 
+/* The plan's furniture (doc 98) says north; the "N ↑" in the drawing goes. */
+.plan-theme--draft-sketch .compass {
+  display: none;
+}
+
+/* Blooms as dabs of his watercolour, each dot through one of his splotches:
+   painted, not plotted — and grey out of season, as they always were. */
+.plan-theme--draft-sketch .bloom-dot {
+  mask: url(#ds-f08c1e65-mask);
+  stroke: none;
+  /* His splotch fills little of its picture: the dab is drawn larger than the
+     dot it replaces, about its own middle, to cover what the dot covered. */
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.8);
+}
+
+/* The viewpoint in his ink: a black dot with the paper round it. */
+.plan-theme--draft-sketch .viewpoint circle {
+  fill: #000000;
+  stroke: #fbfaf6;
+}
+
+/* North, scale and title, on a sheet of his paper in the plan's corner, in his
+   ink whatever the page's colours: the plan is paper in both (below). */
+.plan-furniture {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.4rem;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, auto);
+  align-items: end;
+  gap: 0.2rem 0.7rem;
+  max-width: min(26rem, calc(100% - 1rem));
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: 1.5px solid #000000;
+  border-radius: 2px;
+  background: color-mix(in srgb, #fbfaf6 90%, transparent);
+  color: #1c2419;
+  font-size: var(--text-xs);
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.plan-furniture__north,
+.plan-furniture__scale svg {
+  display: block;
+  overflow: visible;
+}
+
+.plan-furniture__title {
+  display: grid;
+  min-width: 0;
+}
+
+.plan-furniture__title strong {
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
 /* His style is black ink on white paper, and in dark mode the plan stays paper:
    a sheet on a dark desk, with the light palette's marks on it. His ink turned
    white would be another style, not his (doc 97). Feature 4 gives the paper
@@ -46,7 +108,7 @@
     --plan-ground-stroke: var(--outline);
   }
 
-  .plan-theme--draft-sketch .canvas__shadows,
+  .plan-theme--draft-sketch .canvas__shadow,
   .plan-theme--draft-sketch .canvas__ink {
     display: none;
   }

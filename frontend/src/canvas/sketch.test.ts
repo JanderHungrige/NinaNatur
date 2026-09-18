@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { offset, overshoots, ticks, wobble } from './sketch';
+import { inset, offset, overshoots, scaled, ticks, wobble, wobbleLine } from './sketch';
 
 /* The geometry a sketched outline is drawn with (doc 97): pure, seeded, in metres. */
 
@@ -63,5 +63,38 @@ describe('offset — a shadow where the drawing puts it', () => {
     expect(offset(square, 0.5, -0.5)).toEqual([
       { x: 0.5, y: -0.5 }, { x: 4.5, y: -0.5 }, { x: 4.5, y: 3.5 }, { x: 0.5, y: 3.5 },
     ]);
+  });
+});
+
+describe('the marks doc 98 adds', () => {
+  it('insets an outline by the same distance on every side, whichever way it runs', () => {
+    const inner = [{ x: 0.5, y: 0.5 }, { x: 3.5, y: 0.5 }, { x: 3.5, y: 3.5 }, { x: 0.5, y: 3.5 }];
+    expect(inset(square, 0.5)).toEqual(inner);
+    expect(inset([...square].reverse(), 0.5)).toEqual([...inner].reverse());
+  });
+
+  it('draws a ring smaller about its middle', () => {
+    expect(scaled(square, 0.5)).toEqual([
+      { x: 1, y: 1 }, { x: 3, y: 1 }, { x: 3, y: 3 }, { x: 1, y: 3 },
+    ]);
+  });
+
+  it('hatches only the side in shade, and swells and shrinks where told', () => {
+    // His light comes from the upper left: the shade is to the south-east.
+    const shade = ticks(square, 1, 0.2, 90, 0.1, { facing: { x: 1, y: -1 } });
+    expect(shade).toHaveLength(8);
+    for (const [a, b] of shade) expect(Math.min(a.x, b.x) > 3 || Math.min(a.y, b.y) < 1).toBe(true);
+    const varied = ticks(square, 1, 0.2, 90, 0, { sizes: [0.5, 1.5] });
+    const lengths = varied.map(([a, b]) => Math.hypot(b.x - a.x, b.y - a.y));
+    expect(lengths[0]).toBeCloseTo(0.1, 9);
+    expect(lengths[1]).toBeCloseTo(0.3, 9);
+  });
+
+  it('wavers along an open line from its first point to its last', () => {
+    const line = [{ x: 0, y: 0 }, { x: 10, y: 0 }];
+    const drawn = wobbleLine(line, 0.1, 1, 3);
+    expect(drawn.length).toBeGreaterThan(10);
+    for (const p of drawn) expect(Math.abs(p.y)).toBeLessThanOrEqual(0.1 + 1e-9);
+    expect(drawn[drawn.length - 1]!.x).toBeCloseTo(10, 9);
   });
 });

@@ -257,6 +257,9 @@ def symbols_file(patterns: Iterable[Pattern], gradients: Iterable[Gradient],
     out += ["", "/** Every image the patterns draw, for whoever must wait for them to load. */",
             "export const IMAGES: readonly string[] = [",
             *(f"  {variable(key)}," for key in sorted(images)), "];", "",
+            "/** His images by key, for marks laid along a line (doc 98). */",
+            "export const IMAGE: Readonly<Record<string, string>> = {",
+            *(f"  '{key}': {variable(key)}," for key in sorted(images)), "};", "",
             "/** His marks as markup: parsed by the browser in one go (see ../Defs.tsx). */",
             "export const SYMBOLS = `"]
     out += [_mask(key) for key in sorted(masked)]

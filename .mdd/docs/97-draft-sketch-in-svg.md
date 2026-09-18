@@ -63,7 +63,7 @@ known_issues:
   - "His watercolour bleed is not drawn: his splotches spill past a shape's outline, ours are clipped to it (feature 4)."
   - "Buffered ramps are left out: the grey just inside a building's edge and water's darker rim (feature 4)."
   - "Levels of detail use his scale ranges (0.40 and 0.66 m/px) though our marks scale with the plan; mid and far appear only beyond 144 and 238 m across a 360 px plan."
-  - "Paint budget: 69 ms median for the city at 40 m, CPU x4 — 1.9 times Technisch's 36 ms, inside the limit with little to spare; the measure moves in frames of about 16 ms."
+  - "Paint budget: 69 ms median for the city at 40 m, CPU x4 — 1.9 times Technisch's 36 ms, inside the limit with little to spare; the measure moves in frames of about 16 ms. With doc 98's marks it is 85 ms: a stage-3 finding there."
   - "Ticks along a building's inner edge and wobbles drop out below 4 px and 1 px respectively: a visible change while zooming."
   - "A tree's widest wavy ring wanders up to 0.53 m outside its crown, over whatever is next to it."
   - "Fills repeat every 17.8 by 21.2 m (8.9 by 7.1 m texture); dense layers every few metres, on their sheets."
@@ -117,8 +117,8 @@ frontend/src/themes/draft-sketch/index.ts   the theme: our symbols → his, per 
 frontend/src/themes/draft-sketch/Defs.tsx   his markup, parsed by the browser in one go
 frontend/src/themes/draft-sketch/draw.tsx   overlays → SVG, from each shape's own outline
 frontend/src/canvas/sketch.ts               wobble, overshoots, ticks, offset — pure geometry
-frontend/src/components/PlanDecorations.tsx shadows under, ink over the shapes; never a target
-frontend/src/components/PlanCredit.tsx      his credit on the plan, whenever it is his style
+frontend/src/components/PlanDecorations.tsx each shadow beneath its shape (doc 98), ink over them; never a target
+frontend/src/components/PlanCredit.tsx      his credit beneath the plan, whenever it is his style
 ```
 
 **Two halves, because SVG has two halves.** What fills a shape — base wash,
@@ -211,8 +211,9 @@ what his symbols look like drawn (viewed 2026-09-18):
 5. **Nothing of his is public before he has seen it.** Drawn only on the
    preview (`environment` = `dev`), only by `?theme=draft-sketch`; a chunk of
    its own that production never asks for, and would not serve if asked.
-6. **His credit goes with his style**, word for word as agreed, on the plan
-   whenever it is drawn in it.
+6. **His credit goes with his style**, word for word as agreed, beneath the
+   plan whenever it is drawn in it (a caption since doc 98: in the drawing it
+   covered a third of a phone's plan).
 7. **Technisch is untouched**: doc 95's record passes, all 24 cells.
 8. **Everything his markup refers to is in it** — a tinted mark whose mask is
    missing is a hard square of colour. Tested on the markup and on the plan.
@@ -246,7 +247,7 @@ the paper its grain.
 ## Dependencies
 
 - 96 — the seam; this adds three optional members: `decorate`, `images`,
-  `credit`.
+  `credit` (doc 98 adds `Furniture`, and gives `fill` the element's kind).
 - 95 — the sheet it is judged on: `--theme draft-sketch` draws it, with 200 m
   and 400 m columns for the other levels of detail, and is never recorded.
 

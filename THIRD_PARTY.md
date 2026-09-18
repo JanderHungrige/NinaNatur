@@ -10,7 +10,7 @@ ArcGIS Pro style by Warren Davison, created with assistance from Louis Hill
 and adapt Draft Sketch in NinaNatur, including this public repository and
 commercial use.
 
-**Credit**, shown on the plan whenever it is drawn in his style:
+**Credit**, shown beneath the plan whenever it is drawn in his style:
 
 > Zeichenstil nach Draft Sketch von Warren Davison, verwendet und angepasst mit
 > seiner Erlaubnis · with assistance from Louis Hill (@NKYmapLAB)
@@ -31,7 +31,7 @@ that does not (`tests/test_theme_provenance.py`):
 | `frontend/src/themes/draft-sketch/generated/images/` | his images, unchanged | Warren Davison (Draft Sketch) |
 | `frontend/src/themes/draft-sketch/generated/symbols.ts` | his symbols' fills, as SVG patterns | Warren Davison (Draft Sketch) |
 | `frontend/src/themes/draft-sketch/generated/rules.ts` | what his symbols draw along a shape, adapted to SVG | adapted from Draft Sketch |
-| symbols of ours drawn in his manner (from Wave 24, feature 3) | | NinaNatur, in the style of Draft Sketch |
+| `frontend/src/themes/draft-sketch/ours/` | roof lines, raised beds' edges, a hedge's hatch, north arrow, scale bar and title block — ours, in his manner | NinaNatur, in the style of Draft Sketch |
 
 The generated files are derived from his file by `scripts/stylx_to_theme.py`
 and never edited by hand; `--check` proves they still are (doc 97).

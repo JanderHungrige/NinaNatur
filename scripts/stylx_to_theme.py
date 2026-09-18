@@ -21,6 +21,8 @@ from pathlib import Path
 from typing import Any
 
 from scripts.draft_sketch import cim, emit
+from scripts.draft_sketch.layers import layers_of
+from scripts.draft_sketch.lines import line_overlays_of
 from scripts.draft_sketch.outline import Overlay, overlays_of
 from scripts.draft_sketch.tiles import Images, pattern_of
 
@@ -38,6 +40,9 @@ CHOSEN: dict[str, str] = {
     "tree-near": "Tree 1 (LOD 1)",
     "tree-mid": "Tree 1 (LOD 2)",
     "tree-far": "Tree 1 (LOD 3)",
+    "shrub-near": "Tree 2 (LOD 1)",
+    "shrub-mid": "Tree 2 (LOD 2)",
+    "shrub-far": "Tree 2 (LOD 3)",
     "grass": "Grass",
     "water": "Water (area)",
     "sand": "Sand",
@@ -46,6 +51,11 @@ CHOSEN: dict[str, str] = {
     "brown": "Brown Fill",
     "green": "Dark Green Fill",
     "dashed": "Dashed Outline",
+}
+#: His line symbols, laid along a fence's or a wall's line (doc 98).
+LINES: dict[str, str] = {
+    "wood-fence": "Wood Fence",
+    "brick-wall": "Brick Wall",
 }
 
 
@@ -91,13 +101,18 @@ def generate(stylx: Path, out: Path) -> None:
     masks: set[str] = set()
     overlays: dict[str, list[Overlay]] = {}
     for name, title in CHOSEN.items():
-        layers = cim.layers_of(symbols[title])
+        layers = layers_of(symbols[title])
         symbol_id = f"ds-{name}"
         pattern = pattern_of(symbol_id, layers, images)
         if pattern is not None:
             patterns.append(pattern)
         overlays[symbol_id], washes, marks = overlays_of(symbol_id, layers, images)
         ramps += washes
+        masks |= marks
+    lines = cim.read_symbols(stylx, LINES.values(), symbol_class=4)
+    for name, title in LINES.items():
+        overlays[f"ds-{name}"], marks = line_overlays_of(f"ds-{name}", layers_of(lines[title]),
+                                                         images)
         masks |= marks
     for old in [*out.glob("images/*.png"), *out.glob("*.ts")]:
         old.unlink()

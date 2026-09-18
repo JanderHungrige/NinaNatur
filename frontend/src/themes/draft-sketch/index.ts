@@ -1,13 +1,17 @@
 import './theme.css';
 
-import type { DecoratedShape, LevelOfDetail, PlanTheme } from '../types';
+import type { DecoratedShape, Decoration, LevelOfDetail, PlanTheme } from '../types';
 import { DraftSketchDefs } from './Defs';
 import { drawOverlays } from './draw';
+import { drawAlong } from './drawAlong';
 import { OVERLAYS } from './generated/rules';
 import { IMAGES } from './generated/symbols';
+import { DraftSketchFurniture } from './ours/Furniture';
+import { HEDGE, RAISED, ROOF } from './ours/rules';
+import type { LineOverlay, Overlay } from './overlays';
 
 /*
- * Warren Davison's Draft Sketch as a theme of the plan (doc 97), used and
+ * Warren Davison's Draft Sketch as a theme of the plan (docs 97, 98), used and
  * adapted with his permission (THIRD_PARTY.md). What his symbols are is
  * generated from his file; which of ours gets which is decided here.
  */
@@ -22,9 +26,14 @@ const LEVELLED: Readonly<Record<string, string>> = {
   crown: 'ds-tree',
 };
 
-/** Symbols he draws one way. Hedges, walls, fences and unnamed things are his
- *  washes for now; feature 3 draws them properly. His heavy outline round them
- *  was tried and turned a fence into a black bar. */
+/** Kinds that share a symbol with another but get his own: a shrub is his Tree 2. */
+const BY_KIND: Readonly<Record<string, string>> = {
+  shrub: 'ds-shrub',
+};
+
+/** Symbols he draws one way. Hedges and unnamed things are his washes; fences
+ *  and walls carry his line symbols over theirs (doc 98). His heavy outline
+ *  round them was tried and turned a fence into a black bar. */
 const FILLS: Readonly<Record<string, string>> = {
   grass: 'ds-grass',
   water: 'ds-water',
@@ -38,14 +47,39 @@ const FILLS: Readonly<Record<string, string>> = {
   plain: 'ds-grey',
 };
 
-function symbolOf(symbol: string, lod: LevelOfDetail): string {
+/** His line symbols, laid along the elements of these kinds. */
+const ALONG: Readonly<Record<string, string>> = {
+  fence: 'ds-wood-fence',
+  wall: 'ds-brick-wall',
+};
+
+function symbolOf(symbol: string, lod: LevelOfDetail, kind?: string): string {
+  const own = kind === undefined ? undefined : BY_KIND[kind];
+  if (own !== undefined) return `${own}-${lod}`;
   const levelled = LEVELLED[symbol];
   return levelled === undefined ? (FILLS[symbol] ?? 'ds-grey') : `${levelled}-${lod}`;
 }
 
-/** Whose outline a shape is drawn with: the ground is his dashed line and nothing else. */
-function outlineOf(shape: DecoratedShape, lod: LevelOfDetail): string {
-  return shape.ground ? 'ds-dashed' : symbolOf(shape.symbol, lod);
+/** Whose outline a shape is drawn with, and what ours adds to it. A fence's
+ *  line is its whole drawing; the ground is his dashed line and nothing else. */
+function overlaysOf(shape: DecoratedShape, lod: LevelOfDetail): Overlay[] {
+  if (shape.ground) return [...(OVERLAYS['ds-dashed'] ?? [])];
+  if (shape.kind === 'fence') return [];
+  return [
+    ...(shape.raised > 0 ? RAISED : []),
+    ...(OVERLAYS[symbolOf(shape.symbol, lod, shape.kind)] ?? []),
+    ...(shape.roofLines.length > 0 ? ROOF : []),
+    ...(shape.kind === 'hedge' ? HEDGE : []),
+  ];
+}
+
+function decorate(shape: DecoratedShape, lod: LevelOfDetail, metresPerPixel: number): Decoration {
+  const round = drawOverlays(shape, overlaysOf(shape, lod), metresPerPixel);
+  const symbol = ALONG[shape.kind];
+  if (symbol === undefined) return round;
+  const along = drawAlong(shape, (OVERLAYS[symbol] ?? []) as readonly LineOverlay[],
+    metresPerPixel, shape.kind === 'wall');
+  return { under: round.under, over: [round.over, along.over] };
 }
 
 export const draftSketch: PlanTheme = {
@@ -53,15 +87,15 @@ export const draftSketch: PlanTheme = {
   label: 'Draft Sketch',
   provenance: 'Warren Davison (Draft Sketch)',
   Defs: DraftSketchDefs,
-  fill: (symbol, lod) => `url(#${symbolOf(symbol, lod)})`,
+  fill: (symbol, lod, kind) => `url(#${symbolOf(symbol, lod, kind)})`,
   // Beds are painted by the stylesheet, as in Technisch: theme.css hands it his wash.
   bedFill: () => undefined,
   objectsFilter: null,
   lodAt: (metresPerPixel) =>
     metresPerPixel < NEAR_UNTIL ? 'near' : metresPerPixel < MID_UNTIL ? 'mid' : 'far',
-  decorate: (shape, lod, metresPerPixel) =>
-    drawOverlays(shape, OVERLAYS[outlineOf(shape, lod)] ?? [], metresPerPixel),
+  decorate,
   images: IMAGES,
+  Furniture: DraftSketchFurniture,
   // As agreed with him (THIRD_PARTY.md), word for word.
   credit: 'Zeichenstil nach Draft Sketch von Warren Davison, verwendet und angepasst mit seiner '
     + 'Erlaubnis · with assistance from Louis Hill (@NKYmapLAB)',

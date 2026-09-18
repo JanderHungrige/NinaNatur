@@ -18,6 +18,25 @@ export interface DecoratedShape {
   ground: boolean;
   /** Its outline, in garden metres with y north. */
   points: Point[];
+  /** What it is, as `kinds.ts` names it: `bed` for a bed (doc 98). */
+  kind: string;
+  /** Its own line, for an element drawn as one — a fence, a wall, a hedge. */
+  line: Point[] | null;
+  /** How far a raised bed stands above the ground; 0 for everything else. */
+  raised: number;
+  /** The lines that draw its roof, as the server's roof model gives them. */
+  roofLines: [Point, Point][];
+  /** Its roof's shape, as stored: a pent's one line is its upper edge. */
+  roof: string;
+}
+
+/** What the plan's furniture — north, scale, title — is drawn from (doc 98). */
+export interface FurnitureProps {
+  metresPerPixel: number;
+  /** The garden's name. */
+  title: string;
+  /** When the garden last changed, as the server says it. */
+  updatedAt: string | null;
 }
 
 /** What a theme draws for a shape besides its fill: under all the shapes, and over them. */
@@ -45,8 +64,9 @@ export interface PlanTheme {
   /** Every pattern and filter the plan's layers refer to by id, drawn once in its defs. */
   Defs: () => JSX.Element;
   /** The paint for an element that `kinds.ts` draws as `symbol`, at this level
-   *  of detail — `url(#…)`, or undefined to leave it to the stylesheet. */
-  fill: (symbol: string, lod: LevelOfDetail) => string | undefined;
+   *  of detail — `url(#…)`, or undefined to leave it to the stylesheet. Its
+   *  `kind` too, for a theme that draws kinds of one symbol apart (doc 98). */
+  fill: (symbol: string, lod: LevelOfDetail, kind?: string) => string | undefined;
   /** The paint for a bed. Its own member, because a bed is the one shape whose
    *  look is part of what it says: selected, raised, planted. */
   bedFill: (lod: LevelOfDetail) => string | undefined;
@@ -62,7 +82,10 @@ export interface PlanTheme {
   /** Every image its defs draw with, so it can be loaded before the plan is
    *  drawn in it rather than seen arriving piece by piece. */
   images?: readonly string[];
-  /** The line its author is credited with, shown on the plan whenever it is
-   *  drawn in it; none for a theme of our own. */
+  /** The line its author is credited with, shown beneath the plan whenever it
+   *  is drawn in it; none for a theme of our own. */
   credit?: string;
+  /** A north arrow, a scale bar and a title block in the theme's hand, in the
+   *  plan's corner (doc 98); without it the plan says "N ↑", as it always has. */
+  Furniture?: (props: FurnitureProps) => JSX.Element;
 }

@@ -828,21 +828,14 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   height: clamp(16rem, 75vh, 75cqi);
 }
 
-/* Whose drawing style the plan is in (doc 97): in the plan's corner, on a chip
-   of the page's own colour so it reads on any paper, and never in the way. */
+/* Whose drawing style the plan is in (docs 97, 98): a caption beneath the plan,
+   in full, where it covers nothing of the drawing. */
 .plan-credit {
-  position: absolute;
-  right: 0.35rem;
-  bottom: 0.3rem;
-  z-index: 2;
-  max-width: calc(100% - 0.7rem);
-  margin: 0;
-  padding: 0.1rem 0.4rem;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  margin: 0.3rem 0 0;
   color: var(--ink-muted);
   font-size: var(--text-xs);
-  pointer-events: none;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so

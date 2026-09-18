@@ -5,16 +5,21 @@ import { loadTheme, preloaded } from '../themes';
 import { PlanThemeProvider } from '../themes/context';
 import { SHEET_GARDENS } from './gardens';
 import { SheetCell } from './SheetCell';
+import { THEME_GARDENS } from './vocabulary';
 
 /*
  * One cell of the plan's contact sheet per page load (doc 95):
  * ?garden=&span=&sun=&w=&h=, and &theme= for a theme other than Technisch
- * (doc 97). One per page because every pattern and filter id is global to a
+ * (doc 97), &x=&y= for a close-up (doc 98). One per page because every pattern and filter id is global to a
  * page, and nine plans side by side would borrow each other's grid.
  */
 
 const params = new URLSearchParams(window.location.search);
-const entry = SHEET_GARDENS.find((g) => g.id === params.get('garden')) ?? SHEET_GARDENS[0]!;
+const garden = [...SHEET_GARDENS, ...THEME_GARDENS].find((g) => g.id === params.get('garden'))
+  ?? SHEET_GARDENS[0]!;
+// &x=&y= looks somewhere else in the garden: a close-up, never part of the sheet.
+const at = (key: 'x' | 'y') => (params.has(key) ? Number(params.get(key)) : garden.centre[key]);
+const entry = { ...garden, centre: { x: at('x'), y: at('y') } };
 const number = (key: string, fallback: number): number => {
   const value = Number(params.get(key) ?? fallback);
   return Number.isFinite(value) && value > 0 ? value : fallback;

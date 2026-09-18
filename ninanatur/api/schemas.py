@@ -94,6 +94,11 @@ class ObstacleOut(BaseModel):
     #: The pitch the model uses, from eaves, ridge and the span across the
     #: ridge; null where it models the roof unpitched.
     roof_pitch_deg: float | None
+    #: The lines that draw the roof the model knows (doc 98): its ridge, a hip
+    #: roof's hips, a pent roof's upper edge — each as two [x, y] ends in garden
+    #: metres. Empty where the model has a plane. Sent so no drawing works out
+    #: a second answer to where the ridge runs.
+    roof_lines: list[list[list[float]]]
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

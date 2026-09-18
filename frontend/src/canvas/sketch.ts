@@ -8,7 +8,7 @@ import type { Point } from './viewport';
  */
 
 /** mulberry32: small, and the same numbers everywhere for the same seed. */
-function random(seed: number): () => number {
+export function seeded(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -29,31 +29,33 @@ function edgeLengths(points: Point[]): number[] {
   });
 }
 
-/**
- * An outline that wavers like a pen: every point moved off it at right angles,
- * by a smooth random amount of at most `amplitude` that changes its mind about
- * once a `period` — his "Random" waveform. The wave closes on itself, so a ring
- * ends where it began.
- */
-export function wobble(points: Point[], amplitude: number, period: number, seed: number): Point[] {
-  const lengths = edgeLengths(points);
-  const perimeter = lengths.reduce((sum, l) => sum + l, 0);
-  if (points.length < 2 || period <= 0 || perimeter === 0) return points.map((p) => ({ ...p }));
-  const knots = Math.max(1, Math.round(perimeter / period));
-  const next = random(seed);
-  const heights = Array.from({ length: knots }, () => next() * 2 - 1);
-  const wave = (s: number): number => {
-    const u = (s / perimeter) * knots;
-    const i = Math.floor(u) % knots;
-    const eased = (1 - Math.cos((u - Math.floor(u)) * Math.PI)) / 2;
-    return heights[i]! * (1 - eased) + heights[(i + 1) % knots]! * eased;
+/** A smooth random wander between -1 and 1 over `total` metres, changing its
+ *  mind `knots` times; closed, it ends where it began. */
+function wander(total: number, knots: number, seed: number, closed: boolean): (s: number) => number {
+  const next = seeded(seed);
+  const heights = Array.from({ length: closed ? knots : knots + 1 }, () => next() * 2 - 1);
+  return (s) => {
+    const u = (s / total) * knots;
+    const i = Math.min(Math.floor(u), closed ? Number.MAX_SAFE_INTEGER : knots - 1);
+    const eased = (1 - Math.cos((u - i) * Math.PI)) / 2;
+    const [a, b] = closed ? [i % knots, (i + 1) % knots] : [i, i + 1];
+    return heights[a]! * (1 - eased) + heights[b]! * eased;
   };
-  const step = period / SAMPLES_PER_PERIOD;
+}
+
+function waver(points: Point[], amplitude: number, period: number, seed: number,
+  closed: boolean, minStep: number): Point[] {
+  const edges = closed ? points.length : points.length - 1;
+  const lengths = edgeLengths(points).slice(0, Math.max(0, edges));
+  const total = lengths.reduce((sum, l) => sum + l, 0);
+  if (points.length < 2 || period <= 0 || total === 0) return points.map((p) => ({ ...p }));
+  const wave = wander(total, Math.max(1, Math.round(total / period)), seed, closed);
+  const step = Math.max(period / SAMPLES_PER_PERIOD, minStep);
   const line: Point[] = [];
   let travelled = 0;
-  points.forEach((a, i) => {
+  lengths.forEach((length, i) => {
+    const a = points[i]!;
     const b = points[(i + 1) % points.length]!;
-    const length = lengths[i]!;
     if (length === 0) return;
     const ux = (b.x - a.x) / length;
     const uy = (b.y - a.y) / length;
@@ -64,8 +66,30 @@ export function wobble(points: Point[], amplitude: number, period: number, seed:
       line.push({ x: a.x + ux * along + uy * off, y: a.y + uy * along - ux * off });
     }
     travelled += length;
+    if (!closed && i === lengths.length - 1) {
+      const off = amplitude * wave(total);
+      line.push({ x: b.x + uy * off, y: b.y - ux * off });
+    }
   });
   return line;
+}
+
+/**
+ * An outline that wavers like a pen: every point moved off it at right angles,
+ * by a smooth random amount of at most `amplitude` that changes its mind about
+ * once a `period` — his "Random" waveform. The wave closes on itself, so a ring
+ * ends where it began. Points are never closer than `minStep`: the drawing's
+ * pixels, where a wave's own spacing would put several in one.
+ */
+export function wobble(points: Point[], amplitude: number, period: number, seed: number,
+  minStep = 0): Point[] {
+  return waver(points, amplitude, period, seed, true, minStep);
+}
+
+/** A line that wavers as an outline does, from its first point to its last. */
+export function wobbleLine(line: Point[], amplitude: number, period: number, seed: number,
+  minStep = 0): Point[] {
+  return waver(line, amplitude, period, seed, false, minStep);
 }
 
 /** Every edge carried on past both its ends by `length`: the corners a hand draws past. */
@@ -96,8 +120,15 @@ function turning(points: Point[]): number {
  * it, turned `angle` degrees from it: the marks his buildings carry along their
  * inner edge. Inside whichever way round the outline runs.
  */
+export interface TickOptions {
+  /** Lengths as shares of `length`, one tick after another, round again. */
+  sizes?: readonly number[] | undefined;
+  /** Only the edges whose outside faces this way: the side in shade. */
+  facing?: Point | undefined;
+}
+
 export function ticks(points: Point[], spacing: number, length: number, angle: number,
-  inset: number): [Point, Point][] {
+  inset: number, { sizes, facing }: TickOptions = {}): [Point, Point][] {
   const marks: [Point, Point][] = [];
   if (spacing <= 0 || points.length < 3) return marks;
   const inward = turning(points) >= 0 ? 1 : -1;
@@ -112,16 +143,45 @@ export function ticks(points: Point[], spacing: number, length: number, angle: n
     const uy = (b.y - a.y) / run;
     const nx = -uy * inward;
     const ny = ux * inward;
-    const dx = ((ux * Math.cos(turn) + nx * Math.sin(turn)) * length) / 2;
-    const dy = ((uy * Math.cos(turn) + ny * Math.sin(turn)) * length) / 2;
+    const shaded = facing === undefined || -(nx * facing.x + ny * facing.y) > 0;
     for (; next <= travelled + run; next += spacing) {
+      const share = sizes === undefined || sizes.length === 0 ? 1 : sizes[marks.length % sizes.length]!;
+      const dx = ((ux * Math.cos(turn) + nx * Math.sin(turn)) * length * share) / 2;
+      const dy = ((uy * Math.cos(turn) + ny * Math.sin(turn)) * length * share) / 2;
       const cx = a.x + ux * (next - travelled) + nx * inset;
       const cy = a.y + uy * (next - travelled) + ny * inset;
-      marks.push([{ x: cx - dx, y: cy - dy }, { x: cx + dx, y: cy + dy }]);
+      if (shaded) marks.push([{ x: cx - dx, y: cy - dy }, { x: cx + dx, y: cy + dy }]);
     }
     travelled += run;
   });
   return marks;
+}
+
+/** The outline drawn again `factor` times as large, about its middle. */
+export function scaled(points: Point[], factor: number): Point[] {
+  if (factor === 1) return points;
+  const c = centreOf(points);
+  return points.map((p) => ({ x: c.x + (p.x - c.x) * factor, y: c.y + (p.y - c.y) * factor }));
+}
+
+/** The outline moved `distance` inside itself, its corners mitred: a raised
+ *  bed's second edge. Inside whichever way round the outline runs. */
+export function inset(points: Point[], distance: number): Point[] {
+  const n = points.length;
+  if (n < 3 || distance === 0) return points.map((p) => ({ ...p }));
+  const inward = turning(points) >= 0 ? 1 : -1;
+  const normal = (a: Point, b: Point): Point => {
+    const run = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    return { x: (-(b.y - a.y) / run) * inward, y: ((b.x - a.x) / run) * inward };
+  };
+  return points.map((p, i) => {
+    const before = normal(points[(i - 1 + n) % n]!, p);
+    const after = normal(p, points[(i + 1) % n]!);
+    const mitre = { x: before.x + after.x, y: before.y + after.y };
+    const along = before.x * mitre.x + before.y * mitre.y;
+    if (Math.abs(along) < 1e-9) return { x: p.x + before.x * distance, y: p.y + before.y * distance };
+    return { x: p.x + (mitre.x * distance) / along, y: p.y + (mitre.y * distance) / along };
+  });
 }
 
 /** The outline moved: a shadow where the drawing's light puts it. */

@@ -57,7 +57,7 @@ function farmyard(): GardenOut {
     bed(501 + i, `Gemüse ${i + 1}`, [x, -13], box(2, 6), [planting(1001 + i, [7, 3, 6, 5][i]!, 8)]));
   return gardenOf('Hof', beds, [
     element(1, 'garden', [0, 0], box(60, 40)),
-    element(2, 'house', [-12, 12], box(24, 12), { height: 11, roof: 'gable', eaves_m: 6, label: 'Scheune' }),
+    house(2, [-12, 12], 24, 12, 'gable', { height: 11, label: 'Scheune' }),
     element(3, 'shed', [14, 14], box(12, 8), { height: 4, label: 'Stall' }),
     element(4, 'shed', [22, -14], box(3, 3)),
     element(5, 'shed', [-24, 14.5], box(4, 3)),
