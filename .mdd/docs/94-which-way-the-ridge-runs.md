@@ -4,7 +4,7 @@ title: Which Way the Ridge Runs
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-21
-wave_status: active
+wave_status: complete
 depends_on: [82-the-roof-it-actually-has, 93-where-the-roof-came-from]
 relates: [83-measured-surveyed-or-assumed, 93-where-the-roof-came-from]
 source_files:
@@ -41,8 +41,8 @@ test_files:
   - frontend/src/garden/selection.test.ts
 data_flow: .mdd/audits/flow-which-way-the-ridge-runs-2026-09-18.md
 last_synced: 2026-09-18
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [roofs, ridge, pitch, lod2, citygml, light, surveyed]
 path: Map/Buildings
@@ -179,7 +179,25 @@ tile). `ElementForm.test.tsx` passed 300 lines with these tests, so the roof's
 (docs 93 and 94) moved to `ElementForm.roof.test.tsx`, and the render helper
 both use to `src/testing/elementForm.tsx`.
 
+## Verified on the preview (V0.20.193, 2026-09-18)
+
+A garden made south of a detached Wuppertal gable (deleted after). The import
+brought it as OSM's gable with 15 m eaves from five storeys and no direction.
+The recompute measured it: 17.9 m, a surveyed gable, eaves 13.41 m, falling at
+170.2° — a ridge at 80°, as the tile has it — and a pitch of 33.9°. On the light
+map as imported, 35 elements wide and in 5 m cells, its north face read 8.8 h
+against 10.7 h on the south; with only the gable and the garden drawn, in 0.5 m
+cells, 10.7 h against 11.7 h (221 and 211 cells), and the plan's own readout
+said *Dach · 10.7 h* and *Dach · 11.8 h* over the two faces. The form said
+*Satteldach — amtlich vermessen* and *First Ost–West (amtlich vermessen) ·
+Neigung 34°*.
+
 ## Known Issues
+
+- On a garden as the map import leaves it — the neighbours and the street
+  across 150 m — the light grid's time budget gives 5 m cells, a handful on a
+  house's roof: the two faces differ (8.8 h and 10.7 h here), but coarsely.
+  That is the grid's budget (doc 64), not the roof.
 
 - The shadow a house throws on the garden is still the `RISE_KEPT` prism, which
   does not depend on the ridge's direction. Casting it from the real planes is
