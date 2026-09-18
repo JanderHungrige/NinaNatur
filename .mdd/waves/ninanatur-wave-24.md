@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: 2f85277c
+hash: 6854a27a
 ---
 
 # Wave 24: A drawing of a garden
@@ -84,7 +84,7 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | a-theme-is-a-thing | — | planned | 1 |
+| 0 | a-theme-is-a-thing | docs/96-a-theme-is-a-thing.md | complete | 1 |
 | 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
 | 2 | draft-sketch-in-svg | — | planned | 1 |
 | 3 | what-the-style-has-not-drawn | — | planned | 2 |

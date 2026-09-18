@@ -1,13 +1,12 @@
-import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
 import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
-import type { Point, Viewport } from '../canvas/viewport';
-import { bedName } from '../plural';
+import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
+import { usePlanTheme } from '../themes/context';
 import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
+import { PlanObjects } from './PlanObjects';
 import { ReliefMap } from './ReliefMap';
 import { type MapMode, SunMap } from './SunMap';
-import { GardenSymbols } from './GardenSymbols';
 
 interface Props {
   garden: GardenOut;
@@ -57,97 +56,12 @@ interface Props {
   canopies?: CanopySuggestion[] | undefined;
 }
 
-const BY_KIND = new Map(KINDS.map((k) => [k.kind, k]));
-
-/** What a kind is drawn as. Unknown kinds get the plain wash rather than no
- *  fill: an object the server knows and we do not must still be visible. */
-function symbolOf(kind: string): string {
-  return BY_KIND.get(kind)?.symbol ?? 'plain';
-}
-
-/**
- * Surfaces first.
- *
- * A lawn belongs under the shed standing on it, and which is which is a
- * property of the kind — not of the order somebody happened to click. Sorted
- * rather than split into two lists so the array keeps one key space.
- */
-type Drawn = GardenOut['obstacles'][number] | GardenOut['beds'][number];
-
-/** A bed seen as what it is: an element of kind `bed`. */
-function asElement(bed: GardenOut['beds'][number]): Drawn {
-  return bed;
-}
-
-/** Shoelace, on the outline the server already computed. */
-function coverage(item: Drawn): number {
-  const points = 'bed_id' in item ? item.polygon : item.footprint;
-  let sum = 0;
-  for (let i = 0; i < points.length; i += 1) {
-    const a = points[i]!;
-    const b = points[(i + 1) % points.length]!;
-    sum += a[0]! * b[1]! - b[0]! * a[1]!;
-  }
-  return Math.abs(sum) / 2;
-}
-
-/**
- * Surfaces behind the things standing on them, and among surfaces the big ones
- * behind the small.
- *
- * Ranking on kind alone was not enough: a bed and a lawn are both surfaces, so
- * they tied, and a stable sort put the beds last — in front. The garden-wide
- * outline then covered every path and every patch of gravel drawn inside it.
- *
- * Size is the rule a plan follows anyway. The whole-garden bed is the largest
- * thing there is, so it falls to the back on its own, and a small bed drawn on
- * a lawn stays visible without anybody special-casing either.
- */
-function surfacesFirst(items: Drawn[]): Drawn[] {
-  const standing = (item: Drawn): number => {
-    const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
-    return BY_KIND.get(kind)?.standing === false ? 0 : 1;
-  };
-  return [...items].sort(
-    (a, b) => standing(a) - standing(b) || coverage(b) - coverage(a),
-  );
-}
-
-function bedLabel(bed: GardenOut['beds'][number]): string {
-  const light =
-    bed.sun_hours === null
-      ? 'Licht noch nicht berechnet'
-      : `${bed.sun_hours.toFixed(1)} Sonnenstunden pro Tag`;
-  return `${bedName(bed.name)}, ${light}`;
-}
-
-
-function obstacleLabel(o: GardenOut['obstacles'][number]): string {
-  const kind = labelOf(o.kind);
-  // A pond has no height, and the server stopped inventing 0.0 for one. The
-  // label went on reading it out anyway: "Teich, null m hoch".
-  const what = o.height === null ? kind : `${kind}, ${o.height} m hoch`;
-  // The free label first when there is one: it is what the user calls the thing.
-  return o.label ? `${o.label} (${what})` : what;
-}
-
-// Patterns are sized relative to the bed rather than in metres. Metres were the
-// first attempt and the wrong unit twice over: a six-metre band is wider than
-// most beds, and even sub-metre bands tile from the SVG origin rather than from
-// the shape. `objectBoundingBox` says what is actually meant — split this bed
-// into one band per colour, whatever size the bed is.
-
-
-/** Garden metres to the SVG's own coordinates, which run y-down. */
-function d(points: Point[]): string {
-  return points.map((p) => `${p.x},${-p.y}`).join(' ');
-}
-
 /**
  * Everything inside the plan, as pure output.
  *
  * Split from GardenCanvas so the stateful half stays readable: this file knows
- * how the garden looks, that one knows what the pointer is doing.
+ * how the garden looks, that one knows what the pointer is doing. How the shapes
+ * are painted is the theme's (doc 96): its defs, its fills and its one filter.
  */
 export function CanvasScene({
   garden,
@@ -174,6 +88,8 @@ export function CanvasScene({
   onGrabElement,
   dragOffset = null,
 }: Props) {
+  const theme = usePlanTheme();
+  const lod = theme.lodAt(view.spanM / view.widthPx);
   /** Shown where the pointer has it, saved where it is let go. */
   const shift = (id: number): string =>
     dragOffset !== null && dragOffset.id === id
@@ -181,9 +97,9 @@ export function CanvasScene({
       : '';
 
   return (
-    <>
+    <g className={`plan-theme plan-theme--${theme.id}`}>
         <defs>
-        <GardenSymbols />
+        <theme.Defs />
           <pattern
             id="grid"
             width={spacing}
@@ -216,129 +132,10 @@ export function CanvasScene({
           N ↑
         </text>
 
-        {/* One group, one filter run, and one order. Beds used to be drawn in
-            a second pass after every object, which put them in front of
-            everything: a shape drawn on top of a bed could not be clicked,
-            because the click landed on the bed. Since Wave 11 a bed *is* an
-            element, so it belongs in the same ordered list. */}
-        <g className="canvas__objects">
-        {surfacesFirst([...garden.obstacles, ...garden.beds.map(asElement)]).map((item) =>
-          'bed_id' in item ? (
-            <polygon
-              key={`bed-${item.bed_id}`}
-              // The menu anchors to this: it has to follow the shape when the
-              // page scrolls, and a click coordinate cannot.
-              data-element-id={item.bed_id}
-              className={item.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
-              points={d(item.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
-              tabIndex={armed ? undefined : 0}
-              role={armed ? undefined : 'button'}
-              aria-pressed={armed ? undefined : item.bed_id === selectedBedId}
-              aria-label={bedLabel(item)}
-              transform={shift(item.bed_id)}
-              onPointerDown={
-                onGrabElement === undefined || armed
-                  ? undefined
-                  : (event) => onGrabElement(item.bed_id, event)
-              }
-              onContextMenu={
-                onAskWhatItIs === undefined || armed
-                  ? undefined
-                  : (event) => {
-                      event.preventDefault();
-                      onAskWhatItIs(item.bed_id, { x: event.clientX, y: event.clientY });
-                    }
-              }
-              onClick={armed ? undefined : () => onSelectBed(item.bed_id)}
-              onKeyDown={(event) => {
-                if (armed) return;
-                // Shift+F10 and the context-menu key are what a keyboard uses
-                // for a right-click, so the menu is not pointer-only.
-                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-                  event.preventDefault();
-                  const box = event.currentTarget.getBoundingClientRect();
-                  onAskWhatItIs?.(item.bed_id, { x: box.left, y: box.top });
-                  return;
-                }
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  onSelectBed(item.bed_id);
-                }
-              }}
-            >
-              <title>{bedLabel(item)}</title>
-            </polygon>
-          ) : (
-            <polygon
-              key={`obstacle-${item.obstacle_id}`}
-              data-element-id={item.obstacle_id}
-              className={`obstacle obstacle--${item.kind}`}
-              /* The ground is drawn and nothing else. It is where the plan is
-                 measured from and what the server sums over; for the gardener
-                 it is the paper, not a thing on it. Every handler below is left
-                 off rather than covered over, and the CSS takes it out of
-                 hit-testing entirely, so a click inside the garden reaches
-                 whatever is actually there — or the empty canvas. */
-              fill={`url(#symbol-${symbolOf(item.kind)})`}
-              /* The footprint the server computed. Re-deriving it here would be
-                 a third answer to "what ground does this cover", and the two
-                 that already existed agreed only by accident. */
-              points={item.footprint.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-              tabIndex={
-                onSelectObstacle === undefined || armed || isGround(item.kind)
-                  ? undefined
-                  : 0
-              }
-              role={
-                onSelectObstacle === undefined || armed || isGround(item.kind)
-                  ? undefined
-                  : 'button'
-              }
-              aria-pressed={
-                onSelectObstacle === undefined || armed || isGround(item.kind)
-                  ? undefined
-                  : item.obstacle_id === selectedObstacleId
-              }
-              aria-label={obstacleLabel(item)}
-              aria-hidden={isGround(item.kind) ? true : undefined}
-              onClick={
-                onSelectObstacle === undefined || armed || isGround(item.kind)
-                  ? undefined
-                  : () => onSelectObstacle(item.obstacle_id)
-              }
-              transform={shift(item.obstacle_id)}
-              onPointerDown={
-                onGrabElement === undefined || armed || isGround(item.kind)
-                  ? undefined
-                  : (event) => onGrabElement(item.obstacle_id, event)
-              }
-              onContextMenu={
-                onAskWhatItIs === undefined || armed || isGround(item.kind)
-                  ? undefined
-                  : (event) => {
-                      event.preventDefault();
-                      onAskWhatItIs(item.obstacle_id, { x: event.clientX, y: event.clientY });
-                    }
-              }
-              onKeyDown={(event) => {
-                if (onSelectObstacle === undefined || armed || isGround(item.kind)) return;
-                if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-                  event.preventDefault();
-                  const box = event.currentTarget.getBoundingClientRect();
-                  onAskWhatItIs?.(item.obstacle_id, { x: box.left, y: box.top });
-                  return;
-                }
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  onSelectObstacle(item.obstacle_id);
-                }
-              }}
-            >
-              <title>{obstacleLabel(item)}</title>
-            </polygon>
-          ),
-        )}
-        </g>
+        <PlanObjects garden={garden} theme={theme} lod={lod} selectedBedId={selectedBedId}
+                     selectedObstacleId={selectedObstacleId} armed={armed}
+                     onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle}
+                     onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift} />
 
         {sunMap !== undefined && (
           <SunMap map={sunMap.map} mode={sunMap.mode} />
@@ -379,12 +176,12 @@ export function CanvasScene({
 
       {draft.length > 0 && (
           <g data-testid="draft" className="draft">
-            <polyline points={d(draft)} className="draft__line" />
+            <polyline points={svgPoints(draft)} className="draft__line" />
             {draft.map((p) => (
               <circle key={`${p.x},${p.y}`} cx={p.x} cy={-p.y} r={spacing * 0.12} />
             ))}
           </g>
         )}
-    </>
+    </g>
   );
 }
