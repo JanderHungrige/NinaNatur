@@ -4,7 +4,7 @@
  * The plan understands five — pan, drag out a shape, sketch freehand, drop a
  * polygon corner, place a viewpoint — and the order they are tried in is the
  * whole content of this module. Without an order, one click both places a
- * viewpoint and drops a bed corner underneath it.
+ * viewpoint and drops a bed corner underneath it. Two fingers are `usePinch`'s.
  */
 import { useRef } from 'react';
 
@@ -13,6 +13,9 @@ import { type Point, type Viewport, panBy, toGarden } from './viewport';
 
 /** Two decimals: a viewpoint is a place someone stands, not a survey mark. */
 const round = (v: number): number => Math.round(v * 100) / 100;
+
+/** Further than this, and a press has become a pan: its click is not a choice. */
+const MOVED_PX = 4;
 
 interface Gesture {
   active: boolean;
@@ -39,6 +42,14 @@ interface Options {
 export function useCanvasGestures(options: Options) {
   /** Drag with the pointer to pan. Without it, zooming in strands the user. */
   const pan = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * Where the pan began, and whether it has since moved the plan. A pan that
+   * began on a house ends in a click on that house; since houses and streets
+   * no longer move (doc 87, B1), that click is the end of the pan and not a
+   * choice of the house.
+   */
+  const began = useRef<{ x: number; y: number } | null>(null);
+  const panned = useRef(false);
 
   /** Where a pointer landed, in garden metres. */
   const metres = (event: { clientX: number; clientY: number }): Point => {
@@ -50,6 +61,7 @@ export function useCanvasGestures(options: Options) {
   };
 
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+    panned.current = false;
     if (options.drawing) return;
     // A drawing gesture is never also a pan: one drag cannot both make a shape
     // and slide the ground out from under it.
@@ -62,6 +74,7 @@ export function useCanvasGestures(options: Options) {
       return;
     }
     pan.current = { x: event.clientX, y: event.clientY };
+    began.current = pan.current;
   };
 
   const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -75,6 +88,10 @@ export function useCanvasGestures(options: Options) {
     }
     const from = pan.current;
     if (from === null) return;
+    const start = began.current;
+    if (start !== null && Math.hypot(event.clientX - start.x, event.clientY - start.y) > MOVED_PX) {
+      panned.current = true;
+    }
     pan.current = { x: event.clientX, y: event.clientY };
     options.setView((current) =>
       panBy(current, event.clientX - from.x, event.clientY - from.y),
@@ -93,6 +110,18 @@ export function useCanvasGestures(options: Options) {
     pan.current = null;
   };
 
+  /** A second finger landed (doc 91, B1): whatever the first was panning stops. */
+  const cancelPan = () => {
+    pan.current = null;
+  };
+
+  /** Swallows the click that ends a pan, before any shape under it hears it. */
+  const onClickCapture = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (!panned.current) return;
+    panned.current = false;
+    event.stopPropagation();
+  };
+
   /** A click, once the drags have had their say. */
   const onClick = (event: React.MouseEvent<SVGSVGElement>) => {
     if (options.placing && options.onPlaceViewpoint !== undefined) {
@@ -107,5 +136,5 @@ export function useCanvasGestures(options: Options) {
     options.addVertex(snapPoint(metres(event), options.spacing, { free: event.altKey }));
   };
 
-  return { onPointerDown, onPointerMove, endDrag, onClick };
+  return { onPointerDown, onPointerMove, endDrag, cancelPan, onClickCapture, onClick };
 }

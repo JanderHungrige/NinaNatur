@@ -1,8 +1,8 @@
 ---
-generated: 2026-09-17
+generated: 2026-09-18
 doc_count: 93
 connection_count: 111
-overlap_count: 106
+overlap_count: 108
 ---
 
 # Connections
@@ -357,6 +357,7 @@ graph TD
 - `frontend/src/canvas/geometry.ts` — 26-drawing-canvas, 40-freehand-shapes, 56-bloom-dots
 - `frontend/src/canvas/handles.ts` — 39-element-stamps, 43-shape-tools
 - `frontend/src/canvas/shapes.ts` — 43-shape-tools, 89-three-steps-in
+- `frontend/src/canvas/useClusterDrag.ts` — 61-planting-clusters, 87-a-workspace-not-a-page
 - `frontend/src/canvas/useEscapeKey.ts` — 49-drawing-focus, 88-what-the-selection-shows
 - `frontend/src/canvas/viewport.ts` — 26-drawing-canvas, 86-the-plan-that-stayed-a-strip
 - `frontend/src/components/BedDetails.tsx` — 88-what-the-selection-shows, 90-a-list-that-fits-a-window
@@ -371,7 +372,7 @@ graph TD
 - `frontend/src/components/ElementForm.tsx` — 51-element-context-menu, 88-what-the-selection-shows
 - `frontend/src/components/ElementList.tsx` — 52-element-list, 83-measured-surveyed-or-assumed, 89-three-steps-in
 - `frontend/src/components/FilterControls.tsx` — 23-catalogue-filters, 90-a-list-that-fits-a-window
-- `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 88-what-the-selection-shows, 89-three-steps-in
+- `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/GardenDetails.tsx` — 52-element-list, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/GardenId.tsx` — 30-landing-and-garden-id, 87-a-workspace-not-a-page, 89-three-steps-in
 - `frontend/src/components/GardenSymbols.tsx` — 41-garden-style, 58-painted-plan, 59-osm-streets
@@ -394,10 +395,11 @@ graph TD
 - `frontend/src/garden/useGarden.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/garden/useSelection.ts` — 51-element-context-menu, 52-element-list, 88-what-the-selection-shows
 - `frontend/src/garden/useSuggestions.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows
-- `frontend/src/kinds.ts` — 39-element-stamps, 41-garden-style, 45-relabel-and-skin, 59-osm-streets
+- `frontend/src/kinds.ts` — 39-element-stamps, 41-garden-style, 45-relabel-and-skin, 59-osm-streets, 87-a-workspace-not-a-page
 - `frontend/src/map/tiles.ts` — 31-map-selection, 33-imagery-objects
 - `frontend/src/plural.ts` — 11-garden-canvas, 20-score-ui, 24-month-suggestions, 26-drawing-canvas
 - `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style
+- `frontend/src/usePinch.ts` — 31-map-selection, 91-a-sheet-from-below
 - `ninanatur/api/accounts.py` — 35-accounts, 36-claim-gardens, 85-nothing-worse-than-it-looks
 - `ninanatur/api/bloom_year.py` — 18-insect-score, 19-swap-suggestions, 20-score-ui, 29-bloom-playback
 - `ninanatur/api/candidates.py` — 23-catalogue-filters, 62-manual-colours

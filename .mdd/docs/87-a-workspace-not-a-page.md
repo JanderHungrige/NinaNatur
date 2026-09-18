@@ -29,6 +29,13 @@ source_files:
   - frontend/src/components/GardenId.tsx
   - frontend/src/components/ShadeSwitch.tsx
   - frontend/src/styles.css
+  - frontend/src/kinds.ts
+  - frontend/src/canvas/useElementDrag.ts
+  - frontend/src/canvas/useClusterDrag.ts
+  - frontend/src/canvas/useCanvasGestures.ts
+  - frontend/src/canvas/useDrawingModes.ts
+  - frontend/src/components/GardenCanvas.tsx
+  - frontend/src/components/GardenCanvasProps.ts
 routes: []
 models: []
 test_files:
@@ -40,8 +47,9 @@ test_files:
   - tests/test_workspace_layout.py
   - tests/test_stylesheet.py
   - tests/test_plan_stage.py
+  - frontend/src/components/GardenCanvas.touch.test.tsx
 data_flow: mixed
-last_synced: 2026-09-14
+last_synced: 2026-09-18
 status: complete
 phase: all
 mdd_version: 11
@@ -205,6 +213,15 @@ None. The same client calls, from new places.
     `main`, the film behind it.
 12. **No new file is over 300 lines,** and `App.tsx` drops from 1,459 lines to
     under 300.
+13. **Houses and streets stay where they are,** as the garden's outline
+    already did. Chosen, they can be named, given a height or taken out, but
+    no drag, handle or corner moves them — by mouse or by finger (B1). By kind,
+    because nothing records whether a house came from the map or was drawn.
+14. **A finger moves only what has been chosen.** On a phone a finger that
+    lands on a bed, an object or a patch that is not chosen moves the plan;
+    once it is chosen, the same finger moves it (B1). A mouse drags directly,
+    as before, and the click that ends a pan is not a choice of what it began
+    on.
 
 ## Data Flow
 
@@ -249,4 +266,6 @@ components.
 
 ## Bugs
 
-(none yet — populated by /mdd bug when issues are reported)
+| ID | Description | Status | Fixed In | Reported | Fixed |
+|----|-------------|--------|----------|----------|-------|
+| B1 | On a phone a finger that lands on a house, a street or a bed moves it instead of the plan, and a mouse can drag, rotate and resize houses and streets: every element but the garden outline could be dragged by any pointer | Completed | frontend/src/components/GardenCanvas.tsx:76 | 2026-09-18 | 2026-09-18 |

@@ -1,94 +1,21 @@
-import { useCallback, useRef, useState } from 'react';
-
-import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
-import type { Cluster } from '../canvas/clusters';
-import type { MapMode } from './SunMap';
 import { elementById } from '../canvas/elements';
 import { type Box, boxOf } from '../canvas/handles';
+import { useCanvasGestures } from '../canvas/useCanvasGestures';
 import { useClusterDrag } from '../canvas/useClusterDrag';
+import { useDrawingModes } from '../canvas/useDrawingModes';
 import { useElementDrag } from '../canvas/useElementDrag';
 import { useHandleDrag } from '../canvas/useHandleDrag';
-import { useVertexDrag } from '../canvas/useVertexDrag';
-import { usePolygonDraft } from '../canvas/usePolygonDraft';
-import { useViewport } from '../canvas/useViewport';
 import { useSunReadout } from '../canvas/useSunReadout';
-import { useCanvasGestures } from '../canvas/useCanvasGestures';
-import { useFreehandStroke } from '../canvas/useFreehandStroke';
-import { useShapeBand } from '../canvas/useShapeBand';
-import { useEscapeKey } from '../canvas/useEscapeKey';
-import type { DrawnShape, Tool } from '../canvas/shapes';
-import type { Point } from '../canvas/viewport';
-import { gridSpacing, viewBox } from '../canvas/viewport';
+import { useVertexDrag } from '../canvas/useVertexDrag';
+import { useViewport } from '../canvas/useViewport';
+import { type Point, gridSpacing, panBy, viewBox, zoomAt } from '../canvas/viewport';
+import { isFixed } from '../kinds';
 import { beds as bedCount, obstacles as obstacleCount } from '../plural';
+import { usePinch } from '../usePinch';
 import { CanvasControls } from './CanvasControls';
-import { CanvasScene } from './CanvasScene';
 import { CanvasOverlays } from './CanvasOverlays';
-
-interface Props {
-  garden: GardenOut;
-  selectedBedId: number | null;
-  onSelectBed: (bedId: number) => void;
-  /**
-   * The drawing surface's pixel size. Passed rather than measured: an SVG that
-   * has not been laid out yet reports zero in a real browser as surely as it
-   * does in jsdom, and a zero width turns every pointer position into NaN
-   * metres.
-   */
-  /**
-   * Overrides the measured size. Tests pass it because jsdom lays nothing out;
-   * in the browser the element measures itself, since assuming 800×600 for a
-   * surface that is actually 633×292 converts every click to the wrong metre.
-   */
-  size?: { widthPx: number; heightPx: number } | undefined;
-  onDrawBed?: ((polygon: number[][]) => void) | undefined;
-  onSelectObstacle?: ((obstacleId: number) => void) | undefined;
-  /** Every planting as a patch, ready to draw. */
-  clusters?: Cluster[] | undefined;
-  selectedPlantingId?: number | null;
-  /** A patch that was just planted, marked for a moment (doc 88). */
-  freshPlantingId?: number | null;
-  onSelectCluster?: ((plantingId: number) => void) | undefined;
-  /** Dragging a patch to another spot in its bed. */
-  onMoveCluster?: ((plantingId: number, to: { x: number; y: number }) => void) | undefined;
-  /** The same panel the suggestion list opens. */
-  onShowClusterInfo?: ((taxonId: number, name: string) => void) | undefined;
-  sunMap?: { map: LightMap; mode: MapMode } | undefined;
-  /** The ground the garden stands on, drawn beneath the plan. */
-  terrain?: Terrain | null | undefined;
-  shadows?: number[][][] | undefined;
-  /** Where the user is standing, if anywhere. */
-  viewpoint?: { x: number; y: number } | null;
-  /** Placing one, while the rail's Standpunkt is armed (doc 89). */
-  onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
-  /** Trees the surface model found, marked where they stand (doc 89). */
-  canopies?: CanopySuggestion[] | undefined;
-  /** The plan's "N gefundene Bäume": show their card. */
-  onShowFoundTrees?: (() => void) | undefined;
-  /** The shape tool that is armed, if any. A drag then draws instead of panning. */
-  tool?: Tool | null;
-  onDrawShape?: ((shape: DrawnShape) => void) | undefined;
-  /** A freehand stroke: an outline the hand closed, or a path. */
-  onDrawTrace?:
-    | ((trace: { kind: 'area' | 'path'; points: number[][] }) => void)
-    | undefined;
-  /** Escape and "Abbrechen" put the tool down; the parent owns which one it is. */
-  onCancelTool?: (() => void) | undefined;
-  /** Escape also drops whatever is selected — one key out of everything. */
-  onClearSelection?: (() => void) | undefined;
-  /** Right-click on an element: the short way to say what it is. */
-  onAskWhatItIs?:
-    | ((id: number, at: { x: number; y: number }) => void)
-    | undefined;
-  /** Dragging a shape's body moves it. By how far, in metres. */
-  onMoveObstacle?: ((id: number, by: { x: number; y: number }) => void) | undefined;
-  /** The object wearing handles. Selection is the parent's, because the panel
-   *  and the plan must agree on what is being edited. */
-  selectedObstacleId?: number | null;
-  onResizeObstacle?: ((obstacleId: number, box: Box) => void) | undefined;
-  /** Editing the outline itself, corner by corner. */
-  onReshapeObstacle?: ((obstacleId: number, points: number[][]) => void) | undefined;
-}
-
+import { CanvasScene } from './CanvasScene';
+import type { GardenCanvasProps } from './GardenCanvasProps';
 
 /**
  * The garden plan, and the surface it is drawn on.
@@ -97,6 +24,10 @@ interface Props {
  * be focused, named and found by a test, and the scene is tens of shapes rather
  * than thousands. The arithmetic lives in ../canvas, where it can be tested
  * without rendering anything.
+ *
+ * What it is given is `GardenCanvasProps`, and its drawing modes are
+ * `useDrawingModes` — both split out when houses, streets and two fingers came
+ * in (doc 87, B1; doc 91, B1), to keep this file under the 300-line rule.
  */
 export function GardenCanvas({
   garden,
@@ -128,7 +59,7 @@ export function GardenCanvas({
   onAskWhatItIs,
   onMoveObstacle,
   onReshapeObstacle,
-}: Props) {
+}: GardenCanvasProps) {
   const { view, setView, surface, stage, zoom } = useViewport(size);
 
   const sun = useSunReadout(sunMap?.map, view, surface);
@@ -139,12 +70,19 @@ export function GardenCanvas({
   const elementDrag = useElementDrag({
     view,
     surface,
+    // Houses, streets and the ground stay where they are, and a finger moves
+    // only what has been chosen (doc 87, B1). A refused grab pans the plan: on
+    // a phone most of it is houses, streets and beds.
+    movable: (id, byFinger) =>
+      !isFixed(elementById(garden, id)?.kind ?? '') &&
+      (!byFinger || id === selectedObstacleId || id === selectedBedId),
     onFinish: (id, by) => onMoveObstacle?.(id, by),
   });
 
   // Both arrays. A bed is an element of kind `bed`, and looking only in
   // `obstacles` is what took a bed's handles away the moment it was labelled.
   const selected = elementById(garden, selectedObstacleId);
+  const fixed = selected !== null && isFixed(selected.kind);
 
   // Which bed a patch is in, so a drag can be clamped to that outline. Looked
   // up rather than carried on the cluster: the outline is the bed's, and two
@@ -162,6 +100,8 @@ export function GardenCanvas({
     surface,
     clusters: clusters ?? [],
     bedOf,
+    // As with shapes: a finger moves only the patch that has been chosen.
+    movable: (plantingId, byFinger) => !byFinger || plantingId === selectedPlantingId,
     onFinish: (plantingId, to) => onMoveCluster?.(plantingId, to),
   });
   // While a patch is being dragged it is drawn where the pointer has it, not
@@ -177,8 +117,8 @@ export function GardenCanvas({
       : cluster,
   );
   // Derived rather than stored: Wave 11 keeps points, and the box the handles
-  // work in is read back off them.
-  const selectedBox: Box | null = selected === null ? null : boxOf(selected);
+  // work in is read back off them. What stays put has no box, so no handles.
+  const selectedBox: Box | null = selected === null || fixed ? null : boxOf(selected);
   const { preview, grabHandle } = useHandleDrag({
     selectedBox,
     keepSquare: selected?.shape === 'circle',
@@ -199,68 +139,17 @@ export function GardenCanvas({
     onFinish: reshape,
   });
 
-  // Derived, not stored: the polygon tool *is* the drawing mode, and two
-  // places holding the same fact is how they end up disagreeing.
-  const drawing = tool === 'polygon';
-  /** Freehand mode, and the stroke being drawn in it.
-   *
-   * The points live in a ref and are mirrored into state for drawing. The ref
-   * is what pointerup reads: state read from a render closure is one render
-   * behind whenever events arrive faster than React re-renders, and losing the
-   * last points of a stroke that way would be invisible until it wasn't. */
-  const [problem, setProblem] = useState<string | null>(null);
-
-  //  Held in refs so `cancel` can stay a stable callback: the Escape handler
-  //  depends on it, and re-registering that listener on every render is how a
-  //  keypress ends up handled twice.
-  const cancelStroke = useRef<() => void>(() => undefined);
-  const freehandStroke = useFreehandStroke({
-    view,
-    onTrace: (trace) => onDrawTrace?.(trace),
-    onProblem: setProblem,
-  });
-  const stroke = freehandStroke.stroke;
-  cancelStroke.current = freehandStroke.cancel;
-  //  Held in a ref so `cancel` can stay a stable callback: the Escape handler
-  //  depends on it, and re-registering that listener on every render is how a
-  //  keypress ends up handled twice.
-  const cancelBand = useRef<() => void>(() => undefined);
-  const clearDraft = useRef<() => void>(() => undefined);
-  const shapeBand = useShapeBand({
+  const { drawing, problem, freehandStroke, stroke, shapeBand, polygon, cancel } = useDrawingModes({
     tool,
-    onShape: (shape) => onDrawShape?.(shape),
-    onProblem: setProblem,
+    view,
+    spacing,
+    onDrawBed,
+    onDrawShape,
+    onDrawTrace,
+    onCancelTool,
+    onClearSelection,
   });
-  cancelBand.current = shapeBand.cancel;
-  const polygon = usePolygonDraft({
-    onShape: (outline) => onDrawBed?.(outline),
-    onProblem: setProblem,
-    onDone: () => cancel(),
-    // A corner within one grid square of the first is a closure. In metres, so
-    // it means the same distance however far the user has zoomed.
-    closeWithin: spacing,
-  });
-  clearDraft.current = polygon.clear;
-
-  /** Leave every drawing mode and forget what was half-drawn. Stable, because
-   *  the Escape listener depends on it and re-registering that on every render
-   *  is how one keypress ends up handled twice. */
-  const cancel = useCallback(() => {
-    onCancelTool?.();
-    cancelBand.current();
-    cancelStroke.current();
-    onClearSelection?.();
-    clearDraft.current();
-    setProblem(null);
-  }, [onClearSelection]);
-
   const points = polygon.points;
-
-
-  // Always listening: Escape clears a selection too, and a selection can
-  // outlive every drawing mode. Typed into a text field it is the field's (doc 88).
-  useEscapeKey(cancel);
-
 
   const gestures = useCanvasGestures({
     view,
@@ -275,6 +164,17 @@ export function GardenCanvas({
     onPlaceViewpoint,
     // Placed once, the tool is put down, as the button used to switch itself off.
     onViewpointPlaced: () => onCancelTool?.(),
+  });
+  // Two fingers zoom the plan between them and move it with them (doc 91, B1).
+  // Whatever one finger was doing ends when the second lands.
+  const pinch = usePinch({
+    onStart: () => {
+      gestures.cancelPan();
+      elementDrag.cancel();
+      clusterDrag.cancel();
+    },
+    onChange: ({ scale, at, moved }) =>
+      setView((current) => panBy(zoomAt(current, at, 1 / scale), moved.x, moved.y)),
   });
 
   return (
@@ -323,7 +223,10 @@ export function GardenCanvas({
         role="group"
         aria-label={`Gartenplan ${garden.name}, ${bedCount(garden.beds.length)}, ${obstacleCount(garden.obstacles.length)}`}
         onClick={gestures.onClick}
+        // A pan begun on a shape ends in a click on it; that click is not a choice.
+        onClickCapture={gestures.onClickCapture}
         onPointerDown={gestures.onPointerDown}
+        {...pinch}
         onPointerMove={(event) => {
           gestures.onPointerMove(event);
           sun.read(event);
@@ -364,7 +267,7 @@ export function GardenCanvas({
           band={shapeBand.band}
           stroke={stroke}
           vertices={
-            selected === null || selected.points === null || onReshapeObstacle === undefined
+            selected === null || fixed || selected.points === null || onReshapeObstacle === undefined
               ? null
               : {
                   points: vertexDrag.preview ?? selected.points,

@@ -16,6 +16,7 @@ source_files:
   - frontend/src/components/GardenWorkspace.tsx
   - frontend/src/testing/appFixtures.tsx
   - frontend/src/styles.css
+  - frontend/src/usePinch.ts
 routes: []
 models: []
 test_files:
@@ -25,8 +26,9 @@ test_files:
   - frontend/src/components/SiteHeader.test.tsx
   - frontend/src/App.sheet.test.tsx
   - tests/test_narrow_workspace.py
+  - frontend/src/components/GardenCanvas.touch.test.tsx
 data_flow: reads-existing
-last_synced: 2026-09-14
+last_synced: 2026-09-18
 status: complete
 phase: all
 mdd_version: 11
@@ -41,6 +43,7 @@ known_issues:
   - "In a 375 px window the plan's controls are wider than their one row: on V0.20.177 redo stands half out of view and the row scrolls sideways. Feature 6's type scale is to size them."
   - "At a quarter in a 375×635 window a garden name of two lines shows only its first line (V0.20.177, the preview's test garden); the name of a bed, an object or a species shows whole."
   - "Since doc 92 (Wave 23, 2026-09-14) a phone's plan controls take the scales' smallest steps and fit their one row on V0.20.179, with nothing past its end: 335 px of content, where 350 had run past a 341 px row."
+  - "Since B1 (2026-09-18) two fingers zoom the plan between them, and a second finger ends whatever the first was dragging: measured on the preview (V0.20.188), a spread took the span from 40 m to 16 and a pinch back to 40."
 ---
 
 # 91 — A Sheet From Below
@@ -151,6 +154,10 @@ None.
     Pro. Raising the sheet is the gardener's choice to trade plan for details;
     60 % and 90 % do not promise the floor.
 13. **No new file is over 300 lines.**
+14. **Two fingers zoom the plan,** between them, and move it with them (B1).
+    The plan's `touch-action: none` keeps a finger's drag off the page, and so
+    switches the browser's own pinch off too; this replaces it. A second
+    finger ends whatever the first was dragging.
 
 ## Data Flow
 
@@ -181,4 +188,6 @@ Nothing new. `inert` removes interaction; it grants none.
 
 ## Bugs
 
-(none yet — populated by /mdd bug when issues are reported)
+| ID | Description | Status | Fixed In | Reported | Fixed |
+|----|-------------|--------|----------|----------|-------|
+| B1 | Two fingers do not zoom the plan on a phone: nothing handles a second pointer, and the plan's `touch-action: none` switches off the browser's own pinch as well | Completed | frontend/src/usePinch.ts:36 | 2026-09-18 | 2026-09-18 |
