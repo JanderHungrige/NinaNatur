@@ -3,11 +3,11 @@ id: ninanatur-wave-21
 title: "Wave 21: The roof, said properly"
 initiative: ninanatur
 initiative_version: 21
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-19
 demo_state: "Ein Haus aus dem Kartenimport kennt seine Traufhöhe, ohne dass jemand sie eintippt, und sagt woher; die Nordseite eines Satteldachs bekommt sichtbar weniger Sonne als die Südseite, weil die Neigung gemessen und nicht angenommen ist."
 created: 2026-09-07
-hash: 7068c4fd
+hash: ddf3ab99
 ---
 
 # Wave 21: The roof, said properly
@@ -95,6 +95,36 @@ the garden's own axes, and `roofshape` orients the pitches by it instead of by
 the long axis — and a pent roof whose fall is known is pitched at last, rather
 than left flat. The page says which way the ridge runs, the pitch that gives,
 and whether both were measured or assumed.
+
+## Progress
+
+- **2026-09-18 — split first.** Four files the wave had to touch were past the
+  300-line limit (`api/schemas.py` 735, `garden/store.py` 380,
+  `ingest/migrations.py` 315, `ingest/schema_user.py` 310) and `measured.py`
+  stood at 297. Split by concern in two commits that change no behaviour; every
+  importer points at the new home directly.
+- **2026-09-18 — feature 1, where the roof came from** (doc 93). `eaves_source`
+  beside `height_source` and `roof_source`; the survey writes per value; the
+  form sends only what changed; the server alone names a source; the import says
+  `osm` and `osm_levels`; a one-time backfill marks what history makes certain.
+  On the preview (V0.20.191), a Wuppertal garden: 13 imported houses all `osm`,
+  five with storey eaves; after the recompute 13 surveyed, 12 with surveyed
+  eaves; a chosen `hip` survived the next survey; a renamed house stayed
+  surveyed; the form said *amtlich vermessen* under the shape and the eaves.
+- **2026-09-18 — feature 2, which way the ridge runs** (doc 94). The ridge from
+  the survey's faces (952 of 968 gables on two real tiles, no slower), stored as
+  `roof_fall_deg`; the pitch measured across it; a pent with a known fall
+  pitched at last; the page says it. On the preview (V0.20.193), a detached
+  Wuppertal gable: eaves 13.41 m and a ridge at 80° from the survey, pitch 34°,
+  and *First Ost–West (amtlich vermessen) · Neigung 34°* in the form. Its north
+  face read 10.7 h against 11.8 h on the south in the plan's own readout
+  (0.5 m cells, the gable and the garden drawn), 8.8 h against 10.7 h in the
+  5 m cells of the garden as imported.
+- **2026-09-18 — released** as **V0.20.195** (merge `81ab791`); production
+  serves `index-pZvV4pYn.js` and `index-x3SOI-WV.css`, the preview's assets. The
+  smoke test passed in both windows first.
+- **2026-09-18 — complete.** The owner confirmed the demo from the preview's
+  pictures and numbers.
 
 ## Scope, decided 2026-09-18
 

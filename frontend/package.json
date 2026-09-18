@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "plan:sheet": "node scripts/plan-sheet.mjs",
     "generate:api": "python -m scripts.generate_openapi && openapi-typescript openapi.json -o src/api/types.ts"
   },
   "dependencies": {

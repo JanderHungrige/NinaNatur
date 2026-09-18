@@ -1286,7 +1286,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 /* The wobble goes on the group, not on each shape: a filter per object is a
    filter re-run per object. */
-.canvas__objects { filter: url(#watercolour); }
+/* The objects' filter is the theme's now (doc 96): an attribute, which the
+   two `filter: none` rules below still override. */
 
 
 /* Texture is decoration. When the system asks for more contrast, or paints its

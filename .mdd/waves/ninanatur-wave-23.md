@@ -3,11 +3,11 @@ id: ninanatur-wave-23
 title: "Wave 23: The plan is the page"
 initiative: ninanatur
 initiative_version: 23
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-20
 demo_state: "Der Plan füllt den Bildschirm — Werkzeuge links, Details zur Auswahl rechts, die Zeit unten. Beet wählen, Art wählen, die Pflanze im Plan sehen: ohne dass die Seite scrollt, am Schreibtisch wie auf dem Telefon, wo die Details als Blatt von unten kommen. Und der Plan schrumpft nie mehr zu einem Strich."
 created: 2026-09-07
-hash: 2b979c96
+hash: 2632d7bb
 ---
 
 # Wave 23: The plan is the page
@@ -333,6 +333,19 @@ in as the aspect ratio and never recovers until reload. Observed viewBox:
   the shortcut help is open. The workspace's smoke test went with them. CI on
   main passed, and production serves the stylesheet and the bundle measured on
   the preview as V0.20.180 (`index-C2tOCCqE.css`, `index-BZpWFiOE.js`).
+
+- **2026-09-18 — what the phone check found first.** Drawing the garden on the
+  map did not work on a phone: the map assumed a 640 px surface that was 259 px
+  wide there, and a tap set its corner 77 px from the finger. It measures its
+  surface now, and a finger drags it (doc 31, B1; V0.20.187). Then a finger
+  moved houses and streets on the plan, and two fingers zoomed nothing: houses
+  and streets stay where they are, a finger pans unless what is under it is
+  chosen, and two fingers zoom the plan and step the map (docs 87 and 91, B1;
+  doc 31, B2; V0.20.190).
+
+- **2026-09-18 — complete.** The owner's phone check passed, the acceptance's
+  last item: a garden on a phone, three species planted, the plan in sight
+  throughout.
 
 ## Features
 | # | Feature | Doc | Status | Depends on |

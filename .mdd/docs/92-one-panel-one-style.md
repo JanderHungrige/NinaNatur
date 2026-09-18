@@ -4,7 +4,7 @@ title: One Panel, One Style
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [87-a-workspace-not-a-page, 91-a-sheet-from-below]
 relates: [88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window]
 source_files:

@@ -4,7 +4,7 @@ title: Three Steps In
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [88-what-the-selection-shows, 87-a-workspace-not-a-page, 48-garden-soil, 34-sightlines, 84-what-else-is-standing-there]
 relates: [53-account-in-header, 30-landing-and-garden-id, 65-the-shade-switch, 92-one-panel-one-style]
 source_files:

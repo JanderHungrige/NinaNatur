@@ -98,6 +98,11 @@ export function gridSpacing(view: Viewport): number {
   return SPACINGS[SPACINGS.length - 1] as number;
 }
 
+/** Garden metres to the SVG's own coordinates, which run y-down. */
+export function svgPoints(points: Point[]): string {
+  return points.map((p) => `${p.x},${-p.y}`).join(' ');
+}
+
 /** A box as `getBoundingClientRect` measures it. */
 export interface Measured {
   width: number;

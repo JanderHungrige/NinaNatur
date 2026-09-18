@@ -1,5 +1,8 @@
 /**
- * The textures a garden plan is drawn with.
+ * Provenance: NinaNatur
+ *
+ * The textures the Technisch theme draws a garden plan with (doc 96): the plan
+ * as it was drawn until Wave 24, moved here unchanged from GardenSymbols.
  *
  * One definition per symbol, referenced by every object of a kind that uses it
  * — a pattern per object would be a defs block that grows with the garden.
@@ -19,7 +22,7 @@ function Wash({ id, className }: { id: string; className: string }) {
   );
 }
 
-export function GardenSymbols() {
+export function TechnischSymbols() {
   return (
     <>
       {/*

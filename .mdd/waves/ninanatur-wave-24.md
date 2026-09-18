@@ -3,11 +3,11 @@ id: ninanatur-wave-24
 title: "Wave 24: A drawing of a garden"
 initiative: ninanatur
 initiative_version: 23
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: eda106b2
+hash: 6854a27a
 ---
 
 # Wave 24: A drawing of a garden
@@ -84,8 +84,8 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | a-theme-is-a-thing | — | planned | — |
-| 1 | look-before-you-argue | — | planned | 0 |
+| 0 | a-theme-is-a-thing | docs/96-a-theme-is-a-thing.md | complete | 1 |
+| 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
 | 2 | draft-sketch-in-svg | — | planned | 1 |
 | 3 | what-the-style-has-not-drawn | — | planned | 2 |
 | 4 | paper-bleed-and-a-real-shadow | — | planned | 3 |
@@ -95,8 +95,19 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 Three stages, with a **review by the owner after stage 2 and after stage 3**,
 and a courtesy round with Davison before stage 3 ships:
 
-- **Stage 1 — the foundation:** 0, 1. No visible change; an interface and a
-  way to see.
+- **Stage 1 — the foundation:** 1, then 0. No visible change; a way to see,
+  and an interface.
+
+*Order changed on 2026-09-18, before either was built: the contact sheet comes
+first. Feature 0's acceptance is that "Technisch" renders pixel-identical to
+today's plan, and only a raster of today's plan, taken before the extraction,
+can prove that — the wave's own rule, look do not reason. Nothing in the plan's
+drawing is tested for its pixels until then.*
+
+*Decided with the owner on 2026-09-18: stage by stage, and I release stage 1;
+stage 2 goes to the preview for the owner's review first. Davison's written
+permission covers the public repository and commercial use. The work is done
+from the `.stylx` alone — his source assets are not asked for.*
 - **Stage 2 — his style, on our plan:** 2, 3. The converter, then the garden's
   own vocabulary in his hand.
 - **Stage 3 — the finish:** 4, 5, 6.

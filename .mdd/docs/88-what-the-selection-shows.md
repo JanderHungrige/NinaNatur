@@ -4,7 +4,7 @@ title: What the Selection Shows
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [87-a-workspace-not-a-page, 49-drawing-focus, 51-element-context-menu, 52-element-list]
 relates: [48-garden-soil, 47-panel-order, 11-garden-canvas, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style]
 source_files:
