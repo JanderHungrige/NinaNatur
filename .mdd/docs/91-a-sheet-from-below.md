@@ -151,6 +151,10 @@ None.
     Pro. Raising the sheet is the gardener's choice to trade plan for details;
     60 % and 90 % do not promise the floor.
 13. **No new file is over 300 lines.**
+14. **Two fingers zoom the plan,** between them, and move it with them (B1).
+    The plan's `touch-action: none` keeps a finger's drag off the page, and so
+    switches the browser's own pinch off too; this replaces it. A second
+    finger ends whatever the first was dragging.
 
 ## Data Flow
 
@@ -181,4 +185,6 @@ Nothing new. `inert` removes interaction; it grants none.
 
 ## Bugs
 
-(none yet — populated by /mdd bug when issues are reported)
+| ID | Description | Status | Fixed In | Reported | Fixed |
+|----|-------------|--------|----------|----------|-------|
+| B1 | Two fingers do not zoom the plan on a phone: nothing handles a second pointer, and the plan's `touch-action: none` switches off the browser's own pinch as well | Open | - | 2026-09-18 | - |

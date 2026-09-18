@@ -80,6 +80,8 @@ export function MapSurface({
         style={size === undefined ? { height } : { width: size.widthPx, height: size.heightPx }}
         onClick={onAddCorner}
         onPointerDown={surface.onPointerDown}
+        // Two fingers step the zoom (doc 31, B2); they are seen before the drag is.
+        {...surface.pinch}
         // Otherwise the browser's own menu opens in the middle of a pan.
         onContextMenu={(event) => event.preventDefault()}
       >

@@ -192,3 +192,52 @@ describe('MapPicker — a finger on the map', () => {
     expect(screen.getByText(/1 Punkt\b/)).toBeDefined();
   });
 });
+
+describe('MapPicker — two fingers', () => {
+  // Doc 31, B2 (2026-09-18). The tiles come in whole zoom levels, so a spread
+  // or a pinch steps one level rather than scaling the picture.
+  /** The zoom levels the tiles on show belong to: …openstreetmap.org/{z}/{x}/{y}.png */
+  const levels = (surface: HTMLElement) => [
+    ...new Set(
+      [...surface.querySelectorAll('[data-testid="map-tiles"] img')].map(
+        (img) => (img.getAttribute('src') ?? '').split('/')[3],
+      ),
+    ),
+  ];
+  const finger = (
+    surface: HTMLElement,
+    type: 'pointerDown' | 'pointerMove' | 'pointerUp',
+    pointerId: number,
+    x: number,
+  ) => fireEvent[type](surface, { pointerType: 'touch', pointerId, button: 0, ...at(x, 200) });
+
+  it('spreading them zooms the map in one level, and sets no corner', async () => {
+    show();
+    await findPlace();
+    const surface = asPhone();
+    expect(levels(surface)).toEqual(['18']);
+
+    finger(surface, 'pointerDown', 1, 100);
+    finger(surface, 'pointerDown', 2, 160);
+    finger(surface, 'pointerMove', 2, 220); // 60 px apart, then 120
+    finger(surface, 'pointerUp', 2, 220);
+    finger(surface, 'pointerUp', 1, 100);
+
+    expect(levels(surface)).toEqual(['19']);
+    expect(screen.getByText(/0 Punkte/)).toBeDefined();
+  });
+
+  it('pinching them together zooms it out one level', async () => {
+    show();
+    await findPlace();
+    const surface = asPhone();
+
+    finger(surface, 'pointerDown', 1, 60);
+    finger(surface, 'pointerDown', 2, 220);
+    finger(surface, 'pointerMove', 2, 120); // 160 px apart, then 60
+    finger(surface, 'pointerUp', 2, 120);
+    finger(surface, 'pointerUp', 1, 60);
+
+    expect(levels(surface)).toEqual(['17']);
+  });
+});

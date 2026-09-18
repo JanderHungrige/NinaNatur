@@ -3,13 +3,17 @@ import { useCallback } from 'react';
 import type { GardenOut, NinaNaturClient } from '../api/client';
 import { elementById } from '../canvas/elements';
 import { type Box, boxOf, rescale } from '../canvas/handles';
-import { isGround } from '../kinds';
+import { isFixed } from '../kinds';
 import type { UndoEntry } from '../useUndoStack';
 import type { Status } from '../useStatus';
 
 /**
  * The three edits to an element's geometry: move, reshape, resize (doc 87).
  * Move and reshape remember how to take themselves back.
+ *
+ * None of them applies to what stays where it is: the ground, and the houses
+ * and streets around it (doc 87, B1). The plan offers no drag, handle or corner
+ * for those; this is the same rule where the request is made.
  */
 export function useGeometry(
   client: NinaNaturClient,
@@ -25,11 +29,10 @@ export function useGeometry(
   const moveObstacle = useCallback(
     async (obstacleId: number, by: { x: number; y: number }) => {
       const element = elementById(garden, obstacleId);
-      // The ground is where everything else is measured from. Moving it would
-      // shift the garden out from under the plan rather than move anything in
-      // it — and not being able to drag it is behaviour the gardener asked to
-      // keep.
-      if (element === null || isGround(element.kind)) return;
+      // The ground is where everything else is measured from, and the houses
+      // and streets are where they are. Not being able to drag any of them is
+      // behaviour the gardener asked for.
+      if (element === null || isFixed(element.kind)) return;
       const from = { x: element.x, y: element.y };
       await run('Verschieben', async () => {
         setGarden(
@@ -58,6 +61,8 @@ export function useGeometry(
   const reshapeObstacle = useCallback(
     async (obstacleId: number, points: number[][]) => {
       const was = elementById(garden, obstacleId);
+      // Same rule as moving: a house's or a street's corners stay where they are.
+      if (was !== null && isFixed(was.kind)) return;
       await run('Form ändern', async () => {
         setGarden(await client.editObstacle(token, obstacleId, { points, constraint_hint: null }));
         if (was !== null && was.points !== null) {
@@ -86,8 +91,8 @@ export function useGeometry(
   const resizeObstacle = useCallback(
     async (obstacleId: number, box: Box) => {
       const element = elementById(garden, obstacleId);
-      // Same rule as moving: the ground is not dragged about by its handles.
-      if (element === null || isGround(element.kind)) return;
+      // Same rule as moving: nothing fixed is dragged about by its handles.
+      if (element === null || isFixed(element.kind)) return;
       const at = { x: Math.round(box.x * 100) / 100, y: Math.round(box.y * 100) / 100 };
       await run('Größe ändern', async () => {
         setGarden(

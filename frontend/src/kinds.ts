@@ -81,3 +81,18 @@ export const GROUND_KIND = 'garden';
 export function isGround(kind: string): boolean {
   return kind === GROUND_KIND;
 }
+
+/**
+ * What stays where it is: the ground, and the houses and streets around it
+ * (doc 87, B1).
+ *
+ * The gardener said of streets and houses what they had said of the ground:
+ * they are where they are. Chosen, they can still be named, given a height or
+ * taken out — but no drag, handle or corner moves them. By kind, because
+ * nothing records whether a house came from the map or was drawn by hand.
+ */
+const FIXED = new Set([GROUND_KIND, 'house', 'street']);
+
+export function isFixed(kind: string): boolean {
+  return FIXED.has(kind);
+}
