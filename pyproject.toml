@@ -54,6 +54,9 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The repository's root, so `scripts` is importable however pytest is started:
+# `python -m pytest` puts it there by itself, a bare `pytest` (as in CI) does not.
+pythonpath = ["."]
 # No test reaches the network: every socket but a Unix one is refused
 # (`tests/test_no_network.py`). The light worker's forkserver and the event
 # loop talk over Unix sockets, so those stay.
