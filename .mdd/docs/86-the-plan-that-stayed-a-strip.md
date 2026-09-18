@@ -4,7 +4,7 @@ title: The Plan That Stayed a Strip
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [11-garden-canvas, 26-drawing-canvas]
 relates: [47-panel-order, 51-element-context-menu, 65-the-shade-switch]
 source_files:

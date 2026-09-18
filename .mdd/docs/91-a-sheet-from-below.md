@@ -4,7 +4,7 @@ title: A Sheet From Below
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [87-a-workspace-not-a-page, 88-what-the-selection-shows, 90-a-list-that-fits-a-window]
 relates: [53-account-in-header, 30-landing-and-garden-id, 29-bloom-playback, 86-the-plan-that-stayed-a-strip, 92-one-panel-one-style]
 source_files:
