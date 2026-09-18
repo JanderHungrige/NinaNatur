@@ -3,7 +3,7 @@ id: ninanatur
 title: NinaNatur
 status: active
 version: 24
-hash: 3eae59c6
+hash: d53f7781
 created: 2026-08-27
 ---
 
@@ -202,7 +202,7 @@ data would be convenient.
 | Wave 18 | waves/ninanatur-wave-18.md | A place to look before it is live: a real dev environment on its own port | complete |
 | Wave 19 | waves/ninanatur-wave-19.md | Houses that measure themselves: heights and roof shapes from surveyed models | complete |
 | Wave 20 | waves/ninanatur-wave-20.md | Nothing here is worse than it looks: a web and application security review, and the fixes it names | complete |
-| Wave 21 | waves/ninanatur-wave-21.md | The roof, said properly: eaves and ridge direction measured rather than assumed | in_progress |
+| Wave 21 | waves/ninanatur-wave-21.md | The roof, said properly: eaves and ridge direction measured rather than assumed | complete |
 | Wave 22 | waves/ninanatur-wave-22.md | A place to look at it from: accounts, visits and progress, behind an SSH tunnel | planned |
 | Wave 23 | waves/ninanatur-wave-23.md | The plan is the page: a workspace that never scrolls, on the desk and on the phone | in_progress |
 | Wave 24 | waves/ninanatur-wave-24.md | A drawing of a garden: Draft Sketch, with Warren Davison's permission, extended for gardens behind a swappable theme | planned |

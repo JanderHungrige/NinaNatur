@@ -95,6 +95,29 @@ CI computes it and passes it as a build arg; the container has neither git nor
 running, and a baked-in frontend version would keep claiming the old one after a
 partial rollout.
 
+## Where a garden's numbers came from
+
+Heights, roof shapes, eaves and ridge directions carry a source, and the page
+says it (docs 83, 93, 94).
+
+- **Only the server writes a `*_source`**, from what actually changed: the PATCH
+  marks what the gardener changed as `user`, the survey marks what it writes,
+  the map import marks what it brought. A client never sends one — a source a
+  client can name is a label anybody can forge.
+- **Forms send only the fields that changed.** A value in a PATCH body is read
+  as the gardener's word on it, so a form that sends its pre-filled fields back
+  turns a measurement into an entry on every save — which is how renaming a
+  surveyed house once made it the user's (Wave 21).
+
+## Schema changes
+
+- A new column goes into `ingest/migrations.py::COLUMN_MIGRATIONS` (add-only;
+  the running database upgrades itself at startup) and into the `CREATE TABLE`
+  that builds a new database.
+- A change to what existing rows *mean* is a one-time data migration in
+  `ingest/one_time.py`, marked in `catalogue_meta` so it runs once — and marked
+  even on a fresh database with nothing to do. `migrations.py` only adds columns.
+
 ## Tests must not depend on their environment
 
 A test that passes locally and fails in CI is worse than no test: it costs a red
