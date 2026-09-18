@@ -1,4 +1,5 @@
 import type React from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 import type { GardenOut } from '../api/client';
 import { svgPoints } from '../canvas/viewport';
@@ -49,7 +50,7 @@ function coverage(item: Drawn): number {
  * thing there is, so it falls to the back on its own, and a small bed drawn on
  * a lawn stays visible without anybody special-casing either.
  */
-function surfacesFirst(items: Drawn[]): Drawn[] {
+export function surfacesFirst(items: Drawn[]): Drawn[] {
   const standing = (item: Drawn): number => {
     const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
     return BY_KIND.get(kind)?.standing === false ? 0 : 1;
@@ -95,9 +96,11 @@ export interface PlanObjectsProps {
   onGrabElement?: ((id: number, event: React.PointerEvent) => void) | undefined;
   /** Shown where the pointer has it, saved where it is let go. */
   shift: (id: number) => string;
+  /** What a theme draws right beneath a shape — its shadow — by the shape's key. */
+  beneath?: ReadonlyMap<string, ReactNode> | undefined;
 }
 
-type ShapeProps<T> = Omit<PlanObjectsProps, 'garden'> & { item: T };
+type ShapeProps<T> = Omit<PlanObjectsProps, 'garden' | 'beneath'> & { item: T };
 
 function BedShape({ item, theme, lod, selectedBedId, armed, onSelectBed, onAskWhatItIs,
   onGrabElement, shift }: ShapeProps<Bed>) {
@@ -158,7 +161,7 @@ function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectOb
     <polygon
       data-element-id={item.obstacle_id}
       className={`obstacle obstacle--${item.kind}`}
-      fill={theme.fill(symbolOf(item.kind), lod)}
+      fill={theme.fill(symbolOf(item.kind), lod, item.kind)}
       /* The footprint the server computed. Re-deriving it here would be a
          third answer to "what ground does this cover", and the two that
          already existed agreed only by accident. */
@@ -208,16 +211,20 @@ function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectOb
  * on top of a bed could not be clicked, because the click landed on the bed.
  * Since Wave 11 a bed *is* an element, so it belongs in the same ordered list.
  */
-export function PlanObjects({ garden, ...shared }: PlanObjectsProps) {
+export function PlanObjects({ garden, beneath, ...shared }: PlanObjectsProps) {
   return (
     <g className="canvas__objects" filter={shared.theme.objectsFilter ?? undefined}>
-      {surfacesFirst([...garden.obstacles, ...garden.beds]).map((item) =>
-        'bed_id' in item ? (
-          <BedShape key={`bed-${item.bed_id}`} item={item} {...shared} />
-        ) : (
-          <ObstacleShape key={`obstacle-${item.obstacle_id}`} item={item} {...shared} />
-        ),
-      )}
+      {surfacesFirst([...garden.obstacles, ...garden.beds]).map((item) => {
+        const key = 'bed_id' in item ? `bed-${item.bed_id}` : `obstacle-${item.obstacle_id}`;
+        return (
+          <Fragment key={key}>
+            {beneath?.get(key)}
+            {'bed_id' in item
+              ? <BedShape item={item} {...shared} />
+              : <ObstacleShape item={item} {...shared} />}
+          </Fragment>
+        );
+      })}
     </g>
   );
 }

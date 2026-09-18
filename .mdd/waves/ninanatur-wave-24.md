@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: dda1fcb1
+hash: 95ea8549
 ---
 
 # Wave 24: A drawing of a garden
@@ -86,8 +86,8 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 |---|---------|-----|--------|------------|
 | 0 | a-theme-is-a-thing | docs/96-a-theme-is-a-thing.md | complete | 1 |
 | 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
-| 2 | draft-sketch-in-svg | — | planned | 1 |
-| 3 | what-the-style-has-not-drawn | — | planned | 2 |
+| 2 | draft-sketch-in-svg | docs/97-draft-sketch-in-svg.md | complete | 1 |
+| 3 | what-the-style-has-not-drawn | docs/98-what-the-style-has-not-drawn.md | complete | 2 |
 | 4 | paper-bleed-and-a-real-shadow | — | planned | 3 |
 | 5 | lettered-by-hand | — | planned | 2 |
 | 6 | the-switch-and-the-courtesy | — | planned | 0 |
@@ -140,6 +140,30 @@ from the `.stylx` alone — his source assets are not asked for.*
   repository and commercial use; credit *Zeichenstil nach Draft Sketch von Warren
   Davison, verwendet und angepasst mit seiner Erlaubnis*, with the assistance of
   Louis Hill (@NKYmapLAB) that his item credits.
+- **2026-09-18 — feature 2, Draft Sketch in SVG** (doc 97). His style as a
+  theme, derived from the pinned file by `python -m scripts.stylx_to_theme`
+  and checked byte for byte: 13 of his symbols as patterns and overlays, his
+  8 images shipped once (344 KB) and tinted in SVG. Where CIM is silent his own
+  style sheet decided: a tint multiplies, a linear ramp starts where its angle
+  points, a circular ramp's first colour is its rim, buildings carry ticks.
+  Drawn only on the preview by `?theme=draft-sketch`, as a chunk of its own
+  that production never fetches and would not serve (`assets/draft-sketch/`);
+  his credit on the plan whenever it is his style; `THIRD_PARTY.md` written.
+  Paint budget: 69 ms for the city at 40 m against Technisch's 36 — first
+  221 ms, until a pattern held one rect and its marks were recorded once.
+  Technisch's 24 cells as recorded. Known issues are the review's agenda:
+  no bleed yet, no buffered rims, levels of detail at his print ranges.
+- **2026-09-18 — feature 3, what the style has not drawn** (doc 98). Roofs by
+  type from the server's own roof model (`roof_lines`: ridge, hips, a pent's
+  upper edge with a fall arrow), raised beds with a second edge and a shadow,
+  hedges hatched on the shaded side, shrubs as his Tree 2, fences and walls in
+  his Wood Fence and Brick Wall (a wall's fitted to its own faces), blooms as
+  dabs of his watercolour, the viewpoint in his ink, and a north arrow, a true
+  scale bar and a title block; his credit a caption beneath the plan. Each
+  shadow now falls beneath its own shape. Not drawn, named: conifers (no tree
+  carries its kind) and sightlines (no plan draws them). A fourth sheet garden
+  for other themes shows it all. Paint budget 85 ms against the 72 ms limit —
+  a stage-3 finding; 66 ms with production React against Technisch's 17.
 
 ## What each one is
 

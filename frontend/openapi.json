@@ -1631,6 +1631,19 @@
             ],
             "title": "Roof Fall Deg"
           },
+          "roof_lines": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Roof Lines",
+            "type": "array"
+          },
           "roof_pitch_deg": {
             "anyOf": [
               {
@@ -1679,6 +1692,7 @@
           "eaves_source",
           "roof_fall_deg",
           "roof_pitch_deg",
+          "roof_lines",
           "label",
           "height_source",
           "x",
@@ -3177,7 +3191,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.20.190"
+    "version": "V0.23.198"
   },
   "openapi": "3.1.0",
   "paths": {

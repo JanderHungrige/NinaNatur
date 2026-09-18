@@ -16,6 +16,8 @@ import { PreviewBand } from './components/PreviewBand';
 import { SiteHeader, type SiteProps } from './components/SiteHeader';
 import { StatusToast } from './components/StatusToast';
 import { objects } from './plural';
+import { PlanThemeProvider } from './themes/context';
+import { usePageTheme } from './themes/usePageTheme';
 import { useAccount } from './useAccount';
 import { useStatus } from './useStatus';
 
@@ -65,6 +67,7 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
   const [version, setVersion] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
   const account = useAccount(client, status, garden === null);
+  const planTheme = usePageTheme(environment);
 
   /** Stable identities: an inline arrow would refire the landing page's effect
    *  on every render, which is the loop the species panel already cost us. */
@@ -234,16 +237,18 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
           />
         </main>
       ) : (
-        <GardenWorkspace
-          key={garden.share_token}
-          client={client}
-          garden={garden}
-          setGarden={setGarden}
-          status={status}
-          header={header}
-          account={account.account}
-          greeting={greeting ?? `${garden.name} geladen.`}
-        />
+        <PlanThemeProvider theme={planTheme}>
+          <GardenWorkspace
+            key={garden.share_token}
+            client={client}
+            garden={garden}
+            setGarden={setGarden}
+            status={status}
+            header={header}
+            account={account.account}
+            greeting={greeting ?? `${garden.name} geladen.`}
+          />
+        </PlanThemeProvider>
       )}
 
       {/* Status is announced, not only shown — a colour change is invisible to a

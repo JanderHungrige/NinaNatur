@@ -481,12 +481,13 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    metre outside the bed on every side and swallowed most of the shape. */
 .grid-line { fill: none; stroke: var(--line); stroke-width: 0.03; }
 .compass { fill: var(--ink-muted); font-size: 1.6px; }
-.bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 0.08; cursor: pointer; }
-.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 0.16; }
+/* The --plan-* tokens are a theme's hooks (doc 97); unset, each is what it always was. */
+.bed { fill: var(--plan-bed-fill, color-mix(in srgb, var(--leaf) 35%, transparent)); stroke: var(--plan-bed-stroke, var(--leaf)); stroke-width: 0.08; cursor: pointer; }
+.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke: var(--leaf); stroke-width: 0.16; }
 /* No fill here. The fill is a `fill="url(#symbol-…)"` attribute per object, and
    a fill declared in CSS would win over it — every kind would be drawn as the
    same grey no matter which texture it asked for. */
-.obstacle { stroke: var(--outline); stroke-width: 0.08; }
+.obstacle { stroke: var(--plan-shape-stroke, var(--outline)); stroke-width: 0.08; }
 
 /* The ground the plan is drawn on: seen, never pointed at.
  *
@@ -497,8 +498,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
  * whole-garden bed used to get in the way. */
 .obstacle--garden {
   pointer-events: none;
-  fill: color-mix(in srgb, var(--leaf) 5%, transparent);
-  stroke: var(--outline);
+  fill: var(--plan-ground-fill, color-mix(in srgb, var(--leaf) 5%, transparent));
+  stroke: var(--plan-ground-stroke, var(--outline));
   stroke-width: 0.12;
   stroke-dasharray: 0.6 0.3;
 }
@@ -825,6 +826,16 @@ button[disabled] { opacity: 0.55; cursor: progress; }
      16rem. The first line is for a browser without container units. */
   height: clamp(16rem, 75vh, 40rem);
   height: clamp(16rem, 75vh, 75cqi);
+}
+
+/* Whose drawing style the plan is in (docs 97, 98): a caption beneath the plan,
+   in full, where it covers nothing of the drawing. */
+.plan-credit {
+  margin: 0.3rem 0 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so

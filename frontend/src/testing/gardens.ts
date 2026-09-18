@@ -47,7 +47,7 @@ export function shed(overrides: Partial<Obstacle> = {}): Obstacle {
     obstacle_id: 5, kind: 'shed', label: 'Gartenhaus', shape: 'polygon', x: 6, y: 0,
     points: [[-1, -1], [1, -1], [1, 1], [-1, 1]], width: null, constraint_hint: null,
     height: 2.4, height_source: 'user', roof: 'unknown', roof_source: 'user', eaves_m: null,
-    eaves_source: null, roof_fall_deg: null, roof_pitch_deg: null,
+    eaves_source: null, roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [],
     footprint: [[5, -1], [7, -1], [7, 1], [5, 1]],
     ...overrides,
   };

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { clustersFor } from '../canvas/clusters';
 import { type Viewport, gridSpacing, viewBox } from '../canvas/viewport';
 import { CanvasScene } from '../components/CanvasScene';
+import { PlanFurniture } from '../components/PlanFurniture';
 import { SHEET_MONTH, type SheetGarden, coloursFor } from './gardens';
 import { sunMapFor } from './light';
 
@@ -46,6 +47,9 @@ export function SheetCell({ entry, spanM, sun, width, height }: Props) {
                      selectedBedId={null} draft={[]} onSelectBed={nothing}
                      clusters={clusters} sunMap={sunMap} />
       </svg>
+      {/* The plan's corner, as GardenCanvas puts it there: nothing for Technisch. */}
+      <PlanFurniture metresPerPixel={spanM / width} title={entry.title}
+                     updatedAt={entry.garden.updated_at} />
     </div>
   );
 }

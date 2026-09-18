@@ -1442,6 +1442,8 @@ export interface components {
             roof: string;
             /** Roof Fall Deg */
             roof_fall_deg: number | null;
+            /** Roof Lines */
+            roof_lines: number[][][];
             /** Roof Pitch Deg */
             roof_pitch_deg: number | null;
             /** Roof Source */
