@@ -3,11 +3,11 @@ id: ninanatur-wave-21
 title: "Wave 21: The roof, said properly"
 initiative: ninanatur
 initiative_version: 21
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-19
 demo_state: "Ein Haus aus dem Kartenimport kennt seine Traufhöhe, ohne dass jemand sie eintippt, und sagt woher; die Nordseite eines Satteldachs bekommt sichtbar weniger Sonne als die Südseite, weil die Neigung gemessen und nicht angenommen ist."
 created: 2026-09-07
-hash: 59f2fe25
+hash: ddf3ab99
 ---
 
 # Wave 21: The roof, said properly
@@ -122,8 +122,9 @@ and whether both were measured or assumed.
   5 m cells of the garden as imported.
 - **2026-09-18 — released** as **V0.20.195** (merge `81ab791`); production
   serves `index-pZvV4pYn.js` and `index-x3SOI-WV.css`, the preview's assets. The
-  smoke test passed in both windows first. The wave closes when the owner has
-  seen the demo.
+  smoke test passed in both windows first.
+- **2026-09-18 — complete.** The owner confirmed the demo from the preview's
+  pictures and numbers.
 
 ## Scope, decided 2026-09-18
 
