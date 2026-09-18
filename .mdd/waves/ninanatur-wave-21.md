@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-19
 demo_state: "Ein Haus aus dem Kartenimport kennt seine Traufhöhe, ohne dass jemand sie eintippt, und sagt woher; die Nordseite eines Satteldachs bekommt sichtbar weniger Sonne als die Südseite, weil die Neigung gemessen und nicht angenommen ist."
 created: 2026-09-07
-hash: 8e0ac448
+hash: 17a2824e
 ---
 
 # Wave 21: The roof, said properly
@@ -74,7 +74,7 @@ agrees with the faces on 99 % of the gables where both exist.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 1 | where-the-roof-came-from | — | planned | — |
+| 1 | where-the-roof-came-from | docs/93-where-the-roof-came-from.md | complete | — |
 | 2 | which-way-the-ridge-runs | — | planned | 1 |
 
 ### 1. where-the-roof-came-from
