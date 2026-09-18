@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: 95ea8549
+hash: 5818d75a
 ---
 
 # Wave 24: A drawing of a garden
@@ -164,6 +164,18 @@ from the `.stylx` alone — his source assets are not asked for.*
   carries its kind) and sightlines (no plan draws them). A fourth sheet garden
   for other themes shows it all. Paint budget 85 ms against the 72 ms limit —
   a stage-3 finding; 66 ms with production React against Technisch's 17.
+- **2026-09-18 — stage 2 on the preview for the owner's review** as
+  **V0.23.203** (merge `ef9b45f`; the first, `9c2ef89`, failed CI: a bare
+  `pytest` could not import `scripts`, fixed by pytest's `pythonpath`). Checked
+  there with a garden of every kind, made and deleted by a probe: drawn in
+  Draft Sketch only with `?theme=draft-sketch`, Technisch without; the theme's
+  chunk, stylesheet and twelve images all from `assets/draft-sketch/`, none
+  inline; the credit word for word beneath the plan; the server's `roof_lines`
+  live (a gable's ridge, a hip's five lines). No console error but the
+  anonymous `accounts/me` 401 every page gets. The smoke test passed in both
+  windows. The probe's first run failed before it held its garden's token and
+  left an empty "Draft-Sketch-Probe" garden on the preview, beyond reach
+  without the token; preview data is for testing and goes with the next reset.
 
 ## What each one is
 
