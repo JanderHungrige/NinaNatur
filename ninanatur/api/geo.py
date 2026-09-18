@@ -18,10 +18,10 @@ from ninanatur.api.accounts import current_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import to_out
 from ninanatur.api.origin import same_origin
-from ninanatur.api.schemas import (
+from ninanatur.api.schemas import MapGardenOut
+from ninanatur.api.schemas_map import (
     HeightReport,
     ImageryOut,
-    MapGardenOut,
     MapSelection,
     PlaceOut,
     PlaceSearchOut,

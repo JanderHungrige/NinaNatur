@@ -14,12 +14,11 @@ import os
 import sqlite3
 from pathlib import Path
 
-from ninanatur.ingest.migrations import (
+from ninanatur.ingest.migrations import apply_column_migrations, relax_planting_taxon
+from ninanatur.ingest.one_time import (
     ELEMENT_RESET_KEY,
     RESET_KEY,
-    apply_column_migrations,
     move_observed_colours,
-    relax_planting_taxon,
     wave_10_reset,
     wave_11_reset,
 )

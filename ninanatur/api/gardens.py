@@ -18,15 +18,8 @@ from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account, require_account
 from ninanatur.api.deps import get_connection
 from ninanatur.api.origin import same_origin
-from ninanatur.api.schemas import (
-    BedOut,
-    GardenCreate,
-    GardenCreated,
-    GardenOut,
-    GardenSoil,
-    ObstacleOut,
-    PlantingOut,
-)
+from ninanatur.api.schemas import BedOut, GardenCreated, GardenOut, ObstacleOut, PlantingOut
+from ninanatur.api.schemas_garden_in import GardenCreate, GardenSoil
 from ninanatur.auth.sessions import Account
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden

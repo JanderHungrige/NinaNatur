@@ -15,7 +15,7 @@ from ninanatur.api.candidate_cache import candidate_set
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_bed, require_garden
 from ninanatur.api.plants import to_summary
-from ninanatur.api.schemas import BedSuggestions, FilterCountsOut, GrowthForm, PlantSummary
+from ninanatur.api.schemas_plants import BedSuggestions, FilterCountsOut, GrowthForm, PlantSummary
 from ninanatur.api.search import (
     RankedResult,
     ScoredPlant,

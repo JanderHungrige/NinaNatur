@@ -13,8 +13,8 @@ from fastapi import APIRouter, Depends
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
-from ninanatur.api.schemas import (
-    BloomPalette,
+from ninanatur.api.schemas import BloomPalette
+from ninanatur.api.schemas_plants import (
     ChangeOut,
     GapOut,
     ImprovementsOut,

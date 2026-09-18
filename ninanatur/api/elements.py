@@ -19,13 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_bed, require_garden, to_out
-from ninanatur.api.schemas import (
-    BedCreate,
-    BedUpdate,
-    GardenOut,
-    ObstacleCreate,
-    ObstacleUpdate,
-)
+from ninanatur.api.schemas import GardenOut
+from ninanatur.api.schemas_garden_in import BedCreate, BedUpdate, ObstacleCreate, ObstacleUpdate
+from ninanatur.garden.element_edits import update_bed, update_obstacle
 from ninanatur.garden.elements import delete_element
 from ninanatur.garden.models import BedInput, ObstacleInput
 from ninanatur.garden.objects import (
@@ -34,13 +30,7 @@ from ninanatur.garden.objects import (
     default_shape,
     default_size,
 )
-from ninanatur.garden.store import (
-    add_bed,
-    add_obstacle,
-    load_garden,
-    update_bed,
-    update_obstacle,
-)
+from ninanatur.garden.store import add_bed, add_obstacle, load_garden
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
 

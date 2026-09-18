@@ -83,7 +83,7 @@ def test_a_far_polygon_point_is_refused(client: TestClient, token: str) -> None:
 
 
 def test_a_placement_far_outside_the_bed_is_refused(client: TestClient, token: str) -> None:
-    from ninanatur.api.schemas import PlantingPlacement
+    from ninanatur.api.schemas_garden_in import PlantingPlacement
     with pytest.raises(ValueError):
         PlantingPlacement(x=1e9, y=0)
 
