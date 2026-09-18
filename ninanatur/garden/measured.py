@@ -199,6 +199,11 @@ def apply(conn: sqlite3.Connection, found: list[Measurement]) -> int:
     and the honest response is to keep the assumption rather than to publish a
     number that is probably a tree — the warning belongs in the log, where
     somebody looking for why a garden is dark will find it.
+
+    **The gardener's word wins value by value** (doc 93). A building whose
+    height they gave is left whole, as since Wave 19. Elsewhere the survey writes
+    the height, then the shape unless they chose one, then the eaves unless they
+    typed them — and says in each case that it was the one who wrote it.
     """
     changed = 0
     for measurement in found:
@@ -208,26 +213,42 @@ def apply(conn: sqlite3.Connection, found: list[Measurement]) -> int:
                 measurement.obstacle_id,
             )
             continue
-        if measurement.roof is None:
-            conn.execute(
-                "UPDATE element SET height = ?, height_source = ?"
-                " WHERE element_id = ? AND height_source != ?",
-                (measurement.height_m, measurement.source.value,
-                 measurement.obstacle_id, HeightSource.USER.value),
-            )
-        else:
-            conn.execute(
-                "UPDATE element SET height = ?, height_source = ?, roof = ?,"
-                " roof_source = ?, eaves_m = COALESCE(?, eaves_m)"
-                " WHERE element_id = ? AND height_source != ?",
-                (measurement.height_m, measurement.source.value,
-                 measurement.roof.value, measurement.source.value,
-                 measurement.eaves_m, measurement.obstacle_id,
-                 HeightSource.USER.value),
-            )
+        written = conn.execute(
+            "UPDATE element SET height = ?, height_source = ?"
+            " WHERE element_id = ? AND height_source != ?",
+            (measurement.height_m, measurement.source.value,
+             measurement.obstacle_id, HeightSource.USER.value),
+        ).rowcount
+        if written == 0:
+            continue
+        if measurement.roof is not None:
+            _write_roof(conn, measurement, measurement.roof)
         changed += 1
     conn.commit()
     return changed
+
+
+def _write_roof(conn: sqlite3.Connection, measurement: Measurement, roof: Roof) -> None:
+    """The shape and the eaves a survey brings, where nobody said otherwise.
+
+    "Weiß nicht" is nobody's answer: a shape the gardener left at `unknown` is
+    open to the survey. A survey without eaves leaves the stored ones, and their
+    source, alone — the storey count's estimate is better than none.
+    """
+    conn.execute(
+        "UPDATE element SET roof = ?, roof_source = ?"
+        " WHERE element_id = ? AND NOT (roof_source = ? AND roof != ?)",
+        (roof.value, measurement.source.value, measurement.obstacle_id,
+         HeightSource.USER.value, Roof.UNKNOWN.value),
+    )
+    if measurement.eaves_m is None:
+        return
+    conn.execute(
+        "UPDATE element SET eaves_m = ?, eaves_source = ?"
+        " WHERE element_id = ? AND eaves_source IS NOT ?",
+        (measurement.eaves_m, measurement.source.value, measurement.obstacle_id,
+         HeightSource.USER.value),
+    )
 
 
 def _boxed(surveyed: list[Lod2Building] | None) -> list[tuple[Lod2Building, Box]]:

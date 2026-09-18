@@ -131,11 +131,16 @@ def edit_obstacle(
     changes = payload.model_dump(exclude_unset=True)
     if "kind" in changes and changes["kind"] is not None:
         changes["kind"] = str(changes["kind"])
-    # Typing a height is the user's word on it. Without this, correcting a
-    # building the map guessed at would leave every sightline through it
-    # marked as an assumption.
+    # Typing a value is the user's word on it (doc 93). The server says so,
+    # never the client: a source a client could name is a label anybody can
+    # forge. A shape of "weiß nicht" is still theirs to have left open — the
+    # survey may answer it — and emptied eaves are nobody's again.
     if changes.get("height") is not None:
-        changes.setdefault("height_source", "user")
+        changes["height_source"] = "user"
+    if changes.get("roof") is not None:
+        changes["roof_source"] = "user"
+    if "eaves_m" in changes:
+        changes["eaves_source"] = None if changes["eaves_m"] is None else "user"
     update_obstacle(conn, obstacle_id, **changes)
     return to_out(load_garden(conn, garden.garden_id))
 

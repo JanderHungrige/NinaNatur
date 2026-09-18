@@ -133,9 +133,9 @@ class ObstacleUpdate(BaseModel):
     moisture: str | None = None
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
-    # Correcting a height makes it the user's word on it; otherwise every
-    # sightline would go on marking it as an assumption.
-    height_source: str | None = None
+    # No `height_source`, `roof_source` or `eaves_source`: the server marks what
+    # a caller changed as the caller's (doc 93), and a caller cannot say that a
+    # number it sent was surveyed.
 
 
 class GardenSoil(BaseModel):

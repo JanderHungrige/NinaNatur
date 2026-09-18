@@ -140,6 +140,9 @@ def garden_from_map(
         ),
     )
     for obj in around.objects:
+        # OpenStreetMap's shape, and the storeys' eaves where it counted them
+        # (doc 93). The page names both, and a later survey may replace either.
+        eaves_source = None if obj.eaves_m is None else "osm_levels"
         # The shape OSM drew, when it drew one. The square this replaces was
         # sized from half the bounding box's diagonal and came out 2.1 to 2.8
         # times the real footprint on live data — every one axis-aligned, so a
@@ -156,7 +159,9 @@ def garden_from_map(
                 points=[[corner[0], corner[1]] for corner in obj.outline],
                 height=obj.height_m,
                 roof=obj.roof,
+                roof_source="osm",
                 eaves_m=obj.eaves_m,
+                eaves_source=eaves_source,
                 label=obj.label,
                 height_source=obj.height_source.value,
             )
@@ -172,7 +177,9 @@ def garden_from_map(
                 rotation=0.0,
                 height=obj.height_m,
                 roof=obj.roof,
+                roof_source="osm",
                 eaves_m=obj.eaves_m,
+                eaves_source=eaves_source,
                 label=obj.label,
                 height_source=obj.height_source.value,
             )

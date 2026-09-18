@@ -87,7 +87,8 @@ def to_out(garden: Garden) -> GardenOut:
         obstacles=[
             ObstacleOut(
                 obstacle_id=o.obstacle_id, kind=o.kind, roof=o.roof,
-                eaves_m=o.eaves_m, label=o.label,
+                roof_source=o.roof_source, eaves_m=o.eaves_m,
+                eaves_source=o.eaves_source, label=o.label,
                 height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
                 width=o.width, points=o.points,
                 constraint_hint=o.constraint_hint, height=o.height,

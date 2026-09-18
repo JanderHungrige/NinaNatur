@@ -200,3 +200,56 @@ def move_observed_colours(conn: sqlite3.Connection) -> str | None:
     )
     conn.commit()
     return None if moved == 0 else f"moved {moved} noted colour(s) into the catalogue"
+
+
+#: Marks the one-time Wave 21 backfill of where roofs and eaves came from.
+ROOF_PROVENANCE_KEY = "wave_21_roof_provenance"
+
+#: What the history makes certain, in order (doc 93). Until Wave 21 the element
+#: form sent the pre-filled height on every save, so a row somebody saved says
+#: `height_source = 'user'`; the survey wrote a roof, its source and the eaves
+#: together; the raster never wrote a roof; the import was the only other writer
+#: of eaves. Houses and sheds are spelt out rather than read from `objects`: a
+#: migration has to mean what it meant on the day it ran.
+_ROOF_PROVENANCE_STEPS = (
+    # Saved after the survey: the shape may be theirs, and under-claiming a
+    # measurement is the safe way to be wrong.
+    "UPDATE element SET roof_source = 'user'"
+    " WHERE roof_source = 'surveyed' AND height_source = 'user'",
+    # Never saved: the shape came with the import.
+    "UPDATE element SET roof_source = 'osm'"
+    " WHERE roof_source = 'user' AND height_source != 'user'"
+    " AND kind IN ('house', 'shed')",
+    # Saved: typed, or seen and kept.
+    "UPDATE element SET eaves_source = 'user'"
+    " WHERE eaves_m IS NOT NULL AND eaves_source IS NULL AND height_source = 'user'",
+    # Never saved and never surveyed: only the import wrote it.
+    "UPDATE element SET eaves_source = 'osm_levels'"
+    " WHERE eaves_m IS NOT NULL AND eaves_source IS NULL"
+    " AND height_source != 'user' AND roof_source != 'surveyed'",
+)
+
+
+def roof_provenance(conn: sqlite3.Connection) -> str | None:
+    """Say where existing roofs and eaves came from, where their history can.
+
+    Eaves the survey may or may not have written — its own, or the import's
+    that it kept because it had none — are left unmarked rather than guessed
+    at. The next recompute says, because the survey now marks what it writes.
+    """
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS catalogue_meta"
+        " (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+    )
+    done = conn.execute(
+        "SELECT 1 FROM catalogue_meta WHERE key = ?", (ROOF_PROVENANCE_KEY,)
+    ).fetchone()
+    if done is not None:
+        return None
+    changed = sum(conn.execute(step).rowcount for step in _ROOF_PROVENANCE_STEPS)
+    conn.execute(
+        "INSERT OR REPLACE INTO catalogue_meta (key, value) VALUES (?, ?)",
+        (ROOF_PROVENANCE_KEY, str(changed)),
+    )
+    conn.commit()
+    return None if changed == 0 else f"marked where {changed} roof value(s) came from"

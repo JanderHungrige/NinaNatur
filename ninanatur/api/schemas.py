@@ -83,6 +83,11 @@ class ObstacleOut(BaseModel):
     #: the eaves three quarters of the way up. Sent so the edit form can show
     #: what is actually stored rather than an empty box over a real value.
     eaves_m: float | None
+    #: Where the shape came from: 'user' | 'surveyed' | 'osm' (doc 93).
+    roof_source: str
+    #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'; null when nobody
+    #: did — or, for a value stored before Wave 21, until the next recompute.
+    eaves_source: str | None
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

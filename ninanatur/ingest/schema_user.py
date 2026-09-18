@@ -65,6 +65,8 @@ CREATE TABLE IF NOT EXISTS element (
     -- from. They arrive together from a 3D building model and separately from
     -- everywhere else: somebody can look out of the window and know the shape
     -- without knowing the height, and a later refresh must not overwrite that.
+    -- 'user' | 'surveyed' | 'osm'. The default is the gardener, and every
+    -- writer that is not says so.
     roof_source   TEXT NOT NULL DEFAULT 'user',
     -- What shape the roof is, if anybody has said. OSM's `height` is the ridge,
     -- so a building without this is modelled as solid to the ridge — which is
@@ -72,9 +74,14 @@ CREATE TABLE IF NOT EXISTS element (
     -- quietly shortened them would move every existing garden's light without
     -- anybody asking for it.
     roof          TEXT NOT NULL DEFAULT 'unknown',
-    -- Eaves height, where OSM carried `building:levels`. The one measured input
-    -- in the roof model; everything else about a roof here is a shape ratio.
+    -- Eaves height: from the state's survey, from `building:levels`, or typed.
+    -- Null is "nobody has said", and the model then puts the eaves at three
+    -- quarters of the ridge.
     eaves_m       REAL,
+    -- Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'. Null exactly when
+    -- nobody did — or, for a value stored before Wave 21 whose origin the
+    -- history cannot tell, until the next recompute says (doc 93).
+    eaves_source  TEXT,
     label       TEXT,
     -- Below here: what a planting site needs. All null on a paving slab, and
     -- that is the point — one table, and being a bed is a property.

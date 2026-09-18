@@ -19,6 +19,7 @@ from ninanatur.ingest.one_time import (
     ELEMENT_RESET_KEY,
     RESET_KEY,
     move_observed_colours,
+    roof_provenance,
     wave_10_reset,
     wave_11_reset,
 )
@@ -120,5 +121,10 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     moved = move_observed_colours(conn)
     if moved is not None:
         applied.append(moved)
+    # After the schema script too: it reads `eaves_source`, which a new database
+    # only has once the script has run.
+    marked = roof_provenance(conn)
+    if marked is not None:
+        applied.append(marked)
     conn.commit()
     return applied

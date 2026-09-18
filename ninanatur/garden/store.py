@@ -139,7 +139,8 @@ def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInp
         conn, garden_id, kind=obstacle.kind, shape=shape, x=obstacle.x,
         y=obstacle.y, width=width, constraint_hint=hint, height=obstacle.height,
         label=obstacle.label, height_source=obstacle.height_source, points=points,
-        roof=obstacle.roof, eaves_m=obstacle.eaves_m,
+        roof=obstacle.roof, roof_source=obstacle.roof_source,
+        eaves_m=obstacle.eaves_m, eaves_source=obstacle.eaves_source,
     )
     _touch(conn, garden_id)
     return element_id
