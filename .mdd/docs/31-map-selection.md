@@ -15,6 +15,7 @@ source_files:
   - frontend/src/map/useMapSurface.ts
   - frontend/src/components/MapPicker.tsx
   - frontend/src/components/MapSurface.tsx
+  - frontend/src/usePinch.ts
 routes:
   - GET /api/v1/geo/search
   - POST /api/v1/gardens/from-map
@@ -28,7 +29,7 @@ test_files:
   - frontend/src/components/MapPicker.test.tsx
   - frontend/src/components/MapPicker.phone.test.tsx
 data_flow: mixed
-last_synced: 2026-09-17
+last_synced: 2026-09-18
 status: complete
 phase: all
 mdd_version: 11
@@ -136,4 +137,4 @@ a name the module no longer imported.
 | ID | Description | Status | Fixed In | Reported | Fixed |
 |----|-------------|--------|----------|----------|-------|
 | B1 | On a phone the map picker sets corners far from the finger and cannot be panned by touch: the surface is never measured (640×400 assumed, 259 real at 375 px), so a tap is projected as if the map were 640 px wide and the outline SVG scales it down again | Completed | frontend/src/map/useMapSurface.ts:66 | 2026-09-17 | 2026-09-17 |
-| B2 | Two fingers do not zoom the address map on a phone: nothing handles a second pointer, and the surface's `touch-action: none` switches off the browser's own pinch as well | Open | - | 2026-09-18 | - |
+| B2 | Two fingers do not zoom the address map on a phone: nothing handles a second pointer, and the surface's `touch-action: none` switches off the browser's own pinch as well | Completed | frontend/src/map/useMapSurface.ts:124 | 2026-09-18 | 2026-09-18 |

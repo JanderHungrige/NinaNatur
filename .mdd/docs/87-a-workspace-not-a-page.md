@@ -29,6 +29,13 @@ source_files:
   - frontend/src/components/GardenId.tsx
   - frontend/src/components/ShadeSwitch.tsx
   - frontend/src/styles.css
+  - frontend/src/kinds.ts
+  - frontend/src/canvas/useElementDrag.ts
+  - frontend/src/canvas/useClusterDrag.ts
+  - frontend/src/canvas/useCanvasGestures.ts
+  - frontend/src/canvas/useDrawingModes.ts
+  - frontend/src/components/GardenCanvas.tsx
+  - frontend/src/components/GardenCanvasProps.ts
 routes: []
 models: []
 test_files:
@@ -40,8 +47,9 @@ test_files:
   - tests/test_workspace_layout.py
   - tests/test_stylesheet.py
   - tests/test_plan_stage.py
+  - frontend/src/components/GardenCanvas.touch.test.tsx
 data_flow: mixed
-last_synced: 2026-09-14
+last_synced: 2026-09-18
 status: complete
 phase: all
 mdd_version: 11
@@ -260,4 +268,4 @@ components.
 
 | ID | Description | Status | Fixed In | Reported | Fixed |
 |----|-------------|--------|----------|----------|-------|
-| B1 | On a phone a finger that lands on a house, a street or a bed moves it instead of the plan, and a mouse can drag, rotate and resize houses and streets: every element but the garden outline could be dragged by any pointer | Open | - | 2026-09-18 | - |
+| B1 | On a phone a finger that lands on a house, a street or a bed moves it instead of the plan, and a mouse can drag, rotate and resize houses and streets: every element but the garden outline could be dragged by any pointer | Completed | frontend/src/components/GardenCanvas.tsx:76 | 2026-09-18 | 2026-09-18 |
