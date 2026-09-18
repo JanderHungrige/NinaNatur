@@ -19,6 +19,7 @@ from dataclasses import dataclass
 
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ROOFED
+from ninanatur.garden.overlap import Box, box_of, covered, overlaps, sample
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.lod2 import Lod2Building
 from ninanatur.geo.measure import height_of, looks_contaminated
@@ -41,10 +42,6 @@ log = logging.getLogger(__name__)
 #: porch would fail a stricter rule.
 MATCH_OVERLAP = 0.34
 
-#: How finely a footprint is sampled to measure that overlap. Half a metre —
-#: fine enough that a garage cannot pass and coarse enough that a house is a
-#: hundred points rather than ten thousand.
-OVERLAP_STEP_M = 0.5
 
 #: A surveyed height this far from the drawn one is a different building.
 #:
@@ -62,8 +59,6 @@ IMPLAUSIBLE_M = 15.0
 #: house's roof, and against the laser surface as though its crown were one.
 BUILDINGS = frozenset(kind.value for kind in ROOFED)
 
-#: min x, min y, max x, max y.
-Box = tuple[float, float, float, float]
 
 
 @dataclass(frozen=True)
@@ -154,19 +149,19 @@ def _from_survey(
     if not boxed:
         return None
     drawn = [(float(p[0]), float(p[1])) for p in getattr(obstacle, "footprint", [])]
-    points = _sample(drawn)
+    points = sample(drawn)
     if not points:
         return None
-    reach = _box(points)
+    reach = box_of(points)
     best = None
     best_share = MATCH_OVERLAP
     for candidate, box in boxed:
         # A sample can only be inside an outline whose box holds it, so a
         # building whose box misses every sample cannot match. One box test
         # instead of a polygon test per sample, and a tile holds 2,601 of them.
-        if not _overlaps(box, reach):
+        if not overlaps(box, reach):
             continue
-        share = _covered(points, candidate.outline)
+        share = covered(points, candidate.outline)
         if share > best_share:
             best, best_share = candidate, share
     nearest = best
@@ -238,53 +233,7 @@ def apply(conn: sqlite3.Connection, found: list[Measurement]) -> int:
 def _boxed(surveyed: list[Lod2Building] | None) -> list[tuple[Lod2Building, Box]]:
     """Each surveyed building with the box around it — worked out once per
     garden rather than once per building drawn on it."""
-    return [(b, _box(b.outline)) for b in surveyed or [] if len(b.outline) >= 3]
-
-
-def _box(points: list[tuple[float, float]]) -> Box:
-    xs = [p[0] for p in points]
-    ys = [p[1] for p in points]
-    return min(xs), min(ys), max(xs), max(ys)
-
-
-def _overlaps(a: Box, b: Box) -> bool:
-    return a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
-
-
-def _sample(footprint: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    """Points spread over a footprint, for measuring how much of it is covered."""
-    if len(footprint) < 3:
-        return []
-    xs = [p[0] for p in footprint]
-    ys = [p[1] for p in footprint]
-    points: list[tuple[float, float]] = []
-    y = min(ys)
-    while y <= max(ys):
-        x = min(xs)
-        while x <= max(xs):
-            if _inside(footprint, x, y):
-                points.append((x, y))
-            x += OVERLAP_STEP_M
-        y += OVERLAP_STEP_M
-    return points
-
-
-def _covered(points: list[tuple[float, float]], outline: list[tuple[float, float]]) -> float:
-    """What share of those points falls inside this outline."""
-    if not points or len(outline) < 3:
-        return 0.0
-    return sum(1 for x, y in points if _inside(outline, x, y)) / len(points)
-
-
-def _inside(polygon: list[tuple[float, float]], x: float, y: float) -> bool:
-    inside = False
-    n = len(polygon)
-    for i in range(n):
-        ax, ay = polygon[i]
-        bx, by = polygon[(i + 1) % n]
-        if (ay > y) != (by > y) and x < (bx - ax) * (y - ay) / (by - ay) + ax:
-            inside = not inside
-    return inside
+    return [(b, box_of(b.outline)) for b in surveyed or [] if len(b.outline) >= 3]
 
 
 __all__ = [

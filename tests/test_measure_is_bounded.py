@@ -20,7 +20,7 @@ from dataclasses import replace
 
 import pytest
 
-from ninanatur.garden import measured
+from ninanatur.garden import overlap
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.measured import MATCH_OVERLAP, measure
 from ninanatur.garden.models import Garden
@@ -137,13 +137,13 @@ def test_a_house_in_a_dense_tile_is_matched_box_first(
     """The cost was samples x buildings x corners. A box around each building,
     computed once, leaves the handful that can overlap."""
     calls: list[int] = []
-    real: Callable[[list[tuple[float, float]], float, float], bool] = measured._inside
+    real: Callable[[list[tuple[float, float]], float, float], bool] = overlap._inside
 
     def counted(polygon: list[tuple[float, float]], x: float, y: float) -> bool:
         calls.append(1)
         return real(polygon, x, y)
 
-    monkeypatch.setattr(measured, "_inside", counted)
+    monkeypatch.setattr(overlap, "_inside", counted)
     only_house = replace(garden, elements=[e for e in garden.elements if e.kind == "house"])
 
     [found] = measure(only_house, surveyed=_tile(12.4))
@@ -164,8 +164,8 @@ def test_the_box_drops_nothing_that_could_have_matched(garden: Garden) -> None:
     for obstacle in garden.obstacles:
         if obstacle.kind not in ("house", "shed"):
             continue
-        points = measured._sample([(float(x), float(y)) for x, y in obstacle.footprint])
-        best = max(tile, key=lambda b: measured._covered(points, b.outline))
-        matched = measured._covered(points, best.outline) > MATCH_OVERLAP
+        points = overlap.sample([(float(x), float(y)) for x, y in obstacle.footprint])
+        best = max(tile, key=lambda b: overlap.covered(points, b.outline))
+        matched = overlap.covered(points, best.outline) > MATCH_OVERLAP
         assert found.get(obstacle.obstacle_id) == (round(best.height_m, 1) if matched else None)
     assert set(found) == _ids(garden, "house", "shed")
