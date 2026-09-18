@@ -86,7 +86,7 @@ def roofs_of(garden: Garden, ground: TerrainWindow | None) -> list[Roofed]:
         roofed.append(Roofed(
             outline=outline,
             surface=surface_of(outline, Roof(element.roof), element.height,
-                               element.eaves_m),
+                               element.eaves_m, element.roof_fall_deg),
             element_id=element.element_id,
             base=sum(heights) / len(heights) if heights else 0.0,
         ))

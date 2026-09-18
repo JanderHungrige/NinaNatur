@@ -285,7 +285,7 @@ def signature_of(garden: Garden) -> str:
         outline = ";".join(f"{x:.2f},{y:.2f}" for x, y in element.footprint)
         parts.append(
             f"{element.element_id}|{element.kind}|{element.height}"
-            f"|{element.roof}|{element.eaves_m}"
+            f"|{element.roof}|{element.eaves_m}|{element.roof_fall_deg}"
             f"|{element.height_above_ground}|{outline}"
         )
         for planting in element.plantings:

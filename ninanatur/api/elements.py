@@ -139,6 +139,8 @@ def edit_obstacle(
         changes["height_source"] = "user"
     if changes.get("roof") is not None:
         changes["roof_source"] = "user"
+        # The survey's direction described the survey's roof (doc 94).
+        changes["roof_fall_deg"] = None
     if "eaves_m" in changes:
         changes["eaves_source"] = None if changes["eaves_m"] is None else "user"
     update_obstacle(conn, obstacle_id, **changes)

@@ -102,7 +102,8 @@ describe('formValues — where the element form starts', () => {
     });
     expect(formValues(raised)).toEqual({
       kind: 'bed', label: 'Hochbeet', plantings: 1, shape: 'polygon', roof: 'unknown',
-      roofSource: 'user', eavesM: null, eavesSource: null, height: null, width: null,
+      roofSource: 'user', roofFallDeg: null, roofPitchDeg: null, eavesM: null, eavesSource: null,
+      height: null, width: null,
       soilType: 'sand', moisture: 'dry', heightAboveGround: 0.4,
     });
   });
@@ -110,7 +111,8 @@ describe('formValues — where the element form starts', () => {
   it('reads an element: its height, its roof and its eaves', () => {
     expect(formValues(shed({ roof: 'gable', eaves_m: 1.9 }))).toEqual({
       kind: 'shed', label: 'Gartenhaus', plantings: 0, shape: 'polygon', roof: 'gable',
-      roofSource: 'user', eavesM: 1.9, eavesSource: null, height: 2.4, width: null,
+      roofSource: 'user', roofFallDeg: null, roofPitchDeg: null, eavesM: 1.9, eavesSource: null,
+      height: 2.4, width: null,
       soilType: null, moisture: null, heightAboveGround: 0,
     });
   });
@@ -119,5 +121,11 @@ describe('formValues — where the element form starts', () => {
     const values = formValues(shed({ roof_source: 'surveyed', eaves_m: 1.9, eaves_source: 'surveyed' }));
     expect(values.roofSource).toBe('surveyed');
     expect(values.eavesSource).toBe('surveyed');
+  });
+
+  it('reads which way the roof falls and the pitch the model uses (doc 94)', () => {
+    const values = formValues(shed({ roof: 'pent', roof_fall_deg: 180, roof_pitch_deg: 11.3 }));
+    expect(values.roofFallDeg).toBe(180);
+    expect(values.roofPitchDeg).toBe(11.3);
   });
 });

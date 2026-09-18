@@ -26,6 +26,7 @@ from defusedxml.ElementTree import iterparse
 
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.projection import LatLon, to_metres
+from ninanatur.geo.roof_faces import Point, bearing_on_garden, fall_of
 from ninanatur.geo.utm import to_latlon
 
 #: AdV's Dachform key onto the shapes the shading model has a ratio for.
@@ -80,6 +81,10 @@ class Lod2Building:
     #: where the geometry did not say — then the shading model falls back to its
     #: three-quarters assumption, as it did for every building until now.
     eaves_m: float | None = None
+    #: The bearing the roof falls towards, read off its faces (doc 94): in
+    #: [0, 180) for a gable or hip, [0, 360) for a pent, None where they do not
+    #: say. In the tile's grid until `in_garden_frame` turns it.
+    fall_deg: float | None = None
 
     @property
     def centre(self) -> tuple[float, float]:
@@ -161,7 +166,7 @@ def _one(element: ElementTree.Element) -> Lod2Building | None:
         # the surveyor did look, and the honest reading of an unmapped code is
         # "a shape this model does not model".
         roof = Roof.OTHER
-    outline, ground_z, roof_low_z = _surfaces(element)
+    outline, ground_z, roof_low_z, faces = _surfaces(element)
     if not outline:
         return None
     eaves = None
@@ -178,13 +183,15 @@ def _one(element: ElementTree.Element) -> Lod2Building | None:
         height_m=float(height),
         outline=outline,
         eaves_m=eaves,
+        fall_deg=fall_of(roof, faces),
     )
 
 
 def _surfaces(
     element: ElementTree.Element,
-) -> tuple[list[tuple[float, float]], float | None, float | None]:
-    """The ground plan, the height it sits at, and where the roof begins.
+) -> tuple[list[tuple[float, float]], float | None, float | None, list[list[Point]]]:
+    """The ground plan, the height it sits at, where the roof begins, and the
+    roof's faces one polygon at a time (doc 94).
 
     LoD2 labels its faces: every building carries exactly one `GroundSurface`
     — 2,189 of them in a tile with 2,189 roofs — so the footprint is read rather
@@ -198,7 +205,7 @@ def _surfaces(
     """
     ground: list[tuple[float, float]] = []
     ground_z: float | None = None
-    roof_low: float | None = None
+    faces: list[list[Point]] = []
 
     for face in element.iter():
         if face.tag.endswith("}GroundSurface"):
@@ -207,11 +214,19 @@ def _surfaces(
                 ground = [(x, y) for x, y, _z in rings]
                 ground_z = sum(z for _x, _y, z in rings) / len(rings)
         elif face.tag.endswith("}RoofSurface"):
-            rings = _rings(face)
-            if rings:
-                low = min(z for _x, _y, z in rings)
-                roof_low = low if roof_low is None else min(roof_low, low)
-    return ground, ground_z, roof_low
+            faces.extend(_outer_rings(face))
+    roof_low = min((z for ring in faces for _x, _y, z in ring), default=None)
+    return ground, ground_z, roof_low, faces
+
+
+def _outer_rings(face: ElementTree.Element) -> list[list[Point]]:
+    """Each polygon of one face, by its outer ring. A hole lies in the same
+    plane and would only count its area twice."""
+    rings: list[list[Point]] = []
+    for outer in face.iter():
+        if outer.tag.endswith("}exterior"):
+            rings.extend(ring for ring in (_rings(outer),) if ring)
+    return rings
 
 
 def _rings(face: ElementTree.Element) -> list[tuple[float, float, float]]:
@@ -247,6 +262,10 @@ def in_garden_frame(
             lat, lon = to_latlon(east, north, zone)
             here = to_metres(LatLon(lat=lat, lon=lon), anchor)
             outline.append((here.x, here.y))
+        fall = building.fall_deg
+        if fall is not None:
+            fall = bearing_on_garden(fall, *building.centre, zone, anchor)
+            fall = fall if building.roof is Roof.PENT else fall % 180.0
         moved.append(
             Lod2Building(
                 building_id=building.building_id,
@@ -254,6 +273,7 @@ def in_garden_frame(
                 height_m=building.height_m,
                 outline=outline,
                 eaves_m=building.eaves_m,
+                fall_deg=fall,
             )
         )
     return moved

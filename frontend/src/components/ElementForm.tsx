@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { FormValues } from '../garden/selection';
 import { eavesNote, roofNote } from '../heights';
 import { KINDS, PLANTING_KIND } from '../kinds';
-import { ROOFED, ROOFS } from '../roofs';
+import { ROOFED, ROOFS, ridgeNote } from '../roofs';
 
 interface Props extends FormValues {
   /** What the section asks. */
@@ -41,6 +41,8 @@ export function ElementForm({
   shape,
   roof,
   roofSource,
+  roofFallDeg,
+  roofPitchDeg,
   eavesM,
   eavesSource,
   height,
@@ -113,6 +115,11 @@ export function ElementForm({
   // once the field is changed, the value is the gardener's and says nothing.
   const ridge = tall === '' || !Number.isFinite(Number(tall)) ? null : Number(tall);
   const roofSaid = roofShape === roof ? roofNote(roof, roofSource) : null;
+  // The ridge described the stored roof too: another shape chosen, it goes.
+  const ridgeSaid = roofShape === roof ? ridgeNote(roof, roofFallDeg, roofPitchDeg) : null;
+  const roofNotes = [roofSaid === null ? null : field('roof-said'),
+                     ridgeSaid === null ? null : field('ridge-said')]
+    .filter((id) => id !== null).join(' ');
   const eavesSaid = eaves === eavesAtStart ? eavesNote(eavesM, eavesSource, ridge) : null;
 
   return (
@@ -138,12 +145,13 @@ export function ElementForm({
         <>
           <label htmlFor={field('roof')}>Dachform</label>
           <select id={field('roof')} value={roofShape} onChange={(e) => setRoofShape(e.target.value)}
-                  aria-describedby={roofSaid === null ? undefined : field('roof-said')}>
+                  aria-describedby={roofNotes === '' ? undefined : roofNotes}>
             {ROOFS.map(([value, words]) => (
               <option key={value} value={value}>{words}</option>
             ))}
           </select>
           {roofSaid !== null && <p id={field('roof-said')} className="hint">{roofSaid}</p>}
+          {ridgeSaid !== null && <p id={field('ridge-said')} className="hint">{ridgeSaid}</p>}
           {/* Optional, and worth asking for: with the ridge it gives the pitch,
               and the pitch is what makes the north side of a roof darker than
               the south side. Without it the model assumes the eaves are three

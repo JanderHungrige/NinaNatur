@@ -34,6 +34,10 @@ export interface FormValues {
   roof: string;
   /** Where the shape came from: 'user' | 'surveyed' | 'osm' (doc 93). */
   roofSource: string;
+  /** The bearing the roof falls towards, as surveyed; null when it was not (doc 94). */
+  roofFallDeg: number | null;
+  /** The pitch the model uses; null where it models the roof unpitched. */
+  roofPitchDeg: number | null;
   /** Where the roof starts. Null is "nobody has said". */
   eavesM: number | null;
   /** Who gave the eaves; null is nobody — or a value older than anybody's record. */
@@ -112,6 +116,8 @@ export function formValues(item: Bed | Obstacle): FormValues {
       shape: item.shape,
       roof: 'unknown',
       roofSource: 'user',
+      roofFallDeg: null,
+      roofPitchDeg: null,
       eavesM: null,
       eavesSource: null,
       height: null,
@@ -128,6 +134,8 @@ export function formValues(item: Bed | Obstacle): FormValues {
     shape: item.shape,
     roof: item.roof,
     roofSource: item.roof_source,
+    roofFallDeg: item.roof_fall_deg,
+    roofPitchDeg: item.roof_pitch_deg,
     eavesM: item.eaves_m,
     eavesSource: item.eaves_source,
     height: item.height,

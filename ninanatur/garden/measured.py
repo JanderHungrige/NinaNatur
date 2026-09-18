@@ -73,6 +73,8 @@ class Measurement:
     #: Something is standing over this roof that is not the roof. The height is
     #: still offered — the caller decides — but it is offered with a warning.
     suspect: bool = False
+    #: The bearing the surveyed roof falls towards, on the garden's axes.
+    fall_deg: float | None = None
 
 
 def measure(
@@ -173,6 +175,7 @@ def _from_survey(
         source=HeightSource.SURVEYED,
         roof=nearest.roof,
         eaves_m=nearest.eaves_m,
+        fall_deg=nearest.fall_deg,
     )
 
 
@@ -235,11 +238,13 @@ def _write_roof(conn: sqlite3.Connection, measurement: Measurement, roof: Roof) 
     open to the survey. A survey without eaves leaves the stored ones, and their
     source, alone — the storey count's estimate is better than none.
     """
+    # The direction with the shape it belongs to (doc 94): a survey that names
+    # a shape but no clear fall takes an older fall away with the older shape.
     conn.execute(
-        "UPDATE element SET roof = ?, roof_source = ?"
+        "UPDATE element SET roof = ?, roof_source = ?, roof_fall_deg = ?"
         " WHERE element_id = ? AND NOT (roof_source = ? AND roof != ?)",
-        (roof.value, measurement.source.value, measurement.obstacle_id,
-         HeightSource.USER.value, Roof.UNKNOWN.value),
+        (roof.value, measurement.source.value, measurement.fall_deg,
+         measurement.obstacle_id, HeightSource.USER.value, Roof.UNKNOWN.value),
     )
     if measurement.eaves_m is None:
         return

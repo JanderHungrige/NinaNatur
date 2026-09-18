@@ -82,6 +82,11 @@ CREATE TABLE IF NOT EXISTS element (
     -- nobody did — or, for a value stored before Wave 21 whose origin the
     -- history cannot tell, until the next recompute says (doc 93).
     eaves_source  TEXT,
+    -- The bearing the roof falls towards, from the survey's faces (doc 94): in
+    -- [0, 180) for a gable or hip, whose ridge runs at right angles to it, and
+    -- in [0, 360) for a pent. Null: not surveyed, and the ridge is assumed to
+    -- run along the long side.
+    roof_fall_deg REAL,
     label       TEXT,
     -- Below here: what a planting site needs. All null on a paving slab, and
     -- that is the point — one table, and being a bed is a property.

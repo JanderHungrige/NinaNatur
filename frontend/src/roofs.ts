@@ -35,3 +35,38 @@ export const EAVES_FRACTION = 0.75;
 
 /** Kinds a roof is a sensible question for. A pond has no roof. */
 export const ROOFED = new Set(['house', 'shed']);
+
+/** A ridge runs both ways, so four words cover it; a fall runs one way, so eight. */
+const RIDGES = ['Nord–Süd', 'Nordost–Südwest', 'Ost–West', 'Südost–Nordwest'] as const;
+const FALLS = [
+  'Norden', 'Nordosten', 'Osten', 'Südosten', 'Süden', 'Südwesten', 'Westen', 'Nordwesten',
+] as const;
+
+/** The nearest of `words`, spread evenly around a circle of `period` degrees. */
+function nearest(words: readonly string[], bearing: number, period: number): string {
+  const step = period / words.length;
+  const index = Math.round((((bearing % period) + period) % period) / step) % words.length;
+  return words[index] ?? words[0] ?? '';
+}
+
+/**
+ * Which way the ridge runs and the pitch it gives, in words (doc 94).
+ *
+ * The direction is the survey's where there is one — only the survey sets a
+ * fall — and the page says so; otherwise the model's assumption, said as one.
+ * The pitch follows from the eaves, whose own note says where they came from.
+ */
+export function ridgeNote(
+  roof: string,
+  fallDeg: number | null,
+  pitchDeg: number | null,
+): string | null {
+  const pitch = pitchDeg === null ? '' : ` · Neigung ${Math.round(pitchDeg)}°`;
+  if (roof === 'pent') {
+    if (fallDeg === null) return 'Gefälle unbekannt: gerechnet wie ein Flachdach';
+    return `Fällt nach ${nearest(FALLS, fallDeg, 360)} (amtlich vermessen)${pitch}`;
+  }
+  if (roof !== 'gable' && roof !== 'hip') return null;
+  if (fallDeg === null) return `First entlang der längeren Seite (angenommen)${pitch}`;
+  return `First ${nearest(RIDGES, fallDeg + 90, 180)} (amtlich vermessen)${pitch}`;
+}

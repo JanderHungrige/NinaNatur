@@ -1620,6 +1620,28 @@
             "title": "Roof",
             "type": "string"
           },
+          "roof_fall_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roof Fall Deg"
+          },
+          "roof_pitch_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roof Pitch Deg"
+          },
           "roof_source": {
             "title": "Roof Source",
             "type": "string"
@@ -1655,6 +1677,8 @@
           "eaves_m",
           "roof_source",
           "eaves_source",
+          "roof_fall_deg",
+          "roof_pitch_deg",
           "label",
           "height_source",
           "x",

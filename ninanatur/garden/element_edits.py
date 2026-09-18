@@ -43,7 +43,7 @@ _EDITABLE = frozenset(
         # looking out of the window.
         "roof", "eaves_m",
         # Set by the endpoint from what changed, never taken from a caller.
-        "roof_source", "eaves_source",
+        "roof_source", "eaves_source", "roof_fall_deg",
     }
 )
 
@@ -62,6 +62,9 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
     geometry = {k: v for k, v in fields.items() if k in _GEOMETRY}
 
     if geometry:
+        # A new outline is not the one the survey read a ridge off (doc 94);
+        # a move keeps it, because x and y are not geometry.
+        changes["roof_fall_deg"] = None
         # Width, depth and an angle go in; points come out. Anything not named
         # keeps what the element already has, so a resize does not silently
         # reset a shape to its default.
