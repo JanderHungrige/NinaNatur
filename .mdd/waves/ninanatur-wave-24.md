@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: 6854a27a
+hash: dda1fcb1
 ---
 
 # Wave 24: A drawing of a garden
@@ -111,6 +111,35 @@ from the `.stylx` alone — his source assets are not asked for.*
 - **Stage 2 — his style, on our plan:** 2, 3. The converter, then the garden's
   own vocabulary in his hand.
 - **Stage 3 — the finish:** 4, 5, 6.
+
+## Progress
+
+- **2026-09-18 — feature 1, look before you argue** (doc 95), built first.
+  `npm run plan:sheet` draws the app's own plan for three synthetic gardens at
+  12, 40 and 120 m and with the sun map, in Chromium, one page per cell, and
+  keeps a SHA-256 of every cell's pixels in `frontend/sheet/baseline.json`:
+  24 cells, light and dark, recorded before anything else in the wave touched
+  the plan. The paint budget: 36 ms median for the 102-element city block at
+  40 m with the CPU slowed four times.
+- **2026-09-18 — feature 0, a theme is a thing** (doc 96). The plan's look
+  behind one seam — defs, fills per symbol and level of detail, a bed's fill,
+  the one filter — with today's plan as Technisch. All 24 cells as recorded;
+  the filter still switches off under `prefers-contrast` and `forced-colors`.
+  `CanvasScene.tsx` went from 390 lines to 187.
+- **2026-09-18 — stage 1 in production** as **V0.23.200** (merge `9b17cbe`,
+  which also carried the close of Waves 21 and 23). Checked on the preview
+  first (V0.23.199): the plan drawn through `plan-theme--technisch`, the filter
+  in effect, twelve patterns, a fill per kind, no new console error; the smoke
+  test passed in both windows. Production serves `index-DXOCVJ1H.js` and
+  `index-QKIWPeuJ.css`, the preview's assets.
+- **2026-09-18 — stage 2 settled with the owner.** `Draft_Sketch.stylx`
+  (17,096,704 bytes, ArcGIS Online item 3215e720f62d42008d125ca1a3219b14, owner
+  WarrenDz, changed 2021-01-13) is downloaded once and pinned by its SHA-256,
+  not committed; only the generated theme is. `THIRD_PARTY.md`: permission of
+  2026-09-10, to use and adapt Draft Sketch in NinaNatur including this public
+  repository and commercial use; credit *Zeichenstil nach Draft Sketch von Warren
+  Davison, verwendet und angepasst mit seiner Erlaubnis*, with the assistance of
+  Louis Hill (@NKYmapLAB) that his item credits.
 
 ## What each one is
 
