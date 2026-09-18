@@ -4,7 +4,7 @@ title: Where the Roof Came From
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-21
-wave_status: active
+wave_status: complete
 depends_on: [82-the-roof-it-actually-has, 83-measured-surveyed-or-assumed]
 relates: [81-a-house-with-a-measured-height, 82-the-roof-it-actually-has, 83-measured-surveyed-or-assumed, 88-what-the-selection-shows]
 source_files:
@@ -48,8 +48,8 @@ test_files:
   - frontend/src/garden/selection.test.ts
 data_flow: .mdd/audits/flow-where-the-roof-came-from-2026-09-18.md
 last_synced: 2026-09-18
-status: in_progress
-phase: 6
+status: complete
+phase: all
 mdd_version: 11
 tags: [provenance, roofs, eaves, lod2, osm, element-form, migrations]
 path: Map/Buildings
@@ -216,6 +216,16 @@ columns, runs once, and is marked before it can run twice.
   counts as somebody's word.
 - Legacy eaves on survey-written rows keep a null source until the garden's
   light is next recomputed.
+
+## Verified on the preview (V0.20.191, 2026-09-18)
+
+A garden south of a row of Wuppertal houses, made for the check and deleted
+after: the import brought 13 houses, every roof `osm`, five with eaves from the
+storey count and none with eaves and no source. The recompute (19–24 s, the
+survey tile fetched on the host) measured all 13 and gave 12 of them surveyed
+eaves. A shape chosen as `hip` was the gardener's and survived the next survey;
+a renamed house kept `surveyed` on its height, shape and eaves. The form named
+both: *Mischform — amtlich vermessen*, *Traufhöhe 14,21 — amtlich vermessen*.
 
 ## Bugs
 
