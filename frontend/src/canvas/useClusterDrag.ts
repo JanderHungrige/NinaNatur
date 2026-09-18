@@ -9,6 +9,8 @@ interface Options {
   clusters: Cluster[];
   /** The bed each cluster belongs to, as an outline in absolute metres. */
   bedOf: (plantingId: number) => Point[] | null;
+  /** Whether this pointer may pick this patch up; `byFinger` is a touch (doc 87, B1). */
+  movable: (plantingId: number, byFinger: boolean) => boolean;
   onFinish: (plantingId: number, to: Point) => void;
 }
 
@@ -39,6 +41,8 @@ export function useClusterDrag(options: Options) {
   const grab = (plantingId: number, event: React.PointerEvent) => {
     const cluster = options.clusters.find((c) => c.plantingId === plantingId);
     if (cluster === undefined) return;
+    // A refused grab is left to the surface beneath, which pans.
+    if (!options.movable(plantingId, event.pointerType === 'touch')) return;
     // Otherwise the bed underneath reads this as the start of its own drag, and
     // the whole bed moves while the gardener is moving one patch in it.
     event.stopPropagation();
@@ -53,6 +57,13 @@ export function useClusterDrag(options: Options) {
     };
     latest.current = cluster.centre;
     setDragging({ id: plantingId, at: cluster.centre });
+  };
+
+  /** Ended by a second finger (doc 91, B1): the patch stays where it was. */
+  const cancel = () => {
+    held.current = null;
+    latest.current = null;
+    setDragging(null);
   };
 
   useEffect(() => {
@@ -95,5 +106,5 @@ export function useClusterDrag(options: Options) {
     };
   }, [dragging, options]);
 
-  return { dragging, grab };
+  return { dragging, grab, cancel };
 }

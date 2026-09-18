@@ -90,6 +90,7 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
     shown: centre !== null,
     look,
     onLook: (at) => setLook((current) => (current === null ? current : { ...current, ...at })),
+    onZoom: (by) => zoomBy(by),
   });
   const view: MapView = look === null
     ? { lat: 0, lon: 0, zoom: START_ZOOM, ...surface.box }

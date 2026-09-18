@@ -104,6 +104,10 @@ margin, **2** taken over. A 12 m house counts at 45 m, a 2 m fence only at 7.
   surface takes the gesture, so the page does not scroll under the finger
   instead. A mouse keeps the right button for dragging, because its left one is
   how a corner is set.
+- **Two fingers step the zoom.** Spread them half as far apart again and the
+  map goes a level in; pinch them to two thirds and it goes a level out. The
+  tiles come in whole levels, so the picture is not stretched between them
+  (B2).
 
 ## Security
 
@@ -132,3 +136,4 @@ a name the module no longer imported.
 | ID | Description | Status | Fixed In | Reported | Fixed |
 |----|-------------|--------|----------|----------|-------|
 | B1 | On a phone the map picker sets corners far from the finger and cannot be panned by touch: the surface is never measured (640×400 assumed, 259 real at 375 px), so a tap is projected as if the map were 640 px wide and the outline SVG scales it down again | Completed | frontend/src/map/useMapSurface.ts:66 | 2026-09-17 | 2026-09-17 |
+| B2 | Two fingers do not zoom the address map on a phone: nothing handles a second pointer, and the surface's `touch-action: none` switches off the browser's own pinch as well | Open | - | 2026-09-18 | - |

@@ -1,5 +1,6 @@
 import { type PointerEvent as ReactPointerEvent, type RefObject, useEffect, useRef, useState } from 'react';
 
+import { usePinch } from '../usePinch';
 import { type MapView, pixelToLatLon } from './tiles';
 
 export interface Box {
@@ -9,6 +10,9 @@ export interface Box {
 
 /** A pointer that moved less than this tapped; more than this dragged the map. */
 const TAP_PX = 6;
+/** How far apart two fingers must go for the map to step a level: half as far
+ *  again for one in, two thirds for one out (doc 31, B2). */
+const PINCH_STEP = 1.5;
 
 interface Options {
   /** The size to draw at until the surface has been measured. */
@@ -21,6 +25,8 @@ interface Options {
   look: { lat: number; lon: number; zoom: number } | null;
   /** Where it should look after a drag. */
   onLook: (at: { lat: number; lon: number }) => void;
+  /** A level in (1) or out (-1), after a spread or a pinch. */
+  onZoom: (by: number) => void;
 }
 
 export interface Surface {
@@ -30,6 +36,8 @@ export interface Surface {
   /** The size everything on the map is drawn at. */
   box: Box;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  /** Two fingers, on the surface's capture phase. */
+  pinch: ReturnType<typeof usePinch>;
   /** Whether the gesture just ended moved the map, so the click that follows it
    *  belongs to the pan rather than setting a corner. */
   dragged: () => boolean;
@@ -45,17 +53,20 @@ export interface Surface {
  *
  * Dragging is the right mouse button, because the left one is already how a
  * corner is set — and a finger, which has no buttons, so the gesture is told
- * apart by distance instead.
+ * apart by distance instead. Two fingers step the zoom (B2).
  */
-export function useMapSurface({ fallback, size, shown, look, onLook }: Options): Surface {
-  const ref = useRef<HTMLDivElement | null>(null);
+export function useMapSurface({ fallback, size, shown, look, onLook, onZoom }: Options): Surface {
+  const ref = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<Box | null>(null);
   const [panning, setPanning] = useState(false);
   const from = useRef<{ x: number; y: number; lat: number; lon: number; zoom: number } | null>(null);
   const moved = useRef(false);
-  // Read during a drag, so a new handler on every render re-subscribes nothing.
+  // Read during a gesture, so a new handler on every render re-subscribes nothing.
   const latest = useRef(onLook);
   latest.current = onLook;
+  const zoomBy = useRef(onZoom);
+  zoomBy.current = onZoom;
+  const gathered = useRef(1);
 
   const box = size ?? measured ?? fallback;
 
@@ -108,6 +119,26 @@ export function useMapSurface({ fallback, size, shown, look, onLook }: Options):
     };
   }, [panning, box.widthPx, box.heightPx]);
 
+  // The tiles come in whole levels, so a spread or a pinch steps the zoom
+  // rather than stretching the picture between levels (B2).
+  const pinch = usePinch({
+    onStart: () => {
+      // The first finger's drag is over, and a click the fingers send as they
+      // lift is not a corner.
+      from.current = null;
+      moved.current = true;
+      gathered.current = 1;
+      setPanning(false);
+    },
+    onChange: ({ scale }) => {
+      gathered.current *= scale;
+      if (gathered.current >= PINCH_STEP) zoomBy.current(1);
+      else if (gathered.current <= 1 / PINCH_STEP) zoomBy.current(-1);
+      else return;
+      gathered.current = 1;
+    },
+  });
+
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const byTouch = event.pointerType !== 'mouse';
     // A new gesture: whatever the last one was, its click has been and gone.
@@ -120,5 +151,5 @@ export function useMapSurface({ fallback, size, shown, look, onLook }: Options):
     setPanning(true);
   };
 
-  return { ref, box, onPointerDown, dragged: () => moved.current };
+  return { ref, box, onPointerDown, pinch, dragged: () => moved.current };
 }

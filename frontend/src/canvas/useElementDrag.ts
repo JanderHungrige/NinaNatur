@@ -5,6 +5,9 @@
  * plan, which looks exactly like the shape moving while nothing about the
  * garden has changed. Grabbing a shape now moves it; grabbing empty ground
  * still pans.
+ *
+ * Which pointer may pick up which element is the caller's to say (doc 87, B1).
+ * A grab it refuses is left to the surface beneath, which pans.
  */
 import { useEffect, useRef, useState } from 'react';
 
@@ -13,6 +16,8 @@ import { type Point, type Viewport, toGarden } from './viewport';
 interface Options {
   view: Viewport;
   surface: React.RefObject<SVGSVGElement | null>;
+  /** Whether this pointer may pick this element up; `byFinger` is a touch. */
+  movable: (id: number, byFinger: boolean) => boolean;
   onFinish: (id: number, at: Point) => void;
 }
 
@@ -31,11 +36,20 @@ export function useElementDrag(options: Options) {
   };
 
   const grab = (id: number, event: React.PointerEvent) => {
+    // `touch` only: a pen is as exact as a mouse, and jsdom reports a pointer
+    // whose type was never set as ''.
+    if (!options.movable(id, event.pointerType === 'touch')) return;
     // The surface below would otherwise read this as the start of a pan.
     event.stopPropagation();
     held.current = { id, from: metres(event), moved: false };
     latest.current = { dx: 0, dy: 0 };
     setOffset({ id, dx: 0, dy: 0 });
+  };
+
+  /** Ended by a second finger (doc 91, B1): nothing moved, and nothing is saved. */
+  const cancel = () => {
+    held.current = null;
+    setOffset(null);
   };
 
   useEffect(() => {
@@ -68,5 +82,5 @@ export function useElementDrag(options: Options) {
     };
   }, [offset, options]);
 
-  return { offset, grab };
+  return { offset, grab, cancel };
 }
