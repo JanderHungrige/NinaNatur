@@ -4,7 +4,7 @@ title: A Workspace, Not a Page
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [86-the-plan-that-stayed-a-strip, 11-garden-canvas, 47-panel-order, 49-drawing-focus, 52-element-list]
 relates: [51-element-context-menu, 53-account-in-header, 65-the-shade-switch, 29-bloom-playback, 30-landing-and-garden-id, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style]
 source_files:

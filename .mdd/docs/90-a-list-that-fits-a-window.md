@@ -4,7 +4,7 @@ title: A List That Fits a Window
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-23
-wave_status: active
+wave_status: complete
 depends_on: [88-what-the-selection-shows, 23-catalogue-filters, 25-woody-and-birds, 15-timeline-ui]
 relates: [24-month-suggestions, 22-species-info, 87-a-workspace-not-a-page, 91-a-sheet-from-below, 92-one-panel-one-style]
 source_files:
