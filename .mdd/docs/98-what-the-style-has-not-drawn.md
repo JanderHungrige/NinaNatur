@@ -160,7 +160,8 @@ float at the bottom of the whole plan column, which now ends below that
 caption, so the two were drawn over each other. It hangs inside the drawing's
 own box (`canvas-stage`) instead, and the stage takes the room the caption
 leaves (`flex: 1`, doc 86's rule intact: the drawing still cannot set its own
-height).
+height). Under the controls at the top edge, not at the bottom: the bottom is
+the theme's, and the first try put the hint straight over the title block.
 
 ## His line symbols along our elements
 
