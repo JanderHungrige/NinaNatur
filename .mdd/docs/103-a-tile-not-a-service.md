@@ -50,10 +50,11 @@ is wherever it happens to be inside one.
 
 A window is 200 m across (`WINDOW_M` is its half) and a Bavarian tile is 1 km,
 so the window lies inside one tile only when the garden is at least 100 m from
-every edge — an 800 m square inside a 1,000 m one, **64 % of the time**. The rest of the time the window crosses one edge or two,
-and the fetch needs two tiles or four. Anything else leaves the ground missing
-on one side of a garden that happens to sit near a kilometre line, which is
-not a property of the garden.
+every edge — an 800 m square inside a 1,000 m one, **64 % of the time**. The
+rest of the time the window crosses one line or two, and the fetch needs two
+tiles or four. Anything else leaves the ground missing on one side of a garden
+that happens to sit near a kilometre line, which is not a property of the
+garden.
 
 So: `tiles_across(east, north, source, reach_m)` gives every tile the window
 touches, each is fetched, and they are pasted into one raster covering their
