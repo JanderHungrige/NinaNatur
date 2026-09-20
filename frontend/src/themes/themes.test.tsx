@@ -5,7 +5,7 @@ import type { Viewport } from '../canvas/viewport';
 import { CanvasScene } from '../components/CanvasScene';
 import { SHEET_GARDENS } from '../sheet/gardens';
 import { PlanThemeProvider } from './context';
-import { THEMES, themeById } from './index';
+import { ON_OFFER, THEMES, themeById } from './index';
 import { technisch } from './technisch';
 import type { LevelOfDetail, PlanTheme } from './types';
 
@@ -127,5 +127,20 @@ describe('the plan theme (doc 96)', () => {
     expect(themeById('technisch')).toBe(technisch);
     expect(themeById('verschollen')).toBe(technisch);
     expect(THEMES.map((t) => t.id)).toContain('technisch');
+  });
+});
+
+describe('what the picker may offer (doc 100)', () => {
+  it('names the lazy style exactly as the style names itself', async () => {
+    // Its label is repeated in ON_OFFER so the picker can name it without
+    // pulling its chunk into the main bundle. This is what keeps the two true.
+    const { draftSketch } = await import('./draft-sketch');
+    const offered = ON_OFFER.find((theme) => theme.id === draftSketch.id);
+    expect(offered?.label).toBe(draftSketch.label);
+  });
+
+  it('and lists every loaded theme too, the fallback first', () => {
+    expect(ON_OFFER[0]?.id).toBe(technisch.id);
+    expect(ON_OFFER.map((t) => t.id)).toEqual(expect.arrayContaining(THEMES.map((t) => t.id)));
   });
 });

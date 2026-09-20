@@ -226,6 +226,25 @@ from the `.stylx` alone — his source assets are not asked for.*
   it is 42 against the plan's 69 — and doc 99 says so rather than tuning it
   away.
 
+- **2026-09-20 — feature 6's switch, ahead of feature 5** (doc 100). The
+  gardener picks the style in the header's menu — a fieldset of radios, one per
+  style — and their browser remembers it (`ninanatur.plan-theme`). The address
+  still decides where it is given (`?theme=`), the deployment still decides what
+  is on offer (Draft Sketch only where its files are served), and
+  `prefers-contrast: more` or `forced-colors` takes the choice away and says so:
+  a style made of washes and pencil is the wrong answer to "make this clearer",
+  where doc 98 used to answer it by hiding the ink and leaving a drawing with
+  none of its marks. Checked on the local app: Technisch at first, his style
+  after choosing, still his after a reload. What is left of the feature is the
+  courtesy — showing Davison the result — which is the owner's to do.
+- **2026-09-20 — feature 5 is waiting on one decision.** His file has no
+  lettering at all: 97 symbols, 48 polygons, 35 lines, 14 points, and not one
+  font name or text symbol in any of them. So there is no hand of his to match,
+  and the plan's lettering is a choice of ours: an OFL hand — *Patrick Hand*
+  reads upright like a draughtsman's, *Caveat* is more of a note — bundled with
+  the app, since the policy allows no CDN (`font-src 'self'`). That is a
+  third-party file in a public repository, so it waits for the owner.
+
 ## What each one is
 
 ### 0. a-theme-is-a-thing

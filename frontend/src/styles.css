@@ -1776,6 +1776,40 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-weight: 500;
 }
 
+/* Which style the plan is drawn in (doc 100), in the menu beside the sun map.
+   A fieldset rather than a row of buttons: the two choices belong together and
+   a screen reader should hear them that way. */
+.theme-picker {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.theme-picker__legend {
+  float: left;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.theme-picker__choice {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.theme-picker__note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
 .header-link:hover {
   color: var(--ink);
   border-color: var(--leaf);

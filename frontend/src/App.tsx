@@ -67,7 +67,7 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
   const [version, setVersion] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
   const account = useAccount(client, status, garden === null);
-  const planTheme = usePageTheme(environment);
+  const planStyle = usePageTheme(environment);
 
   /** Stable identities: an inline arrow would refire the landing page's effect
    *  on every render, which is the loop the species panel already cost us. */
@@ -237,7 +237,7 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
           />
         </main>
       ) : (
-        <PlanThemeProvider theme={planTheme}>
+        <PlanThemeProvider theme={planStyle.theme}>
           <GardenWorkspace
             key={garden.share_token}
             client={client}
@@ -246,6 +246,7 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
             status={status}
             header={header}
             account={account.account}
+            planStyle={planStyle}
             greeting={greeting ?? `${garden.name} geladen.`}
           />
         </PlanThemeProvider>

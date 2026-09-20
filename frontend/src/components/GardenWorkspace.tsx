@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useGarden } from '../garden/useGarden';
 import { useRemembered } from '../useRemembered';
+import type { PlanChoice } from '../themes/usePageTheme';
 import type { Status } from '../useStatus';
 import type { Snap } from '../workspace/sheet';
 import { useShortcutHelp } from '../workspace/useShortcutHelp';
@@ -15,6 +16,7 @@ import { InspectorPanels } from './InspectorPanels';
 import { PlanArea } from './PlanArea';
 import { ShortcutHelp } from './ShortcutHelp';
 import { SiteHeader, type SiteProps } from './SiteHeader';
+import { ThemePicker } from './ThemePicker';
 import { TimelineDock } from './TimelineDock';
 import { ToolRail } from './ToolRail';
 
@@ -47,6 +49,8 @@ interface Props {
   status: Status;
   header: SiteProps;
   account: AccountInfo | null;
+  /** Which style the plan is drawn in, and the choice of it (doc 100). */
+  planStyle: PlanChoice;
   /** What to say once everything about the garden has arrived. */
   greeting: string;
 }
@@ -59,7 +63,8 @@ interface Props {
  * over. Nor does the sheet's height on a narrow window: every garden opens with
  * the details resting at a quarter (doc 91).
  */
-export function GardenWorkspace({ client, garden, setGarden, status, header, account, greeting }: Props) {
+export function GardenWorkspace({ client, garden, setGarden, status, header, account,
+  planStyle, greeting }: Props) {
   const controller = useGarden(client, garden, setGarden, status, greeting);
   const { derived, elements, light, suggestions } = controller;
   const [wide, setWide] = useRemembered('ninanatur.inspector.wide', false);
@@ -93,6 +98,8 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
         busy={status.busy}
         more={
           <>
+            <ThemePicker options={planStyle.options} chosen={planStyle.chosen}
+                         onChoose={planStyle.choose} overridden={planStyle.overridden} />
             <button
               type="button"
               className="header-link"

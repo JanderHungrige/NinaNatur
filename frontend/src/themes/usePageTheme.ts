@@ -1,22 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { loadTheme, preloaded, themeFor } from './index';
+import { asksForContrast, chosenTheme, offered, remember, remembered } from './choice';
+import { loadTheme, preloaded } from './index';
+import type { ThemeOnOffer } from './index';
 import { technisch } from './technisch';
 import type { PlanTheme } from './types';
 
+export interface PlanChoice {
+  /** The theme the plan is drawn in, once its chunk and images have arrived. */
+  theme: PlanTheme;
+  /** What is on offer here, for the picker (doc 100). */
+  options: readonly ThemeOnOffer[];
+  /** The id that was chosen — which is not the drawn one until it has loaded. */
+  chosen: string;
+  choose: (id: string) => void;
+  /** High contrast has taken the choice away. */
+  overridden: boolean;
+}
+
 /**
- * The theme this page draws its plan in (doc 97): Technisch, unless this is the
- * preview and another is asked for by name — and then from the moment its
- * chunk and its images have arrived. A theme that fails to load leaves the plan
- * as it was.
+ * Which style this page draws its plan in (docs 97, 100): what the viewer chose
+ * and their browser remembered, or what the address asks for, among the styles
+ * this deployment serves — and Technisch whatever they chose, where more
+ * contrast was asked for. A theme that fails to load leaves the plan as it was.
  */
-export function usePageTheme(environment: string | null): PlanTheme {
+export function usePageTheme(environment: string | null): PlanChoice {
   const [theme, setTheme] = useState<PlanTheme>(technisch);
+  const overridden = useMemo(asksForContrast, []);
+  const [chosen, setChosen] = useState(technisch.id);
+
   useEffect(() => {
-    const id = themeFor(environment, window.location.search);
-    if (id === technisch.id) return undefined;
+    setChosen(chosenTheme({
+      environment,
+      search: window.location.search,
+      stored: remembered(),
+      moreContrast: overridden,
+    }));
+  }, [environment, overridden]);
+
+  useEffect(() => {
+    if (chosen === technisch.id) {
+      setTheme(technisch);
+      return undefined;
+    }
     let current = true;
-    loadTheme(id)
+    loadTheme(chosen)
       .then(preloaded)
       .then((loaded) => {
         if (current) setTheme(loaded);
@@ -25,6 +53,12 @@ export function usePageTheme(environment: string | null): PlanTheme {
     return () => {
       current = false;
     };
-  }, [environment]);
-  return theme;
+  }, [chosen]);
+
+  const choose = useCallback((id: string) => {
+    remember(id);
+    setChosen(id);
+  }, []);
+
+  return { theme, options: offered(environment), chosen, choose, overridden };
 }
