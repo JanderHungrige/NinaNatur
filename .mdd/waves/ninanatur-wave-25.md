@@ -3,7 +3,7 @@ id: ninanatur-wave-25
 title: "Wave 25: Down to the square metre"
 initiative: ninanatur
 initiative_version: 23
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-21
 demo_state: "Ein Garten in München, Dresden, Wiesbaden oder Kiel bekommt sein Relief, seinen Horizont und die Nachbarhäuser mit gemessener Höhe und Dachform — und in Nordrhein-Westfalen kennt jeder Baum in der Nachbarschaft seinen Kronenansatz, aus der Punktwolke. Wer mehr will, vermisst seinen eigenen Garten mit dem Telefon. Jede Zahl sagt, woher sie kommt und wie fein sie ist."
 created: 2026-09-07
@@ -109,7 +109,7 @@ confidence travel with every window, as they do with every trait value.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | which-tiles-and-whose | — | planned | — |
+| 0 | which-tiles-and-whose | 102 | built | — |
 | 1 | a-tile-not-a-service | — | planned | 0 |
 | 2 | a-horizon-for-everyone | — | planned | 0 |
 | 3 | every-roof-in-the-country | — | planned | 1 |
@@ -123,6 +123,28 @@ Three stages:
 - **Stage 1 — ground everywhere:** 0, 1, 2.
 - **Stage 2 — what stands on it:** 3, 4, 7.
 - **Stage 3 — the rest, and the gardener's own measurement:** 5, 6.
+
+## Progress
+
+- **2026-09-20 — feature 0, which tiles and whose** (doc 102). The fourth
+  registry, `geo/tile_sources.py`, and the first one holding *files* rather than
+  services. Probed with real requests that day: Bayern's DGM1 tile (200,
+  2,558,672 B) and LoD2 tile (200, 161,627,079 B), NRW's LoD2 tile (200,
+  20,684,673 B) and laser tile (200, 34,967,590 B) with its JSON index, and
+  Copernicus GLO-30 (200, 31,889,167 B) for a horizon anywhere. The plan's
+  index URL was on the wrong host — `download1.bayernwolke.de/odd/…` answers
+  404, `geodaten.bayern.de/odd/…` serves the metalink with its SHA-256 sums —
+  which is the whole argument for a registry of requests rather than citations.
+
+  **Both questions this feature existed to answer are answered, and neither by
+  a status code.** The federal **LoD2-DE** exists and its own product page says
+  *"nur einem eingeschränkten Kreis Nutzungsberechtigter"*, listed as *"nur für
+  Bundesbehörden"*: it does **not** replace the state adapters, so feature 3
+  stays per-state. **Niedersachsen** lists LoD1, LoD2, bDOM20, DGM1, DOM1 and
+  the maps in its OpenGeoData catalogue and **no laser data at all**, so it is a
+  raster state for feature 5 — no crown base there. Both pages are JavaScript
+  and had to be read rather than fetched, and the probe script carries the note
+  so the next run re-checks them.
 
 ## What each one is
 
