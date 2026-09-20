@@ -28,6 +28,10 @@ export interface DecoratedShape {
   roofLines: [Point, Point][];
   /** Its roof's shape, as stored: a pent's one line is its upper edge. */
   roof: string;
+  /** Where this thing's shadow falls at the drawing's moment, in garden metres
+   *  (doc 99), or null where the model says it casts none. A theme draws its
+   *  drop shadow there instead of wherever its style put one. */
+  shadow: Point | null;
 }
 
 /** What a theme draws for the plan as a whole rather than for one shape: a

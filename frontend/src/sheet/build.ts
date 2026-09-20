@@ -24,6 +24,21 @@ export function disc(r: number, corners = 12): number[][] {
   });
 }
 
+/**
+ * The offset the server sends for a thing of this height (`shadow`, doc 99):
+ * where its shadow falls at the drawing's one moment. These are that moment's
+ * real numbers for a garden at 51° north — 15 June, three hours after solar
+ * noon, when the sun stands 45.7° up in the west-south-west — so the sheet
+ * shows what the app shows. Sheet data only: nothing here works out a sun.
+ */
+const SHADOW_PER_METRE: [number, number] = [0.904, 0.363];
+
+export function castBy(height: number | null): number[] | null {
+  if (height === null || height <= 0) return null;
+  const round = (v: number) => Math.round(v * 1000) / 1000;
+  return [round(height * SHADOW_PER_METRE[0]), round(height * SHADOW_PER_METRE[1])];
+}
+
 /** An element standing at `at`, its outline relative to that and absolute beside it. */
 export function element(
   id: number,
@@ -37,6 +52,7 @@ export function element(
     obstacle_id: id, kind, x, y, shape: 'polygon', width: null, constraint_hint: null,
     points: corners, footprint: corners.map(([cx, cy]) => [(cx ?? 0) + x, (cy ?? 0) + y]),
     height: heightOf(kind), height_source: 'user', roof: 'unknown', roof_source: 'user',
+    shadow: castBy(heightOf(kind)),
     eaves_m: null, eaves_source: null, roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [], label: null,
     ...extra,
   };
@@ -69,7 +85,10 @@ export function roofLinesOf(at: [number, number], w: number, d: number, roof: st
 export function house(id: number, at: [number, number], w: number, d: number,
   roof = 'gable', extra: Partial<Obstacle> = {}): Obstacle {
   return element(id, 'house', at, box(w, d), {
-    height: 9, roof, eaves_m: 6, roof_lines: roofLinesOf(at, w, d, roof), ...extra,
+    // A pitched roof shades from between its eaves and its ridge, as the
+    // server's `shading_height` has it (doc 32): 6 m of wall, half the gable.
+    height: 9, roof, eaves_m: 6, shadow: castBy(7.5),
+    roof_lines: roofLinesOf(at, w, d, roof), ...extra,
   });
 }
 

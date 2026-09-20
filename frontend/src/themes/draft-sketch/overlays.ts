@@ -19,10 +19,14 @@ interface Painted {
 /** The shape again, moved, under everything: a drop shadow. */
 export interface Shadow extends Painted {
   kind: 'shadow';
-  /** Garden metres, y north. */
+  /** Garden metres, y north. Where the style would put it; a thing that stands
+   *  up is drawn at the offset the model gives instead (doc 99). */
   dx: number;
   dy: number;
   wave: Wave | null;
+  /** The shape's own depth rather than a shadow the sun casts — a raised bed's
+   *  edge. Drawn where it says, whatever the sun is doing. */
+  edge?: boolean;
 }
 
 /** A line along the outline: his ink, solid — or along the outline drawn

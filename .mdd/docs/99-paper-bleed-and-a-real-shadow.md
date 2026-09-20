@@ -77,9 +77,21 @@ ObstacleOut.shadow: [dx, dy] | null      # metres, x east, y north
 ```
 
 `null` when the thing casts none: no height, a kind that does not cast
-(doc 08's `casts_shadow`), or a sun too low to draw. The drawing offsets the
-shape's own outline by it and wobbles it as before, so the mark stays his and
-only its direction and length become true.
+(doc 08's `casts_shadow`), or a sun too low to draw. A pitched roof shades from
+`shading_height`, so a house throws the shadow of its eaves plus part of its
+gable rather than of its ridge.
+
+**The shape is swept, not moved.** Offsetting the outline by eight metres
+leaves a gap between a house and its own shadow, which reads as a second
+building; the shadow is the ground the thing hides all the way over. So the
+mark is the hull of the outline and its offset copy (`sweep`), which is the
+same hull `solar/shading.shadow_polygon` takes — the drawing and the light
+model draw one outline, not two.
+
+And it is **not wobbled**. His drop shadow was a pen mark and wobbled like one;
+a cast shadow has the edge the wall has. Dropping the wobble from 51 shadows on
+the city took the frame from 78 ms to 69 — the real shadows cost less than the
+style's pretend ones did.
 
 ### The reference moment
 
@@ -127,7 +139,8 @@ bytes at 20 m and by 10 % at 40 m, so the detail is real wherever it is drawn
 
 **The budget is not met, and this is the honest number.** Technisch measures
 21 ms on the same machine on the same day (the 36 ms in doc 95's record is
-another day's machine), so twice Technisch is 42 ms and the city costs 73.
+another day's machine), so twice Technisch is 42 ms and the city costs 73 —
+69 once the shadows stopped being wobbled.
 What is left is not marks — 286 against the cheap answer's 284 — but his
 washes: image tiles with masks, several on one plan. Trying it the other way
 round, one wash for the whole plan and marks per shape, costs *more* (79 ms),

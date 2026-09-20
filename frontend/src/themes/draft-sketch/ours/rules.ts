@@ -21,7 +21,9 @@ export const ROOF: readonly Overlay[] = [
 /** A raised bed: its side's shadow, and a second edge just inside the first
  *  where the board's top is. */
 export const RAISED: readonly Overlay[] = [
-  { kind: 'shadow', colour: '#000000', opacity: 0.2, dx: 0.18, dy: -0.18, wave: null },
+  // The bed's own side, not a shadow the sun throws: it stays where it is drawn.
+  { kind: 'shadow', colour: '#000000', opacity: 0.2, dx: 0.18, dy: -0.18, wave: null,
+    edge: true },
   { kind: 'inner', ...INK, width: 0.06, inset: 0.18, wave: { amplitude: 0.03, period: 0.8, seed: 9 } },
 ];
 

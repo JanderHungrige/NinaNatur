@@ -23,7 +23,8 @@ from ninanatur.api.schemas_garden_in import GardenCreate, GardenSoil
 from ninanatur.auth.sessions import Account
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
-from ninanatur.garden.roofs import Roof
+from ninanatur.garden.objects import ObjectKind, casts_shadow
+from ninanatur.garden.roofs import Roof, shading_height
 from ninanatur.garden.roofshape import pitch_of, roof_lines
 from ninanatur.garden.store import (
     create_garden,
@@ -32,6 +33,8 @@ from ninanatur.garden.store import (
     load_garden,
     set_garden_soil,
 )
+from ninanatur.solar.drawing import drawing_shadow, drawing_sun
+from ninanatur.solar.position import Location, SunPosition
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["gardens"])
 
@@ -52,6 +55,8 @@ def to_out(garden: Garden) -> GardenOut:
     unidentified = sum(
         1 for b in garden.beds for p in b.plantings if p.taxon_id is None
     )
+    # One sun for the whole garden: every shadow in a drawing falls the same way.
+    sun = drawing_sun(Location(latitude=garden.latitude, longitude=garden.longitude))
     return GardenOut(
         unidentified_plantings=unidentified,
         share_token=garden.share_token,
@@ -86,26 +91,42 @@ def to_out(garden: Garden) -> GardenOut:
             )
             for b in garden.beds
         ],
-        obstacles=[
-            ObstacleOut(
-                obstacle_id=o.obstacle_id, kind=o.kind, roof=o.roof,
-                roof_source=o.roof_source, eaves_m=o.eaves_m,
-                eaves_source=o.eaves_source, roof_fall_deg=o.roof_fall_deg,
-                roof_pitch_deg=pitch_of(o.footprint, Roof(o.roof), o.height,
-                                        o.eaves_m, o.roof_fall_deg),
-                roof_lines=[
-                    [[round(x, 3), round(y, 3)] for x, y in line]
-                    for line in roof_lines(o.footprint, Roof(o.roof), o.height,
-                                           o.eaves_m, o.roof_fall_deg)
-                ],
-                label=o.label,
-                height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
-                width=o.width, points=o.points,
-                constraint_hint=o.constraint_hint, height=o.height,
-                footprint=[[px, py] for px, py in o.footprint],
-            )
-            for o in garden.obstacles
+        obstacles=[_obstacle_out(o, sun) for o in garden.obstacles],
+    )
+
+
+def _shadow_of(o: Element, sun: SunPosition) -> list[float] | None:
+    """The offset the thing's shadow has at the drawing's moment (doc 99), or
+    None where the model says it casts none: nothing measured, or a kind that
+    does not stand up. Never a default direction — the drawing then leaves the
+    mark out rather than inventing a light."""
+    if o.height is None or not casts_shadow(ObjectKind(o.kind)):
+        return None
+    cast = drawing_shadow(shading_height(o.height, Roof(o.roof), o.eaves_m), sun)
+    return None if cast is None else [round(cast[0], 3), round(cast[1], 3)]
+
+
+def _obstacle_out(o: Element, sun: SunPosition) -> ObstacleOut:
+    """One obstacle as the API sends it, with what the model knows about the way
+    it is drawn: the lines of its roof (doc 98) and the shadow it throws
+    (doc 99)."""
+    return ObstacleOut(
+        obstacle_id=o.obstacle_id, kind=o.kind, roof=o.roof,
+        roof_source=o.roof_source, eaves_m=o.eaves_m,
+        eaves_source=o.eaves_source, roof_fall_deg=o.roof_fall_deg,
+        roof_pitch_deg=pitch_of(o.footprint, Roof(o.roof), o.height,
+                                o.eaves_m, o.roof_fall_deg),
+        roof_lines=[
+            [[round(x, 3), round(y, 3)] for x, y in line]
+            for line in roof_lines(o.footprint, Roof(o.roof), o.height,
+                                   o.eaves_m, o.roof_fall_deg)
         ],
+        shadow=_shadow_of(o, sun),
+        label=o.label,
+        height_source=o.height_source, x=o.x, y=o.y, shape=o.shape,
+        width=o.width, points=o.points,
+        constraint_hint=o.constraint_hint, height=o.height,
+        footprint=[[px, py] for px, py in o.footprint],
     )
 
 

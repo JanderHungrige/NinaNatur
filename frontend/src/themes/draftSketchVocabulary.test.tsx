@@ -15,7 +15,7 @@ const box = (x: number, y: number, w: number, d: number): Point[] => [
 function shape(kind: string, symbol: string, points: Point[], extra: Partial<DecoratedShape> = {},
 ): DecoratedShape {
   return { key: `obstacle-${kind}`, kind, symbol, ground: false, points, line: null, raised: 0,
-           roofLines: [], roof: 'unknown', ...extra };
+           roofLines: [], roof: 'unknown', shadow: { x: 0.6, y: 0.3 }, ...extra };
 }
 
 /** What the theme draws for one shape, near, at 5 cm a pixel. */
@@ -144,5 +144,33 @@ describe('streets, which arrive as ways and meet at junctions', () => {
   it('and draws nothing at all where a garden has no street', () => {
     const { container } = render(<svg><Plan shapes={[]} metresPerPixel={0.05} /></svg>);
     expect(container.querySelector('[data-mark="roads"]')).toBeNull();
+  });
+});
+
+describe('the shadow the sun casts (doc 99)', () => {
+  const house = (extra = {}) => shape('house', 'building',
+    box(0, 0, 9, 6), { roof: 'gable', ...extra });
+
+  it('falls where the model says, and reaches from the thing to its end', () => {
+    // Eight metres east-north-east: what the server sends for a tall thing at
+    // the drawing's moment.
+    const drawnHouse = drawn(house({ shadow: { x: 8, y: 3 } }));
+    const cast = drawnHouse.under.querySelector('[data-mark="shadow"]')!;
+    const xs = [...(cast.getAttribute('d') ?? '').matchAll(/(-?\d+(?:\.\d+)?),-?\d/g)]
+      .map((m) => Number(m[1]));
+    // The house spans -4.5..4.5. Its shadow is the ground it hides all the way
+    // over, so the mark starts at the house and ends 8 m east of it — not a
+    // copy of the house floating clear of it.
+    expect(Math.min(...xs)).toBeLessThan(-3);
+    expect(Math.max(...xs)).toBeGreaterThan(11);
+  });
+
+  it('is left out where the model says the thing casts none', () => {
+    expect(drawn(house({ shadow: null })).marks('shadow')).toHaveLength(0);
+  });
+
+  it('but a raised bed keeps its own side, which is not the sun\'s doing', () => {
+    const bed = shape('bed', 'planting', box(0, 0, 3, 1.5), { raised: 0.5, shadow: null });
+    expect(drawn(bed).under.querySelectorAll('[data-mark="shadow"]')).toHaveLength(1);
   });
 });
