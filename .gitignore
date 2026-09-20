@@ -69,3 +69,6 @@ assets/draft-sketch/*.stylx
 # The Finder's, not the project's.
 .DS_Store
 **/.DS_Store
+
+# This machine's agent setup: launch configs with local paths.
+.claude/

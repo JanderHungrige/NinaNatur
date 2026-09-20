@@ -191,6 +191,16 @@ luminance, so what is painted black — the road surface — is cut away, and on
 the half of the line that lies outside the network survives. Nothing crosses a
 junction, and a street's own `decorate` draws no outline at all.
 
+**A road turns on a corner it does not have.** A way is a rectangle, so two of
+them meeting at an angle leave the outside of the bend open: a wedge at a
+shallow angle, a notch a metre wide at a sharp one. Each way now carries a disc
+of its own width at each end of its centreline — the round join the rectangles
+lack — drawn beneath the band in the band's own wash, and added to the
+network's outline so the ink rounds the same corner from the same numbers. In
+the mask the discs are a path of their own: in one path with the bands, a disc
+that winds the other way cancels against the band it sits in and opens a hole,
+which lets the ink through inside the road.
+
 A way that ends on another way's **edge** rather than in it puts the two
 boundaries on top of each other, and a hairline of ink comes through the seam —
 a line across a road, which is the thing this draws away. The mask is grown by
@@ -252,14 +262,9 @@ roof fields. The converter reads more of the same pinned file.
 
 ## Known Issues
 
-- **A wedge of paper at a bend.** A street is a row of rectangles, one per way,
-  and two of them meeting at an angle leave a thin wedge of ground uncovered on
-  the outside of the bend. The network's ink hides none of it — it is the
-  bands' own fill that is missing, and Technisch shows the same wedge. Closing
-  it means either the union of the bands as one filled shape (which would lie
-  over the shadows that fall on a road) or a hair of the band's own texture on
-  its edge (which the level of detail changes). Left as it is until feature 4
-  settles the levels.
+- **Technisch still shows the wedge at a bend.** His style now rounds the
+  corner (above); ours draws the rectangles as they come. The same disc would
+  work there, and it is a change to a recorded look, so it waits for the owner.
 
 ## Bugs
 

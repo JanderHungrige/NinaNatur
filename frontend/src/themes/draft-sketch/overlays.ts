@@ -148,5 +148,14 @@ export interface Inner extends Painted {
   wave: Wave | null;
 }
 
+/** The corner where two ways meet, filled in the band's own wash: a street
+ *  arrives as one rectangle per way, and two of them at an angle leave a wedge
+ *  of paper on the outside of the bend (doc 98). */
+export interface Joins {
+  kind: 'joins';
+  fill: string;
+}
+
 export type Overlay = Shadow | Ink | Band | Overshoot | Ticks | Centre | Wash | RoofLines | Inner
+  | Joins
   | LineOverlay;

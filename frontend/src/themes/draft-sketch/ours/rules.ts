@@ -27,6 +27,14 @@ export const RAISED: readonly Overlay[] = [
   { kind: 'inner', ...INK, width: 0.06, inset: 0.18, wave: { amplitude: 0.03, period: 0.8, seed: 9 } },
 ];
 
+/** A street: nothing round the one way — its outline belongs to the network
+ *  (ours/Roads) — but the corner where it meets the next one, filled in its own
+ *  wash. Two rectangles at an angle leave a wedge of paper on the outside of
+ *  the bend, and at a sharp one a notch a metre wide. */
+export const STREET: readonly Overlay[] = [
+  { kind: 'joins', fill: 'url(#ds-grey)' },
+];
+
 /** A hedge is clipped: a mass with a shaded side, hatched along it. */
 export const HEDGE: readonly Overlay[] = [
   { kind: 'ticks', ...INK, width: 0.035, length: 0.35, spacing: 0.25, inset: 0.2, angle: 60,

@@ -274,6 +274,16 @@ from the `.stylx` alone — his source assets are not asked for.*
   smoke test passes in both windows. The only console line is the anonymous
   `accounts/me` 401 every page gets.
 
+- **2026-09-20 — the corner a road turns** (doc 98). The wedge left open at a
+  bend turned out to be a notch a metre wide at a sharp angle, once the sheet's
+  Musterblatt got a bend to show it. Each way now carries a disc of its own
+  width at each end of its centreline, in its own wash, beneath the band — and
+  the same disc goes into the network's outline, so the ink rounds the corner
+  the grey does. The discs are their own path in the mask: in one path with the
+  bands, a disc winding the other way cancels against its band and opens a hole
+  that lets the ink through inside the road, which is what the first attempt
+  drew. Paint 70 ms, Technisch 21 in the same run.
+
 ## What each one is
 
 ### 0. a-theme-is-a-thing

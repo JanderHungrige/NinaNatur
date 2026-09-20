@@ -21,6 +21,9 @@ function vocabulary(): GardenOut {
     // Two ways meeting, as the map sends them: one band over another (doc 98).
     lineElement(18, 'street', [-18, 13.5], [18, 13.5], 6),
     lineElement(19, 'street', [6, 13.5], [6, 21], 5),
+    // And a bend: two ways meeting end to end at an angle, which is where a
+    // road drawn as a row of rectangles shows a wedge of paper (doc 98).
+    lineElement(20, 'street', [-18, 13.5], [-24, 7], 6),
     house(2, [-9.5, 6.5], 9, 6),
     house(3, [0.5, 6.5], 8, 6, 'hip'),
     house(4, [9, 7], 5, 4, 'pent', { roof_fall_deg: 180, height: 5, eaves_m: 3 }),

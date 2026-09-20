@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 
+import { halfWidth } from '../../canvas/along';
 import { centreOf, inset, offset, overshoots, scaled, sweep, ticks } from '../../canvas/sketch';
 import type { Point } from '../../canvas/viewport';
 import type { DecoratedShape, Decoration } from '../types';
 import type {
-  Band, Centre, Inner, Ink, Overlay, Overshoot, RoofLines, Shadow, Ticks, Wave,
+  Band, Centre, Inner, Ink, Joins, Overlay, Overshoot, RoofLines, Shadow, Ticks, Wave,
 } from './overlays';
-import { mm, outline, ring, stroke, width } from './paths';
+import { disc, mm, outline, ring, stroke, width } from './paths';
 
 /*
  * His overlays drawn along one shape (docs 97, 98): from its own outline, in
@@ -60,6 +61,22 @@ function shadow(o: Shadow, shape: DecoratedShape, mpp: number, key: string): Rea
   return <path key={key} data-mark="shadow" className="canvas__shadow" pointerEvents="none"
                aria-hidden="true" d={outline(cast, wave, mpp)}
                fill={o.colour} fillOpacity={o.opacity} />;
+}
+
+/**
+ * The corner a road turns (doc 98). A way is a rectangle, so two of them meeting
+ * at an angle leave the outside of the bend open — a wedge at a shallow angle, a
+ * notch a metre wide at a sharp one. A disc of the band's own width at each end
+ * of its centreline is the round join the rectangles do not have, and it is
+ * drawn beneath the band, where it can fill a corner without covering anything.
+ */
+function joins(o: Joins, shape: DecoratedShape, key: string): ReactNode {
+  const line = shape.line;
+  if (line === null || line.length < 2) return null;
+  const radius = halfWidth(shape.points);
+  if (radius <= 0) return null;
+  const d = disc(line[0]!, radius) + disc(line[line.length - 1]!, radius);
+  return <path key={key} data-mark="joins" d={d} fill={o.fill} />;
 }
 
 function ink(o: Ink, points: Point[], mpp: number, key: string): ReactNode {
@@ -160,6 +177,7 @@ function drawn(o: Overlay, shape: DecoratedShape, mpp: number, key: string): Rea
   const points = shape.points;
   switch (o.kind) {
     case 'shadow': return shadow(o, shape, mpp, key);
+    case 'joins': return joins(o, shape, key);
     case 'ink': return ink(o, points, mpp, key);
     case 'band': return band(o, points, mpp, key);
     case 'overshoot': return overshoot(o, points, mpp, key);
@@ -180,7 +198,9 @@ export function drawOverlays(shape: DecoratedShape, overlays: readonly Overlay[]
   const over: ReactNode[] = [];
   overlays.forEach((o, i) => {
     const mark = drawn(o, shape, metresPerPixel, `${shape.key}-${i}`);
-    if (mark !== null) (o.kind === 'shadow' ? under : over).push(mark);
+    // A shadow and a road's corner go under the shape; everything else over it.
+    const beneath = o.kind === 'shadow' || o.kind === 'joins';
+    if (mark !== null) (beneath ? under : over).push(mark);
   });
   return { under, over };
 }

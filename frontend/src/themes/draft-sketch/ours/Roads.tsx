@@ -10,11 +10,12 @@
  */
 import { useMemo } from 'react';
 
+import { halfWidth } from '../../../canvas/along';
 import type { Point } from '../../../canvas/viewport';
 import type { PlanProps } from '../../types';
 import { OVERLAYS } from '../generated/rules';
 import type { Ink } from '../overlays';
-import { mm, outline, width } from '../paths';
+import { disc, mm, outline, width } from '../paths';
 
 const STREET = 'street';
 /** A way that ends on another way's edge puts the two boundaries on top of each
@@ -40,27 +41,41 @@ export function DraftSketchRoads({ shapes, metresPerPixel }: PlanProps) {
   // A street a hundred ways long is one path, drawn again only when the garden
   // or the scale changes — never on a drag frame.
   const network = useMemo(() => {
-    const roads = shapes.filter((s) => s.kind === STREET).map((s) => s.points);
+    const streets = shapes.filter((s) => s.kind === STREET);
+    const roads = streets.map((s) => s.points);
     if (roads.length === 0 || INK === undefined) return null;
+    // Where a way ends, the road turns: the same disc the band's wash is
+    // rounded with, so the line and the grey agree at every corner.
+    const corners = streets.flatMap((s) => {
+      const line = s.line;
+      if (line === null || line.length < 2) return [];
+      const radius = halfWidth(s.points);
+      return radius <= 0 ? [] : [disc(line[0]!, radius), disc(line[line.length - 1]!, radius)];
+    }).join('');
     // The same line for the mask and for the ink, so a wobble cannot poke out
     // past the band it belongs to.
     const grow = metresPerPixel * SEAM_PX;
     return { d: roads.map((points) => outline(points, INK.wave, metresPerPixel)).join(''),
-             box: bounds(roads, INK.width * 2 + grow * 2), grow };
+             corners, box: bounds(roads, INK.width * 2 + grow * 2), grow };
   }, [shapes, metresPerPixel]);
   if (network === null || INK === undefined) return null;
-  const { d, box, grow } = network;
+  const { d, corners, box, grow } = network;
   return (
     <g data-mark="roads">
-      {/* By luminance, not alpha: what is painted black here is what is cut away. */}
+      {/* By luminance, not alpha: what is painted black here is what is cut away.
+          The corners are a path of their own — in one path with the bands, a
+          disc that winds the other way cancels against the band it sits in and
+          punches a hole in the mask, which lets the ink through inside the
+          road. */}
       <mask id="ds-roads" maskUnits="userSpaceOnUse" {...box}>
         <rect {...box} fill="#ffffff" />
         <path d={d} fill="#000000" stroke="#000000" strokeWidth={mm(grow * 2)}
               strokeLinejoin="round" />
+        <path d={corners} fill="#000000" stroke="#000000" strokeWidth={mm(grow * 2)} />
       </mask>
       {/* Twice his width, and twice the grown mask's on top: everything inside
           the roads is masked away, and what is left outside is his line. */}
-      <path d={d} fill="none" stroke={INK.colour} strokeOpacity={INK.opacity}
+      <path d={d + corners} fill="none" stroke={INK.colour} strokeOpacity={INK.opacity}
             strokeWidth={width((INK.width + grow) * 2, (metresPerPixel + grow) * 2)}
             strokeLinejoin="round" mask="url(#ds-roads)" />
     </g>
