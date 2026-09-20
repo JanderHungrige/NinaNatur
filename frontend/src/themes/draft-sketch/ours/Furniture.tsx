@@ -53,7 +53,7 @@ function Bar({ metresPerPixel }: { metresPerPixel: number }) {
 export function DraftSketchFurniture({ metresPerPixel, title, updatedAt }: FurnitureProps) {
   const date = day(updatedAt);
   return (
-    <figure className="plan-furniture">
+    <figure className="plan-furniture plan-furniture--draft-sketch">
       <North />
       <Bar metresPerPixel={metresPerPixel} />
       <figcaption className="plan-furniture__title">

@@ -35,3 +35,18 @@ that does not (`tests/test_theme_provenance.py`):
 
 The generated files are derived from his file by `scripts/stylx_to_theme.py`
 and never edited by hand; `--check` proves they still are (doc 97).
+
+## Patrick Hand, by Patrick Wagesreiter
+
+The plan's own lettering — the title block, the scale bar's numbers, the north
+letter — is set in **Patrick Hand**, © 2010-2012 Patrick Wagesreiter, under the
+**SIL Open Font Licence 1.1**. The licence allows bundling and requires that it
+travel with the font, which it does: `frontend/src/assets/fonts/OFL.txt`.
+
+The file is `PatrickHand-Regular-latin.woff2` (14,224 bytes, the Latin-1
+subset, which is what German needs), served from this origin. Nothing is
+fetched from a font CDN: the content security policy is `font-src 'self'`
+(doc 101), and a plan lettered in a fallback would be a plan in two hands.
+
+Draft Sketch has no lettering of its own — 97 symbols and not one text symbol
+among them — so this hand is ours and not a copy of his.

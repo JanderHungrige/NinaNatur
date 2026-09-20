@@ -61,8 +61,23 @@ So the hand is ours to choose, and it is chosen for the plan, not for him.
 - **Upright rather than cursive.** A draughtsman letters upright; a sloping
   hand reads as a note stuck to the plan.
 
-Two candidates, both OFL: *Patrick Hand*, which is upright and plain, and
-*Caveat*, which is faster and more slanted. The owner picks.
+**Patrick Hand**, chosen by the owner on 2026-09-20 over *Caveat*, which is
+faster and more slanted. © 2010-2012 Patrick Wagesreiter, SIL Open Font Licence
+1.1, bundled as `frontend/src/assets/fonts/PatrickHand-Regular-latin.woff2` —
+14,224 bytes, the Latin-1 subset — with `OFL.txt` beside it and an entry in
+`THIRD_PARTY.md`.
+
+It letters the plan and what belongs to it: text inside the drawing, and the
+title block, which is HTML beside the SVG rather than in it (doc 98) and so
+carries the theme's own class, `plan-furniture--draft-sketch`. Everything else
+on the page is a control panel and keeps the interface's type. A name with a
+character outside Latin-1 falls back to that same type rather than to a box,
+which `unicode-range` is for.
+
+`tests/test_stylesheet.py` holds both halves of this: that the `src` is a local
+file that exists with its licence beside it — a CDN would simply not load under
+`font-src 'self'`, and a plan lettered in the fallback is a plan in two hands —
+and that exactly those two selectors use it.
 
 ## Contrast, measured
 
@@ -107,7 +122,9 @@ computed from user input.
 
 ## Known Issues
 
-- **Waiting on the owner:** which hand, and whether to bundle a third-party
-  font in the public repository at all.
+- **One weight, one style.** No bold and no italic: the title block's name is
+  bold today and gets the browser's synthetic weight. Looked at on the sheet
+  and left — a hand's synthetic bold is closer to a hand than a second file is
+  to a budget.
 
 ## Bugs
