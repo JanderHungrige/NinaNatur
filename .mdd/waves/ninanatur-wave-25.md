@@ -5,7 +5,7 @@ initiative: ninanatur
 initiative_version: 23
 status: in_progress
 depends_on: ninanatur-wave-21
-demo_state: "Ein Garten in München, Dresden, Wiesbaden oder Kiel bekommt sein Relief, seinen Horizont und die Nachbarhäuser mit gemessener Höhe und Dachform — und in Nordrhein-Westfalen kennt jeder Baum in der Nachbarschaft seinen Kronenansatz, aus der Punktwolke. Wer mehr will, vermisst seinen eigenen Garten mit dem Telefon. Jede Zahl sagt, woher sie kommt und wie fein sie ist."
+demo_state: "Ein Garten in München, Dresden, Wiesbaden oder Kiel bekommt sein Relief, seinen Horizont und die Nachbarhäuser mit gemessener Höhe und Dachform — und in Nordrhein-Westfalen kennt jeder Baum in der Nachbarschaft seinen Kronenansatz, aus der Punktwolke. Jede Zahl sagt, woher sie kommt und wie fein sie ist. (Das eigene Grundstück mit dem Telefon zu vermessen ist am 2026-09-20 in den Backlog gegangen, Feature 6.)"
 created: 2026-09-07
 hash: 75f01f33
 ---
@@ -17,8 +17,10 @@ hash: 75f01f33
 Ein Garten in München, Dresden, Wiesbaden oder Kiel bekommt sein Relief, seinen
 Horizont und die Nachbarhäuser mit gemessener Höhe und Dachform — und in
 Nordrhein-Westfalen kennt jeder Baum in der Nachbarschaft seinen Kronenansatz,
-aus der Punktwolke. Wer mehr will, vermisst seinen eigenen Garten mit dem
-Telefon. Jede Zahl sagt, woher sie kommt und wie fein sie ist.
+aus der Punktwolke. Jede Zahl sagt, woher sie kommt und wie fein sie ist.
+
+*Das eigene Grundstück mit dem Telefon zu vermessen* gehörte zu diesem
+Demo-State und ist am **2026-09-20 in den Backlog** gegangen (Feature 6, unten).
 
 *(This wave is not complete until this can be manually demonstrated.)*
 
@@ -115,7 +117,7 @@ confidence travel with every window, as they do with every trait value.
 | 3 | every-roof-in-the-country | 105 | BY, NW built | 1 |
 | 4 | the-cloud-under-the-crown | 107 | NRW built | 1, 3 |
 | 5 | the-trees-in-the-other-states | 108 | BY built | 1 |
-| 6 | measure-my-own-garden | — | planned | 4 |
+| 6 | measure-my-own-garden | — | **backlog** | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
 
 Three stages:
@@ -412,3 +414,11 @@ shown beside the numbers, as `height_source` already is.
   crown base, roof planes and the rest are Wave 26.
 - Any fee-based source, and any ODbL source in the shipped catalogue.
 - Server-side photogrammetry.
+- **The gardener's own measurement (feature 6), moved to the backlog on
+  2026-09-20.** What it would be is written up in `### 6. measure-my-own-garden`
+  below and in plan 04 § 6.4: a phone scan uploaded and rastered, georeferenced
+  by control points the gardener clicks on the plan. Two things make it a wave
+  of its own rather than the tail of this one — it parses a file a stranger
+  uploads, which is the sort of surface Wave 20's review exists to weigh, and
+  how somebody places a control point on a plan is a design question nobody has
+  answered yet. Everything it depends on (feature 4) is built and waiting.
