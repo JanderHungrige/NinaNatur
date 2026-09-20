@@ -84,6 +84,9 @@ export interface PlanTheme {
   /** The one filter over the shapes, as `url(#…)`, or null. Nothing else is
    *  filtered: a displaced hit target is a target somewhere it is not drawn. */
   objectsFilter: string | null;
+  /** What the plan is drawn on, as a fill — a paper texture under everything
+   *  (doc 99). Left out where the page's own background is the paper. */
+  paper?: string | undefined;
   /** How much detail to draw: the scale in metres per screen pixel, and — for
    *  a mark that belongs to one shape — how wide that shape is, in metres. A
    *  theme may give a house more than a shrub on the same plan (doc 99).

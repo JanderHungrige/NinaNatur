@@ -107,6 +107,22 @@ describe('the plan theme (doc 96)', () => {
     expect(drawn.some((fill) => fill.endsWith('-far)'))).toBe(true);
   });
 
+  it('draws the sheet the theme says it is on, under the grid (doc 99)', () => {
+    const { container } = scene(probe({ paper: 'url(#probe-paper)' }));
+    const paper = container.querySelector('rect.canvas__paper')!;
+    expect(paper.getAttribute('fill')).toBe('url(#probe-paper)');
+    // Under the grid, because the grid is drawn on the paper — and under the
+    // shapes, which stand on it.
+    const grid = container.querySelector('rect[fill="url(#grid)"]')!;
+    expect(paper.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(paper.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('and draws no sheet at all for a theme that is drawn on the page itself', () => {
+    expect(scene(probe()).container.querySelector('rect.canvas__paper')).toBeNull();
+    expect(scene(technisch).container.querySelector('rect.canvas__paper')).toBeNull();
+  });
+
   it('is found by its id, and an id nobody knows is Technisch', () => {
     expect(themeById('technisch')).toBe(technisch);
     expect(themeById('verschollen')).toBe(technisch);

@@ -157,15 +157,22 @@ Everything else in this style is geometry (doc 97). These two cannot be:
   with the theme's paper colour — his paper, not a turbulence of our own,
   because his exists (doc 97's rule). The converter emits it as one more
   pattern, so it stays generated.
-- **The bleed.** One filter on the objects group, the seam's `objectsFilter`,
-  which Technisch has used since Wave 1: turbulence displacing the washes by a
-  fraction of a metre so an edge looks soaked rather than cut. The ink layer is
-  not in that group, so the line stays crisp over a soft wash — which is how
-  watercolour under pen actually looks.
+- **The bleed — tried, measured, dropped.** One filter on the objects group,
+  the seam's `objectsFilter`, as Technisch has had since Wave 1: turbulence
+  displacing the washes so an edge looks soaked rather than cut. At a
+  believable strength (a tenth of a metre) it is invisible at the sizes the
+  plan is used at; at a visible strength it warps his *textures* — the paving's
+  grid goes drunk — because his washes are photographs of paper and a
+  displacement map moves the grain with the edge. Either way it costs 8 to
+  13 ms of a 69 ms frame. Technisch's own wobble filter works because its
+  washes are flat colour with nothing in them to distort.
 
-Both are switched off under `prefers-contrast: more` and `forced-colors`, as
-the existing filter already is (doc 96), and both are measured on the sheet
-before they stay: a filter over the whole group is a raster pass per frame.
+  What a soaked edge would need is the edge alone, which in this style is
+  already his: the outlines are wobbled as geometry (doc 97). So the style
+  keeps no filter, and the seam's `objectsFilter` stays null for it.
+
+The paper is switched off with everything else under `prefers-contrast: more`
+and `forced-colors`, as the existing filter is (doc 96).
 
 ## Business Rules
 

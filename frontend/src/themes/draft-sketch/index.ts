@@ -101,7 +101,10 @@ export const draftSketch: PlanTheme = {
   fill: (symbol, lod, kind) => `url(#${symbolOf(symbol, lod, kind)})`,
   // Beds are painted by the stylesheet, as in Technisch: theme.css hands it his wash.
   bedFill: () => undefined,
+  // No filter: the bleed was tried and dropped (doc 99).
   objectsFilter: null,
+  // His paper, on its own, under the whole drawing: the sheet it is drawn on.
+  paper: 'url(#ds-paper)',
   lodAt: (metresPerPixel, acrossM) => {
     if (acrossM === undefined) {
       return metresPerPixel < NEAR_UNTIL ? 'near' : metresPerPixel < MID_UNTIL ? 'mid' : 'far';

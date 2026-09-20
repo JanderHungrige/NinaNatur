@@ -24,7 +24,7 @@ from scripts.draft_sketch import cim, emit
 from scripts.draft_sketch.layers import layers_of
 from scripts.draft_sketch.lines import line_overlays_of
 from scripts.draft_sketch.outline import Overlay, overlays_of
-from scripts.draft_sketch.tiles import Images, pattern_of
+from scripts.draft_sketch.tiles import Images, paper_of, pattern_of
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets" / "draft-sketch" / "source.json"
@@ -53,6 +53,11 @@ CHOSEN: dict[str, str] = {
     "dashed": "Dashed Outline",
 }
 #: His line symbols, laid along a fence's or a wall's line (doc 98).
+#: The sheet a plan is drawn on (doc 99): the paper under this wash of his, on
+#: its own. Any of them would do — it is one texture — and this one carries the
+#: lightest tint he gives it, which is what a page wants.
+PAPER_FROM = "grey"
+
 LINES: dict[str, str] = {
     "wood-fence": "Wood Fence",
     "brick-wall": "Brick Wall",
@@ -109,6 +114,9 @@ def generate(stylx: Path, out: Path) -> None:
         overlays[symbol_id], washes, marks = overlays_of(symbol_id, layers, images)
         ramps += washes
         masks |= marks
+    paper = paper_of("ds-paper", layers_of(symbols[CHOSEN[PAPER_FROM]]), images)
+    if paper is not None:
+        patterns.append(paper)
     lines = cim.read_symbols(stylx, LINES.values(), symbol_class=4)
     for name, title in LINES.items():
         overlays[f"ds-{name}"], marks = line_overlays_of(f"ds-{name}", layers_of(lines[title]),

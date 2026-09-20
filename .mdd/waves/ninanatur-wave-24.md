@@ -205,6 +205,27 @@ from the `.stylx` alone — his source assets are not asked for.*
   paper where two ways meet at a bend is left, and named in doc 98: it is the
   bands' own fill, which Technisch is missing too.
 
+- **2026-09-20 — feature 4, paper, bleed and a real shadow** (doc 99). Three
+  things, each decided by a measurement rather than by taste. **Levels of
+  detail** are now asked per shape, in pixels across — 48 for his richest, 14
+  for the middle one — because the plan-wide answer has to take the detail off
+  the houses (89 pixels at 40 m) to save what the shrubs cost (13): the city
+  goes from 401 marks and 85 ms to 286 and 73. **The shadow** is the one the
+  sun casts: `solar/drawing` fixes the moment at mid-June, three hours after
+  solar noon at the garden's own longitude, and every obstacle carries the
+  offset its shadow has then, from the same `shading_height` the light model
+  uses; the drawing sweeps the outline rather than moving it, and does not
+  wobble it, which took the frame to 69 ms — cheaper than the style's pretend
+  shadows. **The paper** is his own texture in his own lightest tint, emitted
+  by the converter as a pattern of its own and drawn under the whole plan; how
+  much of it shows is ours. **The bleed was tried and dropped**: believable, it
+  is invisible; visible, it warps his textures, because his washes are
+  photographs of paper and a displacement map moves the grain with the edge.
+  Either way it cost 8–13 ms of the frame. Technisch's 24 cells as recorded.
+  The budget rule is still not met — Technisch measures 21 ms today, so twice
+  it is 42 against the plan's 69 — and doc 99 says so rather than tuning it
+  away.
+
 ## What each one is
 
 ### 0. a-theme-is-a-thing

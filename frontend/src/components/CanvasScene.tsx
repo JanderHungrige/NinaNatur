@@ -114,6 +114,13 @@ export function CanvasScene({
             <path d={`M ${spacing} 0 L 0 0 0 ${spacing}`} className="grid-line" />
           </pattern>
         </defs>
+        {/* The sheet the plan is drawn on, where the theme brings one: under
+            the grid, because the grid is drawn on the paper (doc 99). */}
+        {theme.paper !== undefined && (
+          <rect className="canvas__paper" aria-hidden="true"
+                x={view.centreX - view.spanM} y={-view.centreY - view.spanM}
+                width={view.spanM * 2} height={view.spanM * 2} fill={theme.paper} />
+        )}
         <rect
           x={view.centreX - view.spanM}
           y={-view.centreY - view.spanM}

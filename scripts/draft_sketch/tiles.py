@@ -217,6 +217,19 @@ def _base(layers: list[Layer]) -> Colour | None:
     return inward[0][1] if inward and inward[0] is not None else None
 
 
+def paper_of(pattern_id: str, layers: list[Layer], images: Images) -> Pattern | None:
+    """His paper on its own, without the wash it carries — the sheet a plan is
+    drawn on (doc 99). The tile is the texture's own size, so it repeats the way
+    it does under every wash he paints, and the tint is the one his file gives
+    it: nothing here is a colour of ours."""
+    papers = [layer for layer in layers if layer.kind == "paper"]
+    if not papers:
+        return None
+    width, height = _paper_size(papers[0], images)
+    return Pattern(pattern_id, width * POINT_M, height * POINT_M, None, 1.0,
+                   tuple(_paper(papers[0], images)))
+
+
 def pattern_of(pattern_id: str, layers: list[Layer], images: Images) -> Pattern | None:
     """The symbol's fill as one tile, or None if it fills nothing."""
     base = _base(layers)
@@ -238,4 +251,4 @@ def pattern_of(pattern_id: str, layers: list[Layer], images: Images) -> Pattern 
                    tuple(pieces))
 
 
-__all__ = ["POINT_M", "REFERENCE_SCALE", "Images", "pattern_of", "tile_of"]
+__all__ = ["POINT_M", "REFERENCE_SCALE", "Images", "paper_of", "pattern_of", "tile_of"]
