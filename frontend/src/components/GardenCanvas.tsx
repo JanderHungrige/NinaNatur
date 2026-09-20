@@ -33,6 +33,7 @@ import type { GardenCanvasProps } from './GardenCanvasProps';
  */
 export function GardenCanvas({
   garden,
+  hint,
   selectedBedId,
   onSelectBed,
   size,
@@ -288,6 +289,7 @@ export function GardenCanvas({
       </svg>
       <PlanFurniture metresPerPixel={view.spanM / view.widthPx} title={garden.name}
                      updatedAt={garden.updated_at} />
+      {hint !== undefined && <p className="plan-hint" aria-live="polite">{hint}</p>}
       </div>
       <PlanCredit />
     </div>

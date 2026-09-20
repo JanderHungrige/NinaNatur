@@ -55,12 +55,10 @@ export function PlanArea({ garden, controller }: Props) {
         onResizeObstacle={geometry.resizeObstacle}
         onMoveObstacle={geometry.moveObstacle}
         onReshapeObstacle={geometry.reshapeObstacle}
+        // The hints the drawing panel used to carry, over the plan they are
+        // about — inside the drawing, above any caption under it.
+        hint={hintFor(elements.tool)}
       />
-
-      {/* The hints the drawing panel used to carry, over the plan they are about. */}
-      <p className="plan-hint" aria-live="polite">
-        {hintFor(elements.tool)}
-      </p>
     </div>
   );
 }

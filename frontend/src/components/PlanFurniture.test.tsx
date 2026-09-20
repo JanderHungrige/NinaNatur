@@ -6,6 +6,7 @@ import { PlanThemeProvider } from '../themes/context';
 import { draftSketch } from '../themes/draft-sketch';
 import { technisch } from '../themes/technisch';
 import type { PlanTheme } from '../themes/types';
+import { GardenCanvas } from './GardenCanvas';
 import { PlanCredit } from './PlanCredit';
 import { PlanFurniture } from './PlanFurniture';
 
@@ -45,5 +46,39 @@ describe('the plan\'s furniture', () => {
     const plain = corner(technisch).container;
     expect(plain.querySelector('.plan-furniture')).toBeNull();
     expect(plain.textContent).toBe('');
+  });
+});
+
+describe('the two captions the plan carries', () => {
+  const garden = {
+    unidentified_plantings: 0, soil_type: null, moisture: null, observed_colours: {},
+    share_token: 'tok', name: 'Musterblatt', latitude: 52.5, longitude: 13.4,
+    created_at: '', updated_at: '2026-09-18T10:00:00+00:00', beds: [], obstacles: [],
+  };
+
+  it('hangs the tool hint inside the drawing and his credit on a line under it', () => {
+    const { container } = render(
+      <PlanThemeProvider theme={draftSketch}>
+        <GardenCanvas garden={garden} selectedBedId={null} onSelectBed={() => {}}
+                      hint="Wähle eine Form" />
+      </PlanThemeProvider>,
+    );
+    const stage = container.querySelector('.canvas-stage')!;
+    // The hint floats in the drawing's own box, so the caption beneath the
+    // drawing keeps its line: the two used to be drawn over each other.
+    expect(stage.querySelector('.plan-hint')?.textContent).toBe('Wähle eine Form');
+    const credit = container.querySelector('.plan-credit')!;
+    expect(stage.contains(credit)).toBe(false);
+    expect(stage.compareDocumentPosition(credit) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
+  });
+
+  it('and draws no hint at all where none was given', () => {
+    const { container } = render(
+      <PlanThemeProvider theme={draftSketch}>
+        <GardenCanvas garden={garden} selectedBedId={null} onSelectBed={() => {}} />
+      </PlanThemeProvider>,
+    );
+    expect(container.querySelector('.plan-hint')).toBeNull();
   });
 });
