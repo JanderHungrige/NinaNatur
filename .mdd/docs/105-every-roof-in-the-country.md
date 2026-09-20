@@ -9,6 +9,7 @@ depends_on: [102-which-tiles-and-whose, 40-lod2-roofs]
 relates: [103-a-tile-not-a-service, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs]
 source_files:
   - ninanatur/garden/building_sync.py
+  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/lod2.py
   - ninanatur/geo/tile_sources.py
 routes: []
@@ -89,11 +90,26 @@ the document is streamed, parsed and dropped (doc 103's rule for CityGML).
 
 ## Which states are in
 
-Bayern and Nordrhein-Westfalen, both verified by request. The rest join as
-their portals are probed — Baden-Württemberg closes the gap its 5 m surface
-model leaves for buildings, and Rheinland-Pfalz, Sachsen, Thüringen and
-Schleswig-Holstein all publish CityGML through an index rather than a
-computable name (doc 102), which is the same index work feature 1 needs.
+**Eight, as of 2026-09-20** — Bayern and Nordrhein-Westfalen, then
+Niedersachsen, Thüringen, Sachsen, Brandenburg, Berlin, Mecklenburg-Vorpommern
+and Baden-Württemberg. Every one by request, and every one read by the same
+reader: doc 105's finding held for all of them, so feature 3 never did become
+a dozen parsers.
+
+Two things had to be true and were. **Niedersachsen's LoD2 turned out to be
+computable** — it moved to a flat, dateless layout, and the portal's own
+GeoJSON index still points at the old dated paths, which now 404. And the other
+six **arrive zipped**, which doc 103 now unwraps; the CityGML inside is
+unchanged, except that Berlin calls it `.xml`.
+
+**Baden-Württemberg needed two small things of its own.** Its two-kilometre
+archive holds four one-kilometre tiles, so all four are read — a quarter of a
+neighbourhood is not a neighbourhood — and its grid starts on an **odd**
+easting, so flooring to even numbers asks for a tile that does not exist.
+
+Rheinland-Pfalz's LoD2 is verified and waiting on its ground (doc 102), and
+Schleswig-Holstein's is computable and waiting for the same reason. Hessen,
+Sachsen-Anhalt, Hamburg, Bremen and Saarland publish no addressable tile.
 
 The federal LoD2-DE would have replaced all of them and does not: it is
 restricted to federal authorities (doc 102).

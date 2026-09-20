@@ -60,7 +60,8 @@ class TileSource:
     product: TileProduct
     #: How wide one tile is, in kilometres.
     tile_km: int
-    #: GeoTIFF, CityGML, LAZ, zip — what arrives, for whoever opens it.
+    #: GeoTIFF, CityGML or LAZ — what the tile *is*, which is not always what
+    #: arrives: see `zipped`.
     fmt: str
     licence: str
     attribution: str
@@ -69,6 +70,22 @@ class TileSource:
     epsg: int
     _url: Callable[[int, int], str]
     _name: Callable[[int, int], str]
+    #: Where a coarse grid starts, in kilometres. Almost every two-kilometre
+    #: scheme lands on even numbers, and Baden-Württemberg's lands on an **odd**
+    #: easting — `513_5404` is a tile and `514_5404` is a 404. Floor to the
+    #: wrong parity and every request is for a tile that does not exist.
+    corner_origin: tuple[int, int] = (0, 0)
+    #: Whether the product already holds metres **above the ground** rather
+    #: than above the sea. Almost every surface model is absolute and has its
+    #: terrain taken off (doc 108); Baden-Württemberg's `nDOM1` is a canopy
+    #: height model and is not. Subtracting the ground from it a second time
+    #: would put every tree three hundred metres underground.
+    normalised: bool = False
+    #: Whether the tile arrives inside a zip. Six states wrap theirs, with the
+    #: licence, a world file or the same heights again as text beside it — and
+    #: Baden-Württemberg puts four tiles of its own grid in one archive. The
+    #: grid is unchanged either way, so this is a wrapper, not a tier (doc 103).
+    zipped: bool = False
     #: A raster's own cell, in metres: 1 m for a DGM1, 0.2 for Bayern's DOM20.
     cell_m: float | None = None
     #: A raster's height step, where it has one.
@@ -91,8 +108,9 @@ class TileSource:
     def corner_of(self, easting_m: float, northing_m: float) -> tuple[int, int]:
         """The tile that covers this point, as its south-west corner in km."""
         step = self.tile_km
-        return (int(math.floor(easting_m / 1000 / step) * step),
-                int(math.floor(northing_m / 1000 / step) * step))
+        origin_e, origin_n = self.corner_origin
+        return (int(math.floor((easting_m / 1000 - origin_e) / step) * step + origin_e),
+                int(math.floor((northing_m / 1000 - origin_n) / step) * step + origin_n))
 
 
 def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:

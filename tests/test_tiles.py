@@ -5,18 +5,20 @@ can say which square kilometre a height came from.
 """
 from __future__ import annotations
 
+import io
 import struct
+import zipfile
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.terrain import WINDOW_M
+from ninanatur.geo.terrain import WINDOW_M, TerrainWindow
 from ninanatur.geo.tile_cache import TileCache
 from ninanatur.geo.tile_sources import TileProduct, sources_for
-from ninanatur.geo.tiles import tile_window, tiles_across
-from ninanatur.geo.utm import to_utm
+from ninanatur.geo.tiles import corner_in, surface_window, tile_window, tiles_across
+from ninanatur.geo.utm import to_latlon, to_utm
 
 BAYERN = next(s for s in sources_for("BY") if s.product is TileProduct.DGM1)
 #: A garden in Munich, in the middle of its square kilometre.
@@ -156,3 +158,124 @@ def test_surface_tiles_without_the_ground_are_no_answer(tmp_path: Path) -> None:
     from ninanatur.garden.building_sync import _surface_from_tiles
 
     assert _surface_from_tiles(MUNICH, "Bayern", None) is None
+
+
+# --- Tiles that arrive in an archive (doc 103, the zipping states) ---
+
+THURINGIA = next(s for s in sources_for("TH") if s.product is TileProduct.DGM1)
+BADEN = next(s for s in sources_for("BW") if s.product is TileProduct.DOM)
+
+
+def _archived(url: str, *, members: int = 1) -> bytes:
+    """What Thüringen and Baden-Württemberg actually serve: the tile beside the
+    same heights as text, a licence and a metadata file — and, in Baden-
+    Württemberg, four one-kilometre tiles in one two-kilometre archive."""
+    stem = url.rsplit("/", 1)[-1].removesuffix(".zip")
+    east, north = corner_in(stem, (0, 0))
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(f"{stem}/Datenlizenz_Deutschland.pdf", b"%PDF-1.4 not a tile")
+        if members == 1:
+            archive.writestr(f"{stem}.tif", _flat(east, north))
+            archive.writestr(f"{stem}.xyz", b"561000.50 5609000.50 214.77\n")
+            archive.writestr(f"{stem}.meta", b"Genauigkeit Hoehe: 0.15-0.30m")
+        else:
+            for down in (0, 1):
+                for across in (0, 1):
+                    part = f"{stem}/ndom1_32_{east + across}_{north + down}_1_bw"
+                    archive.writestr(f"{part}.tif", _flat(east + across, north + down))
+                    archive.writestr(f"{part}.csv", b"Kachel;Stand\n")
+    return out.getvalue()
+
+
+def _flat(east: int, north: int) -> bytes:
+    """A tile whose every height says which tile it is."""
+    return _tiff(np.full((1000, 1000), float(east % 100 * 100 + north % 100), dtype="<f4"))
+
+
+def test_a_zipped_tile_is_read_through_its_wrapper(tmp_path: Path) -> None:
+    """Thüringen wraps its GeoTIFF with the same heights again as a 29 MB .xyz
+    and a .meta. The grid is unchanged, so the window is the same window — and
+    the text copy is never the thing that is read."""
+    erfurt = LatLon(lat=50.978, lon=11.029)
+    window = tile_window(erfurt, THURINGIA, cache=_cache(tmp_path), fetch=_archived)
+    assert window is not None
+    assert window.source == "TH"
+    assert np.isfinite(window.heights).all()
+    east, north = to_utm(erfurt.lat, erfurt.lon, 32)
+    marks = {float(e % 100 * 100 + n % 100)
+             for e, n in tiles_across(east, north, THURINGIA, WINDOW_M)}
+    assert set(window.heights) <= marks
+
+
+def test_the_archive_is_what_is_cached_not_what_is_in_it(tmp_path: Path) -> None:
+    """The cache holds what arrived, so a second garden on the same street
+    fetches nothing — and the wrapper is taken off on the way out each time."""
+    cache = _cache(tmp_path)
+    asked: list[str] = []
+
+    def once(url: str) -> bytes:
+        asked.append(url)
+        return _archived(url)
+
+    erfurt = LatLon(lat=50.978, lon=11.029)
+    assert tile_window(erfurt, THURINGIA, cache=cache, fetch=once) is not None
+    first = len(asked)
+    assert tile_window(erfurt, THURINGIA, cache=cache, fetch=once) is not None
+    assert len(asked) == first
+    assert list(tmp_path.rglob("*.zip"))
+
+
+def test_four_tiles_in_one_archive_land_where_their_own_names_say(
+        tmp_path: Path) -> None:
+    """Baden-Württemberg's two-kilometre archive holds four one-kilometre
+    tiles. Pasted at the archive's corner they would be stacked on top of each
+    other; each one goes where its own name puts it."""
+    east, north = 514_000.0, 5_405_000.0  # the point where all four meet
+    lat, lon = to_latlon(east, north, 32)
+    window = tile_window(LatLon(lat=lat, lon=lon), BADEN, cache=_cache(tmp_path),
+                         fetch=lambda url: _archived(url, members=4))
+    assert window is not None
+    assert np.isfinite(window.heights).all(), "a stacked paste leaves three quarters empty"
+    last = window.rows - 1
+    corners = [window.heights[0], window.heights[window.cols - 1],
+               window.heights[last * window.cols],
+               window.heights[last * window.cols + window.cols - 1]]
+    # South-west, south-east, north-west, north-east, each its own tile's mark.
+    assert corners == [1304.0, 1404.0, 1305.0, 1405.0], corners
+
+
+def test_the_grid_a_member_name_carries_is_read_back() -> None:
+    """Every real member name from the states that zip, read on 2026-09-20."""
+    assert corner_in("dgm1_32_561_5609_1_th_2020-2025.tif", (0, 0)) == (561, 5609)
+    assert corner_in("dgm1_33278_5590_2_sn.tif", (0, 0)) == (278, 5590)
+    assert corner_in("dgm_33250-5888.tif", (0, 0)) == (250, 5888)
+    assert corner_in("ndom1_32_513_5405_1_bw.tif", (0, 0)) == (513, 5405)
+    # The folder Baden-Württemberg wraps them in is named after the *archive*,
+    # and reading that instead would stack all four on one corner.
+    assert corner_in("ndom1_32_513_5404_2_bw/ndom1_32_514_5405_1_bw.tif",
+                     (0, 0)) == (514, 5405)
+    assert corner_in("LoD2_33_372_5808_1_BE.xml", (0, 0)) == (372, 5808)
+    # Nothing to read is the archive's own corner, which is every other state.
+    assert corner_in("Datenlizenz_Deutschland.pdf", (690, 5334)) == (690, 5334)
+
+
+def test_a_canopy_height_model_does_not_have_the_ground_taken_off_twice(
+        tmp_path: Path) -> None:
+    """Baden-Württemberg's nDOM1 is already metres above the ground. Every
+    other surface product is metres above the sea, and subtracting a garden's
+    terrain from a height that is already relative buries the trees."""
+    ground = TerrainWindow(min_x=-200.0, min_y=-200.0, cell_m=1.0, cols=400, rows=400,
+                           heights=[300.0] * (400 * 400), source="BW",
+                           licence="dl-de/by-2-0", attribution="LGL", vertical_step_m=0.01)
+    lat, lon = to_latlon(514_000.0, 5_405_000.0, 32)
+    window = surface_window(LatLon(lat=lat, lon=lon), BADEN, ground,
+                            cache=_cache(tmp_path),
+                            fetch=lambda url: _archived(url, members=4))
+    assert window is not None
+    # The tile markers are tens of metres; had the 300 m ground been taken off
+    # a second time, every one of them would be zero after the clamp.
+    assert np.isfinite(window.heights).all()
+    assert set(window.heights) == {
+        float(e % 100 * 100 + n % 100)
+        for e, n in ((513, 5404), (513, 5405), (514, 5404), (514, 5405))}

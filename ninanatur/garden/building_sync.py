@@ -32,7 +32,8 @@ from ninanatur.geo.surface_sources import by_state, measures_buildings
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.geo.tile_cache import cache_at
 from ninanatur.geo.tile_sources import TileProduct, lod2_tiles_for, sources_for
-from ninanatur.geo.tiles import surface_window
+from ninanatur.geo.tile_zip import unpack
+from ninanatur.geo.tiles import INSIDE, surface_window
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
@@ -114,8 +115,13 @@ def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:
     east, north = to_utm(anchor.lat, anchor.lon, zone)
     tile_e, tile_n = source.corner_of(east, north)
     try:
-        document = get_bytes(source.url_for(tile_e, tile_n), max_bytes=MAX_TILE_BYTES)
-        return in_garden_frame(buildings_from(document), anchor, zone)
+        arrived = get_bytes(source.url_for(tile_e, tile_n), max_bytes=MAX_TILE_BYTES)
+        # Six states wrap the tile, and Baden-Württemberg puts four of its own
+        # kilometre tiles in one archive — all four are this garden's
+        # neighbourhood, so all four are read (doc 103).
+        documents = unpack(arrived, want=INSIDE[source.fmt]) if source.zipped else [arrived]
+        surveyed = [found for document in documents for found in buildings_from(document)]
+        return in_garden_frame(surveyed, anchor, zone)
     except Exception:
         log.warning("LoD2 tile failed for %s", state, exc_info=True)
         return None

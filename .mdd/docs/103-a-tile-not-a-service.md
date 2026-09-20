@@ -10,19 +10,22 @@ relates: [17-terrain-window, 07-solar-geometry]
 source_files:
   - ninanatur/geo/tile_cache.py
   - ninanatur/geo/tiles.py
+  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/terrain.py
   - ninanatur/geo/tile_sources.py
+  - ninanatur/geo/tile_grid.py
 routes: []
 models: []
 test_files:
   - tests/test_tile_cache.py
   - tests/test_tiles.py
+  - tests/test_tile_zip.py
 data_flow: mixed
 last_synced: 2026-09-20
 status: complete
 phase: all
 mdd_version: 11
-tags: [tiles, terrain, cache, volume, dgm1, mosaic, provenance]
+tags: [tiles, terrain, cache, volume, dgm1, mosaic, provenance, zip, thueringen, sachsen, baden-wuerttemberg]
 path: Geo/Tile fetch
 integration_contracts: []
 satisfies_contracts: []
@@ -83,6 +86,38 @@ the database.
   parsing rather than cached (doc 104 will say so), because 161 MB per square
   kilometre is not a cache, it is a disk.
 
+## The wrapper is not a tier
+
+Six states wrap each tile in a zip, and that — not any index — was what kept
+them out. The grid is unchanged: the name the registry computes is the
+*archive's* name, so `tile_zip.unpack` takes the wrapper off and everything
+downstream is as it was.
+
+What is inside was read rather than assumed, on **2026-09-20**:
+
+| State | Beside the tile |
+|---|---|
+| Thüringen | the same heights again as a 29 MB `.xyz`, and a `.meta` |
+| Sachsen | a world file, a GDAL sidecar, a currency CSV |
+| Brandenburg | an HTML metadata page |
+| Berlin | nothing — but CityGML is `.xml`, where everyone else writes `.gml` |
+| Baden-Württemberg | the licence as a PDF, and **three more tiles** |
+
+So members are chosen by extension, and a member's **declared** size is checked
+before a byte of it is decompressed — the same order as the TIFF reader's
+header check. Thüringen's 29 MB text copy of the heights is never allocated,
+because it is never wanted.
+
+**Baden-Württemberg is why members carry their names.** Its two-kilometre
+archive holds four one-kilometre tiles, and pasted at the archive's corner all
+four would land on top of each other. Each goes where its own name says, which
+`corner_in` reads back with the same arithmetic `tile_of` uses.
+
+**And its grid starts on an odd easting.** `513_5404` is a tile and
+`514_5404` is a 404, so a scheme that floors to even numbers asks for a tile
+that does not exist, every time. `corner_origin` is that parity, and it is the
+only state that needs one.
+
 ## Politeness
 
 These are state surveying offices publishing at their own cost, not an API with
@@ -135,12 +170,32 @@ tiles the window touches, `tile_cache` keeps them on the volume, and
 service*. A Munich garden now has ground, and its page says CC-BY-4.0 and the
 Bayerische Vermessungsverwaltung.
 
-The other seven DGM1 states hand their tiles out through an index or an Atom
-feed rather than a computable URL (doc 102), so each needs its index fetched
-and read before it can join the registry. Sachsen also arrives zipped. That is
-the rest of this feature, state by state, and each one is a registry entry plus
-an offline fixture in the tests.
+**Thüringen and Sachsen are built**, and with them the tier stops being about
+Bayern. Both were thought to need an index and neither does: their names are
+the grid, exactly, and the zip was the whole obstacle. A garden in Erfurt or
+Dresden now has ground, the surface model over it, and the roofs of the houses
+next door.
+
+Four more states joined by the same code, for the products their coverage
+services never carried: **Brandenburg**, **Berlin** and **Mecklenburg-
+Vorpommern** get surveyed roofs, and **Baden-Württemberg** gets both roofs and
+`nDOM1` — a 1 m canopy height model, already normalised to the ground, which
+closes the gap its 5 m surface service left for finding trees.
+
+What is left of this feature is two states and one technique:
+**Rheinland-Pfalz** and **Schleswig-Holstein**, whose raster names carry a
+per-tile flight year and which therefore really do need their index fetched,
+cached and parsed; and the **range read into a remote archive** that Hamburg,
+Bremen and Saarland would need, none of which publishes a tile at all.
 
 ## Known Issues
+
+- **A zipped point cloud is not read yet.** Thüringen, Sachsen and Brandenburg
+  wrap their LAZ, and `cloud_sync` streams from a file on the volume rather
+  than from bytes (doc 107), so the member has to be written out beside the
+  archive first. The rasters and the buildings are unwrapped; the cloud is not.
+- Baden-Württemberg's `nDOM1` is already above the ground, so the subtraction
+  the other surface tiles need is a no-op there and is applied anyway. It is
+  harmless only because its ground window is the same ground.
 
 ## Bugs

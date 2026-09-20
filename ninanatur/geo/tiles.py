@@ -18,6 +18,7 @@ without a source has always answered.
 from __future__ import annotations
 
 import logging
+import re
 
 import numpy as np
 
@@ -27,6 +28,7 @@ from ninanatur.geo.terrain import FETCH_M, TerrainWindow, resample
 from ninanatur.geo.tiff import WHOLE_TILE_PIXELS, Raster, TiffError, read_raster
 from ninanatur.geo.tile_cache import Fetch, TileCache
 from ninanatur.geo.tile_sources import TileSource
+from ninanatur.geo.tile_zip import ArchiveError, named
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
@@ -47,11 +49,51 @@ def tiles_across(east: float, north: float, source: TileSource,
             for n in range(first_n, last_n + 1, step)]
 
 
+#: What the wanted member of an archive is called, per format. CityGML is
+#: `.gml` in most states and `.xml` in Berlin and Schleswig-Holstein.
+INSIDE: dict[str, tuple[str, ...]] = {
+    "GeoTIFF": (".tif", ".tiff"),
+    "CityGML": (".gml", ".xml"),
+    "LAZ": (".laz", ".las"),
+}
+
+
 def _cache_key(source: TileSource, east_km: int, north_km: int) -> str:
     """Where this tile lives on the volume: what it is, never who asked."""
     suffix = {"GeoTIFF": "tif", "CityGML": "gml", "LAZ": "laz"}.get(source.fmt, "bin")
     return (f"{source.state.lower()}/{source.product.value}/"
-            f"{source.tile_name(east_km, north_km)}.{suffix}")
+            f"{source.tile_name(east_km, north_km)}.{'zip' if source.zipped else suffix}")
+
+
+def corner_in(name: str, fallback: tuple[int, int]) -> tuple[int, int]:
+    """The grid corner a member's own name carries, or the archive's own.
+
+    Only Baden-Württemberg needs this — four one-kilometre tiles in one
+    two-kilometre archive, each named for where it is. Everywhere else the one
+    member covers the tile it arrived as, and the fallback is the answer.
+    """
+    # The member's own name, never the folder around it: Baden-Württemberg
+    # names that folder after the *archive*, so reading the whole path puts all
+    # four tiles on the archive's corner, stacked on top of one another.
+    numbers = [int(part) for part in re.findall(r"\d+", name.rsplit("/", 1)[-1])]
+    for first, second in zip(numbers, numbers[1:], strict=False):
+        # An easting is three digits of kilometres, sometimes with the zone
+        # written onto the front of it (Sachsen, Brandenburg); a German
+        # northing is four, between about 5 200 and 6 100.
+        east = next((first - zone for zone in (0, 32_000, 33_000)
+                     if 200 <= first - zone <= 999), None)
+        if east is not None and 5_000 <= second <= 6_200:
+            return east, second
+    return fallback
+
+
+def _parts(source: TileSource, data: bytes,
+           corner: tuple[int, int]) -> list[tuple[tuple[int, int], Raster]]:
+    """The rasters in what arrived, each with the corner it belongs at."""
+    if not source.zipped:
+        return [(corner, read_raster(data, max_pixels=WHOLE_TILE_PIXELS))]
+    return [(corner_in(name, corner), read_raster(body, max_pixels=WHOLE_TILE_PIXELS))
+            for name, body in named(data, want=INSIDE[source.fmt])]
 
 
 def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
@@ -62,10 +104,10 @@ def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCach
     for east_km, north_km in corners:
         url = source.url_for(east_km, north_km)
         try:
-            got[(east_km, north_km)] = read_raster(
-                cache.get(_cache_key(source, east_km, north_km), url, fetch),
-                max_pixels=WHOLE_TILE_PIXELS)
-        except (OSError, ValueError, TiffError) as trouble:
+            got.update(_parts(source,
+                              cache.get(_cache_key(source, east_km, north_km), url, fetch),
+                              (east_km, north_km)))
+        except (OSError, ValueError, TiffError, ArchiveError) as trouble:
             log.warning("a tile did not arrive; that ground stays unknown",
                         extra={"source": source.name, "tile": f"{east_km}_{north_km}",
                                "why": type(trouble).__name__})
@@ -138,9 +180,13 @@ def surface_window(anchor: LatLon, source: TileSource, ground: TerrainWindow, *,
                                          reach_m=FETCH_M)
     min_xy, side, values = resample(raster, anchor, cell, east, north, zone,
                                     corner=(corner_e, corner_n))
+    # A normalised product is already the answer; everything else is metres
+    # above the sea and has the garden's own ground taken off it.
+    heights = (values if source.normalised
+               else above_ground(values, ground, min_xy, cell, side))
     return SurfaceWindow(
         min_x=min_xy, min_y=min_xy, cell_m=cell, cols=side, rows=side,
-        heights=above_ground(values, ground, min_xy, cell, side),
+        heights=heights,
         source=source.state, licence=source.licence, attribution=source.attribution,
     )
 

@@ -9,6 +9,7 @@ depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service]
 relates: [80-surface-sources, 84-canopies-found, 107-the-cloud-under-the-crown]
 source_files:
   - ninanatur/geo/tiles.py
+  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/surface.py
   - ninanatur/geo/tile_sources.py
   - ninanatur/garden/building_sync.py
@@ -22,7 +23,7 @@ last_synced: 2026-09-20
 status: complete
 phase: all
 mdd_version: 11
-tags: [surface-model, dom, tiles, canopies, bayern, trees]
+tags: [surface-model, dom, ndom, tiles, canopies, bayern, trees, thueringen, sachsen, baden-wuerttemberg]
 path: Geo/Surface tiles
 integration_contracts: []
 satisfies_contracts: []
@@ -63,9 +64,10 @@ all 200. The scheme writes the **zone onto the front of the easting**, which
 `tile_of` now reads back — and which is only unambiguous because every German
 easting is three digits of kilometres.
 
-The same catalogue lists *Laserdaten* and an *Einzelbäume* dataset — individual
-trees, surveyed. Both are candidates and neither is in the registry: an entry
-is a request that was answered (doc 102), and these have not been asked yet.
+The same catalogue lists *Laserdaten* and an *Einzelbäume* dataset. Both have
+since been asked. The laser is in the registry and is the better source for
+trees than any raster (doc 102); *Einzelbäume* is not, because it carries a
+position and two heights and no crown base at all.
 
 ## A window, not a mosaic
 
@@ -94,12 +96,32 @@ That makes the ground a **requirement** rather than an option for this path: a
 state's surface tiles without its terrain are no answer at all, and returning
 None says so.
 
+## Three more states, and a model that was already normalised
+
+**2026-09-20, the second round.** Thüringen's `DOM1` and Sachsen's `DOM1` are
+1 m surface models whose names are simply the grid — the index they were said
+to need does not exist, and the zip around them was the whole obstacle
+(doc 103). Both join by being entries.
+
+**Baden-Württemberg is the interesting one.** This wave was planned around its
+surface model being 5 m, which is too coarse to find a tree; that stopped being
+true. It now publishes `DOM1` at 1 m and, better, **`nDOM1`** — a canopy height
+model, already *above the ground* rather than above the sea.
+
+That last word is the catch. Every other surface product here has the garden's
+terrain subtracted from it, and doing that to a model that is already relative
+would put every tree three hundred metres underground. So a source says whether
+it is `normalised`, and the subtraction is skipped where it is. The rule of
+this doc — *one rule for "above the ground", shared by both paths* — now has a
+second half: **and it is applied once.**
+
 ## Business Rules
 
 1. **A service where the state runs one**, its surface tiles where it does not,
    and nothing where it publishes neither.
 2. **The window is pasted at the size of the window.**
-3. **One rule for "above the ground"**, shared by both paths.
+3. **One rule for "above the ground"**, shared by both paths — and **applied
+   once**: a product that is already normalised says so and keeps its heights.
 4. **A tile's address is read from the state's own index**, not guessed, and
    the computed name is checked against the server before it is an entry.
 
@@ -115,11 +137,14 @@ and the reader refuses an image by its header before allocating.
 
 ## Known Issues
 
-- **Bayern only.** Rheinland-Pfalz, Sachsen, Thüringen, Schleswig-Holstein,
-  Hamburg, Bremen and Saarland publish a surface model through an index or an
-  Atom feed rather than a computable name, which is the same index work the
-  rest of feature 1 needs.
-- Bayern's *Einzelbäume* — surveyed individual trees — would be better than
-  reading trees out of a raster at all, and is not in the registry yet.
+- **Rheinland-Pfalz and Schleswig-Holstein** publish a surface model whose name
+  carries a per-tile flight year, so those two really do need their index
+  fetched and parsed. Hamburg, Bremen and Saarland publish no single tile at
+  all (doc 102), which no index would fix.
+- **Bayern's *Einzelbäume* was asked about and declined.** Its attributes are a
+  position, the ground height and the tree's height — no species, no crown
+  width and **no crown base**, which is the one thing a raster cannot give and
+  the point cloud can (doc 107). Forty gigabytes in lots keyed by production
+  run, for less than we already have.
 
 ## Bugs

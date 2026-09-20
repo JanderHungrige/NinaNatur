@@ -9,6 +9,8 @@ depends_on: [68-terrain-sources, 80-surface-sources]
 relates: [07-solar-geometry, 32-object-heights]
 source_files:
   - ninanatur/geo/tile_sources.py
+  - ninanatur/geo/tile_entries.py
+  - ninanatur/geo/tile_grid.py
   - scripts/probe_tile_sources.py
 routes: []
 models: []
@@ -65,6 +67,81 @@ allows one and a one-byte range where it does not
 The index is served by `geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/{AGS}.meta4`,
 and both the five-digit and the eight-digit municipality key work. This is why
 a registry entry is a request and not a citation.
+
+## The second round, the same day
+
+Twenty-two more candidates, every one of them answered. Sachsen refuses a HEAD
+and allows a range, which is why the probe asks twice.
+
+| Entry | Answer | What it is |
+|---|---|---|
+| `by-laser` | 200, 112,064,676 B | Bayern's point cloud — **and it is classified** |
+| `ni-lod2` | 200, 43,632 B | Niedersachsen's LoD2, flat and dateless |
+| `th-dgm1` / `th-dom1` / `th-las` / `th-lod2` | 200, 8.9 / 9.2 / 114.4 / 2.8 MB | Thüringen, all four, all zipped |
+| `sn-dgm1` / `sn-dom1` / `sn-lsc` / `sn-lod2` | 206 after HEAD 401 | Sachsen, all four, all zipped |
+| `bw-lod2` / `bw-ndom1` | 200, 7.5 / 16.4 MB | Baden-Württemberg's roofs, and a 1 m canopy height model |
+| `mv-lod2` | 200 | Mecklenburg-Vorpommern, through a servlet |
+| `rp-lod2` / `rp-laz` | 200, 88,216 B / 338,759,225 B | Rheinland-Pfalz, waiting on its ground |
+| `sl-dgm1-zip` | 200, 559,134,521 B | Saarland — one Landkreis, because there is nothing smaller |
+
+## "Six index states" was three different problems
+
+Doc 102's first draft said Thüringen, Schleswig-Holstein, Hamburg, Bremen,
+Rheinland-Pfalz and Sachsen "hand their tiles out through an index or an Atom
+feed". Read properly, they do three unrelated things:
+
+- **Thüringen and Sachsen compute perfectly.** Every one of Thüringen's 16,945
+  height tiles and every one of Sachsen's 19,881 rows matches the grid pattern
+  with no exception. What stood in the way was never an index: it is that the
+  tile arrives **in a zip**. Their feeds are useful for enumerating coverage
+  and for nothing else.
+- **Rheinland-Pfalz and Schleswig-Holstein really do need one**, because the
+  name carries a per-tile **flight year** (`dgm1_32_419_5490_1_rp_2022.tif`)
+  that no arithmetic yields. Their LoD2, which carries no year, computes fine.
+- **Hamburg and Bremen have no tile to address at all.** Both publish whole-city
+  archives of 0.4–3.2 GB and nothing smaller; Hamburg's own LoD2 page says a
+  smaller extract is *"kostenpflichtig zu beziehen"*. That is a packaging
+  decision, not a missing index, and no index work will change it.
+
+The lesson is doc 68's, again: the shape of a source is a thing to read, not to
+infer from the words a catalogue uses.
+
+## What Bayern's laser has that NRW's has not
+
+Doc 107 had to borrow the building model to tell a roof from a crown, because
+NRW's tile has ground and "unclassified" and nothing else. Bayern's, on the
+published class list and on two decoded tiles, has **class 6 for buildings and
+class 20 for plants** — and 20 is not the ASPRS vegetation class, so a reader
+looking for 3, 4 and 5 finds nothing. Munich measures 20.4 points per m²
+against the state's guaranteed 4, which is the half-metre cell rather than the
+metre one.
+
+It is also **not on the download host**: every `download1.bayernwolke.de` path
+for it answers 404. The address came out of the product's own metalink, whose
+size and sha-256 the fetched tile matched.
+
+## Asked, and the answer was no
+
+- **Bayern's *Einzelbäume*** — doc 108 named it as the better source for trees.
+  It is not. The published attribute list is `id`, `dgmhoehe`, `baumhoehe`: a
+  position, the ground under it and the tree's height. No species, no crown
+  width, and **no crown base** — which is the one thing the shading model
+  cannot get elsewhere and the point cloud does give. It is also 40 GB in 86
+  lots keyed by production run rather than by the grid. Asked, read, declined.
+- **Saarland's licence**, doc 102's other open question, is **fine**: the
+  download is dl-de/by-2-0, *"© GeoBasis DE/LVGL-SL (Jahr der Bereitstellung)"*,
+  and the restrictive wording that kept it out of doc 68 belongs to a legacy
+  service record. What Saarland has no route for is **one tile**: the share
+  holds six per-Landkreis archives, 559 MB for the ground and 12.5 GB for the
+  cloud.
+- **Hessen** charges for its point cloud (*"fallen Gebühren nach Zeitaufwand
+  … an"*), publishes no per-tile raster, and puts a token in its download path
+  that only resolves for a day.
+- **Berlin's point cloud** is nine regional bundles of 1–50 GB whose members
+  are packed with **deflate64**, which Python's `zipfile` cannot read.
+- **Baden-Württemberg's surface model is no longer 5 m**, which this wave's
+  plan assumed: DOM1 at 1 m and **nDOM1**, a 1 m canopy height model already
+  normalised to the ground, are both open.
 
 ## The two questions this feature existed to answer
 
@@ -139,7 +216,21 @@ fetched from somewhere a garden's data suggests.
 
 ## Known Issues
 
-- Six states wait on feature 1's index resolver (above).
-- Saarland's download licence text is not yet read from the source.
+- **Two states wait on an index resolver**, not six: Rheinland-Pfalz and
+  Schleswig-Holstein, whose raster names carry a per-tile flight year. Both
+  publish a machine-readable list of every tile — RP a 12 MB metalink4 with a
+  sha-256 each, SH a 9 MB GeoJSON — so this is a fetch, a cache and a parse.
+- **Rheinland-Pfalz's LoD2 and point cloud are verified and deliberately not
+  entries.** A state that publishes buildings and no ground has no way to name
+  the survey that measured them (doc 106), so they join when its ground does.
+- **Hamburg and Bremen cannot join at all** while they publish only whole-city
+  archives. Range-reading a member out of a remote zip is possible — Saarland's
+  share was proved to allow it, 1.6 MB instead of 559 — and it is not built.
+- **Sachsen's share tokens could rotate.** They are constants in the entry, one
+  per product, and the state's own download index already carries two stale
+  ones; `index_url` points at the configuration that has the current set.
+- Bayern's laser is LAS 1.2 in lots up to 2021 and **LAS 1.4 point format 6**
+  from 2022, with extra per-point fields. A reader that only reads the legacy
+  point count gets zero from the newer lots.
 
 ## Bugs

@@ -9,6 +9,8 @@ the probe fetched on 2026-09-20.
 """
 from __future__ import annotations
 
+import io
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -83,3 +85,65 @@ def test_a_state_with_no_model_in_the_registry_measures_nothing(
     monkeypatch.setattr(building_sync, "get_bytes", fetch)
     assert lod2_tiles_for("Hessen") is None
     assert building_sync._surveyed(MUNICH, "Hessen") is None  # noqa: SLF001
+
+
+def test_a_zipped_building_tile_is_read_through_its_wrapper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Six states wrap the CityGML — with a licence PDF, a currency CSV or an
+    HTML metadata page beside it — and Berlin calls it `.xml`. The reader that
+    reads Bayern reads what is inside all of them."""
+    def fetch(url: str, **_kwargs: object) -> bytes:
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("LoD2_32_598_5696_2_TH.xml", BAYERN.read_bytes())
+            archive.writestr("LoD2_32_598_5696_2_TH.txt", b"Stand: 2025-03-01")
+        return out.getvalue()
+
+    monkeypatch.setattr(building_sync, "get_bytes", fetch)
+    erfurt = LatLon(lat=50.978, lon=11.029)
+    surveyed = building_sync._surveyed(erfurt, "Thüringen")  # noqa: SLF001
+    assert surveyed is not None and len(surveyed) == 1
+    assert surveyed[0].roof is Roof.FLAT
+
+
+def test_every_kilometre_tile_in_a_two_kilometre_archive_is_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Baden-Württemberg's archive holds four. Reading only the first would
+    measure a quarter of the neighbourhood and call it the neighbourhood."""
+    def fetch(url: str, **_kwargs: object) -> bytes:
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("LoD2_32_513_5404_2_bw/GOVDATA-Datenlizenz.pdf", b"%PDF-1.4")
+            for east in (513, 514):
+                for north in (5404, 5405):
+                    archive.writestr(
+                        f"LoD2_32_513_5404_2_bw/LoD2_32_{east}_{north}_1_BW.gml",
+                        BAYERN.read_bytes())
+        return out.getvalue()
+
+    monkeypatch.setattr(building_sync, "get_bytes", fetch)
+    stuttgart = LatLon(lat=48.7758, lon=9.1829)
+    surveyed = building_sync._surveyed(stuttgart, "Baden-Württemberg")  # noqa: SLF001
+    assert surveyed is not None and len(surveyed) == 4
+
+
+def test_the_odd_easting_of_the_south_west_grid_is_respected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Baden-Württemberg's two-kilometre tiles start on an odd easting and an
+    even northing: `513_5404` is a tile and `514_5404` is a 404. Flooring to
+    the wrong parity asks for a tile that does not exist, every time."""
+    asked: list[str] = []
+
+    def fetch(url: str, **_kwargs: object) -> bytes:
+        asked.append(url)
+        raise AssertionError("not fetched for real")
+
+    monkeypatch.setattr(building_sync, "get_bytes", fetch)
+    building_sync._surveyed(LatLon(lat=48.7758, lon=9.1829), "Baden-Württemberg")  # noqa: SLF001
+    assert len(asked) == 1
+    east, north = (int(part) for part in asked[0].rsplit("/", 1)[-1].split("_")[2:4])
+    assert east % 2 == 1, f"an even easting is not a Baden-Württemberg tile: {asked[0]}"
+    assert north % 2 == 0

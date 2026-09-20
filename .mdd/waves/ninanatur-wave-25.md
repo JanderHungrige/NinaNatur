@@ -112,11 +112,11 @@ confidence travel with every window, as they do with every trait value.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
-| 1 | a-tile-not-a-service | 103 | Bayern built | 0 |
+| 1 | a-tile-not-a-service | 103 | BY, TH, SN built | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
-| 3 | every-roof-in-the-country | 105 | BY, NW built | 1 |
+| 3 | every-roof-in-the-country | 105 | 8 states built | 1 |
 | 4 | the-cloud-under-the-crown | 107 | NRW built | 1, 3 |
-| 5 | the-trees-in-the-other-states | 108 | BY built | 1 |
+| 5 | the-trees-in-the-other-states | 108 | BY, TH, SN, BW built | 1 |
 | 6 | measure-my-own-garden | — | **backlog** | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
 
@@ -280,6 +280,49 @@ Three stages:
   The same catalogue lists *Laserdaten* and *Einzelbäume* — surveyed individual
   trees — and neither is in the registry, because an entry is a request that
   was answered and those have not been asked.
+
+- **2026-09-20 — the other states, and the thing that was actually in the way.**
+  Twenty-two more candidates probed, every one answered, and the wave's own
+  framing turned out to be wrong. Doc 102 called six states "index states";
+  read properly they were three different problems. **Thüringen and Sachsen
+  compute their tile names perfectly** — 16,945 and 19,881 of them checked
+  against the pattern without one exception — and what stood in the way was
+  simply that each tile arrives **in a zip**. Rheinland-Pfalz and
+  Schleswig-Holstein genuinely need an index, because their raster names carry
+  a per-tile flight year. Hamburg and Bremen publish no tile at all, only
+  whole-city archives, which no index would fix.
+
+  So the code was `geo/tile_zip.py`, and it bought six states. Thüringen and
+  Sachsen — both fully gapped until today — now have **ground, the surface
+  model over it, and surveyed roofs**. Brandenburg, Berlin and
+  Mecklenburg-Vorpommern gained roofs their coverage services never carried,
+  Niedersachsen's LoD2 turned out to need no index at all, and
+  Baden-Württemberg gained both roofs and `nDOM1`, a 1 m canopy height model
+  that closes the gap its 5 m surface service left for finding trees. The
+  building model reads all eight states unchanged: feature 3 never did become
+  a dozen parsers.
+
+  What was inside each archive was **read rather than assumed**, and two things
+  came out of that. Baden-Württemberg puts *four one-kilometre tiles in one
+  two-kilometre archive*, inside a folder named after the archive — so the
+  first version placed all four on one corner, and the test written to catch it
+  passed anyway because four separate NaNs are four distinct values. Its grid
+  also starts on an **odd easting**, which no other state's does. And writing
+  the doc caught a bug the tests had not: `nDOM1` is *already* metres above the
+  ground, so the surface path would have subtracted the terrain from it a
+  second time and buried every tree three hundred metres down.
+
+  **Bayern's point cloud is the other find.** It is not on the download host —
+  every bayernwolke path for it is a 404 — and unlike NRW's it is *classified*:
+  class 6 buildings, class 20 plants, 20.4 points per m² measured in Munich
+  against the state's guaranteed 4. Doc 107 had to borrow the building model to
+  tell a roof from a crown; in Bayern the cloud says so itself.
+
+  Two long-standing questions closed by asking. **Saarland's licence is fine**
+  — dl-de/by-2-0, the restrictive wording belongs to a legacy service record —
+  but it publishes nothing smaller than a 559 MB Landkreis. And **Bayern's
+  *Einzelbäume*** carries a position and two heights and **no crown base**, so
+  it is worse than the cloud we already read, and it is not an entry.
 
 - **2026-09-20 — the image was built and run, because the wave added a binary
   dependency.** `docker build` (404 MB) and a run against a fresh empty volume,
