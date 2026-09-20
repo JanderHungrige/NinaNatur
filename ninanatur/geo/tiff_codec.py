@@ -47,6 +47,12 @@ def lzw(data: bytes, limit: int | None = None) -> bytes:
         while bits_held >= width:
             code = (value >> (bits_held - width)) & ((1 << width) - 1)
             bits_held -= width
+            # Drop the bits just consumed. Without this `value` keeps every
+            # byte the stream ever held, so it grows into a million-bit integer
+            # and each shift costs the whole of it: the loop turns quadratic
+            # and a square kilometre takes eight minutes instead of four
+            # seconds. Nothing above nineteen bits is ever read.
+            value &= (1 << bits_held) - 1
             if code == end_of_information:
                 return bytes(out)
             if code == clear:

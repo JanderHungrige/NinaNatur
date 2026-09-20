@@ -8,6 +8,8 @@ written from the specification there, not by the decoder under test.
 """
 from __future__ import annotations
 
+import time
+
 import numpy as np
 import pytest
 from tiff_builders import HEIGHTS, _lzw_encode, _tiff, _tiled
@@ -140,3 +142,58 @@ def test_a_whole_degree_cell_is_refused_unless_the_caller_asks_for_one() -> None
         read_raster(big)
     wide = read_raster(big, max_pixels=WHOLE_TILE_PIXELS)
     assert wide.width == wide.height == 2100
+
+
+# --- The decoder has to survive a whole tile, not just a window (doc 103) ---
+
+def _lzw_literals(payload: bytes) -> bytes:
+    """A real TIFF-LZW stream of literal codes, encoded the way the decoder
+    expects to read it — nine bits growing to twelve, with the early change.
+
+    Written here rather than kept as a fixture because what matters is the
+    *length*: a megabyte of codes is what turned the decoder quadratic, and a
+    megabyte of real tile in the repository would be a megabyte in the repo.
+    """
+    out, value, held = bytearray(), 0, 0
+    table_len, width, started = 258, 9, False
+
+    def emit(code: int) -> None:
+        nonlocal value, held
+        value = (value << width) | code
+        held += width
+        while held >= 8:
+            out.append((value >> (held - 8)) & 0xFF)
+            held -= 8
+            value &= (1 << held) - 1
+
+    emit(256)  # clear
+    for byte in payload:
+        emit(byte)
+        if started:
+            table_len += 1
+        started = True
+        if table_len + 1 >= (1 << width) and width < 12:
+            width += 1
+    emit(257)  # end of information
+    if held:
+        out.append((value << (8 - held)) & 0xFF)
+    return bytes(out)
+
+
+def test_a_whole_tile_of_lzw_decodes_in_a_moment_not_in_minutes() -> None:
+    """Wave 25's tiles are whole square kilometres, where every service before
+    them answered with a 400 m window. A megabyte of LZW is the difference.
+
+    The decoder used to keep every byte the stream had ever held in one Python
+    integer, so each shift cost the whole of it and the loop was quadratic:
+    Hamburg's square kilometre took **492 seconds**, and Sachsen's four square
+    kilometres would have taken half an hour. Masking off the bits already
+    consumed made it 0.58 s. The bound below is loose enough never to flake and
+    far tighter than the bug.
+    """
+    payload = bytes(range(256)) * 4_000  # a megabyte, as a tile's strip is
+    stream = _lzw_literals(payload)
+
+    started = time.monotonic()
+    assert lzw(stream) == payload
+    assert time.monotonic() - started < 10.0, "the LZW decoder has gone quadratic again"
