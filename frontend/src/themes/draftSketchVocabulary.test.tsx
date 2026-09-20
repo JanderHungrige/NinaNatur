@@ -128,7 +128,7 @@ describe('streets, which arrive as ways and meet at junctions', () => {
 
   it('outlines the network once, and shows the line only outside it', () => {
     const { container } = render(<svg><Plan shapes={[across, joining]} metresPerPixel={0.05} /></svg>);
-    const ink = container.querySelector('[data-mark="roads"] path[stroke]')!;
+    const ink = container.querySelector('[data-mark="roads"] > path')!;
     const mask = container.querySelector('mask')!;
     // One line for both bands, and the mask's cut-out is that same line: what
     // lies on a road is hidden, so nothing crosses the junction.
@@ -136,6 +136,9 @@ describe('streets, which arrive as ways and meet at junctions', () => {
     expect(ink.getAttribute('mask')).toBe(`url(#${mask.getAttribute('id')})`);
     expect(mask.querySelector('rect')!.getAttribute('fill')).toBe('#ffffff');
     expect(mask.querySelector('path')!.getAttribute('fill')).toBe('#000000');
+    // Grown by most of a pixel, so a way ending on another way's edge cannot
+    // leave a hairline of ink lying across the road.
+    expect(Number(mask.querySelector('path')!.getAttribute('stroke-width'))).toBeGreaterThan(0);
   });
 
   it('and draws nothing at all where a garden has no street', () => {
