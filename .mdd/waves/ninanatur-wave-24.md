@@ -243,7 +243,11 @@ from the `.stylx` alone — his source assets are not asked for.*
   and the plan's lettering is a choice of ours: an OFL hand — *Patrick Hand*
   reads upright like a draughtsman's, *Caveat* is more of a note — bundled with
   the app, since the policy allows no CDN (`font-src 'self'`). That is a
-  third-party file in a public repository, so it waits for the owner.
+  third-party file in a public repository, so it waits for the owner. What
+  could be done without it is done (doc 101): the plan's lettering measures
+  15.3:1 in the title block, 12.2:1 over the darkest part of his paper grain,
+  5.5 and 7.6 for his credit on a light and a dark page — every one of them
+  past 4.5:1, to be measured again once a thin hand replaces the system sans.
 
 ## What each one is
 
