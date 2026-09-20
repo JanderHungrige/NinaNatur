@@ -4,7 +4,7 @@ import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
 import { usePlanTheme } from '../themes/context';
 import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
-import { InkLayer, beneathOf, useDecorations } from './PlanDecorations';
+import { InkLayer, beneathOf, planScale, useDecorations } from './PlanDecorations';
 import { PlanObjects } from './PlanObjects';
 import { ReliefMap } from './ReliefMap';
 import { type MapMode, SunMap } from './SunMap';
@@ -140,7 +140,9 @@ export function CanvasScene({
                      onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle}
                      onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift}
                      beneath={decorations === null ? undefined : beneathOf(decorations, shift)} />
-        {decorations !== null && <InkLayer drawn={decorations} shift={shift} />}
+        {decorations !== null
+          && <InkLayer drawn={decorations} theme={theme} shift={shift}
+                       metresPerPixel={planScale(metresPerPixel)} />}
 
         {sunMap !== undefined && (
           <SunMap map={sunMap.map} mode={sunMap.mode} />

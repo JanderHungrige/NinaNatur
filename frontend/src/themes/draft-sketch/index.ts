@@ -7,6 +7,7 @@ import { drawAlong } from './drawAlong';
 import { OVERLAYS } from './generated/rules';
 import { IMAGES } from './generated/symbols';
 import { DraftSketchFurniture } from './ours/Furniture';
+import { DraftSketchRoads } from './ours/Roads';
 import { HEDGE, RAISED, ROOF } from './ours/rules';
 import type { LineOverlay, Overlay } from './overlays';
 
@@ -65,6 +66,8 @@ function symbolOf(symbol: string, lod: LevelOfDetail, kind?: string): string {
 function overlaysOf(shape: DecoratedShape, lod: LevelOfDetail): Overlay[] {
   if (shape.ground) return [...(OVERLAYS['ds-dashed'] ?? [])];
   if (shape.kind === 'fence') return [];
+  // A street's outline belongs to the network, not to the one way (ours/Roads).
+  if (shape.kind === 'street') return [];
   return [
     ...(shape.raised > 0 ? RAISED : []),
     ...(OVERLAYS[symbolOf(shape.symbol, lod, shape.kind)] ?? []),
@@ -96,6 +99,7 @@ export const draftSketch: PlanTheme = {
   decorate,
   images: IMAGES,
   Furniture: DraftSketchFurniture,
+  Plan: DraftSketchRoads,
   // As agreed with him (THIRD_PARTY.md), word for word.
   credit: 'Zeichenstil nach Draft Sketch von Warren Davison, verwendet und angepasst mit seiner '
     + 'Erlaubnis · with assistance from Louis Hill (@NKYmapLAB)',

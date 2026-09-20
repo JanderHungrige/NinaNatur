@@ -5,9 +5,9 @@ import type { SheetGarden } from './gardens';
 /*
  * The fourth garden (doc 98): what a theme draws that the first three do not
  * show — every roof the model knows, a raised bed beside a flat one, a hedge
- * and a fence drawn as lines, a wall, shrubs among trees. Drawn for themes
- * other than Technisch only: Technisch's record is of the three it was taken
- * with, and a garden added to it would be a record changed.
+ * and a fence drawn as lines, a wall, shrubs among trees, two streets meeting.
+ * Drawn for themes other than Technisch only: Technisch's record is of the
+ * three it was taken with, and a garden added to it would be a record changed.
  */
 
 function vocabulary(): GardenOut {
@@ -18,6 +18,9 @@ function vocabulary(): GardenOut {
       [planting(1003, 4, 5), planting(1004, 2, 4), planting(1005, 8, 2)]),
   ], [
     element(1, 'garden', [0, 0], box(30, 22)),
+    // Two ways meeting, as the map sends them: one band over another (doc 98).
+    lineElement(18, 'street', [-18, 13.5], [18, 13.5], 6),
+    lineElement(19, 'street', [6, 13.5], [6, 21], 5),
     house(2, [-9.5, 6.5], 9, 6),
     house(3, [0.5, 6.5], 8, 6, 'hip'),
     house(4, [9, 7], 5, 4, 'pent', { roof_fall_deg: 180, height: 5, eaves_m: 3 }),
