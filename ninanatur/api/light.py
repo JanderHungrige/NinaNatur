@@ -16,6 +16,7 @@ from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.garden.building_sync import measure_buildings
+from ninanatur.garden.cloud_sync import ensure_cloud
 from ninanatur.garden.credits import credits_for
 from ninanatur.garden.elements import now
 from ninanatur.garden.light_worker import month_grid, recompute_light
@@ -25,6 +26,7 @@ from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
 from ninanatur.garden.terrain_sync import ensure_terrain, ground_for, horizon_for
+from ninanatur.geo.cloud_store import cloud_source
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain_store import cache_key, horizon_source
 from ninanatur.solar.day import MONTHS, shadow_day
@@ -203,6 +205,10 @@ def rebuild_light_map(
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
     measure_buildings(conn, load_garden(conn, garden.garden_id))
+    # And after the buildings, because the laser cannot tell a roof from a
+    # crown on its own and the building model is what decides (doc 107). Only
+    # where a state publishes a cloud, which is nine of them.
+    ensure_cloud(conn, load_garden(conn, garden.garden_id))
     recompute_light(conn, garden.garden_id)
     return _read(conn, garden.garden_id)
 
@@ -263,6 +269,7 @@ def sources(
         load_garden(conn, garden.garden_id),
         ground=ground_for(conn, anchor),
         horizon_source=horizon_source(conn, cache_key(anchor)),
+        laser_source=cloud_source(conn, cache_key(anchor)),
     )
     return [CreditOut(**vars(credit)) for credit in found]
 

@@ -230,6 +230,12 @@ def ground_tiles_for(state: str) -> TileSource | None:
     return _product_for(state, TileProduct.DGM1)
 
 
+def laser_tiles_for(state: str) -> TileSource | None:
+    """The state's point cloud: the only product that can say where a canopy
+    starts, and the only one that sees under a tree (doc 107)."""
+    return _product_for(state, TileProduct.LAZ)
+
+
 def lod2_tiles_for(state: str) -> TileSource | None:
     """The state's 3D building model: measured height and a surveyed roof
     shape, which no surface raster can give (doc 105)."""
@@ -258,6 +264,7 @@ __all__ = [
     "glo30_url",
     "ground_tiles_for",
     "key_of",
+    "laser_tiles_for",
     "name_of",
     "lod2_tiles_for",
     "sources_for",

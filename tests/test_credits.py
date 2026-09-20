@@ -138,3 +138,20 @@ def test_the_page_can_ask_a_garden_what_it_rests_on() -> None:
         assert answer.json() == []
     finally:
         app.dependency_overrides.clear()
+
+
+def test_the_laser_is_credited_where_one_was_read() -> None:
+    """Feature 4's source (doc 107). NRW's cloud is dl-de/zero-2-0, which asks
+    for nothing and is credited anyway — the page says where a crown base came
+    from, and a number whose origin is not shown is a number nobody can check."""
+    [laser] = credits_for(_garden(), ground=None, horizon_source=None, laser_source="NW")
+    assert laser.about == "laser"
+    assert laser.name == "Laserscan Nordrhein-Westfalen"
+    assert laser.licence == "dl-de/zero-2-0"
+    assert "NRW" in laser.attribution
+    assert laser.detail == "4 Punkte/m²"
+
+
+def test_a_state_with_no_open_cloud_is_credited_for_nothing() -> None:
+    assert credits_for(_garden(), ground=None, horizon_source=None,
+                       laser_source="Hessen") == []

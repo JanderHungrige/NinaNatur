@@ -52,6 +52,18 @@ class TileCache:
         self.tidy()
         return data
 
+    def file_for(self, key: str, url: str, fetch: Fetch) -> Path:
+        """The same tile, as a file on the volume rather than as bytes.
+
+        A laser tile is up to 445 MB (doc 107). Handing it over as bytes means
+        holding all of it and then decoding it, which is the budget twice over;
+        a reader that streams wants a path.
+        """
+        path = self._path(key)
+        if not path.exists():
+            self.get(key, url, fetch)
+        return path
+
     def tidy(self) -> None:
         """Drop the oldest tiles until the cache is inside its cap."""
         files = sorted(

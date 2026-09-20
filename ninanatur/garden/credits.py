@@ -27,6 +27,7 @@ from ninanatur.geo.tile_sources import (
     COPERNICUS_ATTRIBUTION,
     COPERNICUS_LICENCE,
     ground_tiles_for,
+    laser_tiles_for,
     lod2_tiles_for,
     name_of,
 )
@@ -78,8 +79,21 @@ def _buildings_credit(state: str | None) -> Credit | None:
                   attribution=source.attribution, detail="Höhe ±1 m, Dachform vermessen")
 
 
+def _laser_credit(whose: str | None) -> Credit | None:
+    """The point cloud, where one has been read (doc 107)."""
+    if whose is None:
+        return None
+    source = laser_tiles_for(whose)
+    if source is None:
+        return None
+    density = "" if source.points_per_m2 is None else f"{source.points_per_m2:g} Punkte/m²"
+    return Credit(about="laser", name=f"Laserscan {name_of(source.state)}",
+                  licence=source.licence, attribution=source.attribution,
+                  detail=density or None)
+
+
 def credits_for(garden: Garden, *, ground: TerrainWindow | None,
-                horizon_source: str | None) -> list[Credit]:
+                horizon_source: str | None, laser_source: str | None = None) -> list[Credit]:
     """Every source this garden's numbers actually rest on, once each.
 
     Built from what is stored and nothing else. Naming the building model needs
@@ -100,6 +114,9 @@ def credits_for(garden: Garden, *, ground: TerrainWindow | None,
         building = _buildings_credit(ground.source)
         if building is not None:
             found.append(building)
+    laser = _laser_credit(laser_source)
+    if laser is not None:
+        found.append(laser)
     return _without_repeats(found)
 
 

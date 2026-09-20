@@ -113,7 +113,7 @@ confidence travel with every window, as they do with every trait value.
 | 1 | a-tile-not-a-service | 103 | Bayern built | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
 | 3 | every-roof-in-the-country | 105 | BY, NW built | 1 |
-| 4 | the-cloud-under-the-crown | — | planned | 1 |
+| 4 | the-cloud-under-the-crown | 107 | NRW built | 1, 3 |
 | 5 | the-trees-in-the-other-states | — | planned | 1 |
 | 6 | measure-my-own-garden | — | planned | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
@@ -232,6 +232,30 @@ Three stages:
   everything else the server derives, because a garden that shows numbers must
   show their credits at the same time and not a moment later. **Stage 2 is
   complete but for feature 4**, the point cloud.
+
+- **2026-09-20 — feature 4, the cloud under the crown** (doc 107), NRW. The
+  plan's recipe was buildings from class 6, vegetation from 3–5, crown base
+  from the vegetation points. **NRW's tile has none of those classes**: 8.3
+  points/m², 76 % ground, and everything standing is unclassified. So the
+  separation comes from the building model instead — a return inside a surveyed
+  LoD2 footprint is a roof, everything else that stands is a crown — which is
+  only possible because feature 3 landed two features earlier.
+
+  Three layers on the garden's own axes: ground, surface, and the crown base
+  nothing else in this project knows. A laser sees no ground under a roof, so
+  those cells are empty by construction (4 % of the window) and are filled from
+  the rim of each hole inwards; without that a house has no height at all.
+
+  Measured rather than budgeted: tile 35 MB in 4.0 s, window in 0.8 s, **186 MB
+  peak**, ground 100 % after filling, crown base in 2.7 % of cells (median
+  2.9 m), stored window **66 kB**. Two things brought the memory in: the tile is
+  streamed from the volume rather than held — the largest is 445 MB — and the
+  reader takes a quarter of a million points at a time, where a million cost
+  226 MB and was no faster.
+
+  `laspy` and `lazrs` are the first new dependencies since Wave 20. The
+  supply-chain test earned its keep immediately: the image would have shipped a
+  library CI never installed. **Stage 2 is complete.**
 
 ## What each one is
 
