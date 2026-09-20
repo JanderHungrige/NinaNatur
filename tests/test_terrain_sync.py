@@ -38,12 +38,25 @@ def _window() -> TerrainWindow:
     )
 
 
+def _tile_window() -> TerrainWindow:
+    """What a Bavarian garden gets from its state's own tiles."""
+    return TerrainWindow(
+        min_x=-5.0, min_y=-5.0, cell_m=1.0, cols=10, rows=10,
+        heights=[520.0] * 100, source="BY", licence="CC-BY-4.0",
+        attribution="Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de",
+        vertical_step_m=0.01,
+    )
+
+
 def _patch(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> None:
     """Replace the three things that would otherwise reach the network."""
     defaults = {
         "state_at": lambda *_: "Nordrhein-Westfalen",
         "fetch_window": lambda *_a, **_k: _window(),
         "horizon_ring": lambda *_a, **_k: [1.5] * 360,
+        # The tile tier under the services (doc 103); nothing here may reach a
+        # state portal either.
+        "_from_tiles": lambda *_a, **_k: _tile_window(),
     }
     for name, fallback in defaults.items():
         monkeypatch.setattr(terrain_sync, name, kwargs.get(name, fallback))
@@ -80,15 +93,35 @@ def test_the_second_garden_in_the_street_costs_nothing(
     assert calls["n"] == 1
 
 
-def test_a_state_with_no_service_leaves_the_garden_flat(
+def test_a_state_with_neither_a_service_nor_tiles_leaves_the_garden_flat(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Nine Bundesländer have none. Flat is what every garden was yesterday, and
-    it is not an error the gardener has to care about."""
-    _patch(monkeypatch, state_at=lambda *_: "Bayern")
+    """Flat is what every garden was yesterday, and it is not an error the
+    gardener has to care about. Saarland is the case doc 68 named: its service
+    forbids this use, and its download licence has not been read yet."""
+    _patch(monkeypatch, state_at=lambda *_: "Saarland")
 
     assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
-    assert load_window(conn, cache_key(LatLon(lat=51.0, lon=6.0))) is None
+    assert load_window(conn, cache_key(LatLon(lat=51.2564, lon=7.1501))) is None
+
+
+def test_a_state_with_no_service_but_tiles_gets_its_ground_from_them(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Wave 25's point (doc 103): Bayern runs no coverage service anybody may
+    use and publishes every square kilometre as a file. A Munich garden stops
+    living on a flat world, and its page says whose ground it is standing on."""
+    _patch(monkeypatch, state_at=lambda *_: "Bayern")
+    garden = _garden(conn, lat=48.137, lon=11.575)
+
+    assert terrain_sync.ensure_terrain(conn, garden) is True  # type: ignore[arg-type]
+
+    stored = load_window(conn, cache_key(LatLon(lat=48.137, lon=11.575)))
+    assert stored is not None
+    assert stored.licence == "CC-BY-4.0"
+    assert "Bayerische Vermessungsverwaltung" in stored.attribution
+    # And no horizon: the ring still needs a service, which feature 2 gives it.
+    assert load_horizon(conn, cache_key(LatLon(lat=48.137, lon=11.575))) is None
 
 
 def test_a_survey_that_fails_leaves_the_garden_flat_rather_than_broken(

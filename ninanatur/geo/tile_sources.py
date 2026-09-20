@@ -79,6 +79,9 @@ class TileSource:
     fmt: str
     licence: str
     attribution: str
+    #: Which UTM the tile numbers are in: 25832 west of 12°E, 25833 east of it.
+    #: Getting it wrong is not an error, it is a tile 400 km away.
+    epsg: int
     _url: Callable[[int, int], str]
     _name: Callable[[int, int], str]
     #: A raster's height step, where it has one.
@@ -121,7 +124,7 @@ def _nrw_name(east_km: int, north_km: int, prefix: str, suffix: str) -> str:
 
 TILE_SOURCES: tuple[TileSource, ...] = (
     TileSource(
-        name="by-dgm1", state="BY", product=TileProduct.DGM1, tile_km=1, fmt="GeoTIFF",
+        name="by-dgm1", state="BY", epsg=25832, product=TileProduct.DGM1, tile_km=1, fmt="GeoTIFF",
         licence="CC-BY-4.0",
         attribution="Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de",
         _url=_bayern("dgm/dgm1", "tif"), _name=_bayern_name,
@@ -130,14 +133,14 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         index_url="https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/",
     ),
     TileSource(
-        name="by-lod2", state="BY", product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
+        name="by-lod2", state="BY", epsg=25832, product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
         licence="CC-BY-4.0",
         attribution="Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de",
         _url=_bayern("lod2/citygml", "gml"), _name=_bayern_name,
         probed_bytes=161_627_079,
     ),
     TileSource(
-        name="nw-lod2", state="NW", product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
+        name="nw-lod2", state="NW", epsg=25832, product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
         licence="dl-de/zero-2-0",
         attribution="Land NRW (2026), Datenlizenz Deutschland – Zero – Version 2.0",
         _url=lambda e, n: ("https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/"
@@ -146,7 +149,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         probed_bytes=20_684_673,
     ),
     TileSource(
-        name="nw-laz", state="NW", product=TileProduct.LAZ, tile_km=1, fmt="LAZ",
+        name="nw-laz", state="NW", epsg=25832, product=TileProduct.LAZ, tile_km=1, fmt="LAZ",
         licence="dl-de/zero-2-0",
         attribution="Land NRW (2026), Datenlizenz Deutschland – Zero – Version 2.0",
         _url=lambda e, n: ("https://www.opengeodata.nrw.de/produkte/geobasis/hm/3dm_l_las/"
@@ -183,9 +186,35 @@ def glo30_url(latitude: float, longitude: float) -> str:
     )
 
 
+#: The rest of the codebase says "Bayern", and OSM says it too (`state_at`);
+#: a tile's name says "by". One place knows both.
+STATE_KEYS: dict[str, str] = {
+    "baden-württemberg": "BW", "bayern": "BY", "berlin": "BE", "brandenburg": "BB",
+    "bremen": "HB", "hamburg": "HH", "hessen": "HE", "mecklenburg-vorpommern": "MV",
+    "niedersachsen": "NI", "nordrhein-westfalen": "NW", "rheinland-pfalz": "RP",
+    "saarland": "SL", "sachsen": "SN", "sachsen-anhalt": "ST",
+    "schleswig-holstein": "SH", "thüringen": "TH",
+}
+
+
+def key_of(state: str) -> str:
+    """The two-letter key for a state, however it was named."""
+    return STATE_KEYS.get(state.strip().lower(), state.strip().upper())
+
+
 def sources_for(state: str) -> tuple[TileSource, ...]:
-    """Every tile product this state publishes openly. Empty is an answer."""
-    return tuple(source for source in TILE_SOURCES if source.state == state.upper())
+    """Every tile product this state publishes openly, by key or by name.
+    Empty is an answer."""
+    key = key_of(state)
+    return tuple(source for source in TILE_SOURCES if source.state == key)
+
+
+def ground_tiles_for(state: str) -> TileSource | None:
+    """The state's ground, as tiles — the tier under the coverage services."""
+    for source in sources_for(state):
+        if source.product is TileProduct.DGM1:
+            return source
+    return None
 
 
 def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:
@@ -208,6 +237,8 @@ __all__ = [
     "TileProduct",
     "TileSource",
     "glo30_url",
+    "ground_tiles_for",
+    "key_of",
     "sources_for",
     "tile_of",
 ]

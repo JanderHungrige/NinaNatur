@@ -110,7 +110,7 @@ confidence travel with every window, as they do with every trait value.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
-| 1 | a-tile-not-a-service | — | planned | 0 |
+| 1 | a-tile-not-a-service | 103 | Bayern built | 0 |
 | 2 | a-horizon-for-everyone | — | planned | 0 |
 | 3 | every-roof-in-the-country | — | planned | 1 |
 | 4 | the-cloud-under-the-crown | — | planned | 1 |
@@ -145,6 +145,28 @@ Three stages:
   raster state for feature 5 — no crown base there. Both pages are JavaScript
   and had to be read rather than fetched, and the probe script carries the note
   so the next run re-checks them.
+
+- **2026-09-20 — feature 1, a tile not a service** (doc 103), Bayern first. The
+  middle tier Wave 17 named and never built: `geo/tiles.py` fetches every tile
+  the window touches, `geo/tile_cache.py` keeps them on the volume under a cap
+  — oldest out first, written whole or not at all — and `terrain_sync` reaches
+  for them exactly where it used to log *no terrain service*. A garden in
+  Munich has ground, and its page says CC-BY-4.0 and the Bayerische
+  Vermessungsverwaltung.
+
+  The thing a tile changes is where the garden sits in it: a 200 m window fits
+  inside a 1 km tile only when the garden is 100 m from every edge, which is
+  64 % of the time, so the window is pasted from up to four of them before one
+  resample puts it on the garden's axes. `resample` learned to be told the
+  raster's corner instead of deriving it from the window's centre; that is the
+  only change the service path sees. A tile that does not arrive is NaN — ground
+  nobody surveyed — and nothing arriving at all is still None.
+
+  An old test said a Bavarian garden stays flat. It is now two tests: one for a
+  state with neither a service nor tiles, and one for Bayern getting its ground
+  from the tiles. The first version of that test reached for a real socket,
+  which `pytest-socket` blocked and the sync swallowed — passing for the wrong
+  reason, which is the failure mode doc 95 was written about.
 
 ## What each one is
 

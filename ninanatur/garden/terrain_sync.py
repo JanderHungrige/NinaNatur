@@ -37,8 +37,17 @@ from ninanatur.geo.terrain_store import (
     save_horizon,
     save_window,
 )
+from ninanatur.geo.tile_cache import cache_at
+from ninanatur.geo.tile_sources import TileSource, ground_tiles_for
+from ninanatur.geo.tiles import tile_window
+from ninanatur.ingest.db import database_path
 
 log = logging.getLogger(__name__)
+
+#: How much of the volume the tile cache may hold. A Bavarian DGM1 tile is
+#: 2.5 MB and a garden needs at most four, so this is about a hundred gardens'
+#: worth of ground before the oldest tiles start to go (doc 103).
+TILE_CACHE_BYTES = 1_000_000_000
 
 def is_precise(anchor: LatLon) -> bool:
     """Whether this garden's stored location is precise enough to fetch ground.
@@ -86,24 +95,30 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
 
     state = state_at(anchor.lat, anchor.lon)
     source = by_state(state) if state else None
-    if source is None:
-        log.info("no terrain service for %s at %s", state, key)
+    # A service is one request for exactly the window; tiles are up to four for
+    # the same ground, so they are the tier underneath (doc 103).
+    tiles = ground_tiles_for(state) if state and source is None else None
+    if source is None and tiles is None:
+        log.info("no terrain service and no tiles for %s at %s", state, key)
         return have_window
 
     if not have_window:
         try:
-            window = fetch_window(anchor, source)
+            window = (fetch_window(anchor, source) if source is not None
+                      else _from_tiles(anchor, tiles) if tiles is not None else None)
         except Exception:
             # Logged with its context and swallowed on purpose: this is the one
             # place in the project where failing means "the garden stays flat",
             # which is exactly what it was yesterday.
-            log.warning("terrain window failed for %s (%s)", key, source.state, exc_info=True)
+            whose = source.state if source is not None else f"{state} tiles"
+            log.warning("terrain window failed for %s (%s)", key, whose, exc_info=True)
         else:
             if window is not None:
                 save_window(conn, key, window)
                 have_window = True
 
-    if not have_ring:
+    if not have_ring and source is not None:
+        # The ring still needs a service; feature 2 gives the other states one.
         try:
             ring = horizon_ring(anchor, source)
         except Exception:
@@ -112,6 +127,13 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
             save_horizon(conn, key, ring, source.state)
 
     return have_window
+
+
+def _from_tiles(anchor: LatLon, source: TileSource) -> TerrainWindow | None:
+    """The ground from a state's own tiles, cached on the volume beside the
+    database — never in the container layer, where a rolled image loses it and
+    a full disk is the deployment (doc 103)."""
+    return tile_window(anchor, source, cache=cache_at(database_path().parent, TILE_CACHE_BYTES))
 
 
 def ground_for(conn: sqlite3.Connection, anchor: LatLon) -> TerrainWindow | None:
