@@ -90,9 +90,9 @@ the document is streamed, parsed and dropped (doc 103's rule for CityGML).
 
 ## Which states are in
 
-**Eight, as of 2026-09-20** — Bayern and Nordrhein-Westfalen, then
+**Ten, as of 2026-09-20** — Bayern and Nordrhein-Westfalen, then
 Niedersachsen, Thüringen, Sachsen, Brandenburg, Berlin, Mecklenburg-Vorpommern
-and Baden-Württemberg. Every one by request, and every one read by the same
+Baden-Württemberg and Rheinland-Pfalz. Every one by request, and every one read by the same
 reader: doc 105's finding held for all of them, so feature 3 never did become
 a dozen parsers.
 
@@ -107,9 +107,9 @@ archive holds four one-kilometre tiles, so all four are read — a quarter of a
 neighbourhood is not a neighbourhood — and its grid starts on an **odd**
 easting, so flooring to even numbers asks for a tile that does not exist.
 
-Rheinland-Pfalz's LoD2 is verified and waiting on its ground (doc 102), and
-Schleswig-Holstein's is computable and waiting for the same reason. Hessen,
-Sachsen-Anhalt, Hamburg, Bremen and Saarland publish no addressable tile.
+Schleswig-Holstein's is computable and waits on its ground, which needs an
+index reader for GeoJSON (doc 103). Hessen, Sachsen-Anhalt, Hamburg, Bremen
+and Saarland publish no addressable building tile at all.
 
 The federal LoD2-DE would have replaced all of them and does not: it is
 restricted to federal authorities (doc 102).

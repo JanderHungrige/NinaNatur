@@ -112,11 +112,11 @@ confidence travel with every window, as they do with every trait value.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
-| 1 | a-tile-not-a-service | 103 | BY, TH, SN built (9 states) | 0 |
+| 1 | a-tile-not-a-service | 103 | BY, TH, SN, RP built (10 states) | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
-| 3 | every-roof-in-the-country | 105 | 8 states built | 1 |
-| 4 | the-cloud-under-the-crown | 107 | 5 states built | 1, 3 |
-| 5 | the-trees-in-the-other-states | 108 | BY, TH, SN, BW built | 1 |
+| 3 | every-roof-in-the-country | 105 | 10 states built | 1 |
+| 4 | the-cloud-under-the-crown | 107 | 6 states built | 1, 3 |
+| 5 | the-trees-in-the-other-states | 108 | BY, TH, SN, BW, RP built | 1 |
 | 6 | measure-my-own-garden | — | **backlog** | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
 
@@ -323,6 +323,26 @@ Three stages:
   but it publishes nothing smaller than a 559 MB Landkreis. And **Bayern's
   *Einzelbäume*** carries a position and two heights and **no crown base**, so
   it is worse than the cloud we already read, and it is not an entry.
+
+- **2026-09-20 — Rheinland-Pfalz, through its own list.** The last fully
+  gapped state of any size, and the one that genuinely needed the index the
+  wave planned: it writes the **flight year** into a raster's name
+  (`dgm1_32_419_5490_1_rp_2022.tif`) and the tile next door was flown in 2025,
+  so no arithmetic reaches it. Its metalink is 12 MB and **21,160 tiles**
+  across four flight years with a sha-256 each — parsed in 1.5 s, once for the
+  whole deployment, and a name out of it fetched and answered 200.
+
+  The rule that shaped the code: **an index is remote content, and it is read
+  as data rather than as an address.** What is taken from it is a *file name*,
+  matched against a strict character set and kept only if it carries the grid
+  it claims; the scheme, the host and the folder stay the registry's own, and
+  the metalink's `<url>` element is never read at all. Doc 102's guarantee
+  gains one clause rather than losing its meaning: an address is a template and
+  two integers, or a template and a name the state gave us. A test forges that
+  element and checks nothing changes.
+
+  Rheinland-Pfalz joined whole — ground, surface, roofs and a 338 MB point
+  cloud — which is what the credits invariant was holding out for.
 
 - **2026-09-20 — the image was built and run, because the wave added a binary
   dependency.** `docker build` (404 MB) and a run against a fresh empty volume,

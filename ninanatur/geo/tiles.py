@@ -18,7 +18,6 @@ without a source has always answered.
 from __future__ import annotations
 
 import logging
-import re
 
 import numpy as np
 
@@ -27,6 +26,8 @@ from ninanatur.geo.surface import SurfaceWindow, above_ground
 from ninanatur.geo.terrain import FETCH_M, TerrainWindow, resample
 from ninanatur.geo.tiff import WHOLE_TILE_PIXELS, Raster, TiffError, read_raster
 from ninanatur.geo.tile_cache import Fetch, TileCache
+from ninanatur.geo.tile_grid import TileLookup, corner_in
+from ninanatur.geo.tile_index import SAFE_NAME
 from ninanatur.geo.tile_sources import TileSource
 from ninanatur.geo.tile_zip import ArchiveError, named
 from ninanatur.geo.utm import to_utm
@@ -65,28 +66,6 @@ def _cache_key(source: TileSource, east_km: int, north_km: int) -> str:
             f"{source.tile_name(east_km, north_km)}.{'zip' if source.zipped else suffix}")
 
 
-def corner_in(name: str, fallback: tuple[int, int]) -> tuple[int, int]:
-    """The grid corner a member's own name carries, or the archive's own.
-
-    Only Baden-Württemberg needs this — four one-kilometre tiles in one
-    two-kilometre archive, each named for where it is. Everywhere else the one
-    member covers the tile it arrived as, and the fallback is the answer.
-    """
-    # The member's own name, never the folder around it: Baden-Württemberg
-    # names that folder after the *archive*, so reading the whole path puts all
-    # four tiles on the archive's corner, stacked on top of one another.
-    numbers = [int(part) for part in re.findall(r"\d+", name.rsplit("/", 1)[-1])]
-    for first, second in zip(numbers, numbers[1:], strict=False):
-        # An easting is three digits of kilometres, sometimes with the zone
-        # written onto the front of it (Sachsen, Brandenburg); a German
-        # northing is four, between about 5 200 and 6 100.
-        east = next((first - zone for zone in (0, 32_000, 33_000)
-                     if 200 <= first - zone <= 999), None)
-        if east is not None and 5_000 <= second <= 6_200:
-            return east, second
-    return fallback
-
-
 def _parts(source: TileSource, data: bytes,
            corner: tuple[int, int]) -> list[tuple[tuple[int, int], Raster]]:
     """The rasters in what arrived, each with the corner it belongs at."""
@@ -96,20 +75,64 @@ def _parts(source: TileSource, data: bytes,
             for name, body in named(data, want=INSIDE[source.fmt])]
 
 
+#: A state's list of what it holds, parsed once per process. Rheinland-Pfalz's
+#: ground is twelve megabytes of XML and twenty-one thousand names: a thing to
+#: read once for a deployment, not once for a garden. The file itself is on the
+#: volume under the same cap as the tiles.
+_LISTINGS: dict[str, dict[tuple[int, int], str]] = {}
+
+
+def _listing(lookup: TileLookup, cache: TileCache,
+             fetch: Fetch) -> dict[tuple[int, int], str]:
+    """Which tiles the state says it has, and what each is called."""
+    if lookup.index_url not in _LISTINGS:
+        leaf = lookup.index_url.rsplit("/", 1)[-1]
+        key = f"index/{leaf if SAFE_NAME.match(leaf) else 'listing'}"
+        _LISTINGS[lookup.index_url] = lookup.parse(cache.get(key, lookup.index_url, fetch))
+    return _LISTINGS[lookup.index_url]
+
+
+def _addresses(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
+               fetch: Fetch) -> list[tuple[tuple[int, int], str, str]]:
+    """Each tile's corner, its address, and the key to keep it under.
+
+    For nearly every state the address is arithmetic. For the two that write a
+    flight year into the name it is the registry's own folder plus a name their
+    list gave us — never a URL out of that list (doc 103).
+    """
+    if source.lookup is None:
+        return [(corner, source.url_for(*corner), _cache_key(source, *corner))
+                for corner in corners]
+    names = _listing(source.lookup, cache, fetch)
+    found = []
+    for corner in corners:
+        name = names.get(corner)
+        if name is None:
+            # The state's own list says it has nothing there. A gap in a flight,
+            # or a garden near the border — either way not a failed request.
+            continue
+        found.append((corner, source.lookup.folder + name,
+                      f"{source.state.lower()}/{source.product.value}/{name}"))
+    return found
+
+
 def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
              fetch: Fetch) -> dict[tuple[int, int], Raster]:
     """The tiles that arrived. One missing is a hole, not a failure: a state's
     portal short of a tile is not a reason for a garden to have no ground."""
     got: dict[tuple[int, int], Raster] = {}
-    for east_km, north_km in corners:
-        url = source.url_for(east_km, north_km)
+    try:
+        wanted = _addresses(source, corners, cache, fetch)
+    except (OSError, ValueError) as trouble:
+        log.warning("a state's tile list could not be read; no ground from it",
+                    extra={"source": source.name, "why": type(trouble).__name__})
+        return got
+    for corner, url, key in wanted:
         try:
-            got.update(_parts(source,
-                              cache.get(_cache_key(source, east_km, north_km), url, fetch),
-                              (east_km, north_km)))
+            got.update(_parts(source, cache.get(key, url, fetch), corner))
         except (OSError, ValueError, TiffError, ArchiveError) as trouble:
             log.warning("a tile did not arrive; that ground stays unknown",
-                        extra={"source": source.name, "tile": f"{east_km}_{north_km}",
+                        extra={"source": source.name, "tile": f"{corner[0]}_{corner[1]}",
                                "why": type(trouble).__name__})
     return got
 

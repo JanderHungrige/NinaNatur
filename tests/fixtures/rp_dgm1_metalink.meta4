@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metalink xmlns="urn:ietf:params:xml:ns:metalink">
+    <generator>RLP-Met4Generator</generator>
+    <published>2026-08-12 10:00:05.281851+00:00</published><file name="dgm1_32_419_5490_1_rp_2022.tif">
+        <size>1502657</size>
+        <hash type="sha-256">45b19b3dc396f7f5055b005f2e3422087534d5fc48162079ee7e57d900873dd0</hash>
+        <url>https://geobasis-rlp.de/data/dgm1/current/tif/dgm1_32_419_5490_1_rp_2022.tif</url>
+
+    </file><file name="dgm1_32_337_5553_1_rp_2025.tif">
+        <size>1624730</size>
+        <hash type="sha-256">fb0bae91965a68dfe026eef3830df1551cb6084b55e7791946fcec41472e0059</hash>
+        <url>https://geobasis-rlp.de/data/dgm1/current/tif/dgm1_32_337_5553_1_rp_2025.tif</url>
+
+    </file><file name="dgm1_32_420_5566_1_rp_2024.tif">
+        <size>1455932</size>
+        <hash type="sha-256">e8c0f2649ab5fea1cda8172a20e3e0e0b16c93a09b50fdf69dc61cbed4b818cf</hash>
+        <url>https://geobasis-rlp.de/data/dgm1/current/tif/dgm1_32_420_5566_1_rp_2024.tif</url>
+
+    </file><file name="dgm1_32_399_5535_1_rp_2023.tif">
+        <size>1521229</size>
+        <hash type="sha-256">ff39b3dcf9471b4f8132ce51db6c77d8b3ec2e4a876c0ce8706451ca11434338</hash>
+        <url>https://geobasis-rlp.de/data/dgm1/current/tif/dgm1_32_399_5535_1_rp_2023.tif</url>
+
+    </file></metalink>

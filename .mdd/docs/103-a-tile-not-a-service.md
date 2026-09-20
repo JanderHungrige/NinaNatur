@@ -9,6 +9,7 @@ depends_on: [102-which-tiles-and-whose, 68-terrain-sources]
 relates: [17-terrain-window, 07-solar-geometry]
 source_files:
   - ninanatur/geo/tile_cache.py
+  - ninanatur/geo/tile_index.py
   - ninanatur/geo/tiles.py
   - ninanatur/geo/tile_zip.py
   - ninanatur/geo/terrain.py
@@ -20,6 +21,7 @@ test_files:
   - tests/test_tile_cache.py
   - tests/test_tiles.py
   - tests/test_tile_zip.py
+  - tests/test_tile_index.py
 data_flow: mixed
 last_synced: 2026-09-20
 status: complete
@@ -118,6 +120,29 @@ four would land on top of each other. Each goes where its own name says, which
 that does not exist, every time. `corner_origin` is that parity, and it is the
 only state that needs one.
 
+## A name the state gave us
+
+Two states put the **flight year** into a raster's name —
+`dgm1_32_419_5490_1_rp_2022.tif`, and the tile next door was flown in 2025 —
+so no arithmetic reaches it. Both publish a list of everything they hold, and
+Rheinland-Pfalz's is a metalink4: 12 MB, **21,160 tiles**, four flight years,
+a sha-256 each. Read and parsed in 1.5 s, once for the whole deployment; the
+file sits on the volume under the same cap as the tiles.
+
+**An index is remote content, and it is read as data rather than as an
+address.** What is taken from it is a *file name* — matched against a strict
+character set, and kept only if it carries the grid it claims. The scheme, the
+host and the folder stay the registry's own, so a state's list that began
+answering with somebody else's URL would change nothing about where this
+fetches from. The metalink's own `<url>` element is never read at all.
+
+Doc 102's guarantee survives with one clause added: an address is a template
+and two integers, **or a template and a name the state gave us**.
+
+A square the state does not list is not asked for. Its own list saying it has
+nothing there — a gap in a flight, a garden near the border — is an answer, and
+guessing a name would be a 404 with extra steps.
+
 ## Politeness
 
 These are state surveying offices publishing at their own cost, not an API with
@@ -186,11 +211,17 @@ Their **point clouds** came with them: Thüringen, Sachsen and Brandenburg wrap
 theirs too, so the member is streamed out of the archive to a file and read
 from there, and the reader still never holds a tile.
 
-What is left of this feature is two states and one technique:
-**Rheinland-Pfalz** and **Schleswig-Holstein**, whose raster names carry a
-per-tile flight year and which therefore really do need their index fetched,
-cached and parsed; and the **range read into a remote archive** that Hamburg,
-Bremen and Saarland would need, none of which publishes a tile at all.
+**Rheinland-Pfalz joined too**, through its list rather than by arithmetic,
+and it joined whole: ground, surface, roofs and a point cloud. It was the last
+fully gapped state of any size.
+
+What is left of this feature is one state and one technique. **Schleswig-
+Holstein** publishes the same shape of problem with a GeoJSON list instead of a
+metalink, plus two quirks worth knowing before anybody starts: it appends an
+HTML footer to every download, and a stale row answers **200 with an HTML
+error body** rather than a 404. And the **range read into a remote archive**
+that Hamburg, Bremen and Saarland would need — proved possible on Saarland's
+share, 1.6 MB instead of 559 — since none of them publishes a tile at all.
 
 ## Known Issues
 

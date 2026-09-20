@@ -44,6 +44,27 @@ class TileProduct(StrEnum):
 
 
 @dataclass(frozen=True)
+class TileLookup:
+    """How to find a tile whose name is not arithmetic (doc 103).
+
+    Rheinland-Pfalz and Schleswig-Holstein write the flight year into a
+    raster's name, and the tile next door was flown in a different year. Both
+    publish a list of everything they hold, so the name is read from there.
+
+    The index gives a **name**; the address stays ours. `folder` is the
+    registry's own prefix, so what the state's list can change is which file is
+    asked for, never which host it is asked of.
+    """
+
+    #: Where the state publishes its list.
+    index_url: str
+    #: What to put in front of a name from it, ending in a separator.
+    folder: str
+    #: How to read that list: grid corner to file name.
+    parse: Callable[[bytes], dict[tuple[int, int], str]]
+
+
+@dataclass(frozen=True)
 class TileSource:
     """One state's product, as a grid of files.
 
@@ -68,8 +89,12 @@ class TileSource:
     #: Which UTM the tile numbers are in: 25832 west of 12°E, 25833 east of it.
     #: Getting it wrong is not an error, it is a tile 400 km away.
     epsg: int
-    _url: Callable[[int, int], str]
-    _name: Callable[[int, int], str]
+    #: How the address is computed, where it can be. A source found through
+    #: an index has neither — see `lookup`, and `url_for` says so if asked.
+    _url: Callable[[int, int], str] | None = None
+    _name: Callable[[int, int], str] | None = None
+    #: Set where the name is not the grid, and then it is how a tile is found.
+    lookup: TileLookup | None = None
     #: Where a coarse grid starts, in kilometres. Almost every two-kilometre
     #: scheme lands on even numbers, and Baden-Württemberg's lands on an **odd**
     #: easting — `513_5404` is a tile and `514_5404` is a 404. Floor to the
@@ -97,12 +122,21 @@ class TileSource:
     #: What the probe found on the date in the registry's docstring.
     probed_bytes: int | None = None
 
+    @property
+    def computed(self) -> bool:
+        """Whether this tile's address is arithmetic rather than a lookup."""
+        return self._url is not None
+
     def url_for(self, east_km: int, north_km: int) -> str:
         """The address of the tile whose south-west corner is here."""
+        if self._url is None:
+            raise ValueError(f"{self.name} is found through its index, not computed")
         return self._url(east_km, north_km)
 
     def tile_name(self, east_km: int, north_km: int) -> str:
         """What that tile is called, without the folders around it."""
+        if self._name is None:
+            raise ValueError(f"{self.name} is named by its index, not computed")
         return self._name(east_km, north_km)
 
     def corner_of(self, easting_m: float, northing_m: float) -> tuple[int, int]:
@@ -128,4 +162,26 @@ def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:
     raise ValueError(f"{source.name}: {source.tile_name(east_km, north_km)} does not hold its grid")
 
 
-__all__ = ["FREE_LICENCES", "TileProduct", "TileSource", "tile_of"]
+def corner_in(name: str, fallback: tuple[int, int]) -> tuple[int, int]:
+    """The grid corner a member's own name carries, or the archive's own.
+
+    Only Baden-Württemberg needs this — four one-kilometre tiles in one
+    two-kilometre archive, each named for where it is. Everywhere else the one
+    member covers the tile it arrived as, and the fallback is the answer.
+    """
+    # The member's own name, never the folder around it: Baden-Württemberg
+    # names that folder after the *archive*, so reading the whole path puts all
+    # four tiles on the archive's corner, stacked on top of one another.
+    numbers = [int(part) for part in re.findall(r"\d+", name.rsplit("/", 1)[-1])]
+    for first, second in zip(numbers, numbers[1:], strict=False):
+        # An easting is three digits of kilometres, sometimes with the zone
+        # written onto the front of it (Sachsen, Brandenburg); a German
+        # northing is four, between about 5 200 and 6 100.
+        east = next((first - zone for zone in (0, 32_000, 33_000)
+                     if 200 <= first - zone <= 999), None)
+        if east is not None and 5_000 <= second <= 6_200:
+            return east, second
+    return fallback
+
+
+__all__ = ["FREE_LICENCES", "TileLookup", "TileProduct", "TileSource", "corner_in", "tile_of"]

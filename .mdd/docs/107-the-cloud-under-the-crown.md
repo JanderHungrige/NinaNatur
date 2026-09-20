@@ -140,8 +140,8 @@ otherwise ship a library CI never tested.
 
 ## Four more clouds, and one that classifies itself
 
-**2026-09-20.** Bayern, Thüringen, Sachsen and Brandenburg join Nordrhein-
-Westfalen. Three of the four arrive zipped, so the member is streamed out of
+**2026-09-20.** Bayern, Thüringen, Sachsen, Brandenburg and Rheinland-Pfalz
+join Nordrhein-Westfalen. Three of the four arrive zipped, so the member is streamed out of
 the archive to a file beside it and read from there — the reader still never
 holds a tile, which is what kept the budget at 186 MB.
 
@@ -196,11 +196,11 @@ returns is arithmetic over numbers.
   covers it, and a second rule would only differ at the seam.
 - A zipped cloud costs the volume twice for a while — the archive and the
   member written out of it — until the cap drops the older of the two.
-- **Five clouds are in the registry**, and the rest have been asked. Hessen
+- **Six clouds are in the registry**, and the rest have been asked. Hessen
   charges for its; Berlin's is nine bundles of up to 50 GB packed with
   deflate64; Sachsen-Anhalt publishes two areas rather than a state;
   Mecklenburg-Vorpommern's tiles answer 401; Niedersachsen, Baden-Württemberg,
   Bremen and Saarland sell theirs or publish nothing per tile (doc 102).
-  Rheinland-Pfalz's is verified at 338 MB a tile and waits on its ground.
+  Rheinland-Pfalz's is 338 MB a tile, first and last pulse in one file.
 
 ## Bugs

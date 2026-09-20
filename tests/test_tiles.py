@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from ninanatur.geo import tiles
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import WINDOW_M, TerrainWindow
 from ninanatur.geo.tile_cache import TileCache
@@ -279,3 +280,75 @@ def test_a_canopy_height_model_does_not_have_the_ground_taken_off_twice(
     assert set(window.heights) == {
         float(e % 100 * 100 + n % 100)
         for e, n in ((513, 5404), (513, 5405), (514, 5404), (514, 5405))}
+
+
+# --- Tiles found through a state's list, not computed (doc 103) ---
+
+RHINELAND = next(s for s in sources_for("RP") if s.product is TileProduct.DGM1)
+METALINK = Path(__file__).parent / "fixtures" / "rp_dgm1_metalink.meta4"
+
+
+def _listed(url: str) -> bytes:
+    """The state's own metalink, then flat tiles for whatever it names."""
+    if url.endswith(".meta4"):
+        return METALINK.read_bytes()
+    return _tiff(np.full((1000, 1000), 150.0, dtype="<f4"))
+
+
+@pytest.fixture(autouse=True)
+def _forget_listings() -> None:
+    """The parsed list is kept for the life of the process, so a test must not
+    inherit another test's."""
+    tiles._LISTINGS.clear()
+
+
+def test_a_tile_is_found_through_the_states_own_list(tmp_path: Path) -> None:
+    """Rheinland-Pfalz writes the flight year into the name — 419/5490 was
+    flown in 2022 and its neighbour in 2025 — so the address is the registry's
+    own folder plus a name the state's metalink gave us."""
+    asked: list[str] = []
+
+    def fetch(url: str) -> bytes:
+        asked.append(url)
+        return _listed(url)
+
+    lat, lon = to_latlon(419_500.0, 5_490_500.0, 32)
+    window = tile_window(LatLon(lat=lat, lon=lon), RHINELAND, cache=_cache(tmp_path),
+                         fetch=fetch)
+    assert window is not None
+    assert window.source == "RP"
+    assert asked == [
+        "https://geobasis-rlp.de/data/dgm1/current/meta4/dgm1_tif_07.meta4",
+        "https://geobasis-rlp.de/data/dgm1/current/tif/dgm1_32_419_5490_1_rp_2022.tif",
+    ]
+
+
+def test_the_list_is_read_once_however_many_gardens_ask(tmp_path: Path) -> None:
+    """Twelve megabytes of XML and twenty-one thousand names is a thing to read
+    once for a deployment, not once for a garden."""
+    asked: list[str] = []
+
+    def fetch(url: str) -> bytes:
+        asked.append(url)
+        return _listed(url)
+
+    lat, lon = to_latlon(419_500.0, 5_490_500.0, 32)
+    for _ in range(3):
+        assert tile_window(LatLon(lat=lat, lon=lon), RHINELAND,
+                           cache=_cache(tmp_path), fetch=fetch) is not None
+    assert sum(1 for url in asked if url.endswith(".meta4")) == 1
+
+
+def test_a_square_the_state_does_not_list_is_not_asked_for(tmp_path: Path) -> None:
+    """Its own list says it has nothing there — a gap in a flight, or a garden
+    near the border. Guessing a name would be a 404 with extra steps."""
+    asked: list[str] = []
+
+    def fetch(url: str) -> bytes:
+        asked.append(url)
+        return _listed(url)
+
+    lat, lon = to_latlon(500_500.0, 5_500_500.0, 32)
+    assert tile_window(LatLon(lat=lat, lon=lon), RHINELAND,
+                       cache=_cache(tmp_path), fetch=fetch) is None
+    assert [url for url in asked if not url.endswith(".meta4")] == []

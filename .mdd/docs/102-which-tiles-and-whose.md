@@ -81,7 +81,8 @@ and allows a range, which is why the probe asks twice.
 | `sn-dgm1` / `sn-dom1` / `sn-lsc` / `sn-lod2` | 206 after HEAD 401 | Sachsen, all four, all zipped |
 | `bw-lod2` / `bw-ndom1` | 200, 7.5 / 16.4 MB | Baden-Württemberg's roofs, and a 1 m canopy height model |
 | `mv-lod2` | 200 | Mecklenburg-Vorpommern, through a servlet |
-| `rp-lod2` / `rp-laz` | 200, 88,216 B / 338,759,225 B | Rheinland-Pfalz, waiting on its ground |
+| `rp-lod2` / `rp-laz` | 200, 88,216 B / 338,759,225 B | Rheinland-Pfalz's roofs and its cloud |
+| `rp-dgm1` / `rp-dgm1-index` / `rp-dom1-index` | 200, 1.5 MB / 12.0 MB / 7.6 MB | its ground and surface, and the lists that name them |
 | `sl-dgm1-zip` | 200, 559,134,521 B | Saarland — one Landkreis, because there is nothing smaller |
 
 ## "Six index states" was three different problems
@@ -216,13 +217,11 @@ fetched from somewhere a garden's data suggests.
 
 ## Known Issues
 
-- **Two states wait on an index resolver**, not six: Rheinland-Pfalz and
-  Schleswig-Holstein, whose raster names carry a per-tile flight year. Both
-  publish a machine-readable list of every tile — RP a 12 MB metalink4 with a
-  sha-256 each, SH a 9 MB GeoJSON — so this is a fetch, a cache and a parse.
-- **Rheinland-Pfalz's LoD2 and point cloud are verified and deliberately not
-  entries.** A state that publishes buildings and no ground has no way to name
-  the survey that measured them (doc 106), so they join when its ground does.
+- **Schleswig-Holstein waits on the index reader**, which now exists but reads
+  metalink and not GeoJSON. Two quirks are already known and not yet handled:
+  it appends an HTML footer to every download, and a stale row answers **200
+  with an HTML error body** rather than a 404, so the content type is the only
+  honest check.
 - **Hamburg and Bremen cannot join at all** while they publish only whole-city
   archives. Range-reading a member out of a remote zip is possible — Saarland's
   share was proved to allow it, 1.6 MB instead of 559 — and it is not built.

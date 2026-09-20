@@ -37,13 +37,43 @@ def test_every_entry_says_whose_it_is() -> None:
 
 
 def test_the_address_is_built_from_two_numbers_and_nothing_else() -> None:
-    """Every scheme in this family is the grid written down, so a tile's URL is
-    arithmetic. Nothing user-typed reaches a path."""
+    """Nearly every scheme in this family is the grid written down, so a tile's
+    URL is arithmetic. Nothing user-typed reaches a path."""
     for source in TILE_SOURCES:
+        if not source.computed:
+            continue
         url = source.url_for(347, 5647)
         assert url.startswith("https://"), source.name
         assert "347" in url or "0347" in url, f"{source.name}: {url}"
         assert "5647" in url, f"{source.name}: {url}"
+
+
+def test_a_state_that_writes_a_flight_year_says_so_instead_of_pretending() -> None:
+    """Rheinland-Pfalz puts the year of the flight in the name, and the tile
+    next door was flown in a different year. Such a source has no arithmetic
+    address and must refuse to invent one rather than build a plausible 404."""
+    looked_up = [s for s in TILE_SOURCES if not s.computed]
+    assert looked_up, "the registry has lost its index-driven sources"
+    for source in looked_up:
+        assert source.lookup is not None, source.name
+        with pytest.raises(ValueError, match="index"):
+            source.url_for(347, 5647)
+
+
+def test_the_folder_a_looked_up_name_goes_into_is_ours() -> None:
+    """An index is remote content. What is taken from it is a file name; the
+    scheme, the host and the folder stay the registry's own, so a state's list
+    can change which file is asked for and never which host is asked."""
+    for source in TILE_SOURCES:
+        if source.lookup is None:
+            continue
+        assert source.lookup.folder.startswith("https://"), source.name
+        assert source.lookup.folder.endswith("/"), source.name
+        assert source.lookup.index_url.startswith("https://"), source.name
+        # The list and the files come from the same state, not from wherever
+        # the list happens to point.
+        host = source.lookup.folder.split("/")[2]
+        assert source.lookup.index_url.split("/")[2] == host, source.name
 
 
 def test_the_tile_name_round_trips_for_every_state_scheme() -> None:
@@ -54,6 +84,8 @@ def test_the_tile_name_round_trips_for_every_state_scheme() -> None:
     # front of the easting, and "3232" would be ambiguous in a way no real
     # tile name is.
     for source in TILE_SOURCES:
+        if not source.computed:
+            continue
         for east, north in ((347, 5647), (690, 5334), (280, 5000), (920, 6100)):
             assert tile_of(source, east, north) == (east, north), source.name
 
