@@ -90,6 +90,19 @@ def test_the_stage_fills_the_plan_cell_in_the_workspace(css: str) -> None:
     assert "height: 100%" in wrap, "the cell's height has to reach the stage"
 
 
+def test_the_hint_stays_off_the_drawings_own_furniture(css: str) -> None:
+    """The hint hangs under the controls at the drawing's top edge. The bottom
+    edge is the theme's — a title block and a scale bar in its hand (doc 98) —
+    and a hint laid over those covers them, which is how it was found."""
+    base = re.search(r"\n\.plan-hint \{([^}]*)\}", css)
+    assert base is not None
+    _, workspace = _where(css, ".workspace .plan-hint")
+    for rule in (base.group(1), workspace):
+        assert "top:" in rule, "the hint hangs from the top"
+        assert "bottom:" not in rule, "the bottom belongs to the drawing's furniture"
+    assert "position: absolute" in base.group(1)
+
+
 def test_the_dock_leaves_the_plan_its_share(css: str) -> None:
     """The dock's body stops at 40vh and scrolls in itself: a bloom year does not
     get to take the window. What keeps the plan its share is the next test."""
