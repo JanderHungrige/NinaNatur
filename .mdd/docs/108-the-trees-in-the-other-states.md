@@ -19,7 +19,7 @@ test_files:
   - tests/test_tiles.py
 data_flow: mixed
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [surface-model, dom, tiles, canopies, bayern, trees]

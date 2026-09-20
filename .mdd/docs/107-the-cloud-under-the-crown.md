@@ -20,7 +20,7 @@ test_files:
   - tests/test_pointcloud.py
 data_flow: mixed
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [point-cloud, laz, lidar, crown-base, vegetation, buildings, nrw, budget]

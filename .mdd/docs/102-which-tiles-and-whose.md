@@ -16,7 +16,7 @@ test_files:
   - tests/test_tile_sources.py
 data_flow: greenfield
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [tiles, elevation, dgm1, lod2, point-cloud, licence, attribution, registry, open-data]

@@ -279,6 +279,15 @@ Three stages:
   trees — and neither is in the registry, because an entry is a request that
   was answered and those have not been asked.
 
+- **2026-09-20 — the image was built and run, because the wave added a binary
+  dependency.** `docker build` (404 MB) and a run against a fresh empty volume,
+  as the project's own rule asks: `laspy` 2.7.0 with the `Lazrs` and
+  `LazrsParallel` backends available inside the image, every tile source
+  importable, `/healthz` ok, the front page served and
+  `GET /gardens/{token}/sources` answering `[]` for a garden that rests on
+  nothing. The lock resolves 33 wheels for `lazrs`, so the Linux one is in it —
+  and the run is what turns that from an inference into a fact.
+
 ## What each one is
 
 ### 0. which-tiles-and-whose

@@ -18,7 +18,7 @@ test_files:
   - tests/fixtures/lod2_bayern_building.gml
 data_flow: mixed
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [lod2, citygml, roofs, buildings, bayern, survey, open-data]

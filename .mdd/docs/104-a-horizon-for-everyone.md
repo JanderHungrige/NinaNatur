@@ -20,7 +20,7 @@ test_files:
   - tests/test_terrain_sync.py
 data_flow: mixed
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [horizon, copernicus, dem, cog, deflate, shading, open-data]

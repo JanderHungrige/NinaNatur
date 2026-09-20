@@ -20,7 +20,7 @@ test_files:
   - tests/test_credits.py
 data_flow: reads-existing
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [provenance, licence, attribution, credits, staleness, light-map]
