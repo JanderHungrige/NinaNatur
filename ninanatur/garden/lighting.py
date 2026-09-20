@@ -86,7 +86,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     # cheaper than the alternative of one field per point.
     grid = compute_grid(garden, everything, ground=ground, horizon=horizon)
     if grid is not None:
-        save_grid(conn, garden_id, grid, signature_of(garden))
+        save_grid(conn, garden_id, grid, signature_of(garden, ground, horizon))
 
     updated = 0
     for bed in garden.beds:

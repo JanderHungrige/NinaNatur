@@ -264,7 +264,7 @@ def compute_grid(
     )
 
 
-def signature_of(garden: Garden) -> str:
+def signature_of(garden: Garden, ground: object = None, horizon: object = None) -> str:
     """A hash of everything that changes where the shadows fall.
 
     **Not a list of actions that ought to trigger a recomputation.** That was the
@@ -274,11 +274,22 @@ def signature_of(garden: Garden) -> str:
     cannot forget to declare itself.
 
     What is in it: where the garden is, and every obstacle's kind, height, roof
-    and outline, and every planting's species and position. What is deliberately
+    and outline, and every planting's species and position — and **what the
+    ground and the horizon were measured from** (Wave 25, doc 106). A state that
+    gains a source is the case this last part is for: Bayern had no terrain at
+    all until its tiles were read, and a garden whose map was computed flat
+    would otherwise have stayed flat for ever, quietly. What is deliberately
     not: names, labels, colours, soil, bed membership — none of them move a
     shadow.
     """
     parts: list[str] = [f"{garden.latitude:.5f},{garden.longitude:.5f}"]
+    # Where the ground came from and how finely it was measured: a better source
+    # for the same place is a different map.
+    whose = getattr(ground, "source", None)
+    step = getattr(ground, "vertical_step_m", None)
+    parts.append(f"ground|{whose}|{step}")
+    ring = list(horizon) if isinstance(horizon, list) else []
+    parts.append("horizon|" + ",".join(f"{angle:.2f}" for angle in ring))
     for element in sorted(
         list(garden.beds) + list(garden.obstacles), key=lambda e: e.element_id
     ):

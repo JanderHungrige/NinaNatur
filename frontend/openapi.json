@@ -716,6 +716,46 @@
         "title": "Credentials",
         "type": "object"
       },
+      "CreditOut": {
+        "description": "One source a garden's numbers rest on (doc 106).\n\nA credit is not a caption: CC-BY-4.0, dl-de/by-2-0 and the Copernicus terms\nall require the named credit, and a height shown without it is a height\nused outside its licence.",
+        "properties": {
+          "about": {
+            "title": "About",
+            "type": "string"
+          },
+          "attribution": {
+            "title": "Attribution",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "about",
+          "name",
+          "licence",
+          "attribution"
+        ],
+        "title": "CreditOut",
+        "type": "object"
+      },
       "FeedbackIn": {
         "properties": {
           "answers": {
@@ -3205,7 +3245,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.23.198"
+    "version": "V0.23.212"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -4851,6 +4891,53 @@
         "summary": "Set Soil",
         "tags": [
           "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/sources": {
+      "get": {
+        "description": "Every survey this garden's numbers actually rest on (doc 106).\n\nEmpty is an ordinary answer: a garden nobody has measured anything for owes\nnobody anything. What is here is what was used, not what the state could in\nprinciple offer \u2014 a credit for a source a garden never touched would be a\nclaim about where its numbers came from.",
+        "operationId": "sources_api_v1_gardens__token__sources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CreditOut"
+                  },
+                  "title": "Response Sources Api V1 Gardens  Token  Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sources",
+        "tags": [
+          "light"
         ]
       }
     },

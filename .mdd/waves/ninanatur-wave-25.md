@@ -116,7 +116,7 @@ confidence travel with every window, as they do with every trait value.
 | 4 | the-cloud-under-the-crown | — | planned | 1 |
 | 5 | the-trees-in-the-other-states | — | planned | 1 |
 | 6 | measure-my-own-garden | — | planned | 4 |
-| 7 | which-source-said-so | — | planned | 1 |
+| 7 | which-source-said-so | 106 | API built | 1 |
 
 Three stages:
 
@@ -204,6 +204,27 @@ Three stages:
   Cologne's 38 MB was the largest tile anybody had seen — a square kilometre of
   Munich is 161,627,079 B, so the guard was refusing the data it was meant to
   bound.
+
+- **2026-09-20 — feature 7, which source said so** (doc 106), the API half.
+  Feature 2 had created a licence gap the moment it shipped: a Bavarian garden
+  got a Copernicus horizon and nobody was named, while the terms ask for DLR,
+  Airbus and ESA. `GET /gardens/{token}/sources` is the list a page owes —
+  ground, horizon, buildings — built from what a garden *used* and costing no
+  request: naming the building model needs a state, and the stored ground
+  window already says which one measured it.
+
+  That rests on an invariant — every state publishing LoD2 also publishes its
+  ground — and the test written for it **failed on its first run**, in NRW:
+  the terrain services are registered under *Nordrhein-Westfalen* and the tiles
+  under *NW*, so each registry answered to one spelling and returned None for
+  the other. `STATES`, `key_of` and `name_of` are now the one table both go
+  through.
+
+  And `signature_of` learned about the ground. Bayern is why: yesterday a
+  Bavarian garden had no terrain and its light map was computed flat; today its
+  tiles are read, and without the ground in the signature that map would have
+  stayed flat for ever, quietly — the exact failure the signature exists to
+  prevent. What is left of the feature is the panel that prints the list.
 
 ## What each one is
 

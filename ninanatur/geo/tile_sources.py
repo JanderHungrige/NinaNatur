@@ -187,19 +187,28 @@ def glo30_url(latitude: float, longitude: float) -> str:
 
 
 #: The rest of the codebase says "Bayern", and OSM says it too (`state_at`);
-#: a tile's name says "by". One place knows both.
-STATE_KEYS: dict[str, str] = {
-    "baden-württemberg": "BW", "bayern": "BY", "berlin": "BE", "brandenburg": "BB",
-    "bremen": "HB", "hamburg": "HH", "hessen": "HE", "mecklenburg-vorpommern": "MV",
-    "niedersachsen": "NI", "nordrhein-westfalen": "NW", "rheinland-pfalz": "RP",
-    "saarland": "SL", "sachsen": "SN", "sachsen-anhalt": "ST",
-    "schleswig-holstein": "SH", "thüringen": "TH",
+#: a tile's name says "by"; the terrain services are registered under the full
+#: name. One place knows both, and every lookup goes through it — a registry
+#: that answers to one spelling and not the other is a source that silently
+#: is not there.
+STATES: dict[str, str] = {
+    "BW": "Baden-Württemberg", "BY": "Bayern", "BE": "Berlin", "BB": "Brandenburg",
+    "HB": "Bremen", "HH": "Hamburg", "HE": "Hessen", "MV": "Mecklenburg-Vorpommern",
+    "NI": "Niedersachsen", "NW": "Nordrhein-Westfalen", "RP": "Rheinland-Pfalz",
+    "SL": "Saarland", "SN": "Sachsen", "ST": "Sachsen-Anhalt",
+    "SH": "Schleswig-Holstein", "TH": "Thüringen",
 }
+STATE_KEYS: dict[str, str] = {name.lower(): key for key, name in STATES.items()}
 
 
 def key_of(state: str) -> str:
     """The two-letter key for a state, however it was named."""
     return STATE_KEYS.get(state.strip().lower(), state.strip().upper())
+
+
+def name_of(state: str) -> str:
+    """The name the state calls itself, from a key or from itself."""
+    return STATES.get(state.strip().upper(), state.strip())
 
 
 def sources_for(state: str) -> tuple[TileSource, ...]:
@@ -249,6 +258,7 @@ __all__ = [
     "glo30_url",
     "ground_tiles_for",
     "key_of",
+    "name_of",
     "lod2_tiles_for",
     "sources_for",
     "tile_of",

@@ -16,6 +16,7 @@ from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.garden.building_sync import measure_buildings
+from ninanatur.garden.credits import credits_for
 from ninanatur.garden.elements import now
 from ninanatur.garden.light_worker import month_grid, recompute_light
 from ninanatur.garden.lightgrid import extent_of, signature_of
@@ -23,8 +24,9 @@ from ninanatur.garden.lightgrid_store import load_grid
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
-from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
+from ninanatur.garden.terrain_sync import ensure_terrain, ground_for, horizon_for
 from ninanatur.geo.projection import LatLon
+from ninanatur.geo.terrain_store import cache_key, horizon_source
 from ninanatur.solar.day import MONTHS, shadow_day
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["light"])
@@ -113,6 +115,24 @@ class TerrainOut(BaseModel):
     #: 0.01 m for a DGM1. 1.0 for Baden-Württemberg's INSPIRE coverage, which
     #: cannot see a 20 m garden's own fall at all.
     vertical_step_m: float
+
+
+class CreditOut(BaseModel):
+    """One source a garden's numbers rest on (doc 106).
+
+    A credit is not a caption: CC-BY-4.0, dl-de/by-2-0 and the Copernicus terms
+    all require the named credit, and a height shown without it is a height
+    used outside its licence.
+    """
+
+    #: `ground`, `horizon`, `buildings` — or several, where one survey gave
+    #: more than one of them.
+    about: str
+    name: str
+    licence: str
+    attribution: str
+    #: How fine it is, in the source's own terms. Null where it does not say.
+    detail: str | None = None
 
 
 class ShadowFrame(BaseModel):
@@ -225,6 +245,28 @@ def terrain(
     )
 
 
+@router.get("/{token}/sources", response_model=list[CreditOut])
+def sources(
+    token: str,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> list[CreditOut]:
+    """Every survey this garden's numbers actually rest on (doc 106).
+
+    Empty is an ordinary answer: a garden nobody has measured anything for owes
+    nobody anything. What is here is what was used, not what the state could in
+    principle offer — a credit for a source a garden never touched would be a
+    claim about where its numbers came from.
+    """
+    garden = require_garden(conn, token)
+    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
+    found = credits_for(
+        load_garden(conn, garden.garden_id),
+        ground=ground_for(conn, anchor),
+        horizon_source=horizon_source(conn, cache_key(anchor)),
+    )
+    return [CreditOut(**vars(credit)) for credit in found]
+
+
 @router.get("/{token}/shadows", response_model=ShadowDay)
 def shadows_through_a_day(
     token: str,
@@ -270,10 +312,13 @@ def _read(
         return None
     grid, signature, computed_at = stored
     garden = load_garden(conn, garden_id)
+    # What the map was built on is part of what makes it current (doc 106).
+    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
+    now_signature = signature_of(garden, ground_for(conn, anchor), horizon_for(conn, anchor))
     if month is not None:
         fresh = month_grid(conn, garden, month)
         if fresh is not None:
-            grid, computed_at, signature = fresh, now(), signature_of(garden)
+            grid, computed_at, signature = fresh, now(), now_signature
     return LightMap(
         cell_m=grid.cell_m,
         min_x=grid.min_x,
@@ -291,7 +336,7 @@ def _read(
             MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)
         ],
         computed_at=computed_at,
-        stale=signature != signature_of(garden),
+        stale=signature != now_signature,
     )
 
 
