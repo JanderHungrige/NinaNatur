@@ -263,6 +263,27 @@ from the `.stylx` alone — his source assets are not asked for.*
   rather than a threshold. What is left of the wave is the courtesy: showing
   Warren Davison the result.
 
+- **2026-09-20 — stage 3 checked on the preview.** A garden of every kind, made
+  and deleted by a probe: the plan opens in Technisch, the picker draws his
+  style, the title block computes to Patrick Hand and the file arrives 200 from
+  this origin (no font host in the bundle at all), the sheet is `ds-paper`, the
+  roof draws the server's own lines and the shadows fall where the sun puts
+  them. The choice survives in `localStorage`. Asked for more contrast — and
+  again with forced colours — the plan came back Technisch although his style
+  was the remembered choice, with the picker disabled and saying why. Wave 23's
+  smoke test passes in both windows. The only console line is the anonymous
+  `accounts/me` 401 every page gets.
+
+- **2026-09-20 — the corner a road turns** (doc 98). The wedge left open at a
+  bend turned out to be a notch a metre wide at a sharp angle, once the sheet's
+  Musterblatt got a bend to show it. Each way now carries a disc of its own
+  width at each end of its centreline, in its own wash, beneath the band — and
+  the same disc goes into the network's outline, so the ink rounds the corner
+  the grey does. The discs are their own path in the mask: in one path with the
+  bands, a disc winding the other way cancels against its band and opens a hole
+  that lets the ink through inside the road, which is what the first attempt
+  drew. Paint 70 ms, Technisch 21 in the same run.
+
 ## What each one is
 
 ### 0. a-theme-is-a-thing

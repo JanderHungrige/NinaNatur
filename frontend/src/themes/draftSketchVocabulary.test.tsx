@@ -130,15 +130,22 @@ describe('streets, which arrive as ways and meet at junctions', () => {
     const { container } = render(<svg><Plan shapes={[across, joining]} metresPerPixel={0.05} /></svg>);
     const ink = container.querySelector('[data-mark="roads"] > path')!;
     const mask = container.querySelector('mask')!;
+    // The mask is the bands and the corners they turn, in two paths: in one, a
+    // disc winding the other way cancels against its band and opens a hole.
+    const cut = [...mask.querySelectorAll('path')].map((p) => p.getAttribute('d')).join('');
     // One line for both bands, and the mask's cut-out is that same line: what
     // lies on a road is hidden, so nothing crosses the junction.
-    expect(ink.getAttribute('d')).toBe(mask.querySelector('path')!.getAttribute('d'));
+    expect(ink.getAttribute('d')).toBe(cut);
     expect(ink.getAttribute('mask')).toBe(`url(#${mask.getAttribute('id')})`);
     expect(mask.querySelector('rect')!.getAttribute('fill')).toBe('#ffffff');
     expect(mask.querySelector('path')!.getAttribute('fill')).toBe('#000000');
     // Grown by most of a pixel, so a way ending on another way's edge cannot
     // leave a hairline of ink lying across the road.
-    expect(Number(mask.querySelector('path')!.getAttribute('stroke-width'))).toBeGreaterThan(0);
+    for (const path of mask.querySelectorAll('path')) {
+      expect(Number(path.getAttribute('stroke-width'))).toBeGreaterThan(0);
+    }
+    // A road that turns is rounded, in the wash and in the line alike.
+    expect(cut).toContain('a');
   });
 
   it('and draws nothing at all where a garden has no street', () => {

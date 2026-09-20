@@ -8,7 +8,7 @@ import { OVERLAYS } from './generated/rules';
 import { IMAGES } from './generated/symbols';
 import { DraftSketchFurniture } from './ours/Furniture';
 import { DraftSketchRoads } from './ours/Roads';
-import { HEDGE, RAISED, ROOF } from './ours/rules';
+import { HEDGE, RAISED, ROOF, STREET } from './ours/rules';
 import type { LineOverlay, Overlay } from './overlays';
 
 /*
@@ -74,8 +74,9 @@ function symbolOf(symbol: string, lod: LevelOfDetail, kind?: string): string {
 function overlaysOf(shape: DecoratedShape, lod: LevelOfDetail): Overlay[] {
   if (shape.ground) return [...(OVERLAYS['ds-dashed'] ?? [])];
   if (shape.kind === 'fence') return [];
-  // A street's outline belongs to the network, not to the one way (ours/Roads).
-  if (shape.kind === 'street') return [];
+  // A street's outline belongs to the network, not to the one way (ours/Roads);
+  // what it keeps of its own is the corner it turns.
+  if (shape.kind === 'street') return [...STREET];
   return [
     ...(shape.raised > 0 ? RAISED : []),
     ...(OVERLAYS[symbolOf(shape.symbol, lod, shape.kind)] ?? []),

@@ -21,7 +21,7 @@ test_files:
   - frontend/src/components/ThemePicker.test.tsx
 data_flow: greenfield
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [theme, plan, preferences, accessibility, draft-sketch]

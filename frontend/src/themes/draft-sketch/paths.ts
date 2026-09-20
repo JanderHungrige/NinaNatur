@@ -57,6 +57,20 @@ export function stroke(points: Point[], wave: Wave | null, metresPerPixel: numbe
   return drawn.length < 3 ? polyline(drawn) : smoothLine(drawn);
 }
 
+/**
+ * A filled circle, as two half arcs — the way SVG draws one in a path.
+ *
+ * It is the corner a road turns (doc 98): a way is a rectangle, so two of them
+ * meeting at an angle leave the outside of the bend open. The band's wash and
+ * the network's ink both round it with this, from the same numbers, or the grey
+ * would reach past the line drawn round it.
+ */
+export function disc(centre: Point, radius: number): string {
+  const [x, y, r] = [centre.x, -centre.y, mm(radius)];
+  return `M${mm(x - radius)},${mm(y)}a${r},${r} 0 1,0 ${mm(radius * 2)},0`
+    + `a${r},${r} 0 1,0 ${mm(-radius * 2)},0`;
+}
+
 /** His line at 1:250 is a hair at 1:2,000; it never gets thinner than a pixel. */
 export const width = (metres: number, metresPerPixel: number): string =>
   mm(Math.max(metres, metresPerPixel));
