@@ -1,10 +1,13 @@
 /**
  * Which style the plan is drawn in, and who decides (doc 100).
  *
- * The viewer's own choice, remembered in their browser; the address, which the
- * contact sheet and every probe use; and what the deployment actually serves —
- * with high contrast able to take the choice away from all three, because a
- * style made of washes and pencil is the wrong answer to "make this clearer".
+ * The viewer's own choice, remembered in their browser, or what the address
+ * asks for — with high contrast able to take the choice away from both, because
+ * a style made of washes and pencil is the wrong answer to "make this clearer".
+ *
+ * Every style is on offer everywhere since 2026-09-20: his files were served by
+ * the preview alone until he had seen the plan in his hand, and the owner
+ * lifted that gate once he had (docs 97, 100).
  *
  * A preference, never data: it lives in the browser, so two people looking at
  * one shared garden each see it in their own hand.
@@ -13,29 +16,23 @@ import { ON_OFFER, type ThemeOnOffer, themeById } from './index';
 import { technisch } from './technisch';
 
 export const STORAGE_KEY = 'ninanatur.plan-theme';
-/** Drawn only where its files are served (doc 97). */
-const PREVIEW_ONLY = 'draft-sketch';
-const PREVIEW = 'dev';
 
 export interface Circumstances {
-  environment: string | null;
   search: string;
   /** What the browser remembered, or null. Passed in so this stays pure. */
   stored: string | null;
   moreContrast: boolean;
 }
 
-/** The styles this deployment can actually draw. */
-export function offered(environment: string | null): readonly ThemeOnOffer[] {
-  return ON_OFFER.filter((theme) => theme.id !== PREVIEW_ONLY || environment === PREVIEW);
+/** The styles that can be drawn. */
+export function offered(): readonly ThemeOnOffer[] {
+  return ON_OFFER;
 }
 
-export function chosenTheme({ environment, search, stored, moreContrast }: Circumstances): string {
+export function chosenTheme({ search, stored, moreContrast }: Circumstances): string {
   if (moreContrast) return technisch.id;
   const asked = new URLSearchParams(search).get('theme') ?? stored;
-  const here = offered(environment);
-  const found = here.find((theme) => theme.id === asked);
-  return found?.id ?? technisch.id;
+  return offered().find((theme) => theme.id === asked)?.id ?? technisch.id;
 }
 
 /** What the browser remembered, or null — including when it refuses to say. */

@@ -6,7 +6,7 @@ import { technisch } from './technisch';
 /* Which style the plan is drawn in, and who decides (doc 100). */
 
 const DRAFT = 'draft-sketch';
-const plain = { environment: 'dev', search: '', stored: null, moreContrast: false };
+const plain = { search: '', stored: null, moreContrast: false };
 
 beforeEach(() => {
   try {
@@ -18,10 +18,10 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('what is on offer', () => {
-  it('is both styles where the second one is served, and one where it is not', () => {
-    expect(offered('dev').map((t) => t.id)).toEqual([technisch.id, DRAFT]);
-    expect(offered('prod').map((t) => t.id)).toEqual([technisch.id]);
-    expect(offered(null).map((t) => t.id)).toEqual([technisch.id]);
+  it('is every style, wherever the app runs', () => {
+    // His files were the preview's alone until he had seen the plan in his
+    // hand; the owner lifted that on 2026-09-20 (docs 97, 100).
+    expect(offered().map((t) => t.id)).toEqual([technisch.id, DRAFT]);
   });
 });
 
@@ -36,12 +36,6 @@ describe('which one is drawn', () => {
 
   it('or what the address asks for — which is what the sheet and the probes use', () => {
     expect(chosenTheme({ ...plain, search: `?theme=${DRAFT}` })).toBe(DRAFT);
-  });
-
-  it('but never a style this deployment does not serve', () => {
-    expect(chosenTheme({ ...plain, environment: 'prod', stored: DRAFT })).toBe(technisch.id);
-    expect(chosenTheme({ ...plain, environment: 'prod', search: `?theme=${DRAFT}` }))
-      .toBe(technisch.id);
   });
 
   it('and never a style nobody has heard of', () => {

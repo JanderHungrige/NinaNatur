@@ -9,7 +9,8 @@ export function themeById(id: string | null | undefined): PlanTheme {
   return THEMES.find((theme) => theme.id === id) ?? technisch;
 }
 
-/** Draft Sketch, until Warren Davison has seen it (doc 97): the one theme not in THEMES. */
+/** Draft Sketch: a chunk of its own, so it is named here rather than held in
+ *  THEMES, which would pull it into every page (docs 97, 100). */
 const DRAFT_SKETCH = 'draft-sketch';
 
 /** A style the picker can name without loading it (doc 100). A chunk of its own
