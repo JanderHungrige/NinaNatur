@@ -54,9 +54,10 @@ def _patch(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> None:
         "state_at": lambda *_: "Nordrhein-Westfalen",
         "fetch_window": lambda *_a, **_k: _window(),
         "horizon_ring": lambda *_a, **_k: [1.5] * 360,
-        # The tile tier under the services (doc 103); nothing here may reach a
-        # state portal either.
+        # The tile tier under the services (doc 103) and the Copernicus ring
+        # under them both (doc 104); nothing here may reach a portal either.
         "_from_tiles": lambda *_a, **_k: _tile_window(),
+        "far_ring": lambda *_a, **_k: [3.5] * 360,
     }
     for name, fallback in defaults.items():
         monkeypatch.setattr(terrain_sync, name, kwargs.get(name, fallback))
@@ -116,12 +117,29 @@ def test_a_state_with_no_service_but_tiles_gets_its_ground_from_them(
 
     assert terrain_sync.ensure_terrain(conn, garden) is True  # type: ignore[arg-type]
 
-    stored = load_window(conn, cache_key(LatLon(lat=48.137, lon=11.575)))
+    key = cache_key(LatLon(lat=48.137, lon=11.575))
+    stored = load_window(conn, key)
     assert stored is not None
     assert stored.licence == "CC-BY-4.0"
     assert "Bayerische Vermessungsverwaltung" in stored.attribution
-    # And no horizon: the ring still needs a service, which feature 2 gives it.
-    assert load_horizon(conn, cache_key(LatLon(lat=48.137, lon=11.575))) is None
+
+
+def test_a_state_with_no_service_still_gets_a_horizon(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Feature 2 (doc 104): nine Bundesländer have no coverage service and until
+    now had no ring at all — the sun set on the plot at the astronomical hour,
+    whatever the hill to the south-west was doing. Copernicus GLO-30 is 30 m
+    everywhere, which places a ridge and not a hedge, which is all a ring is."""
+    _patch(monkeypatch, state_at=lambda *_: "Bayern")
+    key = cache_key(LatLon(lat=48.137, lon=11.575))
+
+    terrain_sync.ensure_terrain(conn, _garden(conn, lat=48.137, lon=11.575))  # type: ignore[arg-type]
+
+    assert load_horizon(conn, key) == [3.5] * 360
+    whose = conn.execute("SELECT source FROM terrain_horizon WHERE place_key = ?",
+                         (key,)).fetchone()[0]
+    assert whose == "Copernicus GLO-30"
 
 
 def test_a_survey_that_fails_leaves_the_garden_flat_rather_than_broken(

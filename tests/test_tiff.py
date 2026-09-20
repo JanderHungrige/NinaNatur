@@ -115,3 +115,28 @@ def test_a_multipart_response_is_unwrapped() -> None:
     raster = read_raster(wrapped)
 
     assert raster.values[1][2] == pytest.approx(13.0)
+
+
+def test_a_deflated_tiled_raster_reads_like_any_other() -> None:
+    """What a cloud-optimised GeoTIFF is: tiles, packed with deflate rather than
+    LZW. Copernicus GLO-30 is written this way, and without it nine states have
+    no horizon (doc 104)."""
+    side = 32
+    values = np.arange(side * side, dtype="<f4").reshape(side, side)
+    raster = read_raster(_tiled(values, tile=16, compression=8))
+    assert raster.width == raster.height == side
+    assert raster.values[0][0] == pytest.approx(0.0)
+    assert raster.values[side - 1][side - 1] == pytest.approx(side * side - 1)
+
+
+def test_a_whole_degree_cell_is_refused_unless_the_caller_asks_for_one() -> None:
+    """Wave 20's guard stays tight for every window; a caller reading a whole
+    product says so, and only then (doc 104)."""
+    from ninanatur.geo.tiff import MAX_PIXELS, WHOLE_TILE_PIXELS
+
+    assert WHOLE_TILE_PIXELS > 2400 * 3600 > MAX_PIXELS
+    big = _tiled(np.zeros((2100, 2100), dtype="<f4"), tile=1024, compression=8)
+    with pytest.raises(TiffError, match="more than this caller asks for"):
+        read_raster(big)
+    wide = read_raster(big, max_pixels=WHOLE_TILE_PIXELS)
+    assert wide.width == wide.height == 2100

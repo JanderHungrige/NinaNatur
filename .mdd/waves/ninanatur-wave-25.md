@@ -111,7 +111,7 @@ confidence travel with every window, as they do with every trait value.
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
 | 1 | a-tile-not-a-service | 103 | Bayern built | 0 |
-| 2 | a-horizon-for-everyone | — | planned | 0 |
+| 2 | a-horizon-for-everyone | 104 | built | 0 |
 | 3 | every-roof-in-the-country | — | planned | 1 |
 | 4 | the-cloud-under-the-crown | — | planned | 1 |
 | 5 | the-trees-in-the-other-states | — | planned | 1 |
@@ -167,6 +167,27 @@ Three stages:
   from the tiles. The first version of that test reached for a real socket,
   which `pytest-socket` blocked and the sync swallowed — passing for the wrong
   reason, which is the failure mode doc 95 was written about.
+
+- **2026-09-20 — feature 2, a horizon for everyone** (doc 104). Nine states had
+  no ring at all: the sun set on the plot at the astronomical hour, whatever the
+  hill to the south-west was doing. Copernicus GLO-30 gives them one, from a
+  source that covers everywhere — and the check that matters was done end to
+  end that day: the Munich cell, 41,906,386 B fetched in 4.4 s, decoded
+  3,600 × 3,600 in 0.4 s, heights 325–726 m, and **523.8 m at Munich's own
+  coordinates**, which is Munich's elevation. URL, licence, decoder and the
+  degree-cell arithmetic agree.
+
+  The reader learned two things to get there: **deflate**, which is what a
+  cloud-optimised GeoTIFF is packed with and what every state service is not,
+  and that **a whole product is not a window** — Wave 20's four-million-pixel
+  guard is right for a 400 m window and wrong for a degree of the earth, so
+  `read_raster` takes its limit per call and only this path raises it.
+
+  The ring itself is unchanged: the cell's heights are read onto a 20 m UTM grid
+  around the garden and `ring_from` walks the same rays, because a ring built on
+  grid north rather than true north is rotated by two of its own bins. Cells the
+  ring crosses into are fetched too; one that does not arrive is unknown rather
+  than flat. **Stage 1 is complete.**
 
 ## What each one is
 

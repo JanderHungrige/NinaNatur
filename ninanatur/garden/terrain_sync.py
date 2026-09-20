@@ -25,6 +25,7 @@ import logging
 import sqlite3
 
 from ninanatur.garden.models import Garden
+from ninanatur.geo.far_horizon import GLO30_SOURCE, far_ring
 from ninanatur.geo.horizon import horizon_ring
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
@@ -37,7 +38,7 @@ from ninanatur.geo.terrain_store import (
     save_horizon,
     save_window,
 )
-from ninanatur.geo.tile_cache import cache_at
+from ninanatur.geo.tile_cache import TileCache, cache_at
 from ninanatur.geo.tile_sources import TileSource, ground_tiles_for
 from ninanatur.geo.tiles import tile_window
 from ninanatur.ingest.db import database_path
@@ -117,23 +118,31 @@ def ensure_terrain(conn: sqlite3.Connection, garden: Garden) -> bool:
                 save_window(conn, key, window)
                 have_window = True
 
-    if not have_ring and source is not None:
-        # The ring still needs a service; feature 2 gives the other states one.
+    if not have_ring:
+        # A state's own service where there is one; Copernicus GLO-30 where
+        # there is not, which is nine states that never had a horizon (doc 104).
+        whose = source.state if source is not None else GLO30_SOURCE
         try:
-            ring = horizon_ring(anchor, source)
+            ring = (horizon_ring(anchor, source) if source is not None
+                    else far_ring(anchor, cache=_tile_cache()))
         except Exception:
-            log.warning("horizon failed for %s (%s)", key, source.state, exc_info=True)
+            log.warning("horizon failed for %s (%s)", key, whose, exc_info=True)
         else:
-            save_horizon(conn, key, ring, source.state)
+            if ring is not None:
+                save_horizon(conn, key, ring, whose)
 
     return have_window
 
 
+def _tile_cache() -> TileCache:
+    """On the volume beside the database — never in the container layer, where a
+    rolled image loses it and a full disk is the deployment (doc 103)."""
+    return cache_at(database_path().parent, TILE_CACHE_BYTES)
+
+
 def _from_tiles(anchor: LatLon, source: TileSource) -> TerrainWindow | None:
-    """The ground from a state's own tiles, cached on the volume beside the
-    database — never in the container layer, where a rolled image loses it and
-    a full disk is the deployment (doc 103)."""
-    return tile_window(anchor, source, cache=cache_at(database_path().parent, TILE_CACHE_BYTES))
+    """The ground from a state's own tiles (doc 103)."""
+    return tile_window(anchor, source, cache=_tile_cache())
 
 
 def ground_for(conn: sqlite3.Connection, anchor: LatLon) -> TerrainWindow | None:

@@ -15,6 +15,7 @@ rather than guessing.
 from __future__ import annotations
 
 import struct
+import zlib
 from dataclasses import dataclass
 
 import numpy as np
@@ -37,8 +38,16 @@ NO_DATA = -9999.0
 #: cells. Sixteen times that is still a window; a header claiming more is refused
 #: while it is still a header (Wave 20, feature 8).
 MAX_PIXELS = 4_000_000
+#: A whole product, rather than a window of one: a Copernicus GLO-30 cell is a
+#: degree of the earth, 2,400 × 3,600 (doc 104). A caller that means to read one
+#: says so, and every other caller keeps the tighter guard.
+WHOLE_TILE_PIXELS = 16_000_000
 #: These services tile at 128 or 256. Anything past this is not a tile size.
 MAX_TILE_SIDE = 4096
+#: Deflate, under its own tag and the older one some writers still use.
+_DEFLATE = frozenset({8, 32946})
+#: Packing this reader understands: none, LZW, deflate.
+_KNOWN_COMPRESSION = frozenset({1, 5}) | _DEFLATE
 #: (SampleFormat, BitsPerSample) pairs `tiff_codec.to_values` knows how to read.
 _SUPPORTED = {(3, 32), (3, 64), (1, 16), (0, 16), (2, 16)}
 
@@ -59,7 +68,7 @@ class Raster:
     values: np.ndarray
 
 
-def read_raster(data: bytes) -> Raster:
+def read_raster(data: bytes, *, max_pixels: int = MAX_PIXELS) -> Raster:
     """Decode a single-band TIFF into metres.
 
     Raises rather than guesses. A service that starts returning tiles, or JPEG,
@@ -72,14 +81,14 @@ def read_raster(data: bytes) -> Raster:
     could ask for gigabytes before a byte of pixels was read.
     """
     try:
-        return _decode(data)
+        return _decode(data, max_pixels)
     except TiffError:
         raise
     except (struct.error, IndexError, KeyError, ValueError, TiffCodecError) as broken:
         raise TiffError(f"malformed TIFF: {broken}") from broken
 
 
-def _decode(data: bytes) -> Raster:
+def _decode(data: bytes, max_pixels: int = MAX_PIXELS) -> Raster:
     data = _unwrap(data)
     if data[:2] == b"II":
         end = "<"
@@ -94,7 +103,7 @@ def _decode(data: bytes) -> Raster:
     sample_format = _one(fields, _SAMPLE_FORMAT, 1)
     if _one(fields, _SAMPLES_PER_PIXEL, 1) != 1:
         raise TiffError("only single-band rasters are supported")
-    _check_shape(width, height, bits, sample_format)
+    _check_shape(width, height, bits, sample_format, max_pixels)
 
     raw = _strips(data, end, fields, width, height, bits)
     values = to_values(raw, end, bits, sample_format)
@@ -105,12 +114,13 @@ def _decode(data: bytes) -> Raster:
     return Raster(width=width, height=height, values=grid)
 
 
-def _check_shape(width: int, height: int, bits: int, sample_format: int) -> None:
+def _check_shape(width: int, height: int, bits: int, sample_format: int,
+                 max_pixels: int = MAX_PIXELS) -> None:
     """Refuse an image by its header, before a byte of it is allocated."""
     if width < 1 or height < 1:
         raise TiffError(f"a {width}x{height} raster has no pixels")
-    if width * height > MAX_PIXELS:
-        raise TiffError(f"{width}x{height} is more than any window here asks for")
+    if width * height > max_pixels:
+        raise TiffError(f"{width}x{height} is more than this caller asks for")
     if (sample_format, bits) not in _SUPPORTED:
         raise TiffError(f"{bits}-bit sample format {sample_format} is not supported")
 
@@ -204,13 +214,32 @@ def _array(data: bytes, end: str, fields: dict[int, _Field], tag: int) -> list[i
     return list(struct.unpack_from(end + f"{field.count}{code}", data, field.at))
 
 
+def _uncompress(chunk: bytes, compression: int, end: str, width: int, bits: int,
+                predictor: int, limit: int) -> bytes:
+    """One strip or tile, whichever way it was packed.
+
+    LZW is what the state coverage services answer with. Deflate is what a
+    cloud-optimised GeoTIFF uses — tag 8, and 32946 for the same thing under its
+    older number — and it is what Copernicus GLO-30 is written in (doc 104).
+    """
+    if compression == 5:
+        chunk = lzw(chunk, limit=limit)
+    elif compression in _DEFLATE:
+        chunk = zlib.decompress(chunk)
+        if len(chunk) > limit:
+            raise TiffError("a deflated block holds more than its tile")
+    else:
+        return chunk
+    return undo_predictor(chunk, end, width, predictor, bits)
+
+
 def _strips(
     data: bytes, end: str, fields: dict[int, _Field], width: int, height: int, bits: int
 ) -> bytes:
     if _TILE_OFFSETS in fields:
         return _tiles(data, end, fields, width, height, bits)
     compression = _one(fields, _COMPRESSION, 1)
-    if compression not in (1, 5):
+    if compression not in _KNOWN_COMPRESSION:
         raise TiffError(f"compression {compression} is not supported")
     offsets = _array(data, end, fields, _STRIP_OFFSETS)
     counts = _array(data, end, fields, _STRIP_BYTES)
@@ -221,10 +250,8 @@ def _strips(
     for offset, length in zip(offsets, counts, strict=True):
         if offset + length > len(data):
             raise TiffError("a strip runs past the end of the file")
-        chunk = data[offset : offset + length]
-        if compression == 5:
-            chunk = lzw(chunk, limit=max(0, expected - len(out)))
-            chunk = undo_predictor(chunk, end, width, _one(fields, _PREDICTOR, 1), bits)
+        chunk = _uncompress(data[offset : offset + length], compression, end, width, bits,
+                            _one(fields, _PREDICTOR, 1), max(0, expected - len(out)))
         out += chunk
         if len(out) > expected:
             raise TiffError(f"the strips hold more than {width}x{height} pixels")
@@ -247,7 +274,7 @@ def _tiles(
     format to expect more of, not less.
     """
     compression = _one(fields, _COMPRESSION, 1)
-    if compression not in (1, 5):
+    if compression not in _KNOWN_COMPRESSION:
         raise TiffError(f"compression {compression} is not supported")
     tile_w = _one(fields, _TILE_WIDTH)
     tile_h = _one(fields, _TILE_LENGTH)
@@ -265,10 +292,8 @@ def _tiles(
     for index, (offset, length) in enumerate(zip(offsets, counts, strict=True)):
         if offset + length > len(data):
             raise TiffError("a tile runs past the end of the file")
-        chunk = data[offset : offset + length]
-        if compression == 5:
-            chunk = lzw(chunk, limit=tile_w * tile_h * per_sample)
-            chunk = undo_predictor(chunk, end, tile_w, _one(fields, _PREDICTOR, 1), bits)
+        chunk = _uncompress(data[offset : offset + length], compression, end, tile_w, bits,
+                            _one(fields, _PREDICTOR, 1), tile_w * tile_h * per_sample)
         left = (index % across) * tile_w
         top = (index // across) * tile_h
         for line in range(tile_h):
@@ -281,4 +306,4 @@ def _tiles(
     return b"".join(bytes(r) for r in rows)
 
 
-__all__ = ["MAX_PIXELS", "NO_DATA", "Raster", "TiffError", "read_raster"]
+__all__ = ["MAX_PIXELS", "NO_DATA", "WHOLE_TILE_PIXELS", "Raster", "TiffError", "read_raster"]
