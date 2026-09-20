@@ -33,6 +33,7 @@ from ninanatur.geo.tile_index import SAFE_NAME
 from ninanatur.geo.tile_sources import TileSource
 from ninanatur.geo.tile_zip import ArchiveError, named
 from ninanatur.geo.utm import to_utm
+from ninanatur.geo.xyz import read_grid
 from ninanatur.ingest.http import get_bytes, get_range, size_of
 
 log = logging.getLogger(__name__)
@@ -61,22 +62,35 @@ INSIDE: dict[str, tuple[str, ...]] = {
     "GeoTIFF": (".tif", ".tiff"),
     "CityGML": (".gml", ".xml"),
     "LAZ": (".laz", ".las"),
+    "XYZ": (".xyz", ".txt", ".asc"),
 }
 
 
 def _cache_key(source: TileSource, east_km: int, north_km: int) -> str:
     """Where this tile lives on the volume: what it is, never who asked."""
-    suffix = {"GeoTIFF": "tif", "CityGML": "gml", "LAZ": "laz"}.get(source.fmt, "bin")
+    suffix = {"GeoTIFF": "tif", "CityGML": "gml",
+              "LAZ": "laz", "XYZ": "xyz"}.get(source.fmt, "bin")
     return (f"{source.state.lower()}/{source.product.value}/"
             f"{source.tile_name(east_km, north_km)}.{'zip' if source.zipped else suffix}")
 
 
-def _parts(source: TileSource, data: bytes,
-           corner: tuple[int, int]) -> list[tuple[tuple[int, int], Raster]]:
+def _decode(source: TileSource, body: bytes, cell_m: float) -> Raster:
+    """One tile's bytes as a raster, whichever way the state writes them.
+
+    Six states publish a height grid as text rather than as an image (doc 103).
+    It decodes to the same north-up raster, so nothing downstream knows.
+    """
+    if source.fmt == "XYZ":
+        return read_grid(body, cell_m=cell_m, max_pixels=WHOLE_TILE_PIXELS)
+    return read_raster(body, max_pixels=WHOLE_TILE_PIXELS)
+
+
+def _parts(source: TileSource, data: bytes, corner: tuple[int, int],
+           cell_m: float) -> list[tuple[tuple[int, int], Raster]]:
     """The rasters in what arrived, each with the corner it belongs at."""
     if not source.zipped:
-        return [(corner, read_raster(data, max_pixels=WHOLE_TILE_PIXELS))]
-    return [(corner_in(name, corner), read_raster(body, max_pixels=WHOLE_TILE_PIXELS))
+        return [(corner, _decode(source, data, cell_m))]
+    return [(corner_in(name, corner), _decode(source, body, cell_m))
             for name, body in named(data, want=INSIDE[source.fmt])]
 
 
@@ -165,7 +179,7 @@ def _from_archive(where: tuple[str, str]) -> Grab:
 
 
 def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
-             fetch: Fetch) -> dict[tuple[int, int], Raster]:
+             fetch: Fetch, cell_m: float = CELL_M) -> dict[tuple[int, int], Raster]:
     """The tiles that arrived. One missing is a hole, not a failure: a state's
     portal short of a tile is not a reason for a garden to have no ground."""
     got: dict[tuple[int, int], Raster] = {}
@@ -177,7 +191,7 @@ def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCach
         return got
     for corner, key, grab in wanted:
         try:
-            got.update(_parts(source, cache.fetched(key, grab), corner))
+            got.update(_parts(source, cache.fetched(key, grab), corner, cell_m))
         except (OSError, ValueError, TiffError, ArchiveError) as trouble:
             log.warning("a tile did not arrive; that ground stays unknown",
                         extra={"source": source.name, "tile": f"{corner[0]}_{corner[1]}",
@@ -217,7 +231,8 @@ def tile_window(anchor: LatLon, source: TileSource, *, cache: TileCache,
     """The ground under this garden, from its state's tiles."""
     zone = 32 if source.epsg == 25832 else 33
     east, north = to_utm(anchor.lat, anchor.lon, zone)
-    tiles = _rasters(source, tiles_across(east, north, source, FETCH_M), cache, fetch)
+    tiles = _rasters(source, tiles_across(east, north, source, FETCH_M), cache,
+                     fetch, cell_m)
     if not tiles:
         return None
     raster, corner_e, corner_n = _pasted(tiles, cell_m, east=east, north=north,
@@ -244,7 +259,8 @@ def surface_window(anchor: LatLon, source: TileSource, ground: TerrainWindow, *,
     zone = 32 if source.epsg == 25832 else 33
     east, north = to_utm(anchor.lat, anchor.lon, zone)
     cell = source.cell_m or CELL_M
-    tiles = _rasters(source, tiles_across(east, north, source, FETCH_M), cache, fetch)
+    tiles = _rasters(source, tiles_across(east, north, source, FETCH_M), cache,
+                     fetch, cell)
     if not tiles:
         return None
     raster, corner_e, corner_n = _pasted(tiles, cell, east=east, north=north,
