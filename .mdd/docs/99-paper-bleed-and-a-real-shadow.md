@@ -144,9 +144,17 @@ another day's machine), so twice Technisch is 42 ms and the city costs 73 —
 What is left is not marks — 286 against the cheap answer's 284 — but his
 washes: image tiles with masks, several on one plan. Trying it the other way
 round, one wash for the whole plan and marks per shape, costs *more* (79 ms),
-because his near tiles are the heavy ones. Whether 73 ms at a quarter speed —
-about 18 ms on the phone itself — is a problem is a judgement for the owner,
-and it is written down rather than tuned away.
+because his near tiles are the heavy ones. The owner's answer, on 2026-09-20, was
+to accept it: about 18 ms on the phone itself is not a problem, and what a
+drawn style costs is a fact about it rather than a threshold to design around.
+
+So the record carries both. `sheet/baseline.json` keeps Technisch's `timing` as
+the regression guard it always was, and `budgets['draft-sketch']` holds what
+the drawn style costs — measured in the same run as Technisch, because the
+machine and the day move both numbers and it is the pair that means anything:
+**73 ms against 21**. `npm run plan:sheet -- --theme draft-sketch --timing`
+prints the measurement, the ratio and what was recorded, so a change that
+doubles the cost is visible without being a failing test.
 
 ## Paper and bleed, as filters
 

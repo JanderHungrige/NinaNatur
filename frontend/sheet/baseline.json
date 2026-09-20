@@ -38,5 +38,21 @@
     ],
     "median_ms": 36,
     "machine": "darwin Apple M1"
+  },
+  "budgets": {
+    "draft-sketch": {
+      "cell": "city-40",
+      "cpu_slowdown": 4,
+      "runs": [
+        172,
+        73,
+        47,
+        73,
+        70
+      ],
+      "median_ms": 73,
+      "technisch_ms": 21,
+      "machine": "darwin Apple M1"
+    }
   }
 }
