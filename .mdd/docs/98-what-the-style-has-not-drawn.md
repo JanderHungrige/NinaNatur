@@ -252,6 +252,15 @@ roof fields. The converter reads more of the same pinned file.
 
 ## Known Issues
 
+- **A wedge of paper at a bend.** A street is a row of rectangles, one per way,
+  and two of them meeting at an angle leave a thin wedge of ground uncovered on
+  the outside of the bend. The network's ink hides none of it — it is the
+  bands' own fill that is missing, and Technisch shows the same wedge. Closing
+  it means either the union of the bands as one filled shape (which would lie
+  over the shadows that fall on a road) or a hair of the band's own texture on
+  its edge (which the level of detail changes). Left as it is until feature 4
+  settles the levels.
+
 ## Bugs
 
 (none yet — populated by /mdd bug when issues are reported)

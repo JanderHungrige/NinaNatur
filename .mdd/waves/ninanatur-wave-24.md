@@ -198,7 +198,12 @@ from the `.stylx` alone — his source assets are not asked for.*
   city at 40 m is over it. Looking at the result showed a fourth thing, from
   feature 3 rather than from today: the tool's hint and his credit were drawn
   over each other at the plan's bottom edge, in both layouts. The hint now
-  hangs inside the drawing's own box and the caption has its line.
+  hangs inside the drawing, under the zoom controls at its top edge — the first
+  try put it on the title block instead, which is what the bottom corner is
+  for — and the caption has its line. Measured in both layouts: no two of the
+  controls, the hint, the title block and the credit touch. A pale wedge of
+  paper where two ways meet at a bend is left, and named in doc 98: it is the
+  bands' own fill, which Technisch is missing too.
 
 ## What each one is
 
