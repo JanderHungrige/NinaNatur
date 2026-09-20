@@ -17,9 +17,17 @@ import type { LineOverlay, Overlay } from './overlays';
  * generated from his file; which of ours gets which is decided here.
  */
 
-/** His scale ranges, 1:1,500 and 1:2,500, as metres per pixel at 96 dpi. */
+/** His scale ranges, 1:1,500 and 1:2,500, as metres per pixel at 96 dpi: what
+ *  the plan as a whole is drawn at, where nothing says how big the thing is. */
 const NEAR_UNTIL = 0.4;
 const MID_UNTIL = 0.66;
+
+/** What one shape gets, by how wide it is drawn (doc 99). His richest crown is
+ *  three rings and a scatter of splotches, which needs about fifty pixels to
+ *  land; at a dozen nothing but the outline survives. Measured on the contact
+ *  sheet: at 40 m the houses are 89 pixels across and the shrubs 13. */
+const NEAR_FROM_PX = 48;
+const MID_FROM_PX = 14;
 
 /** Symbols he draws in three levels of detail. */
 const LEVELLED: Readonly<Record<string, string>> = {
@@ -94,8 +102,13 @@ export const draftSketch: PlanTheme = {
   // Beds are painted by the stylesheet, as in Technisch: theme.css hands it his wash.
   bedFill: () => undefined,
   objectsFilter: null,
-  lodAt: (metresPerPixel) =>
-    metresPerPixel < NEAR_UNTIL ? 'near' : metresPerPixel < MID_UNTIL ? 'mid' : 'far',
+  lodAt: (metresPerPixel, acrossM) => {
+    if (acrossM === undefined) {
+      return metresPerPixel < NEAR_UNTIL ? 'near' : metresPerPixel < MID_UNTIL ? 'mid' : 'far';
+    }
+    const across = acrossM / metresPerPixel;
+    return across >= NEAR_FROM_PX ? 'near' : across >= MID_FROM_PX ? 'mid' : 'far';
+  },
   decorate,
   images: IMAGES,
   Furniture: DraftSketchFurniture,

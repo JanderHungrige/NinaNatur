@@ -117,3 +117,22 @@ describe('whose style it is', () => {
     expect(container.textContent).toBe('');
   });
 });
+
+describe('how much detail a shape gets (doc 99)', () => {
+  // His print ranges still answer for the plan as a whole — a bed's wash, or
+  // anything that is not one shape.
+  it('keeps his scale ranges where nothing says how big the thing is', () => {
+    expect(draftSketch.lodAt(0.1)).toBe('near');
+    expect(draftSketch.lodAt(0.5)).toBe('mid');
+    expect(draftSketch.lodAt(0.9)).toBe('far');
+  });
+
+  it('gives a shape the detail its own size can show', () => {
+    // One plan at 0.1 m a pixel: a house 90 px across, a tree 30, a shrub 10.
+    expect(draftSketch.lodAt(0.1, 9)).toBe('near');
+    expect(draftSketch.lodAt(0.1, 3)).toBe('mid');
+    expect(draftSketch.lodAt(0.1, 1)).toBe('far');
+    // And the same thing zoomed into is drawn richer, which is the point.
+    expect(draftSketch.lodAt(0.01, 1)).toBe('near');
+  });
+});

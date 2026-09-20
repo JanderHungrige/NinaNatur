@@ -80,8 +80,11 @@ export interface PlanTheme {
   /** The one filter over the shapes, as `url(#…)`, or null. Nothing else is
    *  filtered: a displaced hit target is a target somewhere it is not drawn. */
   objectsFilter: string | null;
-  /** Which level of detail a scale gets, in metres per screen pixel. */
-  lodAt: (metresPerPixel: number) => LevelOfDetail;
+  /** How much detail to draw: the scale in metres per screen pixel, and — for
+   *  a mark that belongs to one shape — how wide that shape is, in metres. A
+   *  theme may give a house more than a shrub on the same plan (doc 99).
+   *  Without a size it answers for the plan as a whole. */
+  lodAt: (metresPerPixel: number, acrossM?: number) => LevelOfDetail;
   /** What is drawn along a shape rather than inside it — ink, shadows, corner
    *  and centre marks (doc 97) — or nothing, when the theme has no such marks.
    *  Never a target: the shape itself stays the only thing a pointer can hit. */

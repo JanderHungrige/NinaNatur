@@ -91,8 +91,10 @@ export function CanvasScene({
 }: Props) {
   const theme = usePlanTheme();
   const metresPerPixel = view.spanM / view.widthPx;
-  const lod = theme.lodAt(metresPerPixel);
-  const decorations = useDecorations(garden, theme, lod, metresPerPixel);
+  // Each shape asks for itself (doc 99), at the scale the decorations use, so
+  // a shape's wash and the marks over it are always at the same level.
+  const scale = planScale(metresPerPixel);
+  const decorations = useDecorations(garden, theme, metresPerPixel);
   /** Shown where the pointer has it, saved where it is let go. */
   const shift = (id: number): string =>
     dragOffset !== null && dragOffset.id === id
@@ -135,14 +137,13 @@ export function CanvasScene({
           N ↑
         </text>
 
-        <PlanObjects garden={garden} theme={theme} lod={lod} selectedBedId={selectedBedId}
+        <PlanObjects garden={garden} theme={theme} metresPerPixel={scale} selectedBedId={selectedBedId}
                      selectedObstacleId={selectedObstacleId} armed={armed}
                      onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle}
                      onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift}
                      beneath={decorations === null ? undefined : beneathOf(decorations, shift)} />
         {decorations !== null
-          && <InkLayer drawn={decorations} theme={theme} shift={shift}
-                       metresPerPixel={planScale(metresPerPixel)} />}
+          && <InkLayer drawn={decorations} theme={theme} shift={shift} metresPerPixel={scale} />}
 
         {sunMap !== undefined && (
           <SunMap map={sunMap.map} mode={sunMap.mode} />

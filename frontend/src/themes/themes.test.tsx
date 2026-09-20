@@ -87,6 +87,26 @@ describe('the plan theme (doc 96)', () => {
     expect(new Set(asked)).toEqual(new Set(['near']));
   });
 
+  it('asks for each shape at the size that shape is drawn (doc 99)', () => {
+    // Every shape on one plan, at one scale, and a theme that answers by size:
+    // what the scene must pass is the shape's own width in metres.
+    const sizes: (number | undefined)[] = [];
+    const theme = probe({
+      lodAt: (_mpp, acrossM) => {
+        sizes.push(acrossM);
+        return acrossM !== undefined && acrossM < 2 ? 'far' : 'near';
+      },
+      fill: (symbol, lod) => `url(#probe-${symbol}-${lod})`,
+    });
+    const { container } = scene(theme);
+    expect(sizes.some((across) => across !== undefined)).toBe(true);
+    // A garden of one size everywhere would prove nothing: these differ.
+    const drawn = [...container.querySelectorAll('polygon.obstacle')]
+      .map((shape) => shape.getAttribute('fill') ?? '');
+    expect(drawn.some((fill) => fill.endsWith('-near)'))).toBe(true);
+    expect(drawn.some((fill) => fill.endsWith('-far)'))).toBe(true);
+  });
+
   it('is found by its id, and an id nobody knows is Technisch', () => {
     expect(themeById('technisch')).toBe(technisch);
     expect(themeById('verschollen')).toBe(technisch);

@@ -1,9 +1,10 @@
 import { type ReactNode, useMemo } from 'react';
 
 import type { GardenOut } from '../api/client';
+import { acrossPoints } from '../canvas/across';
 import type { Point } from '../canvas/viewport';
 import { KINDS, isGround } from '../kinds';
-import type { DecoratedShape, Decoration, LevelOfDetail, PlanTheme } from '../themes';
+import type { DecoratedShape, Decoration, PlanTheme } from '../themes';
 import { surfacesFirst } from './PlanObjects';
 
 /*
@@ -52,7 +53,7 @@ function obstacleShape(o: Obstacle): DecoratedShape {
 export const planScale = (metresPerPixel: number): number =>
   2 ** Math.round(Math.log2(metresPerPixel));
 
-export function useDecorations(garden: GardenOut, theme: PlanTheme, lod: LevelOfDetail,
+export function useDecorations(garden: GardenOut, theme: PlanTheme,
   metresPerPixel: number): Decorated[] | null {
   const scale = planScale(metresPerPixel);
   return useMemo(() => {
@@ -61,9 +62,10 @@ export function useDecorations(garden: GardenOut, theme: PlanTheme, lod: LevelOf
     return surfacesFirst([...garden.obstacles, ...garden.beds]).map((item) => {
       const shape = 'bed_id' in item ? bedShape(item) : obstacleShape(item);
       const id = 'bed_id' in item ? item.bed_id : item.obstacle_id;
+      const lod = theme.lodAt(scale, acrossPoints(shape.points));
       return { id, shape, decoration: decorate(shape, lod, scale) };
     });
-  }, [garden, theme, lod, scale]);
+  }, [garden, theme, scale]);
 }
 
 const isEmpty = (node: ReactNode): boolean =>
