@@ -1448,6 +1448,8 @@ export interface components {
             roof_pitch_deg: number | null;
             /** Roof Source */
             roof_source: string;
+            /** Shadow */
+            shadow?: number[] | null;
             /** Shape */
             shape: string;
             /** Width */

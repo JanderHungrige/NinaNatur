@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { centreOf, inset, offset, overshoots, scaled, ticks } from '../../canvas/sketch';
+import { centreOf, inset, offset, overshoots, scaled, sweep, ticks } from '../../canvas/sketch';
 import type { Point } from '../../canvas/viewport';
 import type { DecoratedShape, Decoration } from '../types';
 import type {
@@ -42,11 +42,23 @@ function capped(wave: Wave | null, radius: number): Wave | null {
   return { ...wave, amplitude: wave.amplitude * shrink, period: wave.period * shrink };
 }
 
-function shadow(o: Shadow, points: Point[], mpp: number, key: string): ReactNode {
-  const cast = offset(points, o.dx, o.dy);
+/**
+ * His drop shadow, thrown where the sun actually throws it (doc 99). The server
+ * gives each standing thing its offset at the drawing's one moment; a thing
+ * that casts none is drawn without a shadow rather than with a stylish guess.
+ * A bed's edge shadow is its own depth and says so.
+ */
+function shadow(o: Shadow, shape: DecoratedShape, mpp: number, key: string): ReactNode {
+  const points = shape.points;
+  const at = o.edge === true ? { x: o.dx, y: o.dy } : shape.shadow;
+  if (at === null) return null;
+  // A bed's edge is the shape moved a little; a thing that stands up hides the
+  // ground all the way over, so its shadow is the shape swept (doc 99).
+  const cast = o.edge === true ? offset(points, at.x, at.y) : sweep(points, at.x, at.y);
+  const wave = o.edge === true ? capped(o.wave, radiusOf(points)) : null;
   // Drawn beneath its shape, among the targets: it must never be one itself.
   return <path key={key} data-mark="shadow" className="canvas__shadow" pointerEvents="none"
-               aria-hidden="true" d={outline(cast, capped(o.wave, radiusOf(points)), mpp)}
+               aria-hidden="true" d={outline(cast, wave, mpp)}
                fill={o.colour} fillOpacity={o.opacity} />;
 }
 
@@ -147,7 +159,7 @@ function centre(o: Centre, points: Point[], mpp: number, key: string): ReactNode
 function drawn(o: Overlay, shape: DecoratedShape, mpp: number, key: string): ReactNode {
   const points = shape.points;
   switch (o.kind) {
-    case 'shadow': return shadow(o, points, mpp, key);
+    case 'shadow': return shadow(o, shape, mpp, key);
     case 'ink': return ink(o, points, mpp, key);
     case 'band': return band(o, points, mpp, key);
     case 'overshoot': return overshoot(o, points, mpp, key);

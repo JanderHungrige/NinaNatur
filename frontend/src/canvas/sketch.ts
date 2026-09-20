@@ -190,6 +190,35 @@ export function offset(points: Point[], dx: number, dy: number): Point[] {
 }
 
 /** Where a shape's middle is: its centroid by area, or — with no area — its mean. */
+/**
+ * The shape swept along a light: the hull of the outline and its offset copy
+ * (doc 99).
+ *
+ * A cast shadow is not the shape moved — that leaves a gap between a house and
+ * its own shadow, which reads as a second building — but the ground the shape
+ * hides all the way over. The server's `shadow_polygon` takes the same hull of
+ * the same two rings, so the drawing and the light model agree on the outline.
+ */
+export function sweep(points: Point[], dx: number, dy: number): Point[] {
+  const all = [...points, ...points.map((p) => ({ x: p.x + dx, y: p.y + dy }))];
+  const order = [...all].sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
+  const turn = (o: Point, a: Point, b: Point): number =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const half = (from: Point[]): Point[] => {
+    const chain: Point[] = [];
+    for (const p of from) {
+      while (chain.length >= 2 && turn(chain[chain.length - 2]!, chain[chain.length - 1]!, p) <= 0) {
+        chain.pop();
+      }
+      chain.push(p);
+    }
+    chain.pop();
+    return chain;
+  };
+  // Andrew's monotone chain, as `ninanatur/solar/shading.py` does it.
+  return [...half(order), ...half([...order].reverse())];
+}
+
 export function centreOf(points: Point[]): Point {
   let area = 0;
   let cx = 0;

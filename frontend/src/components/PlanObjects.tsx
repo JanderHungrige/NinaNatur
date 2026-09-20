@@ -2,10 +2,11 @@ import type React from 'react';
 import { Fragment, type ReactNode } from 'react';
 
 import type { GardenOut } from '../api/client';
+import { acrossPairs } from '../canvas/across';
 import { svgPoints } from '../canvas/viewport';
 import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
 import { bedName } from '../plural';
-import type { LevelOfDetail, PlanTheme } from '../themes';
+import type { PlanTheme } from '../themes';
 
 /*
  * The shapes on the plan — every bed and every element, in one ordered group
@@ -86,7 +87,10 @@ function asksWhatItIs(event: React.KeyboardEvent): boolean {
 export interface PlanObjectsProps {
   garden: GardenOut;
   theme: PlanTheme;
-  lod: LevelOfDetail;
+  /** The scale the plan is drawn at. Each shape asks the theme what detail its
+   *  own size can carry (doc 99); a level worked out once above would give a
+   *  shrub the same as a house. */
+  metresPerPixel: number;
   selectedBedId: number | null;
   selectedObstacleId: number | null;
   armed: boolean;
@@ -102,15 +106,15 @@ export interface PlanObjectsProps {
 
 type ShapeProps<T> = Omit<PlanObjectsProps, 'garden' | 'beneath'> & { item: T };
 
-function BedShape({ item, theme, lod, selectedBedId, armed, onSelectBed, onAskWhatItIs,
-  onGrabElement, shift }: ShapeProps<Bed>) {
+function BedShape({ item, theme, metresPerPixel, selectedBedId, armed, onSelectBed,
+  onAskWhatItIs, onGrabElement, shift }: ShapeProps<Bed>) {
   return (
     <polygon
       // The menu anchors to this: it has to follow the shape when the page
       // scrolls, and a click coordinate cannot.
       data-element-id={item.bed_id}
       className={item.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
-      fill={theme.bedFill(lod)}
+      fill={theme.bedFill(theme.lodAt(metresPerPixel, acrossPairs(item.polygon)))}
       points={svgPoints(item.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
       tabIndex={armed ? undefined : 0}
       role={armed ? undefined : 'button'}
@@ -148,7 +152,7 @@ function BedShape({ item, theme, lod, selectedBedId, armed, onSelectBed, onAskWh
   );
 }
 
-function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectObstacle,
+function ObstacleShape({ item, theme, metresPerPixel, selectedObstacleId, armed, onSelectObstacle,
   onAskWhatItIs, onGrabElement, shift }: ShapeProps<Obstacle>) {
   // The ground is drawn and nothing else. It is where the plan is measured
   // from and what the server sums over; for the gardener it is the paper, not
@@ -161,7 +165,8 @@ function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectOb
     <polygon
       data-element-id={item.obstacle_id}
       className={`obstacle obstacle--${item.kind}`}
-      fill={theme.fill(symbolOf(item.kind), lod, item.kind)}
+      fill={theme.fill(symbolOf(item.kind),
+                       theme.lodAt(metresPerPixel, acrossPairs(item.footprint)), item.kind)}
       /* The footprint the server computed. Re-deriving it here would be a
          third answer to "what ground does this cover", and the two that
          already existed agreed only by accident. */

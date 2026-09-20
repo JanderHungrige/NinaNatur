@@ -12,16 +12,25 @@ export function themeById(id: string | null | undefined): PlanTheme {
 /** Draft Sketch, until Warren Davison has seen it (doc 97): the one theme not in THEMES. */
 const DRAFT_SKETCH = 'draft-sketch';
 
+/** A style the picker can name without loading it (doc 100). A chunk of its own
+ *  is the point of the lazy theme, so its label is repeated here — and
+ *  `themes.test.tsx` fails if the two ever disagree. */
+export interface ThemeOnOffer {
+  id: string;
+  label: string;
+}
+
+/** Every style that exists, whether or not this deployment serves it. */
+export const ON_OFFER: readonly ThemeOnOffer[] = [
+  ...THEMES.map((theme) => ({ id: theme.id, label: theme.label })),
+  { id: DRAFT_SKETCH, label: 'Draft Sketch' },
+];
+
 /**
  * Which theme this page may draw. Draft Sketch only on the preview, and only
  * when asked for by name: nothing of his is shown in public before he has seen
  * it. Which deployment this is, only the server knows (`/healthz`).
  */
-export function themeFor(environment: string | null, search: string): string {
-  const asked = new URLSearchParams(search).get('theme');
-  return environment === 'dev' && asked === DRAFT_SKETCH ? DRAFT_SKETCH : technisch.id;
-}
-
 /** The theme with this id. Draft Sketch is a chunk of its own, fetched only
  *  when it is drawn — which production never asks for. */
 export async function loadTheme(id: string): Promise<PlanTheme> {

@@ -99,6 +99,12 @@ class ObstacleOut(BaseModel):
     #: metres. Empty where the model has a plane. Sent so no drawing works out
     #: a second answer to where the ridge runs.
     roof_lines: list[list[list[float]]]
+    #: How far and which way this throws its shadow in the drawing (doc 99), as
+    #: [dx, dy] in garden metres at one reference moment — mid-June, three hours
+    #: after solar noon. Null where the model says it casts none: nothing
+    #: measured, a kind that does not stand up, or a sun too low. A drawing has
+    #: one light, and this is where it comes from.
+    shadow: list[float] | None = None
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

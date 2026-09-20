@@ -902,4 +902,10 @@ export const SYMBOLS = `
 <rect width="17.778" height="21.167" fill="url(#ds-green-sheet-3)"/>
 </pattern>
 <pattern id="ds-green" width="17.778" height="21.167" patternUnits="userSpaceOnUse"><rect width="17.778" height="21.167" fill="url(#ds-green-tile)"/></pattern>
+<pattern id="ds-paper-paper" width="8.889" height="7.056" patternUnits="userSpaceOnUse"><image href="${ds_6c7f0598}" width="8.889" height="7.056" preserveAspectRatio="none"/></pattern>
+<mask id="ds-paper-paper-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="8.889" height="7.056" mask-type="alpha"><rect width="8.889" height="7.056" fill="url(#ds-paper-paper)"/></mask>
+<pattern id="ds-paper-tile" width="8.889" height="7.056" patternUnits="userSpaceOnUse">
+<rect width="8.889" height="7.056" fill="#e1e1e1" mask="url(#ds-paper-paper-mask)"/>
+</pattern>
+<pattern id="ds-paper" width="8.889" height="7.056" patternUnits="userSpaceOnUse"><rect width="8.889" height="7.056" fill="url(#ds-paper-tile)"/></pattern>
 `;

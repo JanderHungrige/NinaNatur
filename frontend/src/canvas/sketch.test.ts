@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { inset, offset, overshoots, scaled, ticks, wobble, wobbleLine } from './sketch';
+import { inset, offset, overshoots, scaled, sweep, ticks, wobble, wobbleLine } from './sketch';
 
 /* The geometry a sketched outline is drawn with (doc 97): pure, seeded, in metres. */
 
@@ -98,3 +98,46 @@ describe('the marks doc 98 adds', () => {
     expect(drawn[drawn.length - 1]!.x).toBeCloseTo(10, 9);
   });
 });
+
+describe('a shape swept along the light (doc 99)', () => {
+  const box = [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 0, y: 1 }];
+
+  it('covers the shape, its offset copy and the ground between them', () => {
+    const cast = sweep(box, 3, 1);
+    // The hull of both boxes: nothing of either sticks out of it.
+    for (const p of [...box, ...box.map((q) => ({ x: q.x + 3, y: q.y + 1 }))]) {
+      expect(inside(cast, p)).toBe(true);
+    }
+    // And it reaches the far corner of the offset copy, not merely the shape.
+    expect(Math.max(...cast.map((p) => p.x))).toBeCloseTo(5, 6);
+    expect(Math.max(...cast.map((p) => p.y))).toBeCloseTo(2, 6);
+  });
+
+  it('is the shape itself where the light casts nothing', () => {
+    expect(sweep(box, 0, 0).length).toBeLessThanOrEqual(box.length);
+    expect(Math.max(...sweep(box, 0, 0).map((p) => p.x))).toBeCloseTo(2, 6);
+  });
+
+  it('keeps the hull convex: no inner corner survives a sweep', () => {
+    // An L, swept: the notch is filled in, as a shadow's edge has no notch.
+    const ell = [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 1 },
+                 { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 0, y: 3 }];
+    const cast = sweep(ell, 1, 1);
+    expect(inside(cast, { x: 2.5, y: 2.5 })).toBe(true);
+  });
+});
+
+/** Is the point inside this convex ring? Winding all one way says so. */
+function inside(ring: { x: number; y: number }[], p: { x: number; y: number }): boolean {
+  let sign = 0;
+  for (let i = 0; i < ring.length; i += 1) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    const cross = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+    if (Math.abs(cross) < 1e-9) continue;
+    const at = cross > 0 ? 1 : -1;
+    if (sign !== 0 && at !== sign) return false;
+    sign = at;
+  }
+  return true;
+}

@@ -8,7 +8,8 @@ import { KINDS, isGround } from '../kinds';
 import { SHEET_GARDENS } from '../sheet/gardens';
 import { PlanThemeProvider } from './context';
 import { draftSketch } from './draft-sketch';
-import { THEMES, loadTheme, themeFor } from './index';
+import { THEMES, loadTheme } from './index';
+import { chosenTheme } from './choice';
 import { technisch } from './technisch';
 
 /* Draft Sketch as a theme of the plan (doc 97). */
@@ -91,10 +92,12 @@ describe('the Draft Sketch theme', () => {
 
 describe('where Draft Sketch can be seen', () => {
   it('only on the preview, and only when asked for by name', () => {
-    expect(themeFor('dev', '?theme=draft-sketch')).toBe('draft-sketch');
-    expect(themeFor('dev', '')).toBe('technisch');
-    expect(themeFor('prod', '?theme=draft-sketch')).toBe('technisch');
-    expect(themeFor(null, '?theme=draft-sketch')).toBe('technisch');
+    const at = (environment: string | null, search: string) =>
+      chosenTheme({ environment, search, stored: null, moreContrast: false });
+    expect(at('dev', '?theme=draft-sketch')).toBe('draft-sketch');
+    expect(at('dev', '')).toBe('technisch');
+    expect(at('prod', '?theme=draft-sketch')).toBe('technisch');
+    expect(at(null, '?theme=draft-sketch')).toBe('technisch');
   });
 
   it('is not among the themes a page starts with, and is fetched when it is asked for', async () => {
@@ -115,5 +118,24 @@ describe('whose style it is', () => {
     expect(container.textContent).toContain('with assistance from Louis Hill (@NKYmapLAB)');
     rerender(credited(technisch));
     expect(container.textContent).toBe('');
+  });
+});
+
+describe('how much detail a shape gets (doc 99)', () => {
+  // His print ranges still answer for the plan as a whole — a bed's wash, or
+  // anything that is not one shape.
+  it('keeps his scale ranges where nothing says how big the thing is', () => {
+    expect(draftSketch.lodAt(0.1)).toBe('near');
+    expect(draftSketch.lodAt(0.5)).toBe('mid');
+    expect(draftSketch.lodAt(0.9)).toBe('far');
+  });
+
+  it('gives a shape the detail its own size can show', () => {
+    // One plan at 0.1 m a pixel: a house 90 px across, a tree 30, a shrub 10.
+    expect(draftSketch.lodAt(0.1, 9)).toBe('near');
+    expect(draftSketch.lodAt(0.1, 3)).toBe('mid');
+    expect(draftSketch.lodAt(0.1, 1)).toBe('far');
+    // And the same thing zoomed into is drawn richer, which is the point.
+    expect(draftSketch.lodAt(0.01, 1)).toBe('near');
   });
 });

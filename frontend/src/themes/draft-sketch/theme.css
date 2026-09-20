@@ -20,6 +20,13 @@
   fill-opacity: 0.5;
 }
 
+/* The sheet the drawing is on: his paper texture, in his own lightest tint
+   (doc 99). How much of it shows is ours — full strength reads as a stain,
+   and none of it is the blank page the review complained about. */
+.plan-theme--draft-sketch .canvas__paper {
+  opacity: 0.55;
+}
+
 /* The plan's furniture (doc 98) says north; the "N ↑" in the drawing goes. */
 .plan-theme--draft-sketch .compass {
   display: none;
@@ -116,6 +123,9 @@
     --plan-ground-stroke: var(--outline);
   }
 
+  /* His paper goes with his ink: a texture under everything is the opposite of
+     what somebody asking for more contrast wants. */
+  .plan-theme--draft-sketch .canvas__paper,
   .plan-theme--draft-sketch .canvas__shadow,
   .plan-theme--draft-sketch .canvas__ink {
     display: none;

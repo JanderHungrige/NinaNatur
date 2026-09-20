@@ -1659,6 +1659,20 @@
             "title": "Roof Source",
             "type": "string"
           },
+          "shadow": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shadow"
+          },
           "shape": {
             "title": "Shape",
             "type": "string"
