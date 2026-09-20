@@ -109,6 +109,25 @@ says it (docs 83, 93, 94).
   turns a measurement into an entry on every save — which is how renaming a
   surveyed house once made it the user's (Wave 21).
 
+## The plan's look
+
+The plan is drawn through a theme (`frontend/src/themes/`, docs 96–98):
+Technisch is ours, Draft Sketch is Warren Davison's, used and adapted with his
+permission (`THIRD_PARTY.md`).
+
+- **Every file of marks says whose they are**, in its first comment, in one of
+  four wordings: *NinaNatur*, *Warren Davison (Draft Sketch)*, *adapted from
+  Draft Sketch*, *NinaNatur, in the style of Draft Sketch*.
+  `tests/test_theme_provenance.py` refuses a file without one.
+- **His half of the theme is generated, never handwork.** `python -m
+  scripts.stylx_to_theme` writes `themes/draft-sketch/generated/` from his
+  pinned `.stylx`, and `--check` regenerates into a temporary folder and
+  compares byte for byte. Change the converter, never its output.
+- **The roof a drawing shows is the model's.** Ridges, hips and a pent roof's
+  upper edge come from `roof_lines` on `ObstacleOut` (`garden/roofshape.py`,
+  docs 94, 98). Working a ridge out in the browser as well is how two drawings
+  of one roof come to disagree.
+
 ## Schema changes
 
 - A new column goes into `ingest/migrations.py::COLUMN_MIGRATIONS` (add-only;
