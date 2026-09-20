@@ -98,7 +98,9 @@ None says so.
 
 ## Three more states, and a model that was already normalised
 
-**2026-09-20, the second round.** Rheinland-Pfalz's `DOM1` came with its
+**2026-09-20, the second round.** Saarland's and Hamburg's surface models come
+out of whole-region archives over ranges (doc 103), so two more cities' trees
+are findable. Rheinland-Pfalz's `DOM1` came with its
 ground, found through the same metalink (doc 103). Thüringen's `DOM1` and Sachsen's `DOM1` are
 1 m surface models whose names are simply the grid — the index they were said
 to need does not exist, and the zip around them was the whole obstacle
@@ -140,8 +142,7 @@ and the reader refuses an image by its header before allocating.
 
 - **Schleswig-Holstein** publishes a 20 cm surface model whose name carries a
   per-tile flight year, and its list is GeoJSON where the index reader speaks
-  metalink (doc 103). Hamburg, Bremen and Saarland publish no single tile at
-  all (doc 102), which no index would fix.
+  metalink (doc 103). **Bremen's** is XYZ text, which nothing here reads.
 - **Bayern's *Einzelbäume* was asked about and declined.** Its attributes are a
   position, the ground height and the tree's height — no species, no crown
   width and **no crown base**, which is the one thing a raster cannot give and

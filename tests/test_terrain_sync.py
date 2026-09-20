@@ -98,9 +98,13 @@ def test_a_state_with_neither_a_service_nor_tiles_leaves_the_garden_flat(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Flat is what every garden was yesterday, and it is not an error the
-    gardener has to care about. Saarland is the case doc 68 named: its service
-    forbids this use, and its download licence has not been read yet."""
-    _patch(monkeypatch, state_at=lambda *_: "Saarland")
+    gardener has to care about.
+
+    Bremen is the last case of it, and not for want of asking: it publishes its
+    ground openly, as **XYZ text** — a million lines of easting, northing and
+    height per square kilometre — which nothing in this registry reads. When
+    that changes this test will fail, and it should."""
+    _patch(monkeypatch, state_at=lambda *_: "Bremen")
 
     assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
     assert load_window(conn, cache_key(LatLon(lat=51.2564, lon=7.1501))) is None

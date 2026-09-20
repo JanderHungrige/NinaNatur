@@ -30,6 +30,7 @@ from ninanatur.geo.terrain_store import cache_key
 from ninanatur.geo.tile_cache import TileCache, cache_at
 from ninanatur.geo.tile_sources import TileProduct, TileSource, sources_for
 from ninanatur.geo.tile_zip import extract
+from ninanatur.geo.tiles import addressed
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
@@ -87,10 +88,14 @@ def _unwrapped(source: TileSource, cache: TileCache, stem: str,
     are ordinary entries under the cap, and either can be dropped and made
     again (doc 103).
     """
-    url = source.url_for(tile_e, tile_n)
+    found = addressed(source, [(tile_e, tile_n)], cache, get_bytes)
+    if not found:
+        raise FileNotFoundError(f"{source.name} holds no tile at {tile_e}_{tile_n}")
+    grab = found[0][2]
     if not source.zipped:
-        return cache.file_for(f"{stem}.laz", url, get_bytes)
-    archive = cache.file_for(f"{stem}.zip", url, get_bytes)
+        # Saarland's member comes out of a 12.5 GB archive already a .laz.
+        return cache.file_into(f"{stem}.laz", grab)
+    archive = cache.file_into(f"{stem}.zip", grab)
     return extract(archive, want=(".laz", ".las"), out=cache.path_for(f"{stem}.laz"))
 
 

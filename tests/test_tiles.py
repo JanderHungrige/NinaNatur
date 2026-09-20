@@ -297,9 +297,10 @@ def _listed(url: str) -> bytes:
 
 @pytest.fixture(autouse=True)
 def _forget_listings() -> None:
-    """The parsed list is kept for the life of the process, so a test must not
+    """What was parsed is kept for the life of the process, so a test must not
     inherit another test's."""
     tiles._LISTINGS.clear()
+    tiles._HELD.clear()
 
 
 def test_a_tile_is_found_through_the_states_own_list(tmp_path: Path) -> None:
@@ -352,3 +353,79 @@ def test_a_square_the_state_does_not_list_is_not_asked_for(tmp_path: Path) -> No
     assert tile_window(LatLon(lat=lat, lon=lon), RHINELAND,
                        cache=_cache(tmp_path), fetch=fetch) is None
     assert [url for url in asked if not url.endswith(".meta4")] == []
+
+
+# --- Tiles read out of an archive that is never fetched (doc 103) ---
+
+SAARLAND = next(s for s in sources_for("SL") if s.product is TileProduct.DGM1)
+
+
+class _Share:
+    """A state's file host, serving ranges over one archive and keeping the
+    bill. The other five districts are not there, which is a region without
+    ground rather than a state without ground."""
+
+    def __init__(self, corners: list[tuple[int, int]]) -> None:
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as archive:
+            for east, north in corners:
+                archive.writestr(f"DGM1_tif_NK/dgm1_32_{east}_{north}_1_SL_2025.tif",
+                                 _flat(east, north))
+        self.body = out.getvalue()
+        self.here = SAARLAND.archives[1]
+        self.served = 0
+
+    def size(self, url: str) -> int:
+        if url != self.here:
+            raise OSError(f"no such archive: {url}")
+        return len(self.body)
+
+    def ranged(self, url: str, start: int, end: int) -> bytes:
+        if url != self.here:
+            raise OSError(f"no such archive: {url}")
+        self.served += end - start + 1
+        return self.body[start:end + 1]
+
+
+def test_a_tile_is_read_out_of_an_archive_that_is_never_fetched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Saarland publishes nothing smaller than a 559 MB Landkreis. Its own
+    directory says what is in it, and the tile comes out of it by range.
+
+    What this checks is that the path is right: the window is the tile, and the
+    whole-file fetcher is never called. That the cost is a fraction of the
+    archive is `test_remote_zip`, whose archive is incompressible and therefore
+    the size a real one is — four identical tiles deflate to nothing, and a
+    cost assertion over them would pass for the wrong reason."""
+    share = _Share([(348, 5475), (349, 5475), (348, 5476), (349, 5476)])
+    monkeypatch.setattr(tiles, "size_of", share.size)
+    monkeypatch.setattr(tiles, "get_range", share.ranged)
+
+    lat, lon = to_latlon(348_500.0, 5_475_500.0, 32)
+    window = tile_window(LatLon(lat=lat, lon=lon), SAARLAND, cache=_cache(tmp_path),
+                         fetch=_never)
+    assert window is not None
+    assert window.source == "SL"
+    assert np.isfinite(window.heights).all()
+    assert set(window.heights) == {float(48 * 100 + 75)}
+    assert share.served > 0
+
+
+def test_a_district_whose_archive_is_missing_is_a_gap_not_a_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Five of Saarland's six archives are absent in this test. A garden in the
+    sixth still gets its ground, and one elsewhere gets None rather than an
+    error — the same answer as a state with no source at all."""
+    share = _Share([(348, 5475)])
+    monkeypatch.setattr(tiles, "size_of", share.size)
+    monkeypatch.setattr(tiles, "get_range", share.ranged)
+
+    lat, lon = to_latlon(600_500.0, 5_500_500.0, 32)
+    assert tile_window(LatLon(lat=lat, lon=lon), SAARLAND,
+                       cache=_cache(tmp_path), fetch=_never) is None
+
+
+def _never(url: str) -> bytes:
+    raise AssertionError(f"an archived tile must not be fetched whole: {url}")

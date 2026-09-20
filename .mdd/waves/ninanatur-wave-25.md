@@ -112,11 +112,11 @@ confidence travel with every window, as they do with every trait value.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
-| 1 | a-tile-not-a-service | 103 | BY, TH, SN, RP built (10 states) | 0 |
+| 1 | a-tile-not-a-service | 103 | 6 states of tiles (14 with ground) | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
-| 3 | every-roof-in-the-country | 105 | 10 states built | 1 |
-| 4 | the-cloud-under-the-crown | 107 | 6 states built | 1, 3 |
-| 5 | the-trees-in-the-other-states | 108 | BY, TH, SN, BW, RP built | 1 |
+| 3 | every-roof-in-the-country | 105 | 12 states built | 1 |
+| 4 | the-cloud-under-the-crown | 107 | 7 states built | 1, 3 |
+| 5 | the-trees-in-the-other-states | 108 | 7 states built | 1 |
 | 6 | measure-my-own-garden | — | **backlog** | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
 
@@ -343,6 +343,57 @@ Three stages:
 
   Rheinland-Pfalz joined whole — ground, surface, roofs and a 338 MB point
   cloud — which is what the credits invariant was holding out for.
+
+- **2026-09-20 — Saarland and Hamburg, out of archives never fetched.** Doc 102
+  had recorded both as unreachable: they publish no tile, only whole regions —
+  Hamburg 0.7–1.4 GB per product, Saarland a Landkreis at a time, 559 MB for
+  the ground and **12.5 GB** for the cloud. That was written down as a
+  packaging decision no index would fix, and it was wrong.
+
+  A zip keeps its index at the **end**. With range requests an archive reads
+  like a local file, and only the bytes of one member are ever asked for.
+  Against Saarland's real ground archive: its directory of 311 members costs
+  **3 requests and 34,888 B**, and one 4 MB tile two more — **0.38 % of the
+  file, in 2.0 s**. End to end, a garden near Merzig: six districts' directories
+  give 2,775 tiles across the state in 11.8 s, the window follows in 3.2 s, and
+  200 × 200 m at one metre comes back with every cell known, 223.8 to 241.6 m.
+
+  The parsing is the standard library's. `zipfile` already knows Zip64 — which
+  a 12.5 GB archive needs — so `remote_zip` supplies the one thing it lacks, a
+  seekable file whose reads are range requests. Writing a second zip parser to
+  save an import would be the wrong kind of clever.
+
+  Saarland joined **whole**: ground, surface, roofs and a point cloud, out of
+  124 GB it never downloads. All twenty-four of its archives were probed and
+  all answered. Hamburg gained ground, surface and roofs.
+
+  There are now three ways a tile has an address — computed, named by a state's
+  list, or a member of an archive — and one function returns all three in the
+  same shape, so the raster path, the building path and the cloud path each see
+  one thing.
+
+- **2026-09-20 — the decoder had never read a whole tile.** Hamburg's square
+  kilometre took **492.9 seconds**, of which the fetch was three. Every state
+  in this registry ships **LZW** — Bayern, Thüringen, Sachsen,
+  Rheinland-Pfalz, Hamburg, all checked that day — and the LZW decoder was
+  written in Wave 17 for what a coverage service answers: a 400 m window, a
+  quarter of a megabyte. It kept every byte the stream had ever held in one
+  Python integer, so each shift cost the whole of it and the loop was
+  **quadratic**.
+
+  One line, dropping the bits already consumed, and the same tile decodes in
+  **0.58 s**. Bayern 0.90, Thüringen 1.27, Rheinland-Pfalz 0.56, Sachsen's
+  four-square-kilometre tile 0.69 — that last would have been half an hour.
+  Munich reads 510.5 to 522.7 m against the 523.8 m doc 104 measured from
+  Copernicus at the same place, and Hamburg reads −0.5 to 2.6 m, which is
+  Hamburg.
+
+  **Nobody noticed because every fixture in the tile tier is a TIFF this
+  repository wrote to its own expectations** — uncompressed, because that is
+  the easy thing to write. The suite was green through three features and ten
+  states. A tile tier is not tested until a real tile has been through it, and
+  the regression test now decodes a megabyte of real LZW and fails if it goes
+  slow again.
 
 - **2026-09-20 — the image was built and run, because the wave added a binary
   dependency.** `docker build` (404 MB) and a run against a fresh empty volume,

@@ -38,10 +38,15 @@ class TileCache:
 
     def get(self, key: str, url: str, fetch: Fetch) -> bytes:
         """This tile's bytes, from the volume or from its state's portal."""
+        return self.fetched(key, lambda: fetch(url))
+
+    def fetched(self, key: str, grab: Callable[[], bytes]) -> bytes:
+        """The same, for a tile whose address is not a plain URL — a member
+        read out of a remote archive over ranges, say (doc 103)."""
         path = self._path(key)
         if path.exists():
             return path.read_bytes()
-        data = fetch(url)
+        data = grab()
         if not data:
             # A portal having a bad day, not a kilometre with no ground in it.
             raise ValueError(f"empty answer for {key}")
@@ -59,6 +64,13 @@ class TileCache:
         key and the member is written out under this one (doc 103).
         """
         return self._path(key)
+
+    def file_into(self, key: str, grab: Callable[[], bytes]) -> Path:
+        """The same as `file_for`, for an address that is not a plain URL."""
+        path = self._path(key)
+        if not path.exists():
+            self.fetched(key, grab)
+        return path
 
     def file_for(self, key: str, url: str, fetch: Fetch) -> Path:
         """The same tile, as a file on the volume rather than as bytes.

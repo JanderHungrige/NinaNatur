@@ -33,7 +33,7 @@ from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.geo.tile_cache import cache_at
 from ninanatur.geo.tile_sources import TileProduct, lod2_tiles_for, sources_for
 from ninanatur.geo.tile_zip import unpack
-from ninanatur.geo.tiles import INSIDE, surface_window
+from ninanatur.geo.tiles import INSIDE, addressed, surface_window
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
@@ -115,7 +115,15 @@ def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:
     east, north = to_utm(anchor.lat, anchor.lon, zone)
     tile_e, tile_n = source.corner_of(east, north)
     try:
-        arrived = get_bytes(source.url_for(tile_e, tile_n), max_bytes=MAX_TILE_BYTES)
+        # Computed, looked up in the state's list, or read out of a whole-city
+        # archive over ranges — one shape for all three (doc 103). The document
+        # itself is still never cached: 161 MB per square kilometre is a disk.
+        cache = cache_at(database_path().parent, TILE_CACHE_BYTES)
+        found = addressed(source, [(tile_e, tile_n)], cache,
+                          lambda url: get_bytes(url, max_bytes=MAX_TILE_BYTES))
+        if not found:
+            return None
+        arrived = found[0][2]()
         # Six states wrap the tile, and Baden-Württemberg puts four of its own
         # kilometre tiles in one archive — all four are this garden's
         # neighbourhood, so all four are read (doc 103).

@@ -83,7 +83,8 @@ and allows a range, which is why the probe asks twice.
 | `mv-lod2` | 200 | Mecklenburg-Vorpommern, through a servlet |
 | `rp-lod2` / `rp-laz` | 200, 88,216 B / 338,759,225 B | Rheinland-Pfalz's roofs and its cloud |
 | `rp-dgm1` / `rp-dgm1-index` / `rp-dom1-index` | 200, 1.5 MB / 12.0 MB / 7.6 MB | its ground and surface, and the lists that name them |
-| `sl-dgm1-zip` | 200, 559,134,521 B | Saarland — one Landkreis, because there is nothing smaller |
+| `hh-dgm1` / `hh-bdom` / `hh-lod2` | 200, 1.36 / 1.34 / 0.66 GB | Hamburg, the whole city per product |
+| `sl-*`, 24 archives | 200, 0.14–26.2 GB each | Saarland's four products across six Landkreise |
 
 ## "Six index states" was three different problems
 
@@ -102,7 +103,8 @@ feed". Read properly, they do three unrelated things:
 - **Hamburg and Bremen have no tile to address at all.** Both publish whole-city
   archives of 0.4–3.2 GB and nothing smaller; Hamburg's own LoD2 page says a
   smaller extract is *"kostenpflichtig zu beziehen"*. That is a packaging
-  decision, not a missing index, and no index work will change it.
+  decision, not a missing index — and it turned out not to matter, because a
+  zip keeps its index at its end and one member is a range read away (doc 103).
 
 The lesson is doc 68's, again: the shape of a source is a thing to read, not to
 infer from the words a catalogue uses.
@@ -222,9 +224,11 @@ fetched from somewhere a garden's data suggests.
   it appends an HTML footer to every download, and a stale row answers **200
   with an HTML error body** rather than a 404, so the content type is the only
   honest check.
-- **Hamburg and Bremen cannot join at all** while they publish only whole-city
-  archives. Range-reading a member out of a remote zip is possible — Saarland's
-  share was proved to allow it, 1.6 MB instead of 559 — and it is not built.
+- **Bremen cannot join yet**, for two reasons that are not its packaging: its
+  ground and surface models are **XYZ** text, which nothing here reads, and its
+  LoD2 is a zip inside a zip.
+- **Saarland's share token could be rotated.** It is a constant in the entry;
+  the Atom feed it came from is where to re-read it.
 - **Sachsen's share tokens could rotate.** They are constants in the entry, one
   per product, and the state's own download index already carries two stale
   ones; `index_url` points at the configuration that has the current set.

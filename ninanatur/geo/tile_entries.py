@@ -15,8 +15,6 @@ its ground until they were put in one place.
 """
 from __future__ import annotations
 
-from typing import TypedDict
-
 from ninanatur.geo.tile_grid import TileLookup, TileProduct, TileSource
 from ninanatur.geo.tile_index import from_metalink
 from ninanatur.geo.tile_naming import (
@@ -27,52 +25,13 @@ from ninanatur.geo.tile_naming import (
     bb_name,
     bb_url,
     nrw_name,
+    saarland,
     sn_name,
     sn_url,
     th_name,
     th_url,
 )
-
-
-class _Terms(TypedDict):
-    """What every product of one state has in common."""
-
-    state: str
-    licence: str
-    attribution: str
-    epsg: int
-
-
-#: Licence, credit and zone per state, each read from that state's own terms
-#: page on 2026-09-20. Zone 25832 is UTM32 and 25833 UTM33; a state east of
-#: 12°E that is given the wrong one fetches a tile four hundred kilometres away.
-TERMS: dict[str, tuple[str, str, int]] = {
-    # The "Datenquelle:" prefix is how Bayern's own tiles write it, in the
-    # comment at the head of every CityGML document it publishes.
-    "BY": ("CC-BY-4.0",
-           "Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de", 25832),
-    "NW": ("dl-de/zero-2-0",
-           "Land NRW (2026), Datenlizenz Deutschland – Zero – Version 2.0", 25832),
-    "NI": ("CC-BY-4.0", "© GeoBasis-DE/LGLN (2026)", 25832),
-    "TH": ("dl-de/by-2-0",
-           "© GDI-Th (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0", 25832),
-    "SN": ("dl-de/by-2-0", "Quelle: GeoSN, dl-de/by-2-0", 25833),
-    "BB": ("dl-de/by-2-0", "© GeoBasis-DE/LGB, dl-de/by-2-0", 25833),
-    # Zero asks for nothing; the courtesy credit is given anyway.
-    "BE": ("dl-de/zero-2-0",
-           "Geoportal Berlin, Datenlizenz Deutschland – Zero – Version 2.0", 25833),
-    "MV": ("CC-BY-4.0", "© GeoBasis-DE/M-V (2026)", 25833),
-    "BW": ("dl-de/by-2-0", "Datenquelle: LGL, www.lgl-bw.de, dl-de/by-2-0", 25832),
-    "RP": ("dl-de/by-2-0",
-           "©GeoBasis-DE / LVermGeoRP (2026), dl-de/by-2-0, www.lvermgeo.rlp.de", 25832),
-}
-
-
-def terms(state: str) -> _Terms:
-    """That state's licence, credit and zone, to splat into an entry."""
-    licence, attribution, epsg = TERMS[state]
-    return {"state": state, "licence": licence, "attribution": attribution, "epsg": epsg}
-
+from ninanatur.geo.tile_terms import terms
 
 TILE_SOURCES: tuple[TileSource, ...] = (
     TileSource(
@@ -128,6 +87,53 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"{adv_name('LoD2', e, n, suffix='ni')}.gml"),
         _name=lambda e, n: adv_name("LoD2", e, n, suffix="ni"),
         probed_bytes=43_632,
+    ),
+
+    # ---- Saarland and Hamburg publish no tile at all, only whole-region
+    # archives. A zip keeps its index at the end, so one tile is a range read:
+    # 0.38 % of a 559 MB file, measured on 2026-09-20 (doc 103).
+    TileSource(
+        name="sl-dgm1", **terms("SL"), product=TileProduct.DGM1, tile_km=1, fmt="GeoTIFF",
+        archives=saarland("OD_DGM1_2025_tif_LK",
+                          "DGM1_tif_{lk}_EPSG-25832_Entstehung-2025.zip"),
+        vertical_step_m=0.01, probed_bytes=559_134_521,
+    ),
+    TileSource(
+        name="sl-dom1", **terms("SL"), product=TileProduct.DOM, tile_km=1, fmt="GeoTIFF",
+        archives=saarland("OD_DOM1_2025_tif_LK",
+                          "DOM1_tif_{lk}_EPSG-25832_Entstehung-2025.zip"),
+        cell_m=1.0, vertical_step_m=0.01, probed_bytes=626_952_523,
+    ),
+    TileSource(
+        name="sl-lod2", **terms("SL"), product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
+        archives=saarland("OD_Geb%C3%A4udemodelle_LoD2_gml_LK", "{lk}_LOD2BWK_gml.zip"),
+        probed_bytes=188_200_265,
+    ),
+    TileSource(
+        # A hundred and twenty-four gigabytes across the six districts, and a
+        # garden reads about sixty megabytes of it.
+        name="sl-laz", **terms("SL"), product=TileProduct.LAZ, tile_km=1, fmt="LAZ",
+        archives=saarland("OD_LIDAR_Punktwolke_2025_laz_LK",
+                          "LIDAR_laz_{lk}_EPSG-25832_Entstehung-2025.zip"),
+        points_per_m2=4.0, probed_bytes=12_544_319_150,
+    ),
+    TileSource(
+        name="hh-dgm1", **terms("HH"), product=TileProduct.DGM1, tile_km=1, fmt="GeoTIFF",
+        archives=("https://daten-hamburg.de/opendata/fernerkundung_hoehenmodelle/"
+                  "dgm/dgm1_hh_2022-04-30.zip",),
+        vertical_step_m=0.01, probed_bytes=1_364_773_543,
+    ),
+    TileSource(
+        name="hh-bdom", **terms("HH"), product=TileProduct.DOM, tile_km=1, fmt="GeoTIFF",
+        archives=("https://daten-hamburg.de/opendata/Digitales_Hoehenmodell_bDOM/"
+                  "dom1_hh_2022-11-21.zip",),
+        cell_m=1.0, vertical_step_m=0.01, probed_bytes=1_344_475_498,
+    ),
+    TileSource(
+        name="hh-lod2", **terms("HH"), product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
+        archives=("https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/"
+                  "LoD2-DE_HH_2026-04-28.zip",),
+        probed_bytes=659_524_658,
     ),
 
     # ---- Rheinland-Pfalz: the rasters carry a flight year, so they are found

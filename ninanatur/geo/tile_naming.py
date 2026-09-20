@@ -75,3 +75,16 @@ def bb_name(product: str) -> Callable[[int, int], str]:
 def bb_url(folder: str, product: str) -> Callable[[int, int], str]:
     return lambda e, n: (f"https://data.geobasis-bb.de/geobasis/daten/{folder}/"
                          f"{bb_name(product)(e, n)}.zip")
+
+
+#: Saarland publishes no tile: six archives per product, one per Landkreis,
+#: each holding its district's tiles. Every one of the twenty-four answered on
+#: 2026-09-20. The share token is the state's, and it could be rotated.
+SAARLAND_SHARE = ("https://www.shop.lvgl.saarland.de/cloud/public.php/dav/files/"
+                  "NK8ndP55qAqGEZD/")
+DISTRICTS = ("MZG", "NK", "SB", "SLS", "SPK", "WND")
+
+
+def saarland(folder: str, pattern: str) -> tuple[str, ...]:
+    """Every district's archive of one product."""
+    return tuple(f"{SAARLAND_SHARE}{folder}/{pattern.format(lk=lk)}" for lk in DISTRICTS)

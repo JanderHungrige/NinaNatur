@@ -10,6 +10,7 @@ relates: [17-terrain-window, 07-solar-geometry]
 source_files:
   - ninanatur/geo/tile_cache.py
   - ninanatur/geo/tile_index.py
+  - ninanatur/geo/remote_zip.py
   - ninanatur/geo/tiles.py
   - ninanatur/geo/tile_zip.py
   - ninanatur/geo/terrain.py
@@ -22,6 +23,7 @@ test_files:
   - tests/test_tiles.py
   - tests/test_tile_zip.py
   - tests/test_tile_index.py
+  - tests/test_remote_zip.py
 data_flow: mixed
 last_synced: 2026-09-20
 status: complete
@@ -143,6 +145,41 @@ A square the state does not list is not asked for. Its own list saying it has
 nothing there — a gap in a flight, a garden near the border — is an answer, and
 guessing a name would be a 404 with extra steps.
 
+## An archive that is never fetched
+
+Three states publish no tile at all. Hamburg hands out the whole city as one
+archive per product, 0.7–1.4 GB; Saarland hands out a Landkreis at a time,
+559 MB for the ground and **12.5 GB** for the point cloud. Doc 102 recorded
+that as a packaging decision no index would fix.
+
+It is fixable, because of **where a zip keeps its index**. The central
+directory is at the end of the file, so with range requests an archive can be
+read as though it were local: the directory says where each member begins and
+how long it is, and only those bytes are asked for. Measured against Saarland's
+ground archive on **2026-09-20**:
+
+| | |
+|---|---|
+| archive | 559,134,521 B |
+| its directory — 311 members | **3 requests, 34,888 B** |
+| one 4 MB tile out of it | 2 more requests |
+| **total** | **5 requests, 2,132,040 B — 0.38 % of the archive — in 2.0 s** |
+
+And end to end, a garden near Merzig: the six districts' directories give
+**2,775 tiles** across the state in 11.8 s, the window follows in 3.2 s, and
+what stays on the volume is one 4 MB tile. 200 × 200 m at one metre, every cell
+known, 223.8–241.6 m.
+
+**The parsing is the standard library's.** `zipfile` already knows Zip64 — which
+a 12.5 GB archive needs — and data descriptors and every other corner of the
+format. What it lacks is a file to read, so `remote_zip` supplies one: a
+seekable file whose reads are range requests, buffered a megabyte at a time.
+Writing a second zip parser to save an import would be the wrong kind of clever.
+
+An archive's directory **is** the state's index, and its member names are read
+the same way a metalink's are: matched against the grid and against a strict
+character set, and never used to build a path.
+
 ## Politeness
 
 These are state surveying offices publishing at their own cost, not an API with
@@ -211,17 +248,56 @@ Their **point clouds** came with them: Thüringen, Sachsen and Brandenburg wrap
 theirs too, so the member is streamed out of the archive to a file and read
 from there, and the reader still never holds a tile.
 
+**Saarland and Hamburg joined this way** — Saarland whole, with ground,
+surface, roofs and a point cloud out of 124 GB of archives it never fetches.
+
 **Rheinland-Pfalz joined too**, through its list rather than by arithmetic,
 and it joined whole: ground, surface, roofs and a point cloud. It was the last
 fully gapped state of any size.
 
-What is left of this feature is one state and one technique. **Schleswig-
-Holstein** publishes the same shape of problem with a GeoJSON list instead of a
-metalink, plus two quirks worth knowing before anybody starts: it appends an
-HTML footer to every download, and a stale row answers **200 with an HTML
-error body** rather than a 404. And the **range read into a remote archive**
-that Hamburg, Bremen and Saarland would need — proved possible on Saarland's
-share, 1.6 MB instead of 559 — since none of them publishes a tile at all.
+What is left is **two states and one file format**, and they are the same
+problem. Schleswig-Holstein's ground and Bremen's are published as **XYZ** —
+a million lines of `easting northing height` per square kilometre — where every
+state in this registry so far publishes a raster. Nothing here can read that
+yet. Schleswig-Holstein needs a GeoJSON list on top of it, and two quirks worth
+knowing before anybody starts: it appends an HTML footer to every download, and
+a stale row answers **200 with an HTML error body** rather than a 404, so the
+content type is the only honest check. Bremen needs a **nested** archive read —
+its LoD2 is a zip inside a zip.
+
+## The decoder had never read a whole tile
+
+Found by measuring Hamburg rather than by reading anything: its square
+kilometre took **492.9 seconds**. The fetch was three of them.
+
+**Every state in this registry ships LZW** — Bayern, Thüringen, Sachsen,
+Rheinland-Pfalz, Hamburg, all of them, checked on 2026-09-20 — and the LZW
+decoder was written in Wave 17 for what a *coverage service* answers: a 400 m
+window, a quarter of a megabyte. It kept every byte the stream had ever held
+in one Python integer, so each shift cost the whole of it and the loop was
+**quadratic**. Nobody noticed, because at a quarter of a megabyte quadratic is
+fast, and because every test of the tile tier builds its own *uncompressed*
+TIFF.
+
+One line — dropping the bits already consumed — and the same tile decodes in
+**0.58 s**, an eight-hundred-fold difference. Sachsen's two-kilometre tile is
+four times the pixels and would have taken half an hour.
+
+| tile | before | after |
+|---|---|---|
+| Hamburg 1 km | 492.9 s | 0.58 s |
+| Bayern 1 km | — | 0.90 s |
+| Thüringen 1 km | — | 1.27 s |
+| Sachsen 2 km | — | 0.69 s |
+| Rheinland-Pfalz 1 km | — | 0.56 s |
+
+And the heights are right, which is the other half of the check: Munich reads
+510.5 to 522.7 m against the 523.8 m doc 104 got from Copernicus at the same
+place, and Hamburg reads −0.5 to 8.1 m, which is Hamburg.
+
+**The lesson is the one doc 95 is about.** "Bayern is built" was written on a
+green suite whose every fixture was a TIFF this repository wrote to its own
+expectations. A tile tier is not tested until a real tile has been through it.
 
 ## Known Issues
 
@@ -236,3 +312,8 @@ share, 1.6 MB instead of 559 — since none of them publishes a tile at all.
   outside the state entirely.
 
 ## Bugs
+
+- **The LZW decoder was quadratic** (above), so every tile in the registry
+  would have taken minutes. Fixed on 2026-09-20 before any of it reached a
+  deployment; the regression test decodes a megabyte and fails if it goes
+  slow again.

@@ -95,6 +95,11 @@ class TileSource:
     _name: Callable[[int, int], str] | None = None
     #: Set where the name is not the grid, and then it is how a tile is found.
     lookup: TileLookup | None = None
+    #: Set where the state publishes no tile at all, only whole-region
+    #: archives — Hamburg one per product, Saarland one per Landkreis. Each
+    #: archive's own central directory is the index, read over HTTP ranges, and
+    #: one tile costs a fraction of a per cent of the file (doc 103).
+    archives: tuple[str, ...] = ()
     #: Where a coarse grid starts, in kilometres. Almost every two-kilometre
     #: scheme lands on even numbers, and Baden-Württemberg's lands on an **odd**
     #: easting — `513_5404` is a tile and `514_5404` is a 404. Floor to the

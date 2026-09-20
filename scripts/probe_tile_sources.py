@@ -150,6 +150,41 @@ CANDIDATES: tuple[Candidate, ...] = (
                            "produktdownload/app.json",
               "where Sachsen's share tokens are current — its own index has two stale ones"),
 
+    # Hamburg publishes one archive per product for the whole city and nothing
+    # smaller — an extract, its own page says, is "kostenpflichtig zu beziehen".
+    # A zip keeps its index at the end, so one tile is a range read away.
+    Candidate("hh-dgm1", "https://daten-hamburg.de/opendata/fernerkundung_hoehenmodelle/"
+                         "dgm/dgm1_hh_2022-04-30.zip",
+              "HH ground: the whole city, 926 members, GeoTIFF inside"),
+    Candidate("hh-bdom", "https://daten-hamburg.de/opendata/Digitales_Hoehenmodell_bDOM/"
+                         "dom1_hh_2022-11-21.zip",
+              "HH surface: the whole city, 1 m, GeoTIFF inside"),
+    Candidate("hh-lod2", "https://daten-hamburg.de/opendata/3d_stadtmodell_lod2/"
+                         "LoD2-DE_HH_2026-04-28.zip",
+              "HH roofs: the whole city, CityGML inside, flat"),
+
+    # Saarland hands out a Landkreis at a time. Only NK was probed the first
+    # time; the other five are the same name with the district changed, and
+    # "the same name with a letter changed" is a guess until it answers.
+    *[Candidate(f"sl-dgm1-{lk.lower()}",
+                "https://www.shop.lvgl.saarland.de/cloud/public.php/dav/files/"
+                f"NK8ndP55qAqGEZD/OD_DGM1_2025_tif_LK/DGM1_tif_{lk}"
+                "_EPSG-25832_Entstehung-2025.zip",
+                f"SL ground, Landkreis {lk}")
+      for lk in ("MZG", "SB", "SLS", "SPK", "WND")],
+    Candidate("sl-dom1-nk", "https://www.shop.lvgl.saarland.de/cloud/public.php/dav/files/"
+                            "NK8ndP55qAqGEZD/OD_DOM1_2025_tif_LK/"
+                            "DOM1_tif_NK_EPSG-25832_Entstehung-2025.zip",
+              "SL surface, one Landkreis"),
+    Candidate("sl-lod2-nk", "https://www.shop.lvgl.saarland.de/cloud/public.php/dav/files/"
+                            "NK8ndP55qAqGEZD/OD_Geb%C3%A4udemodelle_LoD2_gml_LK/"
+                            "NK_LOD2BWK_gml.zip",
+              "SL roofs, one Landkreis"),
+    Candidate("sl-laz-nk", "https://www.shop.lvgl.saarland.de/cloud/public.php/dav/files/"
+                           "NK8ndP55qAqGEZD/OD_LIDAR_Punktwolke_2025_laz_LK/"
+                           "LIDAR_laz_NK_EPSG-25832_Entstehung-2025.zip",
+              "SL point cloud, one Landkreis, 12.5 GB — and one tile of it is 60 MB"),
+
     # Saarland's licence was doc 102's open question and is answered: the
     # download is dl-de/by-2-0. What it has no route for is one tile — the
     # share holds six per-Landkreis archives and nothing smaller.

@@ -55,9 +55,22 @@ def test_a_state_that_writes_a_flight_year_says_so_instead_of_pretending() -> No
     looked_up = [s for s in TILE_SOURCES if not s.computed]
     assert looked_up, "the registry has lost its index-driven sources"
     for source in looked_up:
-        assert source.lookup is not None, source.name
+        # Either the state lists its tiles, or its archives do it for it.
+        assert source.lookup is not None or source.archives, source.name
         with pytest.raises(ValueError, match="index"):
             source.url_for(347, 5647)
+
+
+def test_a_state_that_publishes_no_tile_says_which_archives_hold_them() -> None:
+    """Hamburg one per product, Saarland one per Landkreis. A zip keeps its
+    index at the end, so the archive is its own list of what it holds."""
+    archived = [s for s in TILE_SOURCES if s.archives]
+    assert archived, "the registry has lost its archive-backed sources"
+    for source in archived:
+        assert not source.computed, source.name
+        for url in source.archives:
+            assert url.startswith("https://"), f"{source.name}: {url}"
+            assert url.endswith(".zip"), f"{source.name}: {url}"
 
 
 def test_the_folder_a_looked_up_name_goes_into_is_ours() -> None:

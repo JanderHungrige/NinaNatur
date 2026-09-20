@@ -18,10 +18,12 @@ without a source has always answered.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 import numpy as np
 
 from ninanatur.geo.projection import LatLon
+from ninanatur.geo.remote_zip import member_of, names_in
 from ninanatur.geo.surface import SurfaceWindow, above_ground
 from ninanatur.geo.terrain import FETCH_M, TerrainWindow, resample
 from ninanatur.geo.tiff import WHOLE_TILE_PIXELS, Raster, TiffError, read_raster
@@ -31,9 +33,12 @@ from ninanatur.geo.tile_index import SAFE_NAME
 from ninanatur.geo.tile_sources import TileSource
 from ninanatur.geo.tile_zip import ArchiveError, named
 from ninanatur.geo.utm import to_utm
-from ninanatur.ingest.http import get_bytes
+from ninanatur.ingest.http import get_bytes, get_range, size_of
 
 log = logging.getLogger(__name__)
+
+#: How a tile's bytes are got, whichever of the three ways it is addressed.
+Grab = Callable[[], bytes]
 
 #: What a DGM1 tile's cell is, in metres. The product's name is its resolution.
 CELL_M = 1.0
@@ -92,28 +97,71 @@ def _listing(lookup: TileLookup, cache: TileCache,
     return _LISTINGS[lookup.index_url]
 
 
-def _addresses(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
-               fetch: Fetch) -> list[tuple[tuple[int, int], str, str]]:
-    """Each tile's corner, its address, and the key to keep it under.
+#: Which archive holds which tile, per set of archives, parsed once. Reading
+#: Saarland's six directories is eighteen requests and two hundred kilobytes.
+_HELD: dict[str, dict[tuple[int, int], tuple[str, str]]] = {}
 
-    For nearly every state the address is arithmetic. For the two that write a
-    flight year into the name it is the registry's own folder plus a name their
-    list gave us — never a URL out of that list (doc 103).
+
+def _held(archives: tuple[str, ...]) -> dict[tuple[int, int], tuple[str, str]]:
+    """What each archive holds, from its own central directory.
+
+    A state that publishes no tile publishes no list of tiles either — and does
+    not need to, because a zip says what is in it and says so at its end.
     """
-    if source.lookup is None:
-        return [(corner, source.url_for(*corner), _cache_key(source, *corner))
-                for corner in corners]
-    names = _listing(source.lookup, cache, fetch)
-    found = []
-    for corner in corners:
-        name = names.get(corner)
-        if name is None:
-            # The state's own list says it has nothing there. A gap in a flight,
-            # or a garden near the border — either way not a failed request.
-            continue
-        found.append((corner, source.lookup.folder + name,
-                      f"{source.state.lower()}/{source.product.value}/{name}"))
-    return found
+    key = "\n".join(archives)
+    if key not in _HELD:
+        found: dict[tuple[int, int], tuple[str, str]] = {}
+        for url in archives:
+            try:
+                inside = names_in(url, size=size_of, ranged=get_range)
+            except (OSError, ValueError) as trouble:
+                # One region's archive missing is that region without ground,
+                # not the state without ground.
+                log.warning("an archive did not answer; that region stays unknown",
+                            extra={"archive": url, "why": type(trouble).__name__})
+                continue
+            for name in inside:
+                leaf = name.rsplit("/", 1)[-1]
+                corner = corner_in(leaf, (0, 0))
+                if corner != (0, 0) and SAFE_NAME.match(leaf):
+                    found[corner] = (url, name)
+        _HELD[key] = found
+    return _HELD[key]
+
+
+def addressed(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
+              fetch: Fetch) -> list[tuple[tuple[int, int], str, Grab]]:
+    """Each tile's corner, the key to keep it under, and how to get it.
+
+    Three ways a tile has an address, and every caller sees one shape. Nearly
+    every state computes it from the grid. Two write a flight year into the
+    name, so it is the registry's own folder plus a name their list gave us —
+    never a URL out of that list. Three publish no tile at all, so it is a
+    member read out of a whole-region archive over ranges (doc 103).
+    """
+    if source.archives:
+        held = _held(source.archives)
+        return [(corner, f"{source.state.lower()}/{source.product.value}/"
+                         f"{held[corner][1].rsplit('/', 1)[-1]}",
+                 _from_archive(held[corner]))
+                for corner in corners if corner in held]
+    if source.lookup is not None:
+        names = _listing(source.lookup, cache, fetch)
+        folder = source.lookup.folder
+        return [(corner, f"{source.state.lower()}/{source.product.value}/{names[corner]}",
+                 _from_url(folder + names[corner], fetch))
+                for corner in corners if corner in names]
+    return [(corner, _cache_key(source, *corner),
+             _from_url(source.url_for(*corner), fetch)) for corner in corners]
+
+
+def _from_url(url: str, fetch: Fetch) -> Grab:
+    return lambda: fetch(url)
+
+
+def _from_archive(where: tuple[str, str]) -> Grab:
+    url, name = where
+    return lambda: member_of(url, name, size=size_of, ranged=get_range)
 
 
 def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
@@ -122,14 +170,14 @@ def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCach
     portal short of a tile is not a reason for a garden to have no ground."""
     got: dict[tuple[int, int], Raster] = {}
     try:
-        wanted = _addresses(source, corners, cache, fetch)
+        wanted = addressed(source, corners, cache, fetch)
     except (OSError, ValueError) as trouble:
         log.warning("a state's tile list could not be read; no ground from it",
                     extra={"source": source.name, "why": type(trouble).__name__})
         return got
-    for corner, url, key in wanted:
+    for corner, key, grab in wanted:
         try:
-            got.update(_parts(source, cache.get(key, url, fetch), corner))
+            got.update(_parts(source, cache.fetched(key, grab), corner))
         except (OSError, ValueError, TiffError, ArchiveError) as trouble:
             log.warning("a tile did not arrive; that ground stays unknown",
                         extra={"source": source.name, "tile": f"{corner[0]}_{corner[1]}",
