@@ -36,13 +36,35 @@ from ninanatur.geo.tiff import MAX_PIXELS, NO_DATA, Raster, TiffError
 #: and something else begins.
 NOT_A_NUMBER = b"<"
 
+#: Bremen writes its eastings with the UTM zone glued to the front —
+#: `32466000.50` for 466 km east — where every other state writes the metres
+#: alone. Anything past this is a zone in front of a coordinate, because no
+#: German easting is thirty million metres.
+ZONED_FROM = 30_000_000.0
+
 
 def _grid_part(data: bytes) -> bytes:
-    """The text up to the last complete line before anything non-numeric."""
+    """The grid alone: no header line, and nothing after the last whole row.
+
+    Bremen writes `x y z` above its first row, and Schleswig-Holstein appends a
+    760-byte HTML footer to every successful download — measured, both of them.
+    """
     stop = data.find(NOT_A_NUMBER)
-    if stop < 0:
-        return data
-    return data[: data.rfind(b"\n", 0, stop) + 1]
+    if stop >= 0:
+        data = data[: data.rfind(b"\n", 0, stop) + 1]
+    head = data.lstrip()[:1]
+    if head and head not in b"0123456789-+.":
+        # A header line. One is all any of these states writes.
+        return data[data.find(b"\n") + 1:]
+    return data
+
+
+def _unzoned(east: np.ndarray) -> np.ndarray:
+    """Eastings in metres, whichever way the state wrote them."""
+    if east.size and east.min() > ZONED_FROM:
+        zone: np.ndarray = east - (east.min() // 1_000_000) * 1_000_000
+        return zone
+    return east
 
 
 def read_grid(data: bytes, *, cell_m: float, max_pixels: int = MAX_PIXELS) -> Raster:
@@ -62,7 +84,7 @@ def read_grid(data: bytes, *, cell_m: float, max_pixels: int = MAX_PIXELS) -> Ra
         raise TiffError(f"{flat.size} numbers is not whole rows of easting, northing, height")
 
     trio = flat.reshape(-1, 3)
-    east, north, height = trio[:, 0], trio[:, 1], trio[:, 2]
+    east, north, height = _unzoned(trio[:, 0]), trio[:, 1], trio[:, 2]
     west, top = east.min(), north.max()
     width = int(round((east.max() - west) / cell_m)) + 1
     rows = int(round((top - north.min()) / cell_m)) + 1

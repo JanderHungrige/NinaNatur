@@ -23,7 +23,7 @@ from collections.abc import Callable
 import numpy as np
 
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.remote_zip import member_of, names_in
+from ninanatur.geo.remote_zip import Ranged, Sized, member_of, names_in
 from ninanatur.geo.surface import SurfaceWindow, above_ground
 from ninanatur.geo.terrain import FETCH_M, TerrainWindow, resample
 from ninanatur.geo.tiff import WHOLE_TILE_PIXELS, Raster, TiffError, read_raster
@@ -116,18 +116,25 @@ def _listing(lookup: TileLookup, cache: TileCache,
 _HELD: dict[str, dict[tuple[int, int], tuple[str, str]]] = {}
 
 
-def _held(archives: tuple[str, ...]) -> dict[tuple[int, int], tuple[str, str]]:
+def _held(archives: tuple[str, ...], *, sized: Sized | None = None,
+          ranged: Ranged | None = None) -> dict[tuple[int, int], tuple[str, str]]:
     """What each archive holds, from its own central directory.
 
     A state that publishes no tile publishes no list of tiles either — and does
     not need to, because a zip says what is in it and says so at its end.
+
+    The two fetchers are arguments because this was the last place in the tile
+    path that reached for `ingest.http` itself; everything else here is already
+    handed what it should use. The defaults are resolved at the call so a test
+    can still replace the module's own.
     """
+    look, reach = sized or size_of, ranged or get_range
     key = "\n".join(archives)
     if key not in _HELD:
         found: dict[tuple[int, int], tuple[str, str]] = {}
         for url in archives:
             try:
-                inside = names_in(url, size=size_of, ranged=get_range)
+                inside = names_in(url, size=look, ranged=reach)
             except (OSError, ValueError) as trouble:
                 # One region's archive missing is that region without ground,
                 # not the state without ground.
@@ -144,7 +151,8 @@ def _held(archives: tuple[str, ...]) -> dict[tuple[int, int], tuple[str, str]]:
 
 
 def addressed(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,
-              fetch: Fetch) -> list[tuple[tuple[int, int], str, Grab]]:
+              fetch: Fetch, *, sized: Sized | None = None,
+              ranged: Ranged | None = None) -> list[tuple[tuple[int, int], str, Grab]]:
     """Each tile's corner, the key to keep it under, and how to get it.
 
     Three ways a tile has an address, and every caller sees one shape. Nearly
@@ -154,10 +162,10 @@ def addressed(source: TileSource, corners: list[tuple[int, int]], cache: TileCac
     member read out of a whole-region archive over ranges (doc 103).
     """
     if source.archives:
-        held = _held(source.archives)
+        held = _held(source.archives, sized=sized, ranged=ranged)
         return [(corner, f"{source.state.lower()}/{source.product.value}/"
                          f"{held[corner][1].rsplit('/', 1)[-1]}",
-                 _from_archive(held[corner]))
+                 _from_archive(held[corner], sized, ranged))
                 for corner in corners if corner in held]
     if source.lookup is not None:
         names = _listing(source.lookup, cache, fetch)
@@ -173,9 +181,11 @@ def _from_url(url: str, fetch: Fetch) -> Grab:
     return lambda: fetch(url)
 
 
-def _from_archive(where: tuple[str, str]) -> Grab:
+def _from_archive(where: tuple[str, str], sized: Sized | None = None,
+                  ranged: Ranged | None = None) -> Grab:
     url, name = where
-    return lambda: member_of(url, name, size=size_of, ranged=get_range)
+    look, reach = sized or size_of, ranged or get_range
+    return lambda: member_of(url, name, size=look, ranged=reach)
 
 
 def _rasters(source: TileSource, corners: list[tuple[int, int]], cache: TileCache,

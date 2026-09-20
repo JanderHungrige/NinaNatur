@@ -138,3 +138,34 @@ def test_the_half_metre_northings_of_a_real_tile_survive_the_parse() -> None:
     assert (raster.width, raster.height) == (2, 2)
     assert raster.values[0][0] == pytest.approx(100.0)
     assert raster.values[1][1] == pytest.approx(111.0)
+
+
+def test_the_header_line_bremen_writes_is_not_read_as_a_cell() -> None:
+    """Bremen alone puts `x y z` above its first row."""
+    raster = read_grid(b"x y z\n" + _grid(), cell_m=1.0)
+    assert (raster.width, raster.height) == (4, 4)
+    assert raster.values[0][0] == pytest.approx(100.0)
+
+
+def test_an_easting_with_the_zone_glued_to_it_is_still_an_easting() -> None:
+    """Bremerhaven writes `32466000.50` for 466 km east; every other state
+    writes the metres alone. Read literally it is an easting thirty-two
+    thousand kilometres out to sea, and the grid would be one cell wide."""
+    zoned = _grid(west=466_000).replace(b"466", b"32466")
+    raster = read_grid(zoned, cell_m=1.0)
+    assert (raster.width, raster.height) == (4, 4)
+    assert raster.values[0][0] == pytest.approx(100.0)
+    assert raster.values[3][3] == pytest.approx(133.0)
+
+
+def test_a_ragged_border_tile_is_read_at_its_true_size() -> None:
+    """Measured on Schleswig-Holstein: border tiles carry 730,232 or 829,760
+    lines rather than a million, with holes inside a row, and no NoData token
+    — the cells are simply absent."""
+    lines = _grid().decode().splitlines()
+    kept = [ln for i, ln in enumerate(lines) if i not in (2, 3, 6, 9, 14)]
+    raster = read_grid(("\r\n".join(kept) + "\r\n").encode(), cell_m=1.0)
+    assert (raster.width, raster.height) == (4, 4)
+    assert int(np.isnan(raster.values).sum()) == 5
+    assert raster.values[0][1] == pytest.approx(101.0)
+    assert raster.values[3][3] == pytest.approx(133.0)
