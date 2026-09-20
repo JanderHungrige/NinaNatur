@@ -209,12 +209,22 @@ def sources_for(state: str) -> tuple[TileSource, ...]:
     return tuple(source for source in TILE_SOURCES if source.state == key)
 
 
-def ground_tiles_for(state: str) -> TileSource | None:
-    """The state's ground, as tiles — the tier under the coverage services."""
+def _product_for(state: str, product: TileProduct) -> TileSource | None:
     for source in sources_for(state):
-        if source.product is TileProduct.DGM1:
+        if source.product is product:
             return source
     return None
+
+
+def ground_tiles_for(state: str) -> TileSource | None:
+    """The state's ground, as tiles — the tier under the coverage services."""
+    return _product_for(state, TileProduct.DGM1)
+
+
+def lod2_tiles_for(state: str) -> TileSource | None:
+    """The state's 3D building model: measured height and a surveyed roof
+    shape, which no surface raster can give (doc 105)."""
+    return _product_for(state, TileProduct.LOD2)
 
 
 def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:
@@ -239,6 +249,7 @@ __all__ = [
     "glo30_url",
     "ground_tiles_for",
     "key_of",
+    "lod2_tiles_for",
     "sources_for",
     "tile_of",
 ]

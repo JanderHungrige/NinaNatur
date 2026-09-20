@@ -112,7 +112,7 @@ confidence travel with every window, as they do with every trait value.
 | 0 | which-tiles-and-whose | 102 | built | — |
 | 1 | a-tile-not-a-service | 103 | Bayern built | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
-| 3 | every-roof-in-the-country | — | planned | 1 |
+| 3 | every-roof-in-the-country | 105 | BY, NW built | 1 |
 | 4 | the-cloud-under-the-crown | — | planned | 1 |
 | 5 | the-trees-in-the-other-states | — | planned | 1 |
 | 6 | measure-my-own-garden | — | planned | 4 |
@@ -188,6 +188,22 @@ Three stages:
   grid north rather than true north is rotated by two of its own bins. Cells the
   ring crosses into are fetched too; one that does not arrive is unknown rather
   than flat. **Stage 1 is complete.**
+
+- **2026-09-20 — feature 3, every roof in the country** (doc 105), and it was
+  smaller than planned. The wave assumed a dozen adapters — CityGML 2.0
+  namespaces, other roof codings, parts. Bayern's tile says otherwise: the same
+  CityGML 1.0, the same `bldg:` namespace, `measuredHeight` in metres and AdV's
+  Dachform keys, which `ADV_ROOFS` already maps. **The reader built for NRW
+  reads a Bavarian building unchanged**, and one real building out of that tile
+  is now `tests/fixtures/lod2_bayern_building.gml`, so the claim is checked
+  against the state's own file.
+
+  What had to change was plumbing and one guard. `_surveyed` no longer begins
+  `if state != "Nordrhein-Westfalen"`; it asks the registry, so a state joins by
+  being probed and nothing else. And `MAX_TILE_BYTES` was 150 MB, set when
+  Cologne's 38 MB was the largest tile anybody had seen — a square kilometre of
+  Munich is 161,627,079 B, so the guard was refusing the data it was meant to
+  bound.
 
 ## What each one is
 

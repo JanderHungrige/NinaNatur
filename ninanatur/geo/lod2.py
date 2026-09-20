@@ -53,9 +53,10 @@ ADV_ROOFS: dict[str, Roof] = {
     "9999": Roof.OTHER,      # Sonstiges
 }
 
-#: The largest tile seen is 38 MB (Cologne). Four times that is still a tile;
-#: anything beyond it is not one, and is refused before a byte of it is parsed.
-MAX_TILE_BYTES = 150_000_000
+#: The largest tile measured is Bayern's 161.6 MB for one square kilometre of
+#: Munich (doc 102); NRW's Cologne tile is 38 MB. Twice the largest is still a
+#: tile; anything beyond it is not one, and is refused before a byte is parsed.
+MAX_TILE_BYTES = 350_000_000
 
 _NS = {"bldg": "http://www.opengis.net/citygml/building/1.0",
        "gml": "http://www.opengis.net/gml"}

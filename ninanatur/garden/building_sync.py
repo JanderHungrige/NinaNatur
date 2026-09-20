@@ -24,23 +24,22 @@ from ninanatur.geo.lod2 import (
     Lod2Building,
     buildings_from,
     in_garden_frame,
-    tile_name,
 )
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import SurfaceWindow, fetch_surface
 from ninanatur.geo.surface_sources import by_state, measures_buildings
+from ninanatur.geo.tile_sources import lod2_tiles_for
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
 log = logging.getLogger(__name__)
 
-#: Where Nordrhein-Westfalen publishes its 3D building model.
-#:
-#: The only state whose LoD2 is addressable by coordinate — the tile name is
-#: computable, so there is no index to consult. Everywhere else the roof shape
-#: stays whatever it was.
-NRW_LOD2 = "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml"
+#: Which states publish a 3D building model as addressable tiles is a question
+#: for the registry now (doc 102), not a constant here: Nordrhein-Westfalen was
+#: the only one anybody had checked, and Bayern turned out to publish the same
+#: CityGML 1.0 with the same `bldg:` namespace (doc 105). Everywhere else the
+#: roof shape stays whatever it was.
 
 
 def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
@@ -74,13 +73,25 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
 
 
 def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:
-    """The official 3D model for this square kilometre, on the garden's axes."""
-    if state != "Nordrhein-Westfalen":
+    """The official 3D model for this square kilometre, on the garden's axes.
+
+    The tile is not cached. A square kilometre of Munich is 161 MB of CityGML
+    and what is kept of it is a few hundred bytes per building: fetched,
+    streamed, parsed, dropped (doc 103).
+
+    One tile, the garden's own. A neighbour across a kilometre line keeps
+    whatever height it had — at 20 to 161 MB a tile, fetching the other three
+    to measure a house fifty metres away is not a trade worth making.
+    """
+    source = lod2_tiles_for(state)
+    if source is None:
         return None
-    east, north = to_utm(anchor.lat, anchor.lon, 32)
+    zone = 32 if source.epsg == 25832 else 33
+    east, north = to_utm(anchor.lat, anchor.lon, zone)
+    tile_e, tile_n = source.corner_of(east, north)
     try:
-        document = get_bytes(f"{NRW_LOD2}/{tile_name(east, north)}", max_bytes=MAX_TILE_BYTES)
-        return in_garden_frame(buildings_from(document), anchor, 32)
+        document = get_bytes(source.url_for(tile_e, tile_n), max_bytes=MAX_TILE_BYTES)
+        return in_garden_frame(buildings_from(document), anchor, zone)
     except Exception:
         log.warning("LoD2 tile failed for %s", state, exc_info=True)
         return None
@@ -101,4 +112,4 @@ def _surface(
         return None
 
 
-__all__ = ["NRW_LOD2", "measure_buildings"]
+__all__ = ["measure_buildings"]
