@@ -192,7 +192,13 @@ from the `.stylx` alone — his source assets are not asked for.*
   itself: only the line outside the roads survives, nothing crosses a junction
   (doc 98). Worked out once per garden and zoom step, not per drag frame.
   Technisch's 24 cells as recorded, the converter's output byte for byte,
-  paint 83 ms.
+  paint 83 ms. On the preview afterwards, with that imported city on a phone
+  and the CPU slowed four times, a zoom step costs 98 ms in his style against
+  Technisch's 66 — 1.5×, inside the wave's rule, where the sheet's synthetic
+  city at 40 m is over it. Looking at the result showed a fourth thing, from
+  feature 3 rather than from today: the tool's hint and his credit were drawn
+  over each other at the plan's bottom edge, in both layouts. The hint now
+  hangs inside the drawing's own box and the caption has its line.
 
 ## What each one is
 

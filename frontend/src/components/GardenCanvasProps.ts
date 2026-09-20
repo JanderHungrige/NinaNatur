@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Box } from '../canvas/handles';
@@ -42,6 +44,10 @@ export interface GardenCanvasProps {
   onShowFoundTrees?: (() => void) | undefined;
   /** The shape tool that is armed, if any. A drag then draws instead of panning. */
   tool?: Tool | null;
+  /** What the armed tool expects, floated in the drawing's own corner. It hangs
+   *  inside the stage, not under it, so a caption beneath the drawing — whose
+   *  hand it is in (doc 98) — has a line of its own. */
+  hint?: ReactNode;
   onDrawShape?: ((shape: DrawnShape) => void) | undefined;
   /** A freehand stroke: an outline the hand closed, or a path. */
   onDrawTrace?:

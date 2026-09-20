@@ -155,7 +155,12 @@ shape itself, as his shadow is each symbol's bottom layer.
 
 **The credit moved.** In the title block, in full, it covered a third of a
 phone's plan; it is now a caption beneath the plan, word for word, whenever
-the plan is drawn in his style.
+the plan is drawn in his style. The tool's hint moved with it: it used to
+float at the bottom of the whole plan column, which now ends below that
+caption, so the two were drawn over each other. It hangs inside the drawing's
+own box (`canvas-stage`) instead, and the stage takes the room the caption
+leaves (`flex: 1`, doc 86's rule intact: the drawing still cannot set its own
+height).
 
 ## His line symbols along our elements
 
