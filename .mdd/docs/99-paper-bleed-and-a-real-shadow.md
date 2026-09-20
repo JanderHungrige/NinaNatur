@@ -33,7 +33,7 @@ test_files:
   - frontend/src/themes/draftSketchVocabulary.test.tsx
 data_flow: mixed
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [draft-sketch, plan, theme, shadow, sun, level-of-detail, paper, filter]

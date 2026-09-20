@@ -65,3 +65,7 @@ deploy/.state/
 # Draft Sketch's style file (doc 97): pinned by assets/draft-sketch/source.json,
 # fetched by the converter, never committed.
 assets/draft-sketch/*.stylx
+
+# The Finder's, not the project's.
+.DS_Store
+**/.DS_Store

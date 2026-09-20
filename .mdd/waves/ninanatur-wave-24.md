@@ -263,6 +263,17 @@ from the `.stylx` alone — his source assets are not asked for.*
   rather than a threshold. What is left of the wave is the courtesy: showing
   Warren Davison the result.
 
+- **2026-09-20 — stage 3 checked on the preview.** A garden of every kind, made
+  and deleted by a probe: the plan opens in Technisch, the picker draws his
+  style, the title block computes to Patrick Hand and the file arrives 200 from
+  this origin (no font host in the bundle at all), the sheet is `ds-paper`, the
+  roof draws the server's own lines and the shadows fall where the sun puts
+  them. The choice survives in `localStorage`. Asked for more contrast — and
+  again with forced colours — the plan came back Technisch although his style
+  was the remembered choice, with the picker disabled and saying why. Wave 23's
+  smoke test passes in both windows. The only console line is the anonymous
+  `accounts/me` 401 every page gets.
+
 ## What each one is
 
 ### 0. a-theme-is-a-thing

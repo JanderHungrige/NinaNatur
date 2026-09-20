@@ -17,7 +17,7 @@ test_files:
   - tests/test_theme_provenance.py
 data_flow: greenfield
 last_synced: 2026-09-20
-status: draft
+status: complete
 phase: all
 mdd_version: 11
 tags: [draft-sketch, typography, font, accessibility, contrast, licence]
