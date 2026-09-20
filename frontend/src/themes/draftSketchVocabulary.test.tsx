@@ -111,3 +111,35 @@ describe('fences and walls, in his line', () => {
     expect(wall.marks('ink').length).toBeGreaterThan(0);
   });
 });
+
+describe('streets, which arrive as ways and meet at junctions', () => {
+  // A T: a road across, and one joining it from the south.
+  const across = shape('street', 'paving', box(0, 0, 36, 6),
+    { line: [{ x: -18, y: 0 }, { x: 18, y: 0 }] });
+  const joining = shape('street', 'paving', box(6, 4, 5, 8),
+    { line: [{ x: 6, y: 0 }, { x: 6, y: 8 }] });
+
+  it('draws no outline of its own round a single band', () => {
+    expect(drawn(across).marks('ink')).toHaveLength(0);
+    expect(drawn(across).marks('line-ink')).toHaveLength(0);
+  });
+
+  const Plan = draftSketch.Plan!;
+
+  it('outlines the network once, and shows the line only outside it', () => {
+    const { container } = render(<svg><Plan shapes={[across, joining]} metresPerPixel={0.05} /></svg>);
+    const ink = container.querySelector('[data-mark="roads"] path[stroke]')!;
+    const mask = container.querySelector('mask')!;
+    // One line for both bands, and the mask's cut-out is that same line: what
+    // lies on a road is hidden, so nothing crosses the junction.
+    expect(ink.getAttribute('d')).toBe(mask.querySelector('path')!.getAttribute('d'));
+    expect(ink.getAttribute('mask')).toBe(`url(#${mask.getAttribute('id')})`);
+    expect(mask.querySelector('rect')!.getAttribute('fill')).toBe('#ffffff');
+    expect(mask.querySelector('path')!.getAttribute('fill')).toBe('#000000');
+  });
+
+  it('and draws nothing at all where a garden has no street', () => {
+    const { container } = render(<svg><Plan shapes={[]} metresPerPixel={0.05} /></svg>);
+    expect(container.querySelector('[data-mark="roads"]')).toBeNull();
+  });
+});

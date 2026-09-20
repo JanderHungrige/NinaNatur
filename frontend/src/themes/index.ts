@@ -44,4 +44,6 @@ export async function preloaded(theme: PlanTheme): Promise<PlanTheme> {
   return theme;
 }
 
-export type { DecoratedShape, Decoration, FurnitureProps, LevelOfDetail, PlanTheme } from './types';
+export type {
+  DecoratedShape, Decoration, FurnitureProps, LevelOfDetail, PlanProps, PlanTheme,
+} from './types';

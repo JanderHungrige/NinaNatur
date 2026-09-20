@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: 95ea8549
+hash: 5818d75a
 ---
 
 # Wave 24: A drawing of a garden
@@ -164,6 +164,35 @@ from the `.stylx` alone — his source assets are not asked for.*
   carries its kind) and sightlines (no plan draws them). A fourth sheet garden
   for other themes shows it all. Paint budget 85 ms against the 72 ms limit —
   a stage-3 finding; 66 ms with production React against Technisch's 17.
+- **2026-09-18 — stage 2 on the preview for the owner's review** as
+  **V0.23.203** (merge `ef9b45f`; the first, `9c2ef89`, failed CI: a bare
+  `pytest` could not import `scripts`, fixed by pytest's `pythonpath`). Checked
+  there with a garden of every kind, made and deleted by a probe: drawn in
+  Draft Sketch only with `?theme=draft-sketch`, Technisch without; the theme's
+  chunk, stylesheet and twelve images all from `assets/draft-sketch/`, none
+  inline; the credit word for word beneath the plan; the server's `roof_lines`
+  live (a gable's ridge, a hip's five lines). No console error but the
+  anonymous `accounts/me` 401 every page gets. The smoke test passed in both
+  windows. The probe's first run failed before it held its garden's token and
+  left an empty "Draft-Sketch-Probe" garden on the preview, beyond reach
+  without the token; preview data is for testing and goes with the next reset.
+- **2026-09-20 — the owner's first review of stage 2**, three notes, all on the
+  phone. (1) *"so white"*: the garden's ground is now his lawn wash at half
+  opacity — pale green paper with a real lawn darker on it
+  (`--plan-ground-fill`); ours is unchanged. (2) *"zooming in removes all
+  buildings"*: reproduced on the preview with a garden imported from the map —
+  59 streets, 10 houses. Nothing vanishes; the houses stand outside the plot,
+  so a zoom into the middle of the garden lands on empty ground, which was a
+  blank white sheet and is now grass. Technisch does the same. No code changed
+  for it; if it still reads as a bug with the ground drawn, it belongs to the
+  view, not the theme. (3) *"the streets overlap and look funny, drawn as edges
+  and nodes"*: right — a street is one element per way, so an outline per band
+  crossed every junction. The seam grew a `Plan` member, drawn once for the
+  whole plan, and `ours/Roads.tsx` draws the network's outline masked by
+  itself: only the line outside the roads survives, nothing crosses a junction
+  (doc 98). Worked out once per garden and zoom step, not per drag frame.
+  Technisch's 24 cells as recorded, the converter's output byte for byte,
+  paint 83 ms.
 
 ## What each one is
 

@@ -49,9 +49,12 @@ function obstacleShape(o: Obstacle): DecoratedShape {
  * halvings rather than with every zoom step: a wobble only needs redrawing
  * when it would change by a pixel.
  */
+export const planScale = (metresPerPixel: number): number =>
+  2 ** Math.round(Math.log2(metresPerPixel));
+
 export function useDecorations(garden: GardenOut, theme: PlanTheme, lod: LevelOfDetail,
   metresPerPixel: number): Decorated[] | null {
-  const scale = 2 ** Math.round(Math.log2(metresPerPixel));
+  const scale = planScale(metresPerPixel);
   return useMemo(() => {
     const decorate = theme.decorate;
     if (decorate === undefined) return null;
@@ -93,9 +96,20 @@ export function beneathOf(drawn: Decorated[], shift: (id: number) => string,
  * shape being dragged gets a group, to move them with it: a group per shape
  * was a third of everything the browser had to build for the city.
  */
-export function InkLayer({ drawn, shift }: { drawn: Decorated[]; shift: (id: number) => string }) {
+export function InkLayer({ drawn, theme, metresPerPixel, shift }: {
+  drawn: Decorated[];
+  theme: PlanTheme;
+  metresPerPixel: number;
+  shift: (id: number) => string;
+}) {
+  // Stable while the garden and the scale are: what the theme draws for the
+  // plan as a whole is not worked out again on every drag frame.
+  const shapes = useMemo(() => drawn.map((d) => d.shape), [drawn]);
   return (
     <g className="canvas__ink" pointerEvents="none" aria-hidden="true">
+      {/* What belongs to no single shape — a street network's outline — under
+          the shapes' own marks. */}
+      {theme.Plan !== undefined && <theme.Plan shapes={shapes} metresPerPixel={metresPerPixel} />}
       {drawn.filter(({ decoration }) => !isEmpty(decoration.over)).map(({ id, shape, decoration }) => {
         const moved = shift(id);
         if (moved === '') return decoration.over;

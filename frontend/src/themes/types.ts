@@ -30,6 +30,13 @@ export interface DecoratedShape {
   roof: string;
 }
 
+/** What a theme draws for the plan as a whole rather than for one shape: a
+ *  street network's outline, which no single street can draw (doc 98). */
+export interface PlanProps {
+  shapes: readonly DecoratedShape[];
+  metresPerPixel: number;
+}
+
 /** What the plan's furniture — north, scale, title — is drawn from (doc 98). */
 export interface FurnitureProps {
   metresPerPixel: number;
@@ -88,4 +95,6 @@ export interface PlanTheme {
   /** A north arrow, a scale bar and a title block in the theme's hand, in the
    *  plan's corner (doc 98); without it the plan says "N ↑", as it always has. */
   Furniture?: (props: FurnitureProps) => JSX.Element;
+  /** What the theme draws for the plan as a whole, under its shapes' own ink. */
+  Plan?: (props: PlanProps) => JSX.Element | null;
 }

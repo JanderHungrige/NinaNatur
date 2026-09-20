@@ -36,6 +36,7 @@ source_files:
   - frontend/src/themes/draft-sketch/overlays.ts
   - frontend/src/themes/draft-sketch/ours/rules.ts
   - frontend/src/themes/draft-sketch/ours/Furniture.tsx
+  - frontend/src/themes/draft-sketch/ours/Roads.tsx
   - frontend/src/themes/draft-sketch/theme.css
   - frontend/src/themes/draft-sketch/generated/rules.ts
   - frontend/src/themes/draft-sketch/generated/symbols.ts
@@ -58,7 +59,7 @@ test_files:
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
 data_flow: reads-existing
-last_synced: 2026-09-18
+last_synced: 2026-09-20
 status: complete
 phase: all
 mdd_version: 11
@@ -103,6 +104,8 @@ has not — and where the data is missing, nothing is invented.
 | **walls** | kind `wall` | his Brick Wall fitted to the wall's own faces: two lines, the wash between | adapted from Draft Sketch |
 | **blooms** | the plan's clusters (doc 56) | each dot a dab of his watercolour, grey out of season | NinaNatur, in the style of Draft Sketch |
 | **viewpoint** | Wave 9 | in his ink | NinaNatur, in the style of Draft Sketch |
+| **streets** | kind `street`, one band per way | his paving wash per band; one ink round the network, none across a junction | NinaNatur, in the style of Draft Sketch |
+| **the ground** | the garden itself | his lawn wash, thinned over the paper: a drawing is not white | NinaNatur, in the style of Draft Sketch |
 | **north, scale, title** | the view, `GardenOut.name` | a north arrow, a scale bar that is true at every zoom, a title block | NinaNatur, in the style of Draft Sketch |
 
 **Not drawn, named:**
@@ -142,6 +145,7 @@ Add-only: a computed field of the answer, no column.
 | roofs, raised beds' edges, hedges' hatch, his ink | `decorate`, `over` | the ink layer over every shape |
 | his line symbols | `drawAlong` | the ink layer; a wall's clipped to its outline |
 | north, scale, title | the theme's `Furniture` | the plan's corner (`PlanFurniture`) |
+| the street network's ink | the theme's `Plan` | first in the ink layer, under every shape's own marks |
 | his credit | `PlanCredit` | a caption beneath the plan |
 
 **Shadows moved.** Doc 97 drew every shadow in one layer under every shape.
@@ -166,10 +170,33 @@ overlays of their own that `draw.tsx` lays along a line:
 - a wall: his two lines, which at 1:250 would stand 0.7 m apart, laid on the
   wall's real faces instead; his wash and splotches between them.
 
+## Streets meet, so they are one network
+
+A street arrives from the map as a **way**: a centreline and a width, one
+element per stretch. Two ways that meet are two bands lying over each other,
+and an outline drawn per band runs straight through the road beside it — the
+junction looks stitched together from edges and nodes, which is what it is.
+
+The plan is drawn one shape at a time, so no shape can know this. The seam has
+a member for it: `PlanTheme.Plan` is drawn once for the whole plan, first in
+the ink layer. `ours/Roads.tsx` takes every street's outline, draws the lot as
+one path at twice his ink width, and masks that path **with itself**: by
+luminance, so what is painted black — the road surface — is cut away, and only
+the half of the line that lies outside the network survives. Nothing crosses a
+junction, and a street's own `decorate` draws no outline at all.
+
+It is worked out once per garden and per zoom step (`useMemo`, and `InkLayer`
+gets the same quantised scale the decorations use), not on every drag frame:
+a map import brings sixty ways, and each one's wobble is real work.
+
+**The ground is grass, not paper.** His lawn wash under the whole garden at
+half opacity — pale green over the paper, with a real lawn darker on top of
+it. `--plan-ground-fill` in `theme.css`; ours keeps the plain ground.
+
 ## The paint budget, measured
 
 The city (102 elements, 11 fences, a 60 m wall, 20 houses with roof lines, 9
-shrubs) at 40 m, CPU ×4, median of five: **85 ms**, against the 72 ms that is
+shrubs) at 40 m, CPU ×4, median of five: **83 ms**, against the 72 ms that is
 twice Technisch's recorded 36 — over, and a finding for stage 3 as doc 97's
 rule has it. Measured with production React, which is what anybody using the
 plan gets: **66 ms**, against Technisch's 17.

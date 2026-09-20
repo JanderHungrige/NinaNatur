@@ -8,8 +8,16 @@
   --plan-shape-stroke: transparent;
   --plan-bed-fill: url(#ds-brown);
   --plan-bed-stroke: transparent;
-  --plan-ground-fill: none;
+  /* The ground is his grass, thinned over the paper: a garden reads as a garden
+     when the plan is zoomed into a corner of it with nothing built there, where
+     bare paper read as an empty page. A lawn drawn on it is the full wash, so
+     the two still tell apart. */
+  --plan-ground-fill: url(#ds-grass);
   --plan-ground-stroke: transparent;
+}
+
+.plan-theme--draft-sketch .obstacle--garden {
+  fill-opacity: 0.5;
 }
 
 /* The plan's furniture (doc 98) says north; the "N ↑" in the drawing goes. */
