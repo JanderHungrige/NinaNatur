@@ -110,6 +110,18 @@ different map.
 5. **One table for the state's two spellings**, and every registry lookup goes
    through it.
 
+## On the page
+
+`SourceCredits` prints the list last in the garden's details, under the things
+it is about: what each survey decided, in the gardener's words — *Gelände*,
+*Horizont*, *Gebäude*, or *Gelände und Gebäude* where one survey gave two — its
+name, how fine it is, and then the credit itself, word for word. Nothing is
+drawn for a garden that rests on nothing, which is most of them.
+
+It is fetched with everything else the server derives (`fetchDerived`), because
+it costs no request of its own beyond the round trip and a garden that shows
+numbers must show their credits at the same time, not a moment later.
+
 ## Dependencies
 
 Docs 102–105 for the sources themselves, doc 93 for the order of truth about
@@ -125,7 +137,9 @@ from anything a garden carries.
 
 - The building credit is named from the ground window's state (above). Guarded
   by a test, and the day it fails the answer is `measured_by` on the element.
-- The page does not yet show the list: the endpoint and the model are here, and
-  the panel that prints them is the frontend half of this feature.
+- The credits are shown in the garden's own details, under everything they are
+  about. A bed's or an element's panel does not repeat them — the numbers on
+  those panels come from the same surveys, and a credit per panel would be four
+  copies of the same paragraph.
 
 ## Bugs

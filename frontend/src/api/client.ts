@@ -32,6 +32,7 @@ export type FeedbackSent = components['schemas']['FeedbackOut'];
 export type LightMap = components['schemas']['LightMap'];
 export type ShadowDay = components['schemas']['ShadowDay'];
 export type Terrain = components['schemas']['TerrainOut'];
+export type Credit = components['schemas']['CreditOut'];
 export type CanopySuggestion = components['schemas']['CanopyOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
@@ -291,6 +292,14 @@ export class NinaNaturClient {
   async terrain(token: string): Promise<Terrain | null> {
     return this.request<Terrain | null>(
       `/api/v1/gardens/${encodeURIComponent(token)}/terrain`,
+    );
+  }
+
+  /** Every survey this garden's numbers rest on, with the credit each licence
+   *  asks for (doc 106). Empty is an ordinary answer. */
+  async sources(token: string): Promise<Credit[]> {
+    return this.request<Credit[]>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/sources`,
     );
   }
 

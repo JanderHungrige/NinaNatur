@@ -656,6 +656,31 @@ export interface paths {
         patch: operations["set_soil_api_v1_gardens__token__soil_patch"];
         trace?: never;
     };
+    "/api/v1/gardens/{token}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sources
+         * @description Every survey this garden's numbers actually rest on (doc 106).
+         *
+         *     Empty is an ordinary answer: a garden nobody has measured anything for owes
+         *     nobody anything. What is here is what was used, not what the state could in
+         *     principle offer — a credit for a source a garden never touched would be a
+         *     claim about where its numbers came from.
+         */
+        get: operations["sources_api_v1_gardens__token__sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/terrain": {
         parameters: {
             query?: never;
@@ -1102,6 +1127,26 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /**
+         * CreditOut
+         * @description One source a garden's numbers rest on (doc 106).
+         *
+         *     A credit is not a caption: CC-BY-4.0, dl-de/by-2-0 and the Copernicus terms
+         *     all require the named credit, and a height shown without it is a height
+         *     used outside its licence.
+         */
+        CreditOut: {
+            /** About */
+            about: string;
+            /** Attribution */
+            attribution: string;
+            /** Detail */
+            detail?: string | null;
+            /** Licence */
+            licence: string;
+            /** Name */
+            name: string;
         };
         /** FeedbackIn */
         FeedbackIn: {
@@ -2975,6 +3020,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_api_v1_gardens__token__sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditOut"][];
                 };
             };
             /** @description Validation Error */

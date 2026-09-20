@@ -33,6 +33,8 @@ export function fakeClient(
     bloom: vi.fn(async () => ({ beds: [] }) as unknown as BloomPalette),
     lightMap: vi.fn(async (): Promise<LightMap | null> => null),
     terrain: vi.fn(async () => null),
+    // What the garden's numbers rest on (doc 106): nothing, in a fixture.
+    sources: vi.fn(async () => []),
     canopies: vi.fn(async () => []),
     bedSuggestions: vi.fn(async () => suggestions()),
     plant: vi.fn(async () => gardens.tok),

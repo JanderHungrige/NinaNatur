@@ -7,6 +7,7 @@ import { FirstSteps, stepsDone } from './FirstSteps';
 import { InsectScore } from './InsectScore';
 import { ShadeSwitch } from './ShadeSwitch';
 import { SoilLine } from './SoilLine';
+import { SourceCredits } from './SourceCredits';
 
 interface Props {
   garden: GardenOut;
@@ -87,6 +88,9 @@ export function GardenDetails({ garden, controller, busy }: Props) {
         onSelect={controller.selectElement}
         onDelete={elements.deleteElement}
       />
+      {/* Last, because it is about everything above it: which survey said so,
+          and the credit each licence asks for (doc 106). */}
+      <SourceCredits credits={derived.sources} />
     </>
   );
 }

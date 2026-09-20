@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   BloomPalette,
   CanopySuggestion,
+  Credit,
   GardenOut,
   ImprovementsOut,
   LightMap,
@@ -36,6 +37,8 @@ export function useDerived(
    *  whether there is anything to show. */
   const [lightMap, setLightMap] = useState<LightMap | null>(null);
   const [terrain, setTerrain] = useState<Terrain | null>(null);
+  /** Which survey said so, and the credit its licence asks for (doc 106). */
+  const [sources, setSources] = useState<Credit[]>([]);
   const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
   const [forage, setForage] = useState(true);
 
@@ -48,6 +51,7 @@ export function useDerived(
       palette: setPalette,
       lightMap: setLightMap,
       terrain: setTerrain,
+      sources: setSources,
     }),
     [],
   );
@@ -139,6 +143,7 @@ export function useDerived(
     lightMap,
     setLightMap,
     terrain,
+    sources,
     canopies,
     forage,
     toggleForage,

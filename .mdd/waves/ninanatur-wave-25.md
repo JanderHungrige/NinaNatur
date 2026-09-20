@@ -116,7 +116,7 @@ confidence travel with every window, as they do with every trait value.
 | 4 | the-cloud-under-the-crown | — | planned | 1 |
 | 5 | the-trees-in-the-other-states | — | planned | 1 |
 | 6 | measure-my-own-garden | — | planned | 4 |
-| 7 | which-source-said-so | 106 | API built | 1 |
+| 7 | which-source-said-so | 106 | built | 1 |
 
 Three stages:
 
@@ -224,7 +224,14 @@ Three stages:
   Bavarian garden had no terrain and its light map was computed flat; today its
   tiles are read, and without the ground in the signature that map would have
   stayed flat for ever, quietly — the exact failure the signature exists to
-  prevent. What is left of the feature is the panel that prints the list.
+  prevent.
+
+  The page half followed: `SourceCredits` prints the list last in the garden's
+  details, under the numbers it is about — what each survey decided in the
+  gardener's words, how fine it is, and the credit word for word. Fetched with
+  everything else the server derives, because a garden that shows numbers must
+  show their credits at the same time and not a moment later. **Stage 2 is
+  complete but for feature 4**, the point cloud.
 
 ## What each one is
 

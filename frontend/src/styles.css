@@ -1776,6 +1776,33 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-weight: 500;
 }
 
+/* Where a garden's numbers come from (doc 106). Not a caption: the licences
+   these sources carry require the named credit, so it is small and it is
+   always there rather than behind a disclosure. */
+.source-credits__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-credits__item {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.source-credits__what {
+  color: var(--ink);
+  font-size: var(--text-xs);
+}
+
+.source-credits__credit {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
 /* Which style the plan is drawn in (doc 100), in the menu beside the sun map.
    A fieldset rather than a row of buttons: the two choices belong together and
    a screen reader should hear them that way. */

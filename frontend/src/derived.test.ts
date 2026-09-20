@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type {
+  Credit,
   BloomPalette,
   ImprovementsOut,
   LightMap,
@@ -29,12 +30,13 @@ function pending() {
     bloom: later<BloomPalette>(),
     lightMap: later<LightMap | null>(),
     terrain: later<Terrain | null>(),
+    sources: later<Credit[]>(),
   };
 }
 
 type Pending = ReturnType<typeof pending>;
 
-/** The six calls a garden's derived state needs, each recorded as it is made. */
+/** The calls a garden's derived state needs, each recorded as it is made. */
 function server(answers: Pending) {
   const asked: string[] = [];
   const ask = <T>(name: string, answer: Promise<T>) => {
@@ -48,6 +50,7 @@ function server(answers: Pending) {
     bloom: vi.fn((_token: string) => ask('bloom', answers.bloom.promise)),
     lightMap: vi.fn((_token: string) => ask('lightMap', answers.lightMap.promise)),
     terrain: vi.fn((_token: string) => ask('terrain', answers.terrain.promise)),
+    sources: vi.fn((_token: string) => ask('sources', answers.sources.promise)),
   };
   return { client: spies as unknown as DerivedSource, asked, spies };
 }
@@ -60,6 +63,7 @@ function screen() {
     palette: vi.fn(),
     lightMap: vi.fn(),
     terrain: vi.fn(),
+    sources: vi.fn(),
   } satisfies DerivedSetters;
 }
 
@@ -78,17 +82,18 @@ function answerAll(answers: Pending): void {
   answers.bloom.answer(PALETTE);
   answers.lightMap.answer(null);
   answers.terrain.answer(null);
+  answers.sources.answer([]);
 }
 
 describe('fetchDerived', () => {
-  it('asks for all six before any one has answered', () => {
+  it('asks for all of them before any one has answered', () => {
     // Opening a garden used to await each of these in turn: eight round trips,
     // one after another, on a connection that could carry them together.
     const { client, asked } = server(pending());
     void fetchDerived(client, 'token', true, screen());
 
     expect([...asked].sort()).toEqual(
-      ['bloom', 'improvements', 'lightMap', 'score', 'terrain', 'timeline'],
+      ['bloom', 'improvements', 'lightMap', 'score', 'sources', 'terrain', 'timeline'],
     );
   });
 
@@ -123,6 +128,7 @@ describe('fetchDerived', () => {
     answers.improvements.answer(IMPROVEMENTS);
     answers.bloom.answer(PALETTE);
     answers.terrain.answer(null);
+    answers.sources.answer([]);
     answers.lightMap.fail(new Error('Sonnenkarte: 503'));
 
     await expect(done).rejects.toThrow('503');
