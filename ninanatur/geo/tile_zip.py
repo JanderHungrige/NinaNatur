@@ -25,7 +25,9 @@ read, never after.
 from __future__ import annotations
 
 import io
+import shutil
 import zipfile
+from pathlib import Path
 
 #: The largest member this will unpack. Thüringen's CityGML is 36 MB of XML
 #: and its laser member about 110 MB; four hundred is generous for those and
@@ -72,6 +74,43 @@ def named(data: bytes, *, want: tuple[str, ...],
         raise ArchiveError(f"not an archive this can read: {broken}") from broken
 
 
+def extract(archive: Path, *, want: tuple[str, ...], out: Path,
+            max_member_bytes: int = MAX_MEMBER_BYTES) -> Path:
+    """Write the wanted member out beside its archive, and say where it went.
+
+    The point cloud reader takes a path and streams from it, because the
+    largest tile in the country is 445 MB and holding one is the whole budget
+    (doc 107). So this streams too: the member is copied through a megabyte at
+    a time rather than read into memory and written back out.
+
+    Written whole or not at all, like everything else on the volume — half a
+    point cloud that looks like a point cloud is a day of somebody's life.
+    """
+    if out.exists():
+        return out
+    wanted = tuple(suffix.lower() for suffix in want)
+    try:
+        with zipfile.ZipFile(archive) as bundle:
+            entry = next((found for found in sorted(bundle.infolist(),
+                                                    key=lambda found: found.filename)
+                          if not found.is_dir()
+                          and found.filename.lower().endswith(wanted)), None)
+            if entry is None:
+                raise ArchiveError(f"no {' or '.join(wanted)} in {archive.name}")
+            if entry.file_size > max_member_bytes:
+                raise ArchiveError(f"{entry.filename} is too large: {entry.file_size} bytes")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            part = out.with_suffix(f"{out.suffix}.part")
+            with bundle.open(entry) as inside, part.open("wb") as sink:
+                shutil.copyfileobj(inside, sink, length=1 << 20)
+            part.replace(out)
+    except ArchiveError:
+        raise
+    except (zipfile.BadZipFile, NotImplementedError, OSError, RuntimeError) as broken:
+        raise ArchiveError(f"could not take {archive.name} apart: {broken}") from broken
+    return out
+
+
 def unpack(data: bytes, *, want: tuple[str, ...],
            max_member_bytes: int = MAX_MEMBER_BYTES) -> list[bytes]:
     """The same, for the callers that only want what is in the members."""
@@ -79,4 +118,4 @@ def unpack(data: bytes, *, want: tuple[str, ...],
                                           max_member_bytes=max_member_bytes)]
 
 
-__all__ = ["MAX_MEMBER_BYTES", "ArchiveError", "named", "unpack"]
+__all__ = ["MAX_MEMBER_BYTES", "ArchiveError", "extract", "named", "unpack"]

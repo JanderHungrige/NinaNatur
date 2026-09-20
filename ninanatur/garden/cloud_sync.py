@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import sqlite3
+from pathlib import Path
 
 from ninanatur.garden.models import Garden
 from ninanatur.garden.terrain_sync import TILE_CACHE_BYTES, is_precise
@@ -26,8 +27,9 @@ from ninanatur.geo.osm import state_at
 from ninanatur.geo.pointcloud import CloudWindow, window_from
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain_store import cache_key
-from ninanatur.geo.tile_cache import cache_at
+from ninanatur.geo.tile_cache import TileCache, cache_at
 from ninanatur.geo.tile_sources import TileProduct, TileSource, sources_for
+from ninanatur.geo.tile_zip import extract
 from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
@@ -76,6 +78,22 @@ def ensure_cloud(conn: sqlite3.Connection, garden: Garden, *,
     return True
 
 
+def _unwrapped(source: TileSource, cache: TileCache, stem: str,
+               tile_e: int, tile_n: int) -> Path:
+    """The tile as a file the reader can stream, wrapper and all.
+
+    Thüringen, Sachsen and Brandenburg zip their point clouds. The archive is
+    kept under its own key and the member written out beside it, once — both
+    are ordinary entries under the cap, and either can be dropped and made
+    again (doc 103).
+    """
+    url = source.url_for(tile_e, tile_n)
+    if not source.zipped:
+        return cache.file_for(f"{stem}.laz", url, get_bytes)
+    archive = cache.file_for(f"{stem}.zip", url, get_bytes)
+    return extract(archive, want=(".laz", ".las"), out=cache.path_for(f"{stem}.laz"))
+
+
 def _read(anchor: LatLon, source: TileSource,
           buildings: list[Lod2Building]) -> CloudWindow | None:
     """The tile this garden sits in, read into a window.
@@ -89,9 +107,10 @@ def _read(anchor: LatLon, source: TileSource,
     east, north = to_utm(anchor.lat, anchor.lon, zone)
     tile_e, tile_n = source.corner_of(east, north)
     cache = cache_at(database_path().parent, TILE_CACHE_BYTES)
-    key = f"{source.state.lower()}/{source.product.value}/{source.tile_name(tile_e, tile_n)}.laz"
+    stem = f"{source.state.lower()}/{source.product.value}/{source.tile_name(tile_e, tile_n)}"
+    key = f"{stem}.laz"
     try:
-        path = cache.file_for(key, source.url_for(tile_e, tile_n), get_bytes)
+        path = _unwrapped(source, cache, stem, tile_e, tile_n)
         return window_from(
             path, anchor, zone=zone, source=source.state, licence=source.licence,
             attribution=source.attribution,

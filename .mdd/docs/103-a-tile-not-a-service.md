@@ -182,6 +182,10 @@ Vorpommern** get surveyed roofs, and **Baden-Württemberg** gets both roofs and
 `nDOM1` — a 1 m canopy height model, already normalised to the ground, which
 closes the gap its 5 m surface service left for finding trees.
 
+Their **point clouds** came with them: Thüringen, Sachsen and Brandenburg wrap
+theirs too, so the member is streamed out of the archive to a file and read
+from there, and the reader still never holds a tile.
+
 What is left of this feature is two states and one technique:
 **Rheinland-Pfalz** and **Schleswig-Holstein**, whose raster names carry a
 per-tile flight year and which therefore really do need their index fetched,
@@ -190,12 +194,14 @@ Bremen and Saarland would need, none of which publishes a tile at all.
 
 ## Known Issues
 
-- **A zipped point cloud is not read yet.** Thüringen, Sachsen and Brandenburg
-  wrap their LAZ, and `cloud_sync` streams from a file on the volume rather
-  than from bytes (doc 107), so the member has to be written out beside the
-  archive first. The rasters and the buildings are unwrapped; the cloud is not.
-- Baden-Württemberg's `nDOM1` is already above the ground, so the subtraction
-  the other surface tiles need is a no-op there and is applied anyway. It is
-  harmless only because its ground window is the same ground.
+- **A zipped tile costs the volume twice** where the reader needs a file
+  rather than bytes: the point cloud keeps the archive *and* the member
+  streamed out of it until the cap drops the older one. The rasters and the
+  buildings are unwrapped in memory and cost nothing extra.
+- **Coverage is not known before it is asked for.** Every one of these states
+  publishes a list of which tiles exist, and none of them is read: a tile that
+  is not there answers 404, which the window already reads as ground nobody
+  surveyed. That is right for a hole in a flight and wasteful for a garden
+  outside the state entirely.
 
 ## Bugs

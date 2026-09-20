@@ -52,6 +52,14 @@ class TileCache:
         self.tidy()
         return data
 
+    def path_for(self, key: str) -> Path:
+        """Where this key lives on the volume, whether or not it is there yet.
+
+        For a tile that arrives wrapped: the archive is fetched under its own
+        key and the member is written out under this one (doc 103).
+        """
+        return self._path(key)
+
     def file_for(self, key: str, url: str, fetch: Fetch) -> Path:
         """The same tile, as a file on the volume rather than as bytes.
 

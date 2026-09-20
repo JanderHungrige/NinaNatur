@@ -8,10 +8,16 @@ from __future__ import annotations
 
 import io
 import zipfile
+from pathlib import Path
 
 import pytest
 
-from ninanatur.geo.tile_zip import MAX_MEMBER_BYTES, ArchiveError, unpack
+from ninanatur.geo.tile_zip import (
+    MAX_MEMBER_BYTES,
+    ArchiveError,
+    extract,
+    unpack,
+)
 
 
 def _zip(*members: tuple[str, bytes]) -> bytes:
@@ -91,3 +97,35 @@ def test_the_cap_is_big_enough_for_the_products_it_guards() -> None:
     """Thüringen's CityGML is 36 MB of XML uncompressed and its laser member
     about 110 MB. A cap that refuses the data it guards guards nothing."""
     assert MAX_MEMBER_BYTES >= 150_000_000
+
+
+def test_the_member_is_written_out_beside_its_archive(tmp_path: Path) -> None:
+    """Thüringen, Sachsen and Brandenburg zip their point clouds, and the
+    reader streams from a file rather than from bytes (doc 107). So the member
+    is copied out once and read from there."""
+    archive = tmp_path / "las_32_561_5609_1_th_2020-2025.zip"
+    archive.write_bytes(_zip(("las_32_561_5609_1_th_2020-2025.laz", b"LASF points"),
+                             ("las_32_561_5609_1_th_2020-2025.xml", b"<meta/>")))
+    out = extract(archive, want=(".laz", ".las"), out=tmp_path / "th" / "tile.laz")
+    assert out.read_bytes() == b"LASF points"
+    assert not list(tmp_path.rglob("*.part")), "a half-written tile must not survive"
+
+
+def test_a_member_already_written_out_is_not_written_again(tmp_path: Path) -> None:
+    """A second garden on the same street reads the file that is already
+    there; unpacking a hundred megabytes again would be the cache's whole
+    point undone."""
+    archive = tmp_path / "tile.zip"
+    archive.write_bytes(_zip(("tile.laz", b"LASF points")))
+    out = tmp_path / "tile.laz"
+    extract(archive, want=(".laz",), out=out)
+    out.write_bytes(b"left alone")
+    assert extract(archive, want=(".laz",), out=out).read_bytes() == b"left alone"
+
+
+def test_an_archive_with_no_cloud_in_it_leaves_nothing_behind(tmp_path: Path) -> None:
+    archive = tmp_path / "tile.zip"
+    archive.write_bytes(_zip(("readme.txt", b"hello")))
+    with pytest.raises(ArchiveError, match="no .laz"):
+        extract(archive, want=(".laz",), out=tmp_path / "tile.laz")
+    assert not (tmp_path / "tile.laz").exists()

@@ -9,6 +9,7 @@ depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service, 105-every-roof
 relates: [84-canopies-found, 106-which-source-said-so, 07-solar-geometry]
 source_files:
   - ninanatur/geo/pointcloud.py
+  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/cloud_store.py
   - ninanatur/garden/cloud_sync.py
   - ninanatur/geo/tile_cache.py
@@ -23,7 +24,7 @@ last_synced: 2026-09-20
 status: complete
 phase: all
 mdd_version: 11
-tags: [point-cloud, laz, lidar, crown-base, vegetation, buildings, nrw, budget]
+tags: [point-cloud, laz, lidar, crown-base, vegetation, buildings, nrw, bayern, thueringen, sachsen, brandenburg, budget]
 path: Geo/Point cloud
 integration_contracts: []
 satisfies_contracts: []
@@ -137,6 +138,30 @@ rather than a minute. They are pinned with hashes in `requirements.txt` **and**
 in `requirements-dev.txt` — the supply-chain test caught that the image would
 otherwise ship a library CI never tested.
 
+## Four more clouds, and one that classifies itself
+
+**2026-09-20.** Bayern, Thüringen, Sachsen and Brandenburg join Nordrhein-
+Westfalen. Three of the four arrive zipped, so the member is streamed out of
+the archive to a file beside it and read from there — the reader still never
+holds a tile, which is what kept the budget at 186 MB.
+
+**Bayern's cloud is classified where NRW's is not**: class 6 for buildings and
+class 20 for plants, on the published scheme and on two decoded tiles. Twenty
+is not the ASPRS vegetation class, so a reader looking for 3, 4 and 5 finds
+nothing — which is exactly the sort of thing this doc exists to record. Munich
+measures 20.4 points per m² against the state's guaranteed 4, so the cell
+there is the half-metre one.
+
+The reader **does not use those classes yet**, and that is deliberate. The
+footprint rule works in every state with a building model, Bayern included,
+and one rule that holds everywhere beats two that disagree at the seam. What
+the classification buys is the states that publish a cloud and *no* LoD2, and
+there are none of those in the registry today.
+
+Brandenburg is flown over about 44 % of its area, so a missing tile there is a
+place nobody has flown rather than a portal having a bad day. The cloud path
+already reads that as "no window", which is the right answer either way.
+
 ## Business Rules
 
 1. **The classification is not trusted to say what a thing is.** Ground is
@@ -167,7 +192,15 @@ returns is arithmetic over numbers.
   445 MB a tile, fetching the other three is not the trade the terrain's is.
 - **Nothing reads the crown base yet.** It is stored, credited and tested; the
   shading model starts using it in Wave 26, which is what it was asked for.
-- **Nine states publish a cloud and one is in the registry.** NRW is verified;
-  BY, HE, SN, ST, TH, BB, BE and HH join as their portals are probed.
+- **Bayern's own classification is not used** (above): the footprint rule
+  covers it, and a second rule would only differ at the seam.
+- A zipped cloud costs the volume twice for a while — the archive and the
+  member written out of it — until the cap drops the older of the two.
+- **Five clouds are in the registry**, and the rest have been asked. Hessen
+  charges for its; Berlin's is nine bundles of up to 50 GB packed with
+  deflate64; Sachsen-Anhalt publishes two areas rather than a state;
+  Mecklenburg-Vorpommern's tiles answer 401; Niedersachsen, Baden-Württemberg,
+  Bremen and Saarland sell theirs or publish nothing per tile (doc 102).
+  Rheinland-Pfalz's is verified at 338 MB a tile and waits on its ground.
 
 ## Bugs

@@ -169,6 +169,15 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         probed_bytes=2_774_164,
     ),
 
+    TileSource(
+        name="th-las", state="TH", epsg=25832, product=TileProduct.LAZ, tile_km=1,
+        fmt="LAZ", zipped=True, licence="dl-de/by-2-0",
+        attribution="© GDI-Th (2026), Datenlizenz Deutschland – Namensnennung – Version 2.0",
+        _url=_th("las", "LAS/las_2020-2025"),
+        _name=lambda e, n: _adv_name("las", e, n, suffix="th_2020-2025"),
+        points_per_m2=4.0, probed_bytes=114_375_923,
+    ),
+
     # ---- Sachsen: the same four products, two kilometres at a time. ----
     TileSource(
         name="sn-dgm1", state="SN", epsg=25833, product=TileProduct.DGM1, tile_km=2,
@@ -196,6 +205,14 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         probed_bytes=853,
     ),
 
+    TileSource(
+        name="sn-lsc", state="SN", epsg=25833, product=TileProduct.LAZ, tile_km=2,
+        fmt="LAZ", zipped=True, licence="dl-de/by-2-0",
+        attribution="Quelle: GeoSN, dl-de/by-2-0",
+        _url=_sn("lsc", "laz", "EpkzyJHScGb5ndd"), _name=_sn_name("lsc", "laz"),
+        points_per_m2=4.0, probed_bytes=19_782_635,
+    ),
+
     # ---- Roofs for four states that already had their ground from a service. ----
     TileSource(
         name="bb-lod2", state="BB", epsg=25833, product=TileProduct.LOD2, tile_km=1,
@@ -204,6 +221,20 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         _url=lambda e, n: ("https://data.geobasis-bb.de/geobasis/daten/3d_gebaeude/"
                            f"lod2_gml/{_bb_name('lod2')(e, n)}.zip"),
         _name=_bb_name("lod2"), probed_bytes=137_502,
+    ),
+    TileSource(
+        # Flown over about 44 % of the state, so a tile missing here is a place
+        # nobody has flown rather than a portal having a bad day — which the
+        # cloud path already reads as "no window", not as a failure.
+        name="bb-als", state="BB", epsg=25833, product=TileProduct.LAZ, tile_km=1,
+        fmt="LAZ", zipped=True, licence="dl-de/by-2-0",
+        attribution="© GeoBasis-DE/LGB, dl-de/by-2-0",
+        _url=lambda e, n: ("https://data.geobasis-bb.de/geobasis/daten/als/laz/"
+                           f"{_bb_name('als')(e, n)}.zip"),
+        _name=_bb_name("als"),
+        # The state guarantees five per m² for current flights; the tile read
+        # on 2026-09-20 held 18.4.
+        points_per_m2=5.0, probed_bytes=107_481_210,
     ),
     TileSource(
         name="be-lod2", state="BE", epsg=25833, product=TileProduct.LOD2, tile_km=1,

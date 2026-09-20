@@ -112,10 +112,10 @@ confidence travel with every window, as they do with every trait value.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
-| 1 | a-tile-not-a-service | 103 | BY, TH, SN built | 0 |
+| 1 | a-tile-not-a-service | 103 | BY, TH, SN built (9 states) | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
 | 3 | every-roof-in-the-country | 105 | 8 states built | 1 |
-| 4 | the-cloud-under-the-crown | 107 | NRW built | 1, 3 |
+| 4 | the-cloud-under-the-crown | 107 | 5 states built | 1, 3 |
 | 5 | the-trees-in-the-other-states | 108 | BY, TH, SN, BW built | 1 |
 | 6 | measure-my-own-garden | — | **backlog** | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
