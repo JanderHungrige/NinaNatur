@@ -9,6 +9,7 @@ import struct
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import WINDOW_M
@@ -117,3 +118,41 @@ def test_nothing_arrives_at_all_and_the_answer_is_none(tmp_path: Path) -> None:
         raise FileNotFoundError(url)
 
     assert tile_window(MUNICH, BAYERN, cache=_cache(tmp_path), fetch=gone) is None
+
+
+def test_a_state_with_no_surface_service_gets_one_from_its_tiles(tmp_path: Path) -> None:
+    """Feature 5 (doc 108): Bayern publishes a twenty-centimetre surface model
+    as tiles and runs no coverage service anybody may use, so until now the
+    biggest state in the country found no trees at all."""
+    from ninanatur.geo.terrain import TerrainWindow
+    from ninanatur.geo.tile_sources import TileProduct
+    from ninanatur.geo.tiles import surface_window
+
+    source = next(s for s in sources_for("BY") if s.product is TileProduct.DOM)
+    assert source.cell_m == 0.2
+
+    # Ground at 500 m, and a tile whose every pixel is eight metres above it.
+    ground = TerrainWindow(
+        min_x=-100.0, min_y=-100.0, cell_m=1.0, cols=200, rows=200,
+        heights=[500.0] * (200 * 200), source="BY", licence="CC-BY-4.0",
+        attribution="Bayerische Vermessungsverwaltung", vertical_step_m=0.01,
+    )
+    side = int(1000 / source.cell_m)
+    tile = _tiff(np.full((side, side), 508.0, dtype="<f4"))
+
+    window = surface_window(MUNICH, source, ground, cache=_cache(tmp_path),
+                            fetch=lambda _url: tile)
+    assert window is not None
+    assert window.cell_m == 0.2
+    # Above the ground, not above the sea: that subtraction is the whole point.
+    assert window.at(0.0, 0.0) == pytest.approx(8.0, abs=0.01)
+    assert window.licence == "CC-BY-4.0"
+
+
+def test_surface_tiles_without_the_ground_are_no_answer(tmp_path: Path) -> None:
+    """A surface model is metres above sea level. Without the terrain under it
+    there is nothing to subtract, and a height above the sea says nothing about
+    what stands in a garden."""
+    from ninanatur.garden.building_sync import _surface_from_tiles
+
+    assert _surface_from_tiles(MUNICH, "Bayern", None) is None

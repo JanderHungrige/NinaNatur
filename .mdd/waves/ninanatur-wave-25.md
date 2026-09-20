@@ -114,7 +114,7 @@ confidence travel with every window, as they do with every trait value.
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
 | 3 | every-roof-in-the-country | 105 | BY, NW built | 1 |
 | 4 | the-cloud-under-the-crown | 107 | NRW built | 1, 3 |
-| 5 | the-trees-in-the-other-states | — | planned | 1 |
+| 5 | the-trees-in-the-other-states | 108 | BY built | 1 |
 | 6 | measure-my-own-garden | — | planned | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
 
@@ -256,6 +256,28 @@ Three stages:
   `laspy` and `lazrs` are the first new dependencies since Wave 20. The
   supply-chain test earned its keep immediately: the image would have shipped a
   library CI never installed. **Stage 2 is complete.**
+
+- **2026-09-20 — feature 5, the trees in the other states** (doc 108), Bayern.
+  `canopies_in` has only ever worked where a state runs a coverage service, so
+  a garden in Bayern had no trees around it — not because there are none.
+  Bayern's own catalogue, read rather than guessed at, has *DOM20*: a
+  **twenty-centimetre** surface model, CC BY 4.0, one-kilometre tiles, five
+  times finer than anything in doc 80's registry. The tile address came out of
+  the state's metalink index and three computed names were checked against the
+  server (43.7, 48.4, 51.1 MB, all 200). Its scheme writes the zone onto the
+  front of the easting, which `tile_of` now reads back.
+
+  Two things followed from a 5,000 × 5,000 tile. The pixel guard grew to thirty
+  million — a square kilometre at 20 cm is 25, which is a tile and not a
+  malformed header — and **the mosaic stopped being a mosaic**: four of those
+  tiles are 400 MB for a 400 m window, so the tiles are now pasted straight
+  into the window's own extent, which is five. The subtraction that turns
+  metres above the sea into metres above the ground is shared with the service
+  path rather than copied.
+
+  The same catalogue lists *Laserdaten* and *Einzelbäume* — surveyed individual
+  trees — and neither is in the registry, because an entry is a request that
+  was answered and those have not been asked.
 
 ## What each one is
 

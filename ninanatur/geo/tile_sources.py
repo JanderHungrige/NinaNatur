@@ -50,8 +50,9 @@ class TileProduct(StrEnum):
 
     #: The ground, as a raster.
     DGM1 = "dgm1"
-    #: The ground and everything standing on it, as a raster.
-    DOM1 = "dom1"
+    #: The ground and everything standing on it, as a raster. How fine it is
+    #: varies — Bayern's is 20 cm — so the resolution is `cell_m`, not the name.
+    DOM = "dom"
     #: Buildings with measured height and a standardised roof, as CityGML.
     LOD2 = "lod2"
     #: The laser points themselves, classified.
@@ -84,6 +85,8 @@ class TileSource:
     epsg: int
     _url: Callable[[int, int], str]
     _name: Callable[[int, int], str]
+    #: A raster's own cell, in metres: 1 m for a DGM1, 0.2 for Bayern's DOM20.
+    cell_m: float | None = None
     #: A raster's height step, where it has one.
     vertical_step_m: float | None = None
     #: A cloud's density, where it is one.
@@ -122,6 +125,12 @@ def _nrw_name(east_km: int, north_km: int, prefix: str, suffix: str) -> str:
     return f"{prefix}_32_{east_km}_{north_km}_1_{suffix}"
 
 
+#: Bayern writes the zone in front of the easting and the product behind:
+#: `32690_5334_20_DOM.tif` is UTM32, 690 km east, 5 334 km north, 20 cm, surface.
+def _bayern_dom_name(east_km: int, north_km: int) -> str:
+    return f"32{east_km}_{north_km}_20_DOM"
+
+
 TILE_SOURCES: tuple[TileSource, ...] = (
     TileSource(
         name="by-dgm1", state="BY", epsg=25832, product=TileProduct.DGM1, tile_km=1, fmt="GeoTIFF",
@@ -131,6 +140,16 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         vertical_step_m=0.01, probed_bytes=2_558_672,
         # Not on the download host: that path answers 404 (doc 102).
         index_url="https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/",
+    ),
+    TileSource(
+        name="by-dom20", state="BY", epsg=25832, product=TileProduct.DOM, tile_km=1,
+        fmt="GeoTIFF", licence="CC-BY-4.0",
+        attribution="Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de",
+        _url=lambda e, n: ("https://download1.bayernwolke.de/a/dom20/DOM/"
+                           f"{_bayern_dom_name(e, n)}.tif"),
+        _name=_bayern_dom_name,
+        cell_m=0.2, vertical_step_m=0.01, probed_bytes=48_441_449,
+        index_url="https://geodaten.bayern.de/odd/a/dom20/meta/DOM/metalink/",
     ),
     TileSource(
         name="by-lod2", state="BY", epsg=25832, product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
@@ -247,10 +266,13 @@ def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:
     test insists on, and what reads a state's index into this registry's terms."""
     numbers = [int(part) for part in re.findall(r"\d+", source.tile_name(east_km, north_km))]
     # The pair that is the grid: an easting is three digits of kilometres, a
-    # northing four. Zone, sheet size and state suffix are the other numbers.
+    # northing four. Zone, sheet size and state suffix are the other numbers —
+    # and Bayern writes the zone *onto the front of* the easting, so a number is
+    # the easting if it is one, or if it is one with a zone in front of it.
+    zones = (0, 32_000, 33_000)
     for first, second in zip(numbers, numbers[1:], strict=False):
-        if (first, second) == (east_km, north_km):
-            return first, second
+        if second == north_km and any(first - zone == east_km for zone in zones):
+            return east_km, north_km
     raise ValueError(f"{source.name}: {source.tile_name(east_km, north_km)} does not hold its grid")
 
 

@@ -17,7 +17,7 @@ import sqlite3
 from ninanatur.garden.canopies_found import remember
 from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
-from ninanatur.garden.terrain_sync import ground_for, is_precise
+from ninanatur.garden.terrain_sync import TILE_CACHE_BYTES, ground_for, is_precise
 from ninanatur.geo.canopy import canopies_in
 from ninanatur.geo.lod2 import (
     MAX_TILE_BYTES,
@@ -29,8 +29,12 @@ from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import SurfaceWindow, fetch_surface
 from ninanatur.geo.surface_sources import by_state, measures_buildings
-from ninanatur.geo.tile_sources import lod2_tiles_for
+from ninanatur.geo.terrain import TerrainWindow
+from ninanatur.geo.tile_cache import cache_at
+from ninanatur.geo.tile_sources import TileProduct, lod2_tiles_for, sources_for
+from ninanatur.geo.tiles import surface_window
 from ninanatur.geo.utm import to_utm
+from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
 
 log = logging.getLogger(__name__)
@@ -70,6 +74,26 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
         remember(conn, garden.garden_id,
                  canopies_in(surface, [list(o.footprint) for o in garden.obstacles]))
     return changed
+
+
+def _surface_from_tiles(anchor: LatLon, state: str,
+                        ground: TerrainWindow | None) -> SurfaceWindow | None:
+    """The state's surface tiles, where it publishes them and runs no service.
+
+    Without the ground there is nothing to subtract, and a surface model in
+    metres above sea level says nothing about what stands in a garden.
+    """
+    if ground is None:
+        return None
+    source = next((s for s in sources_for(state) if s.product is TileProduct.DOM), None)
+    if source is None:
+        return None
+    try:
+        return surface_window(anchor, source, ground,
+                              cache=cache_at(database_path().parent, TILE_CACHE_BYTES))
+    except Exception:
+        log.warning("surface tiles failed for %s", state, exc_info=True)
+        return None
 
 
 def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:

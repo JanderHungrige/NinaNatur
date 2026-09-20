@@ -49,8 +49,12 @@ def test_the_address_is_built_from_two_numbers_and_nothing_else() -> None:
 def test_the_tile_name_round_trips_for_every_state_scheme() -> None:
     """Bayern writes `690_5334`, NRW `LoD2_32_347_5647_1_NW`: the same two
     numbers, differently dressed. What the registry computes, it can read back."""
+    # Three digits of kilometres, which every German easting in UTM32 and 33
+    # is (about 280 to 920). It matters here: Bayern writes the zone onto the
+    # front of the easting, and "3232" would be ambiguous in a way no real
+    # tile name is.
     for source in TILE_SOURCES:
-        for east, north in ((347, 5647), (690, 5334), (32, 5000)):
+        for east, north in ((347, 5647), (690, 5334), (280, 5000), (920, 6100)):
             assert tile_of(source, east, north) == (east, north), source.name
 
 
@@ -78,7 +82,7 @@ def test_what_a_number_is_worth_is_recorded() -> None:
     for source in TILE_SOURCES:
         if source.product is TileProduct.LAZ:
             assert source.points_per_m2 is not None and source.points_per_m2 > 0, source.name
-        elif source.product in (TileProduct.DGM1, TileProduct.DOM1):
+        elif source.product in (TileProduct.DGM1, TileProduct.DOM):
             assert source.vertical_step_m is not None and source.vertical_step_m > 0, source.name
 
 

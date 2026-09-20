@@ -39,9 +39,12 @@ NO_DATA = -9999.0
 #: while it is still a header (Wave 20, feature 8).
 MAX_PIXELS = 4_000_000
 #: A whole product, rather than a window of one: a Copernicus GLO-30 cell is a
-#: degree of the earth, 2,400 × 3,600 (doc 104). A caller that means to read one
-#: says so, and every other caller keeps the tighter guard.
-WHOLE_TILE_PIXELS = 16_000_000
+#: degree of the earth, 3,600 × 3,600 (doc 104), and a square kilometre of
+#: Bayern's twenty-centimetre surface model is 5,000 × 5,000 (doc 108). A caller
+#: that means to read one says so, and every other caller keeps the tighter
+#: guard — 25 million float32 is a hundred megabytes, which is a tile and not a
+#: malformed header.
+WHOLE_TILE_PIXELS = 30_000_000
 #: These services tile at 128 or 256. Anything past this is not a tile size.
 MAX_TILE_SIDE = 4096
 #: Deflate, under its own tag and the older one some writers still use.
