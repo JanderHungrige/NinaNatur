@@ -17,8 +17,10 @@ integers — survives with one word added: and a name the state gave us.
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
+from urllib.parse import parse_qs, urlparse
 
 from defusedxml import DefusedXmlException
 from defusedxml.ElementTree import fromstring
@@ -70,4 +72,49 @@ def from_metalink(data: bytes) -> dict[tuple[int, int], str]:
     return found
 
 
-__all__ = ["MAX_INDEX_BYTES", "SAFE_NAME", "ListingError", "from_metalink"]
+def from_geojson_links(data: bytes) -> dict[tuple[int, int], str]:
+    """Every tile a Schleswig-Holstein download index lists, by grid corner.
+
+    The same job as `from_metalink` against a different document. Each feature
+    carries `kachel` — the zone, the easting and the northing run together as
+    `32<EEE><NNNN>` — and a ready-made download URL under `link_data`, or
+    `data_link` for the building model, because the two were written by
+    different people.
+
+    **Only the file name is taken out of that URL**, and only if it is a file
+    name: the address is rebuilt from the registry's own template (doc 103).
+    The state's list can therefore change which tile is fetched and never which
+    host is asked.
+    """
+    if len(data) > MAX_INDEX_BYTES:
+        raise ListingError(f"index is {len(data)} bytes, which is not a list of names")
+    try:
+        document = json.loads(data)
+        features = document["features"]
+    except (ValueError, TypeError, KeyError) as broken:
+        raise ListingError(f"not an index this can read: {broken}") from broken
+
+    found: dict[tuple[int, int], str] = {}
+    for feature in features:
+        held = feature.get("properties") if isinstance(feature, dict) else None
+        if not isinstance(held, dict):
+            continue
+        link = held.get("link_data") or held.get("data_link") or ""
+        name = parse_qs(urlparse(str(link)).query).get("file", [""])[0].strip()
+        if not SAFE_NAME.match(name):
+            continue
+        corner = corner_in(name, (0, 0))
+        if corner != (0, 0):
+            found[corner] = name
+    if not found:
+        raise ListingError("an index with no tile in it")
+    return found
+
+
+__all__ = [
+    "MAX_INDEX_BYTES",
+    "SAFE_NAME",
+    "ListingError",
+    "from_geojson_links",
+    "from_metalink",
+]

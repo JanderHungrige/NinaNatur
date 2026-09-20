@@ -169,9 +169,9 @@ def addressed(source: TileSource, corners: list[tuple[int, int]], cache: TileCac
                 for corner in corners if corner in held]
     if source.lookup is not None:
         names = _listing(source.lookup, cache, fetch)
-        folder = source.lookup.folder
+        address = source.lookup.address
         return [(corner, f"{source.state.lower()}/{source.product.value}/{names[corner]}",
-                 _from_url(folder + names[corner], fetch))
+                 _from_url(address(names[corner], corner), fetch))
                 for corner in corners if corner in names]
     return [(corner, _cache_key(source, *corner),
              _from_url(source.url_for(*corner), fetch)) for corner in corners]

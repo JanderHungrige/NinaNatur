@@ -98,7 +98,10 @@ None says so.
 
 ## Three more states, and a model that was already normalised
 
-**2026-09-20, the second round.** Saarland's and Hamburg's surface models come
+**2026-09-20, the second round.** Bremen's `DOM1` is lidar-derived and arrives
+as XYZ text out of a whole-city archive; at one place its ground tops out at
+4.8 m and its surface at 33.5, which is the houses. Saarland's and Hamburg's
+surface models come
 out of whole-region archives over ranges (doc 103), so two more cities' trees
 are findable. Rheinland-Pfalz's `DOM1` came with its
 ground, found through the same metalink (doc 103). Thüringen's `DOM1` and Sachsen's `DOM1` are
@@ -140,9 +143,10 @@ and the reader refuses an image by its header before allocating.
 
 ## Known Issues
 
-- **Schleswig-Holstein** publishes a 20 cm surface model whose name carries a
-  per-tile flight year, and its list is GeoJSON where the index reader speaks
-  metalink (doc 103). **Bremen's** is XYZ text, which nothing here reads.
+- **Schleswig-Holstein** is the last state with no trees. Its bDOM is 20 cm,
+  which is 100 MB of uncompressed float32 a square kilometre, and its download
+  script **ignores a Range request** — so a 400 m window costs the whole tile.
+  That is the only reason; the licence and the address are both fine.
 - **Bayern's *Einzelbäume* was asked about and declined.** Its attributes are a
   position, the ground height and the tree's height — no species, no crown
   width and **no crown base**, which is the one thing a raster cannot give and

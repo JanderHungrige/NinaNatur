@@ -100,11 +100,11 @@ def test_a_state_with_neither_a_service_nor_tiles_leaves_the_garden_flat(
     """Flat is what every garden was yesterday, and it is not an error the
     gardener has to care about.
 
-    Bremen is the last case of it, and not for want of asking: it publishes its
-    ground openly, as **XYZ text** — a million lines of easting, northing and
-    height per square kilometre — which nothing in this registry reads. When
-    that changes this test will fail, and it should."""
-    _patch(monkeypatch, state_at=lambda *_: "Bremen")
+    No Bundesland is this case any more — see the test below — so the state
+    named here is one that does not exist. The behaviour still has to hold: a
+    garden somewhere this project has no source for keeps the flat world, and
+    says nothing about it."""
+    _patch(monkeypatch, state_at=lambda *_: "Vorarlberg")
 
     assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
     assert load_window(conn, cache_key(LatLon(lat=51.2564, lon=7.1501))) is None
@@ -212,3 +212,24 @@ def test_a_window_stored_under_the_old_rounding_is_not_served_either(
     assert terrain_sync.ground_for(conn, precise) is not None
     assert terrain_sync.ground_for(conn, legacy) is None
     assert terrain_sync.horizon_for(conn, legacy) is None
+
+
+def test_every_bundesland_now_has_ground() -> None:
+    """Wave 25's whole point, as an assertion rather than a claim.
+
+    Before it, nine of the sixteen states had no terrain at all and a garden
+    there was computed on a flat world. Each one arrived by a different route —
+    a coverage service, a computable tile, a name out of the state's own list,
+    or a member of a whole-region archive — and this does not care which, only
+    that every state has one.
+
+    If this ever fails, a state has withdrawn something and the health check
+    (doc 109) will have said so first.
+    """
+    from ninanatur.geo.terrain_sources import by_state as service
+    from ninanatur.geo.tile_sources import STATES, ground_tiles_for, name_of
+
+    without = [name_of(key) for key in STATES
+               if ground_tiles_for(key) is None and service(name_of(key)) is None]
+    assert without == [], f"no ground for {', '.join(without)}"
+    assert len(STATES) == 16

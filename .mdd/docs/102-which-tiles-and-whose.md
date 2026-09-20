@@ -85,6 +85,8 @@ and allows a range, which is why the probe asks twice.
 | `rp-dgm1` / `rp-dgm1-index` / `rp-dom1-index` | 200, 1.5 MB / 12.0 MB / 7.6 MB | its ground and surface, and the lists that name them |
 | `hh-dgm1` / `hh-bdom` / `hh-lod2` | 200, 1.36 / 1.34 / 0.66 GB | Hamburg, the whole city per product |
 | `sl-*`, 24 archives | 200, 0.14–26.2 GB each | Saarland's four products across six Landkreise |
+| `sh-dgm1` / `sh-lod2` | 200, 27.1 MB / 100 kB | Schleswig-Holstein's ground as XYZ, and its roofs |
+| `hb-*`, 4 archives | 200, 0.32–1.24 GB | Bremen's and Bremerhaven's ground and surface |
 
 ## "Six index states" was three different problems
 
@@ -219,14 +221,17 @@ fetched from somewhere a garden's data suggests.
 
 ## Known Issues
 
-- **Schleswig-Holstein waits on the index reader**, which now exists but reads
-  metalink and not GeoJSON. Two quirks are already known and not yet handled:
-  it appends an HTML footer to every download, and a stale row answers **200
-  with an HTML error body** rather than a 404, so the content type is the only
-  honest check.
-- **Bremen cannot join yet**, for two reasons that are not its packaging: its
-  ground and surface models are **XYZ** text, which nothing here reads, and its
-  LoD2 is a zip inside a zip.
+- **Schleswig-Holstein's surface model is not an entry.** Its bDOM is 20 cm —
+  100 MB of uncompressed float32 a square kilometre — and its download script
+  **ignores a Range request**, so a 400 m window costs the whole tile. The
+  licence and the address are fine; the trade is not.
+- **Bremen's roofs are not an entry.** Its LoD2 is a zip inside a zip, and the
+  inner one is STORED, so a doubly-nested range read reaches it for 781 kB of
+  a 403 MB archive. Measured and not built (doc 103).
+- **Bremen publishes 2015 and 2017 data**, and a March 2026 flight has not
+  appeared. The rest of that download tree has been converting to year-less
+  names, so a rename rather than a replacement is likely — and the health check
+  would stay green through one. Watch the names.
 - **Saarland's share token could be rotated.** It is a constant in the entry;
   the Atom feed it came from is where to re-read it.
 - **Sachsen's share tokens could rotate.** They are constants in the entry, one

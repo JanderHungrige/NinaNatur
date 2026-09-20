@@ -46,6 +46,9 @@ TERMS: dict[str, tuple[str, str, int]] = {
     "SL": ("dl-de/by-2-0", "© GeoBasis DE/LVGL-SL (2026)", 25832),
     "HH": ("dl-de/by-2-0", "Quellenvermerk: Freie und Hansestadt Hamburg, "
            "Landesbetrieb Geoinformation und Vermessung (LGV)", 25832),
+    "SH": ("CC-BY-4.0", "©GeoBasis-DE/LVermGeo SH/CC BY 4.0", 25832),
+    "HB": ("CC-BY-4.0",
+           "© GeoBasis-DE / Landesamt GeoInformation Bremen (2026)", 25832),
     "RP": ("dl-de/by-2-0",
            "©GeoBasis-DE / LVermGeoRP (2026), dl-de/by-2-0, www.lvermgeo.rlp.de", 25832),
 }

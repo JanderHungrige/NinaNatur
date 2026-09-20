@@ -255,15 +255,38 @@ surface, roofs and a point cloud out of 124 GB of archives it never fetches.
 and it joined whole: ground, surface, roofs and a point cloud. It was the last
 fully gapped state of any size.
 
-What is left is **two states and one file format**, and they are the same
-problem. Schleswig-Holstein's ground and Bremen's are published as **XYZ** —
-a million lines of `easting northing height` per square kilometre — where every
-state in this registry so far publishes a raster. Nothing here can read that
-yet. Schleswig-Holstein needs a GeoJSON list on top of it, and two quirks worth
-knowing before anybody starts: it appends an HTML footer to every download, and
-a stale row answers **200 with an HTML error body** rather than a 404, so the
-content type is the only honest check. Bremen needs a **nested** archive read —
-its LoD2 is a zip inside a zip.
+**Schleswig-Holstein and Bremen closed it**, and with them every state that
+publishes an addressable tile is in. Both publish their ground as **XYZ** — a
+million lines of `easting northing height` to the square kilometre, twenty-eight
+megabytes of ASCII for four of binary — which `geo/xyz.py` now reads into the
+same north-up raster a GeoTIFF becomes.
+
+Measured, and each one changed the code:
+
+- **A tile is not always a million lines.** Schleswig-Holstein's border tiles
+  carry 730,232, or 829,760, or 999,000, with holes *inside* a row, and there is
+  **no NoData token anywhere** — 4.5 million points checked, not one sentinel.
+  A cell nobody surveyed is simply an absent line. So values are placed by their
+  own coordinates rather than by counting, and a gap stays a gap.
+- **Bremen disagrees with itself four ways.** Its city writes bare integer
+  eastings; Bremerhaven writes them with the zone glued on (`32466000.5`) and a
+  **double underscore** in the terrain model's filename but not the surface
+  model's; one of the four is north-first and another south-first; and the city
+  puts an `x y z` header line above the grid.
+- **Every Schleswig-Holstein download carries a 760-byte HTML footer**, and a
+  stale row answers **200 with an HTML apology** rather than a 404.
+
+Its terrain model needs the state's list because the name carries a per-tile
+survey year — 2005 in one tile and 2025 in its neighbour. Its *building* model
+carries no year and a fixed one in the query, so that one is arithmetic. The
+list is GeoJSON rather than metalink, which is one more parser and no new idea:
+a name comes out, the address is still built from the registry's own template.
+
+Verified end to end on **2026-09-20**: Kiel, Rendsburg and Bremen all return a
+200 x 200 m window at one metre with every cell known. Rendsburg reads 2.2 to
+8.3 m against a town about five metres up, and Bremen's ground tops out at
+4.8 m where its surface reaches 33.5 — the difference is the houses.
+Cross-checked against Copernicus at the same points, which agrees.
 
 ## The decoder had never read a whole tile
 
@@ -300,6 +323,21 @@ green suite whose every fixture was a TIFF this repository wrote to its own
 expectations. A tile tier is not tested until a real tile has been through it.
 
 ## Known Issues
+
+- **Schleswig-Holstein's surface model is not read.** Its bDOM is 20 cm, which
+  is 100 MB of uncompressed float32 per square kilometre, and its download
+  script **ignores a Range request** — so a 400 m window costs the whole tile.
+  It also needs the list, because the name carries a flight year. No trees in
+  Schleswig-Holstein until that trade looks better.
+- **Bremen's roofs are not read.** Its LoD2 is a zip inside a zip. The inner one
+  is **STORED**, so a doubly-nested range read reaches it for 781 kB of a 403 MB
+  archive — measured — and it is not built. Its largest member is a 263 MB
+  CityGML whose DOM peaks at 1.9 GB, so that path must use `iterparse`, which
+  `lod2.py` already does.
+- **Bremen's data is from 2015 and 2017**, and a March 2026 flight has not been
+  published. When it is, the archive may be renamed rather than replaced — the
+  rest of that download tree has already converted to year-less names — so the
+  health check would stay green through a rename. Watch the names, not the bytes.
 
 - **A zipped tile costs the volume twice** where the reader needs a file
   rather than bytes: the point cloud keeps the archive *and* the member

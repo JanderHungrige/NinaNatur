@@ -88,3 +88,47 @@ DISTRICTS = ("MZG", "NK", "SB", "SLS", "SPK", "WND")
 def saarland(folder: str, pattern: str) -> tuple[str, ...]:
     """Every district's archive of one product."""
     return tuple(f"{SAARLAND_SHARE}{folder}/{pattern.format(lk=lk)}" for lk in DISTRICTS)
+
+
+#: Schleswig-Holstein serves every product from one script, and the query
+#: carries the tile's **ten-kilometre block** beside the file name. `id` is
+#: fixed per product; `live` is the survey year, which for the terrain model
+#: differs tile by tile and is therefore read out of the name the index gave.
+SH_DOWNLOAD = ("https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/"
+               "dladownload/massen.php")
+
+
+def sh_block(east_km: int, north_km: int) -> str:
+    """The ten-kilometre block a tile sits in, as the query spells it."""
+    return f"32{east_km // 10 * 10}_{north_km // 10 * 10}"
+
+
+def sh_named(product_id: int, year: str = "") -> Callable[[str, tuple[int, int]], str]:
+    """The address for a name Schleswig-Holstein's own index gave us.
+
+    `year` empty means take it from the name, which is where the terrain
+    model's lives; the building model has no year in its name and a fixed one
+    in its query.
+    """
+    def address(name: str, corner: tuple[int, int]) -> str:
+        live = year or name.rsplit("_", 1)[-1].split(".")[0]
+        return (f"{SH_DOWNLOAD}?file={name}&id={product_id}"
+                f"&live={live}&km={sh_block(*corner)}")
+    return address
+
+
+def sh_lod2(east_km: int, north_km: int) -> str:
+    """Its building model carries no year, so this one is arithmetic."""
+    return f"LoD2_32_{east_km}_{north_km}_1_SH"
+
+
+#: Bremen publishes its city and Bremerhaven as separate archives, and the two
+#: disagree: Bremerhaven's terrain model has a **double** underscore after the
+#: easting, its surface model a single one. Both are read out of the archive's
+#: own directory, so this records the shape rather than building it.
+BREMEN_DOWNLOAD = "https://gdi2.geo.bremen.de/inspire/download/"
+
+
+def bremen(folder: str, *names: str) -> tuple[str, ...]:
+    """The city's archive and Bremerhaven's, for one product."""
+    return tuple(f"{BREMEN_DOWNLOAD}{folder}/data/{name}" for name in names)

@@ -41,6 +41,11 @@ SAMPLE_BYTES = 4096
 #: between flight years, so three times is generous on purpose.
 SIZE_DRIFT = 3.0
 
+#: A text grid announces itself only by being numbers. Bremen writes an
+#: `x y z` header above its first row, so a letter at the front is not proof
+#: of trouble — but an HTML apology still is, and that is what this catches.
+NUMERIC = b"0123456789-+."
+
 #: How each format announces itself in its first bytes.
 MAGIC: dict[str, tuple[bytes, ...]] = {
     "GeoTIFF": (b"II*\x00", b"MM\x00*"),
@@ -105,8 +110,16 @@ def looks_like(sample: bytes, want: str) -> str | None:
     if any(sample.startswith(magic) for magic in MAGIC.get(want, ())):
         return None
     head = sample[:64].lstrip()
+    # Named before anything else, because an apology served with a 200 is the
+    # case this exists for and it must not be reported as merely the wrong kind.
     if head[:9].lower() in (b"<!doctype", b"<html>"[:9]) or head[:5].lower() == b"<html":
         return "an HTML page"
+    if want == "XYZ":
+        # No magic bytes: a grid is numbers, one line per cell. Bremen's header
+        # line means the first token may be a word, so the second line decides.
+        rows = sample.split(b"\n", 2)
+        starts = [row.lstrip()[:1] for row in rows[:2]]
+        return None if any(c and c in NUMERIC for c in starts) else "no numbers"
     for name, magics in MAGIC.items():
         if any(sample.startswith(magic) for magic in magics):
             return name
@@ -150,7 +163,7 @@ def target_of(source: TileSource, *, get: Get, sized: Sized, ranged: Ranged) -> 
     if source.lookup is not None:
         names = source.lookup.parse(get(source.lookup.index_url))
         corner = next(iter(sorted(names)))
-        return Target(names[corner], source.lookup.folder + names[corner], None)
+        return Target(names[corner], source.lookup.address(names[corner], corner), None)
     if source.probed_tile is None:
         raise LookupError("no tile recorded to ask for")
     east, north = source.probed_tile

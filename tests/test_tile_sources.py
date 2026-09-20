@@ -73,20 +73,24 @@ def test_a_state_that_publishes_no_tile_says_which_archives_hold_them() -> None:
             assert url.endswith(".zip"), f"{source.name}: {url}"
 
 
-def test_the_folder_a_looked_up_name_goes_into_is_ours() -> None:
+def test_the_address_a_looked_up_name_goes_into_is_ours() -> None:
     """An index is remote content. What is taken from it is a file name; the
-    scheme, the host and the folder stay the registry's own, so a state's list
-    can change which file is asked for and never which host is asked."""
+    scheme, the host and the shape of the address stay the registry's own, so
+    a state's list can change which file is asked for and never which host is
+    asked. A name that arrived pointing somewhere else goes nowhere else."""
+    forged = "https://example.invalid/evil.tif"
     for source in TILE_SOURCES:
         if source.lookup is None:
             continue
-        assert source.lookup.folder.startswith("https://"), source.name
-        assert source.lookup.folder.endswith("/"), source.name
         assert source.lookup.index_url.startswith("https://"), source.name
-        # The list and the files come from the same state, not from wherever
-        # the list happens to point.
-        host = source.lookup.folder.split("/")[2]
-        assert source.lookup.index_url.split("/")[2] == host, source.name
+        here = source.lookup.index_url.split("/")[2]
+
+        built = source.lookup.address("dgm1_32_419_5490_1_rp_2022.tif", (419, 5490))
+        assert built.startswith("https://"), f"{source.name}: {built}"
+        assert built.split("/")[2] == here, f"{source.name}: {built}"
+
+        # Even handed a whole URL as the "name", the host is still the state's.
+        assert source.lookup.address(forged, (419, 5490)).split("/")[2] == here, source.name
 
 
 def test_the_tile_name_round_trips_for_every_state_scheme() -> None:

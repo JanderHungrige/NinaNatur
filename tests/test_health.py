@@ -232,3 +232,19 @@ def test_a_host_that_answers_nothing_at_all_is_still_gone() -> None:
     check = check_tile_source(BAYERN, get=refused, sized=lambda _u: 0,  # type: ignore[arg-type]
                               ranged=no_ranges, present=refused)
     assert check.verdict is Verdict.GONE
+
+
+def test_a_text_grid_is_recognised_by_being_numbers() -> None:
+    """XYZ has no magic bytes — it is numbers, one line per cell. Bremen puts
+    an `x y z` header above its first row, so the second line has to count."""
+    assert looks_like(b"424000.50 6002999.50 1.05\r\n424001.50 6002999.50 1.06\r\n",
+                      "XYZ") is None
+    assert looks_like(b"x y z\n465000 5896999 1.4\n", "XYZ") is None
+    assert looks_like(b"-9.50 6002999.50 1.05\n", "XYZ") is None
+
+
+def test_an_apology_is_still_an_apology_where_a_grid_was_expected() -> None:
+    """The case this whole checker exists for, and a text format must not be
+    the hole in it."""
+    assert looks_like(AN_APOLOGY, "XYZ") == "an HTML page"
+    assert looks_like(b"Die Datei ist veraltet.\nBitte neu laden.\n", "XYZ") == "no numbers"

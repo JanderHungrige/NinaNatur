@@ -112,11 +112,11 @@ confidence travel with every window, as they do with every trait value.
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
 | 0 | which-tiles-and-whose | 102 | built | — |
-| 1 | a-tile-not-a-service | 103 | 6 states of tiles (14 with ground) | 0 |
+| 1 | a-tile-not-a-service | 103 | 8 states of tiles — **ground everywhere** | 0 |
 | 2 | a-horizon-for-everyone | 104 | built | 0 |
-| 3 | every-roof-in-the-country | 105 | 12 states built | 1 |
+| 3 | every-roof-in-the-country | 105 | 13 states built | 1 |
 | 4 | the-cloud-under-the-crown | 107 | 7 states built | 1, 3 |
-| 5 | the-trees-in-the-other-states | 108 | 7 states built | 1 |
+| 5 | the-trees-in-the-other-states | 108 | 8 states built | 1 |
 | 6 | measure-my-own-garden | — | **backlog** | 4 |
 | 7 | which-source-said-so | 106 | built | 1 |
 
@@ -394,6 +394,51 @@ Three stages:
   states. A tile tier is not tested until a real tile has been through it, and
   the regression test now decodes a megabyte of real LZW and fails if it goes
   slow again.
+
+- **2026-09-20 — Schleswig-Holstein and Bremen, and with them the whole
+  country.** The last two states, and the same obstacle: both publish their
+  ground only as **XYZ** — a million lines of `easting northing height` to the
+  square kilometre, twenty-eight megabytes of ASCII for four of binary — where
+  every other state publishes a raster.
+
+  Three things were measured and each changed the code. **A tile is not always
+  a million lines**: Schleswig-Holstein's border tiles carry 730,232 or 829,760
+  or 999,000, with holes inside a row, and there is **no NoData token anywhere**
+  in 4.5 million points checked — a cell nobody surveyed is simply an absent
+  line. So values are placed by their own coordinates rather than by counting,
+  and a gap stays a gap. **Bremen disagrees with itself four ways**: bare
+  integer eastings in the city, the zone glued on in Bremerhaven
+  (`32466000.5`), a double underscore in one filename and a single one in its
+  neighbour, north-first in one archive and south-first in another, and an
+  `x y z` header line above the grid. And **every Schleswig-Holstein download
+  carries a 760-byte HTML footer**, with a stale row answered as 200 and an
+  HTML apology rather than a 404.
+
+  Its terrain model needs the state's list, because the name carries a per-tile
+  survey year — 2005 in one tile and 2025 in its neighbour. Its building model
+  carries no year and a fixed one in the query, so that one is arithmetic. The
+  list is GeoJSON rather than metalink: one more parser, no new idea, and the
+  address still built from the registry's own template.
+
+  Bremen needed no new fetch code at all — the archive tier already reached it.
+
+  Verified end to end that day: Kiel, Rendsburg and Bremen each return a
+  200 x 200 m window at one metre with every cell known. Rendsburg reads 2.2 to
+  8.3 m for a town about five metres up; Bremen's ground tops out at 4.8 m where
+  its surface reaches 33.5, and the difference is the houses. Cross-checked
+  against Copernicus at the same points, which agrees — including at a hill
+  where the DGM1 read 50.8 to 64.7 m and Copernicus 54.9 to 69.0, so the number
+  that looked wrong was my coordinate rather than the data.
+
+  **Ground now reaches 100 % of the population** — every one of the sixteen
+  states. Surface 97 %, surveyed roofs 89 %, point clouds 54 %.
+
+  A correction belongs here too: this wave's XYZ commit claimed `np.loadtxt`
+  takes 2.86 s where `fromstring` takes 0.21. That was measured under
+  `tracemalloc`, which taxes the allocation-heavy one far more. Without it they
+  are 0.18 and 0.21 — near enough the same. The reader keeps `fromstring` for
+  returning three columns in one pass, not for speed, and the docstring says so
+  now.
 
 - **2026-09-20 — a way to find out that a state moved, before a gardener does**
   (doc 109). Not one of the wave's eight features; asked for on the day, and

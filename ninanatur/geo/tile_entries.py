@@ -15,17 +15,22 @@ its ground until they were put in one place.
 """
 from __future__ import annotations
 
-from ninanatur.geo.tile_grid import TileLookup, TileProduct, TileSource
-from ninanatur.geo.tile_index import from_metalink
+from ninanatur.geo.tile_grid import TileLookup, TileProduct, TileSource, under
+from ninanatur.geo.tile_index import from_geojson_links, from_metalink
 from ninanatur.geo.tile_naming import (
+    SH_DOWNLOAD,
     adv_name,
     bayern_dom_name,
     bayern_name,
     bayern_url,
     bb_name,
     bb_url,
+    bremen,
     nrw_name,
     saarland,
+    sh_block,
+    sh_lod2,
+    sh_named,
     sn_name,
     sn_url,
     th_name,
@@ -96,6 +101,40 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         probed_tile=(342, 5824),
     ),
 
+    # ---- The last two. Both publish their ground as XYZ text, which is why
+    # they were the last two states with none (doc 103).
+    TileSource(
+        # The terrain model's name carries the survey year — 2005 in one tile
+        # and 2025 in its neighbour — so the state's own list is the only route.
+        name="sh-dgm1", **terms("SH"), product=TileProduct.DGM1, tile_km=1, fmt="XYZ",
+        lookup=TileLookup(
+            index_url=("https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/"
+                       "dladownload/single.php?file=DGM1_SH__Massendownload.geojson&id=4"),
+            address=sh_named(2), parse=from_geojson_links),
+        vertical_step_m=0.01, probed_bytes=27_088_579,
+    ),
+    TileSource(
+        # No year in the name and a fixed one in the query, so this computes.
+        name="sh-lod2", **terms("SH"), product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
+        _url=lambda e, n: (f"{SH_DOWNLOAD}?file={sh_lod2(e, n)}.xml&id=4"
+                           f"&live=2024&km={sh_block(e, n)}"),
+        _name=sh_lod2, probed_bytes=100_616, probed_tile=(426, 6004),
+        index_url=("https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/"
+                   "dladownload/single.php?file=LOD2_SH_Massendownload.geojson&id=4"),
+    ),
+    TileSource(
+        name="hb-dgm1", **terms("HB"), product=TileProduct.DGM1, tile_km=1, fmt="XYZ",
+        archives=bremen("DGM", "Gitternetz_DGM1_2017_HB_ASCII_XYZ.zip",
+                        "Gitternetz_DGM1_2015_BHV_ASCII_XYZ.zip"),
+        vertical_step_m=0.001, probed_bytes=1_088_588_635,
+    ),
+    TileSource(
+        name="hb-dom1", **terms("HB"), product=TileProduct.DOM, tile_km=1, fmt="XYZ",
+        archives=bremen("DOM", "Gitternetz_DOM1_2017_HB_ASCII_XYZ.zip",
+                        "Gitternetz_DOM1_2015_BHV_ASCII_XYZ.zip"),
+        cell_m=1.0, vertical_step_m=0.001, probed_bytes=1_236_054_202,
+    ),
+
     # ---- Saarland and Hamburg publish no tile at all, only whole-region
     # archives. A zip keeps its index at the end, so one tile is a range read:
     # 0.38 % of a 559 MB file, measured on 2026-09-20 (doc 103).
@@ -149,7 +188,8 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         name="rp-dgm1", **terms("RP"), product=TileProduct.DGM1, tile_km=1, fmt="GeoTIFF",
         lookup=TileLookup(
             index_url="https://geobasis-rlp.de/data/dgm1/current/meta4/dgm1_tif_07.meta4",
-            folder="https://geobasis-rlp.de/data/dgm1/current/tif/", parse=from_metalink),
+            address=under("https://geobasis-rlp.de/data/dgm1/current/tif/"),
+            parse=from_metalink),
         vertical_step_m=0.01, probed_bytes=1_502_657,
         index_url="https://geobasis-rlp.de/data/dgm1/current/meta4/dgm1_tif_07.meta4",
     ),
@@ -157,7 +197,8 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         name="rp-dom1", **terms("RP"), product=TileProduct.DOM, tile_km=1, fmt="GeoTIFF",
         lookup=TileLookup(
             index_url="https://geobasis-rlp.de/data/dom1/current/meta4/dom1_tif_07.meta4",
-            folder="https://geobasis-rlp.de/data/dom1/current/tif/", parse=from_metalink),
+            address=under("https://geobasis-rlp.de/data/dom1/current/tif/"),
+            parse=from_metalink),
         cell_m=1.0, vertical_step_m=0.01, probed_bytes=2_087_864,
         index_url="https://geobasis-rlp.de/data/dom1/current/meta4/dom1_tif_07.meta4",
     ),

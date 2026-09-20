@@ -58,8 +58,12 @@ class TileLookup:
 
     #: Where the state publishes its list.
     index_url: str
-    #: What to put in front of a name from it, ending in a separator.
-    folder: str
+    #: The address for a name the list gave, at a grid corner. Rheinland-Pfalz
+    #: wants the name after a folder; Schleswig-Holstein wants it inside a
+    #: query with the tile's ten-kilometre block beside it. Either way the
+    #: scheme, the host and the shape are the registry's, and only the name
+    #: comes from the state.
+    address: Callable[[str, tuple[int, int]], str]
     #: How to read that list: grid corner to file name.
     parse: Callable[[bytes], dict[tuple[int, int], str]]
 
@@ -157,6 +161,11 @@ class TileSource:
                 int(math.floor((northing_m / 1000 - origin_n) / step) * step + origin_n))
 
 
+def under(folder: str) -> Callable[[str, tuple[int, int]], str]:
+    """The simple address: a name inside a folder of ours."""
+    return lambda name, _corner: folder + name
+
+
 def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:
     """The two kilometre numbers back out of a tile's name — the round trip the
     test insists on, and what reads a state's index into this registry's terms."""
@@ -194,4 +203,12 @@ def corner_in(name: str, fallback: tuple[int, int]) -> tuple[int, int]:
     return fallback
 
 
-__all__ = ["FREE_LICENCES", "TileLookup", "TileProduct", "TileSource", "corner_in", "tile_of"]
+__all__ = [
+    "FREE_LICENCES",
+    "TileLookup",
+    "TileProduct",
+    "TileSource",
+    "corner_in",
+    "tile_of",
+    "under",
+]
