@@ -28,87 +28,9 @@ registry when its index has been fetched and answered, which is feature 1.
 from __future__ import annotations
 
 import math
-import re
 from collections.abc import Callable
-from dataclasses import dataclass
-from enum import StrEnum
 
-#: Licences under which a tile may be used here. dl-de/zero-2-0 asks for
-#: nothing and is credited anyway; the others require the named credit. A
-#: licence that is not in this set keeps its state out of the registry, however
-#: a catalogue describes it (doc 68's Saarland).
-FREE_LICENCES: frozenset[str] = frozenset({
-    "CC-BY-4.0",
-    "dl-de/by-2-0",
-    "dl-de/zero-2-0",
-    "Copernicus",
-})
-
-
-class TileProduct(StrEnum):
-    """What a tile holds."""
-
-    #: The ground, as a raster.
-    DGM1 = "dgm1"
-    #: The ground and everything standing on it, as a raster. How fine it is
-    #: varies — Bayern's is 20 cm — so the resolution is `cell_m`, not the name.
-    DOM = "dom"
-    #: Buildings with measured height and a standardised roof, as CityGML.
-    LOD2 = "lod2"
-    #: The laser points themselves, classified.
-    LAZ = "laz"
-
-
-@dataclass(frozen=True)
-class TileSource:
-    """One state's product, as a grid of files.
-
-    `url_for` takes UTM kilometres — the easting and northing of the tile's
-    south-west corner — because that is what every one of these schemes is:
-    the grid written down. `tile_of` reads the same numbers back out, so what
-    the registry computes it can also recognise.
-    """
-
-    #: `<state>-<product>`, lower case: the name the probe script prints.
-    name: str
-    #: The two-letter state key, as the rest of the codebase writes it.
-    state: str
-    product: TileProduct
-    #: How wide one tile is, in kilometres.
-    tile_km: int
-    #: GeoTIFF, CityGML, LAZ, zip — what arrives, for whoever opens it.
-    fmt: str
-    licence: str
-    attribution: str
-    #: Which UTM the tile numbers are in: 25832 west of 12°E, 25833 east of it.
-    #: Getting it wrong is not an error, it is a tile 400 km away.
-    epsg: int
-    _url: Callable[[int, int], str]
-    _name: Callable[[int, int], str]
-    #: A raster's own cell, in metres: 1 m for a DGM1, 0.2 for Bayern's DOM20.
-    cell_m: float | None = None
-    #: A raster's height step, where it has one.
-    vertical_step_m: float | None = None
-    #: A cloud's density, where it is one.
-    points_per_m2: float | None = None
-    #: Where the state says which tiles exist, if it says so anywhere.
-    index_url: str | None = None
-    #: What the probe found on the date in this module's docstring.
-    probed_bytes: int | None = None
-
-    def url_for(self, east_km: int, north_km: int) -> str:
-        """The address of the tile whose south-west corner is here."""
-        return self._url(east_km, north_km)
-
-    def tile_name(self, east_km: int, north_km: int) -> str:
-        """What that tile is called, without the folders around it."""
-        return self._name(east_km, north_km)
-
-    def corner_of(self, easting_m: float, northing_m: float) -> tuple[int, int]:
-        """The tile that covers this point, as its south-west corner in km."""
-        step = self.tile_km
-        return (int(math.floor(easting_m / 1000 / step) * step),
-                int(math.floor(northing_m / 1000 / step) * step))
+from ninanatur.geo.tile_grid import FREE_LICENCES, TileProduct, TileSource, tile_of
 
 
 def _bayern(product: str, extension: str) -> Callable[[int, int], str]:
@@ -120,9 +42,18 @@ def _bayern_name(east_km: int, north_km: int) -> str:
     return f"{east_km}_{north_km}"
 
 
-#: NRW: the zone in front, the sheet number and the state behind.
+#: What most states write, and what AdV's own tile scheme looks like: a product
+#: prefix, the UTM zone as its own field, the two kilometre numbers of the
+#: south-west corner, how many kilometres across, and the state. Nordrhein-
+#: Westfalen, Rheinland-Pfalz, Niedersachsen and Thüringen all use it; the
+#: disagreements are capitalisation and the sheet size, not the shape.
+def _adv_name(prefix: str, east_km: int, north_km: int, *, zone: int = 32,
+              km: int = 1, suffix: str) -> str:
+    return f"{prefix}_{zone}_{east_km}_{north_km}_{km}_{suffix}"
+
+
 def _nrw_name(east_km: int, north_km: int, prefix: str, suffix: str) -> str:
-    return f"{prefix}_32_{east_km}_{north_km}_1_{suffix}"
+    return _adv_name(prefix, east_km, north_km, suffix=suffix)
 
 
 #: Bayern writes the zone in front of the easting and the product behind:
@@ -159,6 +90,18 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         probed_bytes=161_627_079,
     ),
     TileSource(
+        name="by-laser", state="BY", epsg=25832, product=TileProduct.LAZ, tile_km=1, fmt="LAZ",
+        licence="CC-BY-4.0",
+        attribution="Bayerische Vermessungsverwaltung – www.geodaten.bayern.de",
+        # Not on the download host: every bayernwolke path for the laser is a
+        # 404, and this address comes out of the product's own metalink.
+        _url=lambda e, n: f"https://geodaten.bayern.de/odd_data/laser/{e}_{n}.laz",
+        _name=_bayern_name,
+        # The state guarantees four per m² since 2012; Munich measures twenty.
+        points_per_m2=4.0, probed_bytes=112_064_676,
+        index_url="https://geodaten.bayern.de/odd/a/laser/meta/metalink/",
+    ),
+    TileSource(
         name="nw-lod2", state="NW", epsg=25832, product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
         licence="dl-de/zero-2-0",
         attribution="Land NRW (2026), Datenlizenz Deutschland – Zero – Version 2.0",
@@ -177,6 +120,20 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         points_per_m2=4.0, probed_bytes=34_967_590,
         index_url=("https://www.opengeodata.nrw.de/produkte/geobasis/hm/3dm_l_las/"
                    "3dm_l_las/index.json"),
+    ),
+    # Rheinland-Pfalz is verified and waiting, not missing: its LoD2 and its
+    # point cloud both answered on 2026-09-20 (doc 102). They join when its
+    # ground does — a state that publishes buildings and no ground has no way
+    # to name the survey that measured them (`test_credits`), and a garden with
+    # roofs on flat ground is worse than one that waits.
+    TileSource(
+        name="ni-lod2", state="NI", epsg=25832, product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
+        licence="CC-BY-4.0",
+        attribution="© GeoBasis-DE/LGLN (2026)",
+        _url=lambda e, n: ("https://lod2.opengeodata.lgln.niedersachsen.de/"
+                           f"{_adv_name('LoD2', e, n, suffix='ni')}.gml"),
+        _name=lambda e, n: _adv_name("LoD2", e, n, suffix="ni"),
+        probed_bytes=43_632,
     ),
 )
 
@@ -259,21 +216,6 @@ def lod2_tiles_for(state: str) -> TileSource | None:
     """The state's 3D building model: measured height and a surveyed roof
     shape, which no surface raster can give (doc 105)."""
     return _product_for(state, TileProduct.LOD2)
-
-
-def tile_of(source: TileSource, east_km: int, north_km: int) -> tuple[int, int]:
-    """The two kilometre numbers back out of a tile's name — the round trip the
-    test insists on, and what reads a state's index into this registry's terms."""
-    numbers = [int(part) for part in re.findall(r"\d+", source.tile_name(east_km, north_km))]
-    # The pair that is the grid: an easting is three digits of kilometres, a
-    # northing four. Zone, sheet size and state suffix are the other numbers —
-    # and Bayern writes the zone *onto the front of* the easting, so a number is
-    # the easting if it is one, or if it is one with a zone in front of it.
-    zones = (0, 32_000, 33_000)
-    for first, second in zip(numbers, numbers[1:], strict=False):
-        if second == north_km and any(first - zone == east_km for zone in zones):
-            return east_km, north_km
-    raise ValueError(f"{source.name}: {source.tile_name(east_km, north_km)} does not hold its grid")
 
 
 __all__ = [
