@@ -243,7 +243,25 @@ from the `.stylx` alone — his source assets are not asked for.*
   and the plan's lettering is a choice of ours: an OFL hand — *Patrick Hand*
   reads upright like a draughtsman's, *Caveat* is more of a note — bundled with
   the app, since the policy allows no CDN (`font-src 'self'`). That is a
-  third-party file in a public repository, so it waits for the owner.
+  third-party file in a public repository, so it waits for the owner. What
+  could be done without it is done (doc 101): the plan's lettering measures
+  15.3:1 in the title block, 12.2:1 over the darkest part of his paper grain,
+  5.5 and 7.6 for his credit on a light and a dark page — every one of them
+  past 4.5:1, to be measured again once a thin hand replaces the system sans.
+
+- **2026-09-20 — the owner settled three things, and they are built.**
+  (1) **Feature 5, lettered by hand** (doc 101): *Patrick Hand* over *Caveat* —
+  OFL 1.1, © Patrick Wagesreiter, a 14 KB Latin-1 woff2 bundled with its licence
+  and named in `THIRD_PARTY.md`, because `font-src 'self'` allows no CDN. It
+  letters the drawing and its title block; the interface keeps its own type.
+  (2) **The preview-only gate is lifted**: his files are served wherever the app
+  runs, the test that proved they were withheld now proves they arrive, and the
+  choice no longer depends on the deployment. (3) **The paint budget is
+  accepted and recorded** (docs 95, 99): Technisch's timing stays the guard,
+  `budgets['draft-sketch']` holds 73 ms measured against Technisch's 21 in the
+  same run, and the timing run prints the pair — a fact about a drawn style
+  rather than a threshold. What is left of the wave is the courtesy: showing
+  Warren Davison the result.
 
 ## What each one is
 

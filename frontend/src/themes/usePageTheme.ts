@@ -20,23 +20,22 @@ export interface PlanChoice {
 
 /**
  * Which style this page draws its plan in (docs 97, 100): what the viewer chose
- * and their browser remembered, or what the address asks for, among the styles
- * this deployment serves — and Technisch whatever they chose, where more
- * contrast was asked for. A theme that fails to load leaves the plan as it was.
+ * and their browser remembered, or what the address asks for — and Technisch
+ * whatever they chose, where more contrast was asked for. A theme that fails to
+ * load leaves the plan as it was.
  */
-export function usePageTheme(environment: string | null): PlanChoice {
+export function usePageTheme(): PlanChoice {
   const [theme, setTheme] = useState<PlanTheme>(technisch);
   const overridden = useMemo(asksForContrast, []);
   const [chosen, setChosen] = useState(technisch.id);
 
   useEffect(() => {
     setChosen(chosenTheme({
-      environment,
       search: window.location.search,
       stored: remembered(),
       moreContrast: overridden,
     }));
-  }, [environment, overridden]);
+  }, [overridden]);
 
   useEffect(() => {
     if (chosen === technisch.id) {
@@ -60,5 +59,5 @@ export function usePageTheme(environment: string | null): PlanChoice {
     setChosen(id);
   }, []);
 
-  return { theme, options: offered(environment), chosen, choose, overridden };
+  return { theme, options: offered(), chosen, choose, overridden };
 }

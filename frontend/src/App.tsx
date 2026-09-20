@@ -67,7 +67,7 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
   const [version, setVersion] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
   const account = useAccount(client, status, garden === null);
-  const planStyle = usePageTheme(environment);
+  const planStyle = usePageTheme();
 
   /** Stable identities: an inline arrow would refire the landing page's effect
    *  on every render, which is the loop the species panel already cost us. */

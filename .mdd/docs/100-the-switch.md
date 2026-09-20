@@ -51,10 +51,11 @@ Three things, in this order — the last one wins:
    storage is not an error: the choice then lasts the page.
 2. **What the address asks for** (`?theme=…`), which still works and is what
    the contact sheet and every probe use.
-3. **What the deployment allows.** Draft Sketch is served only where its files
-   are (`assets/draft-sketch/`, doc 97) — the preview. Elsewhere the list has
-   one entry and no picker is drawn, and a remembered choice for a style that
-   is not on offer falls back to Technisch rather than to an empty plan.
+3. **What the app knows about.** A remembered id for a style nobody has heard
+   of — renamed, withdrawn — falls back to Technisch rather than to an empty
+   plan. Every style is offered everywhere: his files were the preview's alone
+   while he had not seen the plan in his hand, and the owner lifted that gate
+   on 2026-09-20 with the switch in place.
 
 And one override above all of them: with **`prefers-contrast: more` or
 `forced-colors: active` the plan is Technisch**, whatever was chosen. A style
@@ -89,12 +90,13 @@ not served everywhere also needs a line in `delivery.py`, as Draft Sketch has.
    never on the server and never in a garden: two people looking at one shared
    garden each see it in their own hand.
 3. **High contrast and forced colours take the choice away**, visibly.
-4. **Nothing offers a style the deployment will not serve.**
+4. **Nothing offers a style the app cannot draw**, and an unknown id is
+   Technisch, never a blank plan.
 
 ## Dependencies
 
-Doc 96 (the seam and `THEMES`), doc 97 (the chunk and the preview-only gate),
-doc 91 (the header's menu).
+Doc 96 (the seam and `THEMES`), doc 97 (the chunk and his style), doc 91 (the
+header's menu).
 
 ## Security
 

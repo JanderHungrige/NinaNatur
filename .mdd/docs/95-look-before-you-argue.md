@@ -118,6 +118,17 @@ and it is the budget stage 2 and 3 are held to. One filter chain per layer and
 no filter on anything interactive are rules for the themes that come next; this
 feature only measures.
 
+## What the record holds
+
+- `cells`: a SHA-256 per cell, Technisch's, in both modes — the pixels a change
+  must not move by accident.
+- `chromium`: which browser took them, because a new one may move them all.
+- `timing`: Technisch's paint for the city at 40 m, CPU ×4 — the guard.
+- `budgets`: what another style costs on the same cell, each measured in the
+  same run as Technisch so the pair can be compared (doc 99). Draft Sketch:
+  73 ms against Technisch's 21, accepted by the owner on 2026-09-20. A budget
+  is recorded, never asserted: a stopwatch on a shared machine is not a test.
+
 ## Business Rules
 
 1. The sheet renders the app's own components with the app's stylesheet —

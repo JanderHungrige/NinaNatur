@@ -91,13 +91,11 @@ describe('the Draft Sketch theme', () => {
 });
 
 describe('where Draft Sketch can be seen', () => {
-  it('only on the preview, and only when asked for by name', () => {
-    const at = (environment: string | null, search: string) =>
-      chosenTheme({ environment, search, stored: null, moreContrast: false });
-    expect(at('dev', '?theme=draft-sketch')).toBe('draft-sketch');
-    expect(at('dev', '')).toBe('technisch');
-    expect(at('prod', '?theme=draft-sketch')).toBe('technisch');
-    expect(at(null, '?theme=draft-sketch')).toBe('technisch');
+  it('anywhere, when it is asked for — and Technisch when it is not', () => {
+    const at = (search: string) => chosenTheme({ search, stored: null, moreContrast: false });
+    expect(at('?theme=draft-sketch')).toBe('draft-sketch');
+    expect(at('')).toBe('technisch');
+    expect(at('?theme=verschollen')).toBe('technisch');
   });
 
   it('is not among the themes a page starts with, and is fetched when it is asked for', async () => {
