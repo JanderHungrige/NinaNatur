@@ -17,6 +17,11 @@ import type { Ink } from '../overlays';
 import { mm, outline, width } from '../paths';
 
 const STREET = 'street';
+/** A way that ends on another way's edge puts the two boundaries on top of each
+ *  other, and a hairline of ink shows through the seam — a line across a road,
+ *  which is the very thing this draws away. The mask is grown by most of a
+ *  pixel so it swallows them. */
+const SEAM_PX = 0.75;
 /** His wash's own ink is the street's: the same line every other surface has. */
 const INK = (OVERLAYS['ds-grey'] ?? []).find((o): o is Ink => o.kind === 'ink');
 
@@ -39,23 +44,25 @@ export function DraftSketchRoads({ shapes, metresPerPixel }: PlanProps) {
     if (roads.length === 0 || INK === undefined) return null;
     // The same line for the mask and for the ink, so a wobble cannot poke out
     // past the band it belongs to.
+    const grow = metresPerPixel * SEAM_PX;
     return { d: roads.map((points) => outline(points, INK.wave, metresPerPixel)).join(''),
-             box: bounds(roads, INK.width * 2) };
+             box: bounds(roads, INK.width * 2 + grow * 2), grow };
   }, [shapes, metresPerPixel]);
   if (network === null || INK === undefined) return null;
-  const { d, box } = network;
+  const { d, box, grow } = network;
   return (
     <g data-mark="roads">
       {/* By luminance, not alpha: what is painted black here is what is cut away. */}
       <mask id="ds-roads" maskUnits="userSpaceOnUse" {...box}>
         <rect {...box} fill="#ffffff" />
-        <path d={d} fill="#000000" />
+        <path d={d} fill="#000000" stroke="#000000" strokeWidth={mm(grow * 2)}
+              strokeLinejoin="round" />
       </mask>
-      {/* Twice his width: the half inside the road is masked away, and what is
-          left outside is the line he draws. */}
+      {/* Twice his width, and twice the grown mask's on top: everything inside
+          the roads is masked away, and what is left outside is his line. */}
       <path d={d} fill="none" stroke={INK.colour} strokeOpacity={INK.opacity}
-            strokeWidth={width(INK.width * 2, metresPerPixel * 2)} strokeLinejoin="round"
-            mask="url(#ds-roads)" />
+            strokeWidth={width((INK.width + grow) * 2, (metresPerPixel + grow) * 2)}
+            strokeLinejoin="round" mask="url(#ds-roads)" />
     </g>
   );
 }

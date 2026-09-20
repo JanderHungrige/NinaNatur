@@ -190,6 +190,12 @@ luminance, so what is painted black — the road surface — is cut away, and on
 the half of the line that lies outside the network survives. Nothing crosses a
 junction, and a street's own `decorate` draws no outline at all.
 
+A way that ends on another way's **edge** rather than in it puts the two
+boundaries on top of each other, and a hairline of ink comes through the seam —
+a line across a road, which is the thing this draws away. The mask is grown by
+three quarters of a pixel to swallow them, and the line is drawn that much
+wider so what is left outside keeps his weight.
+
 It is worked out once per garden and per zoom step (`useMemo`, and `InkLayer`
 gets the same quantised scale the decorations use), not on every drag frame:
 a map import brings sixty ways, and each one's wobble is real work.
