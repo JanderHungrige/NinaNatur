@@ -73,7 +73,7 @@ function shadow(o: Shadow, shape: DecoratedShape, mpp: number, key: string): Rea
 function joins(o: Joins, shape: DecoratedShape, key: string): ReactNode {
   const line = shape.line;
   if (line === null || line.length < 2) return null;
-  const radius = halfWidth(shape.points);
+  const radius = (shape.bandWidth ?? 2 * halfWidth(shape.points)) / 2;
   if (radius <= 0) return null;
   const d = disc(line[0]!, radius) + disc(line[line.length - 1]!, radius);
   return <path key={key} data-mark="joins" d={d} fill={o.fill} />;
