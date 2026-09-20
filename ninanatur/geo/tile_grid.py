@@ -126,6 +126,11 @@ class TileSource:
     index_url: str | None = None
     #: What the probe found on the date in the registry's docstring.
     probed_bytes: int | None = None
+    #: **Which** tile that was, as its south-west corner in kilometres. Without
+    #: it `probed_bytes` is a number with nothing to compare against, and a
+    #: health check has no square kilometre it knows should exist. A source
+    #: found through a list or an archive needs none: the list is the answer.
+    probed_tile: tuple[int, int] | None = None
 
     @property
     def computed(self) -> bool:

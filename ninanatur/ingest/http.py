@@ -222,6 +222,25 @@ def size_of(url: str) -> int:
     return int(length)
 
 
+def presence(url: str) -> int | None:
+    """Whether this address answers at all, and how large it says it is.
+
+    A different question from `size_of`, and the difference is real: Bayern's
+    laser host answers a HEAD with 200 and no `Content-Length` at all, so a
+    check that treated silence as absence would report a healthy source gone.
+    Raises when nothing answers; returns None when something answers and will
+    not say how much.
+    """
+    time.sleep(REQUEST_DELAY_S)
+    response = requests.head(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT,
+                             allow_redirects=True)
+    if response.status_code >= 400:
+        raise HttpError(f"HEAD {url} refused: {response.status_code}",
+                        status=response.status_code)
+    length = response.headers.get("Content-Length")
+    return int(length) if length is not None else None
+
+
 def get_range(url: str, start: int, end: int) -> bytes:
     """The bytes from `start` to `end` inclusive, as HTTP counts them.
 

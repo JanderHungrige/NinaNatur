@@ -40,6 +40,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         vertical_step_m=0.01, probed_bytes=2_558_672,
         # Not on the download host: that path answers 404 (doc 102).
         index_url="https://geodaten.bayern.de/odd/a/dgm/dgm1/meta/metalink/",
+        probed_tile=(690, 5334),
     ),
     TileSource(
         name="by-dom20", **terms("BY"), product=TileProduct.DOM, tile_km=1, fmt="GeoTIFF",
@@ -48,11 +49,13 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         _name=bayern_dom_name,
         cell_m=0.2, vertical_step_m=0.01, probed_bytes=48_441_449,
         index_url="https://geodaten.bayern.de/odd/a/dom20/meta/DOM/metalink/",
+        probed_tile=(690, 5334),
     ),
     TileSource(
         name="by-lod2", **terms("BY"), product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
         _url=bayern_url("lod2/citygml", "gml"), _name=bayern_name,
         probed_bytes=161_627_079,
+        probed_tile=(690, 5334),
     ),
     TileSource(
         # Not on the download host either: every bayernwolke path for the laser
@@ -64,6 +67,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         # The state guarantees four per m² since 2012; Munich measures twenty.
         points_per_m2=4.0, probed_bytes=112_064_676,
         index_url="https://geodaten.bayern.de/odd/a/laser/meta/metalink/",
+        probed_tile=(690, 5334),
     ),
     TileSource(
         name="nw-lod2", **terms("NW"), product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
@@ -71,6 +75,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"lod2_gml/{nrw_name(e, n, 'LoD2', 'NW')}.gml"),
         _name=lambda e, n: nrw_name(e, n, "LoD2", "NW"),
         probed_bytes=20_684_673,
+        probed_tile=(347, 5647),
     ),
     TileSource(
         name="nw-laz", **terms("NW"), product=TileProduct.LAZ, tile_km=1, fmt="LAZ",
@@ -80,6 +85,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         points_per_m2=4.0, probed_bytes=34_967_590,
         index_url=("https://www.opengeodata.nrw.de/produkte/geobasis/hm/3dm_l_las/"
                    "3dm_l_las/index.json"),
+        probed_tile=(347, 5647),
     ),
     TileSource(
         name="ni-lod2", **terms("NI"), product=TileProduct.LOD2, tile_km=1, fmt="CityGML",
@@ -87,6 +93,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"{adv_name('LoD2', e, n, suffix='ni')}.gml"),
         _name=lambda e, n: adv_name("LoD2", e, n, suffix="ni"),
         probed_bytes=43_632,
+        probed_tile=(342, 5824),
     ),
 
     # ---- Saarland and Hamburg publish no tile at all, only whole-region
@@ -160,6 +167,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"{adv_name('LoD2', e, n, km=2, suffix='RP')}.gml"),
         _name=lambda e, n: adv_name("LoD2", e, n, km=2, suffix="RP"),
         probed_bytes=88_216,
+        probed_tile=(292, 5548),
     ),
     TileSource(
         # First and last pulse in one file, which is why a tile is 338 MB.
@@ -168,6 +176,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"{adv_name('lpolpg', e, n, suffix='rp')}.laz"),
         _name=lambda e, n: adv_name("lpolpg", e, n, suffix="rp"),
         points_per_m2=4.0, probed_bytes=338_759_225,
+        probed_tile=(292, 5548),
     ),
 
     # ---- Thüringen: ground, surface, cloud and roofs, all of them zipped. ----
@@ -177,18 +186,21 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         _url=th_url("DGM/dgm_2020-2025"), _name=th_name("dgm"),
         vertical_step_m=0.01, probed_bytes=8_944_113,
         index_url="https://geoportal.geoportal-th.de/dienste/atom_th_hoehendaten_dgm",
+        probed_tile=(561, 5609),
     ),
     TileSource(
         name="th-dom1", **terms("TH"), product=TileProduct.DOM, tile_km=1,
         fmt="GeoTIFF", zipped=True,
         _url=th_url("DOM/dom_2020-2025"), _name=th_name("dom"),
         cell_m=1.0, vertical_step_m=0.01, probed_bytes=9_183_189,
+        probed_tile=(561, 5609),
     ),
     TileSource(
         name="th-las", **terms("TH"), product=TileProduct.LAZ, tile_km=1,
         fmt="LAZ", zipped=True,
         _url=th_url("LAS/las_2020-2025"), _name=th_name("las"),
         points_per_m2=4.0, probed_bytes=114_375_923,
+        probed_tile=(561, 5609),
     ),
     TileSource(
         name="th-lod2", **terms("TH"), product=TileProduct.LOD2, tile_km=2,
@@ -197,6 +209,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"{adv_name('LoD2', e, n, km=2, suffix='TH')}.zip"),
         _name=lambda e, n: adv_name("LoD2", e, n, km=2, suffix="TH"),
         probed_bytes=2_774_164,
+        probed_tile=(598, 5696),
     ),
 
     # ---- Sachsen: the same four, two kilometres at a time. ----
@@ -209,24 +222,28 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         # viewer's configuration carries the working set. Re-read them there.
         index_url=("https://geoviewer.sachsen.de/mapviewer/resources/apps/"
                    "produktdownload/app.json"),
+        probed_tile=(278, 5590),
     ),
     TileSource(
         name="sn-dom1", **terms("SN"), product=TileProduct.DOM, tile_km=2,
         fmt="GeoTIFF", zipped=True,
         _url=sn_url("dom1", "tiff", "S6wwnFwX7882sZm"), _name=sn_name("dom1", "tiff"),
         cell_m=1.0, vertical_step_m=0.01, probed_bytes=1_150_934,
+        probed_tile=(278, 5590),
     ),
     TileSource(
         name="sn-lsc", **terms("SN"), product=TileProduct.LAZ, tile_km=2,
         fmt="LAZ", zipped=True,
         _url=sn_url("lsc", "laz", "EpkzyJHScGb5ndd"), _name=sn_name("lsc", "laz"),
         points_per_m2=4.0, probed_bytes=19_782_635,
+        probed_tile=(278, 5590),
     ),
     TileSource(
         name="sn-lod2", **terms("SN"), product=TileProduct.LOD2, tile_km=2,
         fmt="CityGML", zipped=True,
         _url=sn_url("lod2", "citygml", "AyJqXpJAZJXomCb"), _name=sn_name("lod2", "citygml"),
         probed_bytes=853,
+        probed_tile=(278, 5590),
     ),
 
     # ---- What four states with a coverage service never had from it. ----
@@ -235,6 +252,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         fmt="CityGML", zipped=True,
         _url=bb_url("3d_gebaeude/lod2_gml", "lod2"), _name=bb_name("lod2"),
         probed_bytes=137_502,
+        probed_tile=(251, 5888),
     ),
     TileSource(
         # Flown over about 44 % of the state, so a tile missing here is a place
@@ -246,6 +264,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         # Five per m² is the state's floor for current flights; the tile read
         # on 2026-09-20 held 18.4.
         points_per_m2=5.0, probed_bytes=107_481_210,
+        probed_tile=(304, 5862),
     ),
     TileSource(
         # Berlin leaves the zone off the archive and writes CityGML as `.xml`.
@@ -254,6 +273,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         _url=lambda e, n: f"https://gdi.berlin.de/data/a_lod2/atom/LoD2_{e}_{n}.zip",
         _name=lambda e, n: f"LoD2_{e}_{n}", probed_bytes=537_026,
         index_url="https://gdi.berlin.de/data/a_lod2/atom/0.atom",
+        probed_tile=(372, 5808),
     ),
     TileSource(
         name="mv-lod2", **terms("MV"), product=TileProduct.LOD2, tile_km=2,
@@ -263,6 +283,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"&file=lod2_33_{e}_{n}_2_gml.zip"),
         _name=lambda e, n: f"lod2_33_{e}_{n}_2_gml",
         index_url="https://www.geodaten-mv.de/dienste/gebaeude_atom",
+        probed_tile=(206, 5920),
     ),
 
     # ---- Baden-Württemberg: four one-kilometre tiles inside each archive,
@@ -275,6 +296,7 @@ TILE_SOURCES: tuple[TileSource, ...] = (
         _name=lambda e, n: adv_name("LoD2", e, n, km=2, suffix="bw"),
         probed_bytes=7_519_207,
         index_url="https://opengeodata.lgl-bw.de/assets/config/local/odp-products.json",
+        probed_tile=(513, 5404),
     ),
     TileSource(
         # Already normalised to the ground — a canopy height model, which is
@@ -285,5 +307,6 @@ TILE_SOURCES: tuple[TileSource, ...] = (
                            f"{adv_name('ndom1', e, n, km=2, suffix='bw')}.zip"),
         _name=lambda e, n: adv_name("ndom1", e, n, km=2, suffix="bw"),
         cell_m=1.0, vertical_step_m=0.01, probed_bytes=16_393_060,
+        probed_tile=(513, 5404),
     ),
 )

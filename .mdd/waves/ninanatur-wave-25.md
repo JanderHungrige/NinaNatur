@@ -395,6 +395,32 @@ Three stages:
   the regression test now decodes a megabyte of real LZW and fails if it goes
   slow again.
 
+- **2026-09-20 — a way to find out that a state moved, before a gardener does**
+  (doc 109). Not one of the wave's eight features; asked for on the day, and
+  the registry is what made it possible. Forty-nine sources across sixteen
+  surveying offices, and in the two days this registry took to build, four of
+  them changed underneath it.
+
+  It cannot be a ping. Every one of Niedersachsen's dead LoD2 tiles is listed
+  by a live index, and Schleswig-Holstein answers a stale row with **200 and an
+  HTML apology** — a checker reading status codes would call all of it healthy.
+  So a source passes only when the bytes are what they claim: `II*` for a TIFF,
+  `LASF` for a cloud, a root element for CityGML, a directory that still holds
+  the square kilometre.
+
+  Writing it earned its keep twice over. It found its own cap was smaller than
+  Rheinland-Pfalz's twelve-megabyte index, and then something better: **silent
+  is not absent.** Bayern's laser host serves no range and states no length, so
+  the first run called a healthy source gone. "Does this answer" is now a
+  different question from "how large is it", and a source that will not be
+  looked into is reported as unread rather than as well.
+
+  `probed_tile` joined `probed_bytes` on every computed entry, so there is a
+  square kilometre to ask for and something to compare against. The logic is
+  tested offline against all four real failures; the thing that touches the
+  network is a script whose exit code is the alarm, never a test — doc 102's
+  rule, kept. **Baseline: 49 of 49.**
+
 - **2026-09-20 — the image was built and run, because the wave added a binary
   dependency.** `docker build` (404 MB) and a run against a fresh empty volume,
   as the project's own rule asks: `laspy` 2.7.0 with the `Lazrs` and
