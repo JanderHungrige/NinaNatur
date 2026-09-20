@@ -21,12 +21,12 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from geokachel.terrain_sources import TerrainSource
+from geokachel.tiff import read_raster
+from geokachel.utm import to_utm
 
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import Fetch, frame_map
-from ninanatur.geo.terrain_sources import TerrainSource
-from ninanatur.geo.tiff import read_raster
-from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
 #: How far out the land is asked about. Beyond five kilometres a hill has to be

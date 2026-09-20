@@ -10,8 +10,7 @@ import os
 from pathlib import Path
 
 import pytest
-
-from ninanatur.geo.tile_cache import TileCache
+from geokachel.tile_cache import TileCache
 
 
 def counting(payloads: dict[str, bytes], seen: list[str]):

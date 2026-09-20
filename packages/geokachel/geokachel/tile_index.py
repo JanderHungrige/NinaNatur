@@ -25,7 +25,7 @@ from urllib.parse import parse_qs, urlparse
 from defusedxml import DefusedXmlException
 from defusedxml.ElementTree import fromstring
 
-from ninanatur.geo.tile_grid import corner_in
+from geokachel.tile_grid import corner_in
 
 log = logging.getLogger(__name__)
 

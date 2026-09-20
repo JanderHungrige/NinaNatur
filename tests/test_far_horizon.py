@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from geokachel.tile_cache import TileCache
 from tiff_builders import _tiled
 
 from ninanatur.geo.far_horizon import cells_across, far_ring
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.tile_cache import TileCache
 
 #: Munich: Bayern has no coverage service anybody may use, which is the point.
 MUNICH = LatLon(lat=48.137, lon=11.575)

@@ -12,10 +12,9 @@ import time
 
 import numpy as np
 import pytest
+from geokachel.tiff import TiffError, read_raster
+from geokachel.tiff_codec import lzw
 from tiff_builders import HEIGHTS, _lzw_encode, _tiff, _tiled
-
-from ninanatur.geo.tiff import TiffError, read_raster
-from ninanatur.geo.tiff_codec import lzw
 
 
 def test_a_plain_little_endian_float_raster() -> None:
@@ -134,7 +133,7 @@ def test_a_deflated_tiled_raster_reads_like_any_other() -> None:
 def test_a_whole_degree_cell_is_refused_unless_the_caller_asks_for_one() -> None:
     """Wave 20's guard stays tight for every window; a caller reading a whole
     product says so, and only then (doc 104)."""
-    from ninanatur.geo.tiff import MAX_PIXELS, WHOLE_TILE_PIXELS
+    from geokachel.tiff import MAX_PIXELS, WHOLE_TILE_PIXELS
 
     assert WHOLE_TILE_PIXELS > 2400 * 3600 > MAX_PIXELS
     big = _tiled(np.zeros((2100, 2100), dtype="<f4"), tile=1024, compression=8)

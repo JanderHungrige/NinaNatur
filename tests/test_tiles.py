@@ -12,14 +12,16 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from geokachel import addressing
+from geokachel.addressing import tiles_across
+from geokachel.tile_cache import TileCache
+from geokachel.tile_grid import corner_in
+from geokachel.tile_sources import TileProduct, sources_for
+from geokachel.utm import to_latlon, to_utm
 
-from ninanatur.geo import tiles
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import WINDOW_M, TerrainWindow
-from ninanatur.geo.tile_cache import TileCache
-from ninanatur.geo.tile_sources import TileProduct, sources_for
-from ninanatur.geo.tiles import corner_in, surface_window, tile_window, tiles_across
-from ninanatur.geo.utm import to_latlon, to_utm
+from ninanatur.geo.tiles import surface_window, tile_window
 
 BAYERN = next(s for s in sources_for("BY") if s.product is TileProduct.DGM1)
 #: A garden in Munich, in the middle of its square kilometre.
@@ -127,8 +129,9 @@ def test_a_state_with_no_surface_service_gets_one_from_its_tiles(tmp_path: Path)
     """Feature 5 (doc 108): Bayern publishes a twenty-centimetre surface model
     as tiles and runs no coverage service anybody may use, so until now the
     biggest state in the country found no trees at all."""
+    from geokachel.tile_sources import TileProduct
+
     from ninanatur.geo.terrain import TerrainWindow
-    from ninanatur.geo.tile_sources import TileProduct
     from ninanatur.geo.tiles import surface_window
 
     source = next(s for s in sources_for("BY") if s.product is TileProduct.DOM)
@@ -299,8 +302,8 @@ def _listed(url: str) -> bytes:
 def _forget_listings() -> None:
     """What was parsed is kept for the life of the process, so a test must not
     inherit another test's."""
-    tiles._LISTINGS.clear()
-    tiles._HELD.clear()
+    addressing._LISTINGS.clear()
+    addressing._HELD.clear()
 
 
 def test_a_tile_is_found_through_the_states_own_list(tmp_path: Path) -> None:
@@ -399,8 +402,8 @@ def test_a_tile_is_read_out_of_an_archive_that_is_never_fetched(
     the size a real one is — four identical tiles deflate to nothing, and a
     cost assertion over them would pass for the wrong reason."""
     share = _Share([(348, 5475), (349, 5475), (348, 5476), (349, 5476)])
-    monkeypatch.setattr(tiles, "size_of", share.size)
-    monkeypatch.setattr(tiles, "get_range", share.ranged)
+    monkeypatch.setattr(addressing, "size_of", share.size)
+    monkeypatch.setattr(addressing, "get_range", share.ranged)
 
     lat, lon = to_latlon(348_500.0, 5_475_500.0, 32)
     window = tile_window(LatLon(lat=lat, lon=lon), SAARLAND, cache=_cache(tmp_path),
@@ -419,8 +422,8 @@ def test_a_district_whose_archive_is_missing_is_a_gap_not_a_failure(
     sixth still gets its ground, and one elsewhere gets None rather than an
     error — the same answer as a state with no source at all."""
     share = _Share([(348, 5475)])
-    monkeypatch.setattr(tiles, "size_of", share.size)
-    monkeypatch.setattr(tiles, "get_range", share.ranged)
+    monkeypatch.setattr(addressing, "size_of", share.size)
+    monkeypatch.setattr(addressing, "get_range", share.ranged)
 
     lat, lon = to_latlon(600_500.0, 5_500_500.0, 32)
     assert tile_window(LatLon(lat=lat, lon=lon), SAARLAND,

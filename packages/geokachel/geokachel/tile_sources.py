@@ -29,8 +29,8 @@ from __future__ import annotations
 
 import math
 
-from ninanatur.geo.tile_entries import TILE_SOURCES
-from ninanatur.geo.tile_grid import FREE_LICENCES, TileProduct, TileSource, tile_of
+from geokachel.tile_entries import TILE_SOURCES
+from geokachel.tile_grid import FREE_LICENCES, TileProduct, TileSource, tile_of
 
 #: The whole-country fallback: 30 m, one file per degree cell, for a horizon
 #: ring where no state serves anything (doc 102). Not a `TileSource` — its grid

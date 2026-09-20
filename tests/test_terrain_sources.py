@@ -7,7 +7,7 @@ whose axes or projection are guessed.
 """
 from __future__ import annotations
 
-from ninanatur.geo.terrain_sources import (
+from geokachel.terrain_sources import (
     AXES_EN,
     AXES_XY,
     TERRAIN_SOURCES,

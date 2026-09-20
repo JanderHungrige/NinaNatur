@@ -25,10 +25,12 @@ WORKDIR /build
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
 
 COPY pyproject.toml requirements.txt ./
+COPY packages ./packages
 COPY ninanatur ./ninanatur
 # Exactly the lock CI tested against, every file checked against its hash — then
 # the project itself, which must not pull a dependency of its own.
 RUN pip install --prefix=/install --require-hashes -r requirements.txt \
+ && pip install --prefix=/install --no-deps ./packages/geokachel \
  && pip install --prefix=/install --no-deps .
 
 

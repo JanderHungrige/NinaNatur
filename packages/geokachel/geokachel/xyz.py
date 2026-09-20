@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ninanatur.geo.tiff import MAX_PIXELS, NO_DATA, Raster, TiffError
+from geokachel.tiff import MAX_PIXELS, NO_DATA, Raster, TiffError
 
 #: A height never contains one of these, so the first is where the grid stops
 #: and something else begins.

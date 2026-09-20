@@ -12,11 +12,10 @@ import zipfile
 from pathlib import Path
 
 import pytest
-
-from ninanatur.geo.health import Verdict, check_coverage, check_tile_source, looks_like
-from ninanatur.geo.terrain_sources import TERRAIN_SOURCES
-from ninanatur.geo.tile_grid import TileProduct
-from ninanatur.geo.tile_sources import sources_for
+from geokachel.health import Verdict, check_coverage, check_tile_source, looks_like
+from geokachel.terrain_sources import TERRAIN_SOURCES
+from geokachel.tile_grid import TileProduct
+from geokachel.tile_sources import sources_for
 
 BAYERN = next(s for s in sources_for("BY") if s.product is TileProduct.DGM1)
 RHEINLAND = next(s for s in sources_for("RP") if s.product is TileProduct.DGM1)

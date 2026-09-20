@@ -18,12 +18,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ninanatur.garden.models import Garden
-from ninanatur.geo.far_horizon import GLO30_SOURCE
-from ninanatur.geo.projection import LatLon
-from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.geo.terrain_sources import by_state as terrain_service
-from ninanatur.geo.tile_sources import (
+from geokachel.terrain_sources import by_state as terrain_service
+from geokachel.tile_sources import (
     COPERNICUS_ATTRIBUTION,
     COPERNICUS_LICENCE,
     ground_tiles_for,
@@ -31,6 +27,11 @@ from ninanatur.geo.tile_sources import (
     lod2_tiles_for,
     name_of,
 )
+
+from ninanatur.garden.models import Garden
+from ninanatur.geo.far_horizon import GLO30_SOURCE
+from ninanatur.geo.projection import LatLon
+from ninanatur.geo.terrain import TerrainWindow
 
 #: What a surveyed height means about where it came from (doc 93).
 SURVEYED = "survey"

@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ninanatur.geo.tiff_codec import TiffCodecError, lzw, to_values, undo_predictor
+from geokachel.tiff_codec import TiffCodecError, lzw, to_values, undo_predictor
 
 #: Tags that matter here. Everything else in the directory is skipped.
 _WIDTH, _HEIGHT, _BITS, _COMPRESSION = 256, 257, 258, 259

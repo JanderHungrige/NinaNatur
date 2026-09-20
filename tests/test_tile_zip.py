@@ -11,8 +11,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
-
-from ninanatur.geo.tile_zip import (
+from geokachel.tile_zip import (
     MAX_MEMBER_BYTES,
     ArchiveError,
     extract,

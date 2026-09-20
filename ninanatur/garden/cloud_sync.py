@@ -19,6 +19,12 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from geokachel.addressing import addressed
+from geokachel.tile_cache import TileCache, cache_at
+from geokachel.tile_sources import TileProduct, TileSource, sources_for
+from geokachel.tile_zip import extract
+from geokachel.utm import to_utm
+
 from ninanatur.garden.models import Garden
 from ninanatur.garden.terrain_sync import TILE_CACHE_BYTES, is_precise
 from ninanatur.geo.cloud_store import load_cloud, save_cloud
@@ -27,11 +33,6 @@ from ninanatur.geo.osm import state_at
 from ninanatur.geo.pointcloud import CloudWindow, window_from
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain_store import cache_key
-from ninanatur.geo.tile_cache import TileCache, cache_at
-from ninanatur.geo.tile_sources import TileProduct, TileSource, sources_for
-from ninanatur.geo.tile_zip import extract
-from ninanatur.geo.tiles import addressed
-from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
 

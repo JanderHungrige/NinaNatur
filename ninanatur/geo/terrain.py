@@ -15,12 +15,13 @@ import math
 from dataclasses import dataclass
 from typing import Protocol
 
+from geokachel.terrain_sources import TerrainSource, by_state
+from geokachel.tiff import Raster, read_raster
+from geokachel.utm import to_utm
+
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon, Metres
 from ninanatur.geo.projection import to_latlon as to_latlon_local
-from ninanatur.geo.terrain_sources import TerrainSource, by_state
-from ninanatur.geo.tiff import Raster, read_raster
-from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
 #: Half-width of the fetched window, in metres.

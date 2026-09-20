@@ -15,9 +15,9 @@ its ground until they were put in one place.
 """
 from __future__ import annotations
 
-from ninanatur.geo.tile_grid import TileLookup, TileProduct, TileSource, under
-from ninanatur.geo.tile_index import from_geojson_links, from_metalink
-from ninanatur.geo.tile_naming import (
+from geokachel.tile_grid import TileLookup, TileProduct, TileSource, under
+from geokachel.tile_index import from_geojson_links, from_metalink
+from geokachel.tile_naming import (
     SH_DOWNLOAD,
     adv_name,
     bayern_dom_name,
@@ -36,7 +36,7 @@ from ninanatur.geo.tile_naming import (
     th_name,
     th_url,
 )
-from ninanatur.geo.tile_terms import terms
+from geokachel.tile_terms import terms
 
 TILE_SOURCES: tuple[TileSource, ...] = (
     TileSource(

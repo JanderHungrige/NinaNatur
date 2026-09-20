@@ -1,0 +1,48 @@
+[project]
+name = "geokachel"
+version = "0.1.0"
+description = "Official German open elevation, surface, building and point-cloud data — one interface, all sixteen Bundesländer, with the credit each licence requires."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+authors = [{ name = "werthvoll" }]
+keywords = [
+    "germany", "deutschland", "elevation", "dem", "dtm", "dsm",
+    "dgm1", "dom", "lod2", "laz", "lidar", "pointcloud",
+    "geotiff", "citygml", "utm", "bundesland", "geodata",
+    "dl-de", "open-data", "opendata", "hoehendaten",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.26",
+    "defusedxml>=0.7",
+    "requests>=2.31",
+]
+
+[project.urls]
+Homepage = "https://github.com/werthvoll/NinaNatur"
+Source = "https://github.com/werthvoll/NinaNatur/tree/main/packages/geokachel"
+Issues = "https://github.com/werthvoll/NinaNatur/issues"
+
+[project.scripts]
+geokachel = "geokachel.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["geokachel"]
+
+# PEP 561. Without the marker in the wheel, every consumer's type
+# checker sees `Any` for all of this, and says nothing about it.
+[tool.hatch.build.targets.wheel.force-include]
+"geokachel/py.typed" = "geokachel/py.typed"

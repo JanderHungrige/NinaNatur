@@ -10,10 +10,10 @@ import struct
 
 import numpy as np
 import pytest
+from geokachel.terrain_sources import by_state
 
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import WINDOW_M, fetch_window
-from ninanatur.geo.terrain_sources import by_state
 from ninanatur.geo.terrain_store import cache_key
 
 NRW = by_state("Nordrhein-Westfalen")

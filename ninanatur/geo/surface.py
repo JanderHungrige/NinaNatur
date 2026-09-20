@@ -17,11 +17,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from geokachel.surface_sources import NORMALISED, SurfaceSource
+from geokachel.tiff import read_raster
+from geokachel.utm import to_utm
+
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.surface_sources import NORMALISED, SurfaceSource
 from ninanatur.geo.terrain import FETCH_M, Fetch, TerrainWindow, resample
-from ninanatur.geo.tiff import read_raster
-from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
 

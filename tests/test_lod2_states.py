@@ -14,12 +14,12 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from geokachel.tile_sources import lod2_tiles_for
 
 from ninanatur.garden import building_sync
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.lod2 import MAX_TILE_BYTES, buildings_from
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.tile_sources import lod2_tiles_for
 
 BAYERN = Path(__file__).parent / "fixtures" / "lod2_bayern_building.gml"
 #: The tile the fixture came out of, and the garden it stands over.

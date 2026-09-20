@@ -10,8 +10,7 @@ from __future__ import annotations
 import re
 
 import pytest
-
-from ninanatur.geo.tile_sources import (
+from geokachel.tile_sources import (
     FREE_LICENCES,
     TILE_SOURCES,
     TileProduct,

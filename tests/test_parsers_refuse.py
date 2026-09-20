@@ -33,15 +33,16 @@ from pathlib import Path
 import numpy as np
 import pytest
 import requests
+from geokachel import tiff
+from geokachel.tiff import TiffError, read_raster
+from geokachel.tiff_codec import TiffCodecError, lzw
 from test_lod2 import HEAD, ROOF, SQUARE, TAIL, _building, _surface
 from tiff_builders import HEIGHTS, _lzw_encode, _tiff, _tiled
 
 from ninanatur.garden import building_sync
-from ninanatur.geo import lod2, tiff
+from ninanatur.geo import lod2
 from ninanatur.geo.lod2 import Lod2Error, buildings_from
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.tiff import TiffError, read_raster
-from ninanatur.geo.tiff_codec import TiffCodecError, lzw
 from ninanatur.ingest import http
 
 VALID = HEAD + _building(

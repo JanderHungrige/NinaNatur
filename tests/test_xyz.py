@@ -11,9 +11,8 @@ import time
 
 import numpy as np
 import pytest
-
-from ninanatur.geo.tiff import TiffError
-from ninanatur.geo.xyz import read_grid
+from geokachel.tiff import TiffError
+from geokachel.xyz import read_grid
 
 
 def _grid(west: int = 348_000, south: int = 5_475_000, side: int = 4,

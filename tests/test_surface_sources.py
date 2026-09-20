@@ -6,7 +6,7 @@ carelessly.
 """
 from __future__ import annotations
 
-from ninanatur.geo.surface_sources import (
+from geokachel.surface_sources import (
     NORMALISED,
     SURFACE,
     SURFACE_SOURCES,
@@ -14,7 +14,7 @@ from ninanatur.geo.surface_sources import (
     by_state,
     measures_buildings,
 )
-from ninanatur.geo.terrain_sources import AXES_EN, AXES_XY, TERRAIN_SOURCES
+from geokachel.terrain_sources import AXES_EN, AXES_XY, TERRAIN_SOURCES
 
 FORBIDDING = ("kostenpflichtig", "gebührenpflichtig", "non-commercial", "nc-")
 

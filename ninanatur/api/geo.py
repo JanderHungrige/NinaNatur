@@ -12,6 +12,7 @@ import sqlite3
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, status
+from geokachel.orthophotos import by_state
 
 from ninanatur.api import ratelimit
 from ninanatur.api.accounts import current_account
@@ -33,7 +34,6 @@ from ninanatur.garden.store import (
     create_garden,
     load_garden,
 )
-from ninanatur.geo.orthophotos import by_state
 from ninanatur.geo.osm import buildings_in, search_address, state_at
 from ninanatur.geo.osm_streets import streets_in
 from ninanatur.geo.projection import LatLon, bounding_box_of, centroid, to_metres

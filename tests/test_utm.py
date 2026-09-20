@@ -9,8 +9,7 @@ from __future__ import annotations
 import math
 
 import pytest
-
-from ninanatur.geo.utm import central_meridian, to_latlon, to_utm, zone_for
+from geokachel.utm import central_meridian, to_latlon, to_utm, zone_for
 
 
 def test_the_central_meridian_is_exactly_the_false_easting() -> None:

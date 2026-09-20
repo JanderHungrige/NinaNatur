@@ -226,8 +226,8 @@ def test_every_bundesland_now_has_ground() -> None:
     If this ever fails, a state has withdrawn something and the health check
     (doc 109) will have said so first.
     """
-    from ninanatur.geo.terrain_sources import by_state as service
-    from ninanatur.geo.tile_sources import STATES, ground_tiles_for, name_of
+    from geokachel.terrain_sources import by_state as service
+    from geokachel.tile_sources import STATES, ground_tiles_for, name_of
 
     without = [name_of(key) for key in STATES
                if ground_tiles_for(key) is None and service(name_of(key)) is None]

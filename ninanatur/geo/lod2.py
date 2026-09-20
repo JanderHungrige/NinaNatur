@@ -23,11 +23,11 @@ from xml.etree import ElementTree
 
 from defusedxml import DefusedXmlException
 from defusedxml.ElementTree import iterparse
+from geokachel.utm import to_latlon
 
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.projection import LatLon, to_metres
 from ninanatur.geo.roof_faces import Point, bearing_on_garden, fall_of
-from ninanatur.geo.utm import to_latlon
 
 #: AdV's Dachform key onto the shapes the shading model has a ratio for.
 #:

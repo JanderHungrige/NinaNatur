@@ -5,10 +5,10 @@ import struct
 
 import numpy as np
 import pytest
+from geokachel.surface_sources import by_state
 
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import fetch_surface
-from ninanatur.geo.surface_sources import by_state
 from ninanatur.geo.terrain import TerrainWindow
 
 WEST = LatLon(lat=51.0, lon=6.0)

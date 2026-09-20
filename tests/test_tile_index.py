@@ -9,8 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from ninanatur.geo.tile_index import MAX_INDEX_BYTES, ListingError, from_metalink
+from geokachel.tile_index import MAX_INDEX_BYTES, ListingError, from_metalink
 
 RP = Path(__file__).parent / "fixtures" / "rp_dgm1_metalink.meta4"
 

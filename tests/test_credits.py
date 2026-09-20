@@ -75,8 +75,8 @@ def test_every_state_with_a_building_model_also_publishes_its_ground() -> None:
     on a page load — and that holds only while no state publishes LoD2 and no
     ground. If this ever fails, the state it names needs `measured_by` on the
     element instead (doc 106)."""
-    from ninanatur.geo.terrain_sources import by_state as service
-    from ninanatur.geo.tile_sources import (
+    from geokachel.terrain_sources import by_state as service
+    from geokachel.tile_sources import (
         TILE_SOURCES,
         TileProduct,
         ground_tiles_for,

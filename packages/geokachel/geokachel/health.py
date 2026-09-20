@@ -30,8 +30,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
 
-from ninanatur.geo.remote_zip import Ranged, Sized, names_in
-from ninanatur.geo.tile_grid import TileSource, corner_in
+from geokachel.remote_zip import Ranged, Sized, names_in
+from geokachel.tile_grid import TileSource, corner_in
 
 #: Enough of a file to say what it is, and little enough to ask for often.
 SAMPLE_BYTES = 4096
@@ -59,11 +59,20 @@ Get = Callable[[str], bytes]
 
 class Coverage(Protocol):
     """What the terrain and surface registries have in common: a service, and
-    the one coverage inside it that this project asks for by name."""
+    the one coverage inside it that is asked for by name.
 
-    state: str
-    url: str
-    coverage: str
+    Read-only on purpose: the registries are frozen dataclasses, and a protocol
+    that declared these as settable would not match one.
+    """
+
+    @property
+    def state(self) -> str: ...
+
+    @property
+    def url(self) -> str: ...
+
+    @property
+    def coverage(self) -> str: ...
 
 
 class Verdict(StrEnum):

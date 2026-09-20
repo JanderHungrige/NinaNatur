@@ -14,6 +14,13 @@ from __future__ import annotations
 import logging
 import sqlite3
 
+from geokachel.addressing import INSIDE, addressed
+from geokachel.surface_sources import by_state, measures_buildings
+from geokachel.tile_cache import cache_at
+from geokachel.tile_sources import TileProduct, lod2_tiles_for, sources_for
+from geokachel.tile_zip import unpack
+from geokachel.utm import to_utm
+
 from ninanatur.garden.canopies_found import remember
 from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
@@ -28,13 +35,8 @@ from ninanatur.geo.lod2 import (
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import SurfaceWindow, fetch_surface
-from ninanatur.geo.surface_sources import by_state, measures_buildings
 from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.geo.tile_cache import cache_at
-from ninanatur.geo.tile_sources import TileProduct, lod2_tiles_for, sources_for
-from ninanatur.geo.tile_zip import unpack
-from ninanatur.geo.tiles import INSIDE, addressed, surface_window
-from ninanatur.geo.utm import to_utm
+from ninanatur.geo.tiles import surface_window
 from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
 

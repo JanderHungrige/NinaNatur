@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ninanatur.geo.terrain_sources import AXES_EN, AXES_XY
+from geokachel.terrain_sources import AXES_EN, AXES_XY
 
 #: Already differenced against the terrain: a value is height above ground.
 NORMALISED = "ndom"

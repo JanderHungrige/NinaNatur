@@ -26,13 +26,13 @@ import logging
 import math
 
 import numpy as np
+from geokachel.tiff import WHOLE_TILE_PIXELS, Raster, TiffError, read_raster
+from geokachel.tile_cache import Fetch, TileCache
+from geokachel.tile_sources import glo30_url
+from geokachel.utm import to_latlon, to_utm, zone_for
 
 from ninanatur.geo.horizon import AZIMUTHS, RING_CELL_M, RING_RADIUS_M, ring_from
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.tiff import WHOLE_TILE_PIXELS, Raster, TiffError, read_raster
-from ninanatur.geo.tile_cache import Fetch, TileCache
-from ninanatur.geo.tile_sources import glo30_url
-from ninanatur.geo.utm import to_latlon, to_utm, zone_for
 from ninanatur.ingest.http import get_bytes
 
 log = logging.getLogger(__name__)

@@ -1,0 +1,49 @@
+geokachel
+=========
+
+Copyright (c) 2026 werthvoll. Licensed under the MIT License (see LICENSE).
+
+The MIT licence covers **this software**. It does not, and cannot, relicense
+the data this software fetches.
+
+
+The data is somebody else's
+---------------------------
+
+This library fetches open geodata published by the German state surveying
+authorities, by the Bundesamt für Kartographie und Geodäsie, and by the
+Copernicus programme. Each dataset is licensed by whoever published it —
+`dl-de/by-2-0`, `dl-de/zero-2-0` or `CC BY 4.0` — and **most of them require a
+named credit wherever the data is shown**.
+
+A height displayed without its credit is a height used outside its licence.
+
+Every source in this registry carries the exact credit its licence asks for, in
+the words the publisher chose, as a required field on the source itself. It is
+not optional metadata and it is not decoration:
+
+    from geokachel import ground_tiles_for
+    source = ground_tiles_for("BY")
+    print(source.attribution)
+    # Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de
+
+If you show a number this library gave you, show that string with it.
+
+A source whose licence forbids this kind of use is not in the registry at all,
+however a catalogue describes it — that check happens once, here, rather than
+in every program that installs this.
+
+
+Not affiliated
+--------------
+
+geokachel is not affiliated with, endorsed by, or produced by any
+Landesvermessungsamt or Landesbetrieb, the Arbeitsgemeinschaft der
+Vermessungsverwaltungen der Länder der Bundesrepublik Deutschland (AdV), the
+Bundesamt für Kartographie und Geodäsie (BKG), the European Space Agency, or
+the Copernicus programme.
+
+Where those names and brands appear in this software, they appear because a
+licence requires the publisher to be named as the source of the data — never to
+suggest a relationship. In particular the string "GeoBasis-DE" is the surveying
+authorities' own brand and appears only inside the credit that they require.

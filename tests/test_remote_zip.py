@@ -11,8 +11,7 @@ import random
 import zipfile
 
 import pytest
-
-from ninanatur.geo.remote_zip import RemoteArchiveError, member_of, names_in
+from geokachel.remote_zip import RemoteArchiveError, member_of, names_in
 
 
 class Portal:

@@ -32,10 +32,10 @@ from io import BytesIO
 from pathlib import Path
 
 import numpy as np
+from geokachel.utm import to_utm
 
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import frame_map
-from ninanatur.geo.utm import to_utm
 
 log = logging.getLogger(__name__)
 

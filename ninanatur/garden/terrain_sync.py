@@ -24,13 +24,16 @@ from __future__ import annotations
 import logging
 import sqlite3
 
+from geokachel.terrain_sources import by_state
+from geokachel.tile_cache import TileCache, cache_at
+from geokachel.tile_sources import TileSource, ground_tiles_for
+
 from ninanatur.garden.models import Garden
 from ninanatur.geo.far_horizon import GLO30_SOURCE, far_ring
 from ninanatur.geo.horizon import horizon_ring
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import TerrainWindow, fetch_window
-from ninanatur.geo.terrain_sources import by_state
 from ninanatur.geo.terrain_store import (
     cache_key,
     load_horizon,
@@ -38,8 +41,6 @@ from ninanatur.geo.terrain_store import (
     save_horizon,
     save_window,
 )
-from ninanatur.geo.tile_cache import TileCache, cache_at
-from ninanatur.geo.tile_sources import TileSource, ground_tiles_for
 from ninanatur.geo.tiles import tile_window
 from ninanatur.ingest.db import database_path
 

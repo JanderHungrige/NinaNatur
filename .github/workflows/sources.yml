@@ -1,0 +1,85 @@
+# Are the state surveying offices still serving what the registry says?
+#
+# Deliberately NOT part of the test suite (doc 102, doc 109). A suite that needs
+# sixteen state portals to be up fails on their maintenance window, teaches
+# people to ignore red, and says nothing about this repository's code.
+#
+# So this job does not fail. When something has moved it opens an issue — or
+# adds to the open one — and stays green, because a red build nobody can fix by
+# changing code is a red build everybody learns to scroll past.
+name: sources
+
+on:
+  schedule:
+    # Monday, early, off the hour: sixteen public offices, not an API.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: sources
+  cancel-in-progress: false
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.13"
+
+      - run: pip install ./packages/geokachel
+
+      - name: Ask every source whether it is still there
+        id: ask
+        env:
+          # Say who is asking. These offices publish at their own expense, and
+          # a request from a CI runner with no contact in it is rude.
+          GEOKACHEL_USER_AGENT: >-
+            geokachel/0.1 (+https://github.com/${{ github.repository }};
+            weekly source check)
+        run: |
+          set +e
+          geokachel check > report.txt 2>&1
+          echo "moved=$?" >> "$GITHUB_OUTPUT"
+          cat report.txt
+          exit 0
+
+      - name: Say so, once, where somebody will see it
+        if: steps.ask.outputs.moved != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          {
+            echo "A source this project reads has changed. It is not a code failure —"
+            echo "a state has moved its files, rotated a share token, renamed a coverage"
+            echo "or retired a tile."
+            echo
+            echo "Re-read it from the source and correct the registry and its doc:"
+            echo "an entry is a request that was answered, and this one no longer is."
+            echo
+            echo '```'
+            cat report.txt
+            echo '```'
+            echo
+            echo "[The run]($RUN)"
+          } > body.md
+
+          open=$(gh issue list --label sources --state open \
+                   --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file body.md
+          else
+            gh label create sources --color BFD4F2 \
+              --description "A state moved its data" 2>/dev/null || true
+            gh issue create --title "A source has moved" \
+              --label sources --body-file body.md
+          fi
