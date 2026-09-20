@@ -15,7 +15,7 @@ const box = (x: number, y: number, w: number, d: number): Point[] => [
 function shape(kind: string, symbol: string, points: Point[], extra: Partial<DecoratedShape> = {},
 ): DecoratedShape {
   return { key: `obstacle-${kind}`, kind, symbol, ground: false, points, line: null, raised: 0,
-           roofLines: [], roof: 'unknown', shadow: { x: 0.6, y: 0.3 }, ...extra };
+           roofLines: [], roof: 'unknown', bandWidth: null, shadow: { x: 0.6, y: 0.3 }, ...extra };
 }
 
 /** What the theme draws for one shape, near, at 5 cm a pixel. */
@@ -179,5 +179,33 @@ describe('the shadow the sun casts (doc 99)', () => {
   it('but a raised bed keeps its own side, which is not the sun\'s doing', () => {
     const bed = shape('bed', 'planting', box(0, 0, 3, 1.5), { raised: 0.5, shadow: null });
     expect(drawn(bed).under.querySelectorAll('[data-mark="shadow"]')).toHaveLength(1);
+  });
+});
+
+describe('the corner a road turns (doc 98)', () => {
+  const bent = (extra = {}) => shape('street', 'paving', box(0, 4, 12, 20),
+    { line: [{ x: -6, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 12 }], ...extra });
+
+  it('is a disc of the band\'s own width, not of the outline\'s reach', () => {
+    // A way that bends: its outline is twelve metres across because of the
+    // bend, and the road is six wide. A disc from the outline would be twice
+    // the road.
+    const marks = drawn(bent({ bandWidth: 6 })).under.querySelectorAll('[data-mark="joins"]');
+    expect(marks).toHaveLength(1);
+    const radii = [...(marks[0]!.getAttribute('d') ?? '').matchAll(/a([\d.]+),/g)]
+      .map((m) => Number(m[1]));
+    expect(radii.every((r) => Math.abs(r - 3) < 0.01)).toBe(true);
+  });
+
+  it('sits at each end of the centreline, where the next way starts', () => {
+    const d = drawn(bent({ bandWidth: 6 })).under
+      .querySelector('[data-mark="joins"]')!.getAttribute('d') ?? '';
+    // Two discs: one at (-6, 0), one at (0, 12) — in SVG, y the other way up.
+    expect(d).toContain('M-9,0');
+    expect(d).toContain('M-3,-12');
+  });
+
+  it('and a way with no line of its own draws none', () => {
+    expect(drawn(shape('street', 'paving', box(0, 0, 10, 6))).marks('joins')).toHaveLength(0);
   });
 });

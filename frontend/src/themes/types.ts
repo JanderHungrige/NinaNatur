@@ -28,6 +28,11 @@ export interface DecoratedShape {
   roofLines: [Point, Point][];
   /** Its roof's shape, as stored: a pent's one line is its upper edge. */
   roof: string;
+  /** How wide the band round a line is, in metres, as the element carries it —
+   *  null for anything that is not drawn along a line. Measuring it from the
+   *  outline works for a straight way and not for one that bends: there the
+   *  outline's width across is the bend's own reach. */
+  bandWidth: number | null;
   /** Where this thing's shadow falls at the drawing's moment, in garden metres
    *  (doc 99), or null where the model says it casts none. A theme draws its
    *  drop shadow there instead of wherever its style put one. */

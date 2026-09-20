@@ -31,7 +31,7 @@ function bedShape(bed: Bed): DecoratedShape {
   return { key: `bed-${bed.bed_id}`, symbol: 'planting', ground: false, kind: 'bed',
            points: toPoints(bed.polygon), line: null, raised: bed.height_above_ground,
            // A bed lies on the ground: what it shows is its own side, not a cast.
-           roofLines: [], roof: 'unknown', shadow: null };
+           roofLines: [], roof: 'unknown', bandWidth: null, shadow: null };
 }
 
 function obstacleShape(o: Obstacle): DecoratedShape {
@@ -42,6 +42,7 @@ function obstacleShape(o: Obstacle): DecoratedShape {
   return { key: `obstacle-${o.obstacle_id}`, symbol: SYMBOL.get(o.kind) ?? 'plain',
            ground: isGround(o.kind), kind: o.kind, points: toPoints(o.footprint), line,
            raised: 0, roof: o.roof,
+           bandWidth: o.shape === 'line' ? o.width : null,
            shadow: o.shadow === null || o.shadow === undefined
              ? null : { x: o.shadow[0] ?? 0, y: o.shadow[1] ?? 0 },
            roofLines: o.roof_lines.map((l) => [toPoints(l)[0]!, toPoints(l)[1]!] as [Point, Point]) };

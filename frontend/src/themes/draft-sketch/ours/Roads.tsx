@@ -49,7 +49,7 @@ export function DraftSketchRoads({ shapes, metresPerPixel }: PlanProps) {
     const corners = streets.flatMap((s) => {
       const line = s.line;
       if (line === null || line.length < 2) return [];
-      const radius = halfWidth(s.points);
+      const radius = (s.bandWidth ?? 2 * halfWidth(s.points)) / 2;
       return radius <= 0 ? [] : [disc(line[0]!, radius), disc(line[line.length - 1]!, radius)];
     }).join('');
     // The same line for the mask and for the ink, so a wobble cannot poke out
