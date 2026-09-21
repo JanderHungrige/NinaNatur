@@ -199,8 +199,9 @@ export const BANDS: ReadonlyArray<readonly [number, string]> = [
   [0, 'tiefer Schatten'],
 ];
 
-/** What to call this many hours. Mirrors the server's `SUN_HOUR_BANDS`, which
- *  is a documented convention rather than physics. */
+/** What to call this many hours. Each band begins at one of the server's
+ *  `SUN_HOUR_ANCHORS` (`solar/light.py`), a documented convention rather than
+ *  physics; `tests/test_light_legend.py` holds the two together. */
 export function bandFor(hours: number): string {
   for (const [lower, label] of BANDS) {
     if (hours >= lower) return label;

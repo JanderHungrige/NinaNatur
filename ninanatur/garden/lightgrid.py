@@ -32,6 +32,7 @@ from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model
 from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
+from ninanatur.solar.light import LIGHT_MODEL
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle
 
@@ -235,11 +236,15 @@ def signature_of(
     says so and offers the finer one. The box is here rather than implied by the
     outlines because it also reads where an element came from: a neighbour's
     house the gardener makes their own joins it.
+
+    And which hours->L convention the beds' values came from (`LIGHT_MODEL`):
+    a new one moves every bed's light although no shadow moved.
     """
     box = grid_extent_of(garden)
     parts: list[str] = [
         f"{garden.latitude:.5f},{garden.longitude:.5f}",
         grid_model(),
+        f"light|{LIGHT_MODEL}",
         "box|" + ("" if box is None else ",".join(f"{v:.2f}" for v in box)),
     ]
     # Where the ground came from and how finely it was measured: a better source

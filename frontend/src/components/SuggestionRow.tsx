@@ -1,6 +1,6 @@
 import type { BedSuggestions } from '../api/client';
 import { colourLabel } from '../colours';
-import { birds } from '../plural';
+import { birds, insects } from '../plural';
 import { SWATCH } from './ClusterLayer';
 import { MonthStrip } from './MonthStrip';
 
@@ -71,6 +71,14 @@ function birdsFor(item: Suggestion): string | null {
     : null;
 }
 
+/** "214 Insektenarten": what the list's order weighs beside the growing
+ *  conditions, on the row so the order can be argued with. Nothing where GloBI
+ *  records none — "0" would claim the data knows there are none. */
+function insectsFor(item: Suggestion): string | null {
+  const n = item.insect_partners ?? null;
+  return n !== null && n > 0 ? insects(n) : null;
+}
+
 /** Whether a row has room or birds to show: what a third line is for. */
 export function hasExtraLine(item: Suggestion): boolean {
   return roomFor(item) !== null || birdsFor(item) !== null;
@@ -109,8 +117,9 @@ function readFit(axes: Suggestion['fit']['axes']): Fit | null {
 
 /**
  * One suggestion as one compact row (doc 90): its name, which opens what is
- * known about the species; its colour, months and fit on the second line; room
- * and birds on a third when its window has any; and a button to plant it.
+ * known about the species; its colour, months, insects and fit on the second
+ * line; room and birds on a third when its window has any; and a button to
+ * plant it.
  */
 export function SuggestionRow(props: Props) {
   const { item, index, setsize, top, tabbable, extraLine, busy, onPlant, onShowInfo } = props;
@@ -118,6 +127,7 @@ export function SuggestionRow(props: Props) {
   const fit = readFit(item.fit.axes);
   const room = roomFor(item);
   const eaten = birdsFor(item);
+  const visited = insectsFor(item);
   const colour = item.observed_colour ?? item.flower_colour;
   const swatch = colour != null ? SWATCH[colour] : undefined;
   const colourWords = describeColour(item);
@@ -153,6 +163,14 @@ export function SuggestionRow(props: Props) {
           <span className="suggestion-row__colour-word">{colourWords}</span>
         </span>
         <MonthStrip start={item.flowering_start_month} end={item.flowering_end_month} />
+        {visited !== null ? (
+          <span
+            className="suggestion-row__insects"
+            title={`${visited}, in Deutschland als Partner dieser Pflanze erfasst`}
+          >
+            {visited}
+          </span>
+        ) : null}
         {fit !== null ? (
           <span className={`suggestion-row__fit suggestion-row__fit--${fit.band}`} title={fit.full}>
             <span aria-hidden="true">{fit.short}</span>

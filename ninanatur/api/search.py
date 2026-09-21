@@ -25,6 +25,7 @@ from ninanatur.api.filters import (
     light_verdict,
     verdicts_for,
 )
+from ninanatur.fit.rank import growing_conditions, insect_value
 from ninanatur.fit.score import SiteVector, score_species
 
 # Filters that order rather than remove. Named in one place so the sites that
@@ -56,8 +57,12 @@ class RankedResult:
     report: dict[str, FilterCounts]
 
 
-def _order_key(scored: ScoredPlant, verdicts: dict[str, Verdict]) -> tuple[int, int, float]:
-    """Known matches first, then unknowns, then colour mismatches — score within.
+def _order_key(
+    scored: ScoredPlant, verdicts: dict[str, Verdict]
+) -> tuple[int, int, float, float]:
+    """Known matches first, then unknowns, then colour mismatches — and within
+    each, growing conditions lifted by insect value (`fit.rank`), the plain fit
+    breaking ties.
 
     Unknowns are kept only when the user asked for them, and even then they must
     not outrank a species that actually matches what was asked.
@@ -65,7 +70,16 @@ def _order_key(scored: ScoredPlant, verdicts: dict[str, Verdict]) -> tuple[int, 
     values = verdicts.values()
     unknown = 1 if any(v is Verdict.UNKNOWN for v in values) else 0
     mismatch = 1 if any(v is Verdict.MISMATCH for v in values) else 0
-    return (mismatch, unknown, -scored.score)
+    return (mismatch, unknown, -scored.rank, -scored.score)
+
+
+def _passes(verdicts: dict[str, Verdict], filters: SearchFilters) -> bool:
+    """Colour never removes anything; the other filters remove known
+    mismatches, and remove unknowns only when the user did not ask for them."""
+    hard = [v for name, v in verdicts.items() if name not in RANKS_ONLY]
+    if any(v is Verdict.MISMATCH for v in hard):
+        return False
+    return filters.include_unknown or not any(v is Verdict.UNKNOWN for v in hard)
 
 
 def rank_plants(
@@ -83,6 +97,9 @@ def rank_plants(
     report: dict[str, FilterCounts] = {}
     kept: list[tuple[ScoredPlant, dict[str, Verdict]]] = []
     lit = "ellenberg_l" in site.values
+    # The insect value's scale is the catalogue's, not what the filters leave:
+    # a plant's worth to insects does not change with the height asked for.
+    most = max((p.insect_partners or 0 for p in candidates), default=0)
 
     for plant in candidates:
         if excluded_outright(plant, filters):
@@ -105,14 +122,13 @@ def rank_plants(
             if light is Verdict.MISMATCH:
                 continue
 
-        # Colour never removes anything; the other filters remove known
-        # mismatches, and remove unknowns only when the user did not ask for them.
-        hard = {n: v for n, v in verdicts.items() if n not in RANKS_ONLY}
-        if any(v is Verdict.MISMATCH for v in hard.values()):
+        if not _passes(verdicts, filters):
             continue
-        if not filters.include_unknown and any(v is Verdict.UNKNOWN for v in hard.values()):
-            continue
-        kept.append((ScoredPlant(plant=plant, fit=fit), verdicts))
+        kept.append((ScoredPlant(
+            plant=plant, fit=fit,
+            growing=growing_conditions(fit, len(site.values)),
+            insect=insect_value(plant.insect_partners, most),
+        ), verdicts))
 
     kept.sort(key=lambda pair: _order_key(*pair))
     return RankedResult(items=[scored for scored, _ in kept], report=report)

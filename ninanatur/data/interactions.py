@@ -101,18 +101,14 @@ def bird_counts(conn: sqlite3.Connection, taxon_ids: list[int]) -> dict[int, int
     return {int(r["taxon_id"]): int(r["german"]) for r in rows}
 
 
-def german_partner_totals(conn: sqlite3.Connection, taxon_ids: list[int]) -> dict[int, int]:
-    """German insect partners for a set of species, in one query.
+def german_partner_totals(conn: sqlite3.Connection) -> dict[int, int]:
+    """German insect partners for every plant that has any record, in one query.
 
-    For ranking a shortlist, where the reason to plant the thing is the number
-    itself rather than a breakdown of it.
+    For the ranking, which weighs the number itself rather than a breakdown of
+    it, for every candidate on every request (`fit.rank.insect_value`). Read
+    with the candidate set and held with it (`api.candidate_cache`): the
+    summary is catalogue data and changes only with a catalogue build. Plants
+    GloBI holds nothing for are absent rather than zero.
     """
-    if not taxon_ids:
-        return {}
-    unique = sorted(set(taxon_ids))
-    placeholders = ",".join("?" for _ in unique)
-    rows = conn.execute(
-        f"SELECT taxon_id, german FROM partner_totals WHERE taxon_id IN ({placeholders})",  # noqa: S608
-        unique,
-    )
-    return {int(r["taxon_id"]): int(r["german"]) for r in rows}
+    rows = conn.execute("SELECT taxon_id, german FROM partner_totals").fetchall()
+    return {int(row[0]): int(row[1]) for row in rows}

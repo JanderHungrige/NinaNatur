@@ -50,7 +50,7 @@ describe('FilterControls', () => {
     // Owner review #9: hidden by default, so the removable state is `true`, and
     // unchecking clears the field rather than sending the server's default.
     const onChange = setup({ colour: 'yellow' });
-    const toggle = screen.getByRole('checkbox', { name: /denen das Licht zu hell ist/ });
+    const toggle = screen.getByRole('checkbox', { name: /denen das Licht hier nicht passt/ });
     expect((toggle as HTMLInputElement).checked).toBe(false);
     fireEvent.click(toggle);
     expect(onChange).toHaveBeenLastCalledWith({ colour: 'yellow', includeLightUnsuitable: true });
@@ -58,7 +58,7 @@ describe('FilterControls', () => {
 
   it('clears the light toggle instead of sending false', () => {
     const onChange = setup({ includeLightUnsuitable: true });
-    const toggle = screen.getByRole('checkbox', { name: /denen das Licht zu hell ist/ });
+    const toggle = screen.getByRole('checkbox', { name: /denen das Licht hier nicht passt/ });
     expect((toggle as HTMLInputElement).checked).toBe(true);
     fireEvent.click(toggle);
     expect(onChange).toHaveBeenCalledWith({});

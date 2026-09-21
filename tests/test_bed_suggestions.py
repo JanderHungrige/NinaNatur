@@ -8,9 +8,12 @@ from fastapi.testclient import TestClient
 from ninanatur.api.deps import get_connection
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.solar.light import SUN_HOUR_ANCHORS
 from ninanatur.web.app import app
 
 SQUARE = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]
+#: A plant of full sun: what an open bed gets on EIVE's scale.
+SUN = SUN_HOUR_ANCHORS[-1][1]
 
 
 def _species(c: sqlite3.Connection, tid: int, name: str, light: float,
@@ -30,11 +33,11 @@ def _species(c: sqlite3.Connection, tid: int, name: str, light: float,
 def client() -> Iterator[TestClient]:
     conn = connect(":memory:", same_thread=False)
     init_schema(conn)
-    _species(conn, 1, "Sonnenkraut", light=8.0, form="forb")
+    _species(conn, 1, "Sonnenkraut", light=SUN, form="forb")
     _species(conn, 2, "Schattenkraut", light=2.0, form="forb")
-    _species(conn, 3, "Riesenbaum", light=8.0, form="tree")
-    _species(conn, 4, "Grosstrauch", light=8.0, form="shrub")
-    _species(conn, 5, "Unbekanntwuchs", light=8.0, form=None)
+    _species(conn, 3, "Riesenbaum", light=SUN, form="tree")
+    _species(conn, 4, "Grosstrauch", light=SUN, form="shrub")
+    _species(conn, 5, "Unbekanntwuchs", light=SUN, form=None)
     conn.commit()
     app.dependency_overrides[get_connection] = lambda: conn
     yield TestClient(app)
@@ -150,7 +153,7 @@ def test_woodiness_still_identifies_what_growth_form_misses(client: TestClient) 
     removes, rather than what every bed silently never sees.
     """
     conn = app.dependency_overrides[get_connection]()
-    _species(conn, 10, "Tannenartig", light=8.0, form=None)
+    _species(conn, 10, "Tannenartig", light=SUN, form=None)
     upsert_trait(conn, 10, "woodiness", value_text="woody", source="GIFT", license="CC-BY-4.0")
     conn.commit()
     token, bed_id = _sunny_bed(client)
@@ -162,7 +165,7 @@ def test_height_identifies_what_neither_form_nor_woodiness_records(
     client: TestClient,
 ) -> None:
     conn = app.dependency_overrides[get_connection]()
-    _species(conn, 11, "Hochgewachsen", light=8.0, form=None)
+    _species(conn, 11, "Hochgewachsen", light=SUN, form=None)
     upsert_trait(conn, 11, "height_max_m", value_num=12.0, source="GIFT", license="CC-BY-4.0")
     conn.commit()
     token, bed_id = _sunny_bed(client)
@@ -180,7 +183,7 @@ def test_a_species_with_no_woody_signal_at_all_is_still_kept(
 def test_introduced_species_are_not_suggested_by_default(client: TestClient) -> None:
     """The product promises native plants and a third of the catalogue is not."""
     conn = app.dependency_overrides[get_connection]()
-    _species(conn, 20, "Eingefuehrte Art", light=8.0, form="forb")
+    _species(conn, 20, "Eingefuehrte Art", light=SUN, form="forb")
     upsert_trait(conn, 20, "native_de", value_text="introduced",
                  source="GBIF-WCVP", license="CC-BY-4.0")
     conn.commit()
@@ -190,7 +193,7 @@ def test_introduced_species_are_not_suggested_by_default(client: TestClient) -> 
 
 def test_introduced_species_can_be_asked_for(client: TestClient) -> None:
     conn = app.dependency_overrides[get_connection]()
-    _species(conn, 21, "Auf Wunsch", light=8.0, form="forb")
+    _species(conn, 21, "Auf Wunsch", light=SUN, form="forb")
     upsert_trait(conn, 21, "native_de", value_text="introduced",
                  source="GBIF-WCVP", license="CC-BY-4.0")
     conn.commit()
@@ -201,7 +204,7 @@ def test_introduced_species_can_be_asked_for(client: TestClient) -> None:
 def test_unknown_origin_is_still_suggested(client: TestClient) -> None:
     """A gap in the data is not a property of the plant."""
     conn = app.dependency_overrides[get_connection]()
-    _species(conn, 22, "Herkunft unbekannt", light=8.0, form="forb")
+    _species(conn, 22, "Herkunft unbekannt", light=SUN, form="forb")
     upsert_trait(conn, 22, "native_de", value_text="unknown",
                  source="GBIF-WCVP", license="CC-BY-4.0")
     conn.commit()

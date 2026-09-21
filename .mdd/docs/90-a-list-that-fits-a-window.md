@@ -35,7 +35,7 @@ test_files:
   - frontend/src/api/client.test.ts
   - tests/test_workspace_layout.py
 data_flow: mixed
-last_synced: 2026-09-14
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -72,11 +72,13 @@ is shown, and how far down it can be read.
 ```
 BedDetails (a bed selected)
 └─ SuggestionList            section "Vorschläge für <bed>"
-   ├─ header                 what is listed, of how many · the active filters as chips (FilterBar)
+   ├─ header                 what is listed, of how many · what the order means (doc 13)
+   │                         · the active filters as chips (FilterBar)
    │                         · Filter (FilterControls, in a disclosure) · the birds note, once
    ├─ SuggestionWindow       role=list, scrolls in itself, only the rows in view in the DOM
    │  └─ SuggestionRow       name (opens Info) · + · colour dot and word · months strip
-   │                         · fit badge · room and birds on a third line
+   │                         · "N Insektenarten" (since 2026-09-21; gives way like the colour
+   │                         word) · fit badge · room and birds on a third line
    └─ Gehölze für diesen Standort   its own heading and its own window (at most eight)
 ```
 
@@ -129,13 +131,15 @@ None changed. `client.bedSuggestions` asks for `limit=50` by default instead of
    Second line: the colour as a dot and its German word — the gardener's own
    marked "von dir", unknown a neutral dashed dot and "Farbe unbekannt"
    (doc 15); the flowering months as a strip, wrap-aware, named in words
-   ("Blüte Juni bis Juli", or "Blühzeit unbekannt"); the fit as a badge naming
+   ("Blüte Juni bis Juli", or "Blühzeit unbekannt"); since 2026-09-21 the
+   German insect species recorded on it, "214 Insektenarten" — what the order
+   weighs (doc 13) — and nothing where none are recorded; the fit as a badge naming
    its weakest axis ("Feuchte grenzwertig", or "optimal"), with every axis in
    its title and for a screen reader. Third line, in every row of a window where
    any row needs one: "braucht ~N m²" when it does not fit the bed, and the
    birds recorded eating it (doc 25). **The badge is never cut**: it names what
-   does not suit the place. Beside it the colour's word and an unknown bloom
-   time give way, and the colour's whole word stays in its title. Before this
+   does not suit the place. Beside it the colour's word, the insect count and
+   an unknown bloom time give way, each whole in its title. Before this
    rule, on V0.20.170 in the details' 22rem, 11 of 58 badges were cut ("Licht
    p…"), every one beside "Farbe unbekannt", which 47 of the 58 rows say.
 6. ***+* stays in reach while its request runs**: `aria-disabled`, presses

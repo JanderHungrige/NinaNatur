@@ -2286,6 +2286,17 @@
             ],
             "title": "Height Max M"
           },
+          "insect_partners": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Insect Partners"
+          },
           "observed_colour": {
             "anyOf": [
               {
@@ -3755,7 +3766,7 @@
     },
     "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
       "get": {
-        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nWoody plants get a shortlist of their own. Introduced species are left out\n(the product promises native plants), and so, unless asked for, are species\nthe bed is far too bright for (`filters.light_verdict`). `light_state` says\nwhether there was a light value to judge by.",
+        "description": "Species that suit this bed: ranked by how well they grow against its own\nsite vector, and among those that grow equally well by insect value\n(`fit.rank`).\n\nWoody plants get a shortlist of their own, in the same order. Introduced species are left out\n(the product promises native plants), and so, unless asked for\n(`include_light_unsuitable`), are species whose light is unsuitable here \u2014\ntoo bright or too dark (`filters.light_verdict`). `light_state` says\nwhether there was a light value to judge by.",
         "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
         "parameters": [
           {
@@ -5179,7 +5190,7 @@
     },
     "/api/v1/plants": {
       "get": {
-        "description": "Species ranked by how well they fit the given site conditions.",
+        "description": "Species ranked by how well they grow at the given site conditions, the\ninsect value deciding among equals (`fit.rank`, the bed lists' order).",
         "operationId": "search_plants_api_v1_plants_get",
         "parameters": [
           {

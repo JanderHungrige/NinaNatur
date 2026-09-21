@@ -90,6 +90,27 @@ describe('SuggestionRow', () => {
     expect(document.querySelector('.suggestion-row__fit')).toBeNull();
   });
 
+  it('counts the insects the order weighs, on the traits line', () => {
+    // Owner, 2026-09-21: ranked by growing conditions and insect value, so the
+    // row shows the number the order argues with.
+    row({ item: item({ insect_partners: 214 }) });
+    const count = screen.getByText('214 Insektenarten');
+    expect(count.closest('.suggestion-row__traits')).not.toBeNull();
+    expect(count.getAttribute('title')).toMatch(/in Deutschland als Partner/);
+  });
+
+  it('counts one insect in the singular, and none not at all', () => {
+    row({ item: item({ insect_partners: 1 }) });
+    expect(screen.getByText('1 Insektenart')).toBeDefined();
+  });
+
+  it('prints no zero where no insect was recorded', () => {
+    // "0 Insektenarten" would claim the data knows there are none.
+    row({ item: item({ insect_partners: 0 }) });
+    expect(screen.queryByText(/Insektenart/)).toBeNull();
+    expect(document.querySelector('.suggestion-row__insects')).toBeNull();
+  });
+
   it('prices a plant too large for the bed, and counts the birds that eat it', () => {
     // Doc 25: shown, not hidden; counted beside the insect score, not in it.
     row({ item: item({ fits_bed: false, space_m2: 201.1, bird_partners: 100 }), extraLine: true });

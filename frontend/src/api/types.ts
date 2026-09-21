@@ -252,11 +252,14 @@ export interface paths {
         };
         /**
          * Bed Suggestions
-         * @description Species that suit this bed, ranked by fit against its own site vector.
+         * @description Species that suit this bed: ranked by how well they grow against its own
+         *     site vector, and among those that grow equally well by insect value
+         *     (`fit.rank`).
          *
-         *     Woody plants get a shortlist of their own. Introduced species are left out
-         *     (the product promises native plants), and so, unless asked for, are species
-         *     the bed is far too bright for (`filters.light_verdict`). `light_state` says
+         *     Woody plants get a shortlist of their own, in the same order. Introduced species are left out
+         *     (the product promises native plants), and so, unless asked for
+         *     (`include_light_unsuitable`), are species whose light is unsuitable here —
+         *     too bright or too dark (`filters.light_verdict`). `light_state` says
          *     whether there was a light value to judge by.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
@@ -781,7 +784,8 @@ export interface paths {
         };
         /**
          * Search Plants
-         * @description Species ranked by how well they fit the given site conditions.
+         * @description Species ranked by how well they grow at the given site conditions, the
+         *     insect value deciding among equals (`fit.rank`, the bed lists' order).
          */
         get: operations["search_plants_api_v1_plants_get"];
         put?: never;
@@ -1646,6 +1650,8 @@ export interface components {
             flowering_start_month: number | null;
             /** Height Max M */
             height_max_m: number | null;
+            /** Insect Partners */
+            insect_partners?: number | null;
             /** Observed Colour */
             observed_colour?: string | null;
             /** Space M2 */

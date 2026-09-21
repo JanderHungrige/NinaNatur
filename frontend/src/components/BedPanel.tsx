@@ -15,7 +15,9 @@ export function lightText(bed: GardenOut['beds'][number]): string {
   if (bed.sun_hours === null || bed.ellenberg_l === null) {
     return 'noch nicht berechnet';
   }
-  const light = `${bed.sun_hours.toFixed(1)} h/Tag · L ${bed.ellenberg_l}`;
+  // L on EIVE's 0–10 scale since 2026-09-21, and continuous: one decimal is
+  // already finer than the model knows, and "L 7.8125" claimed more.
+  const light = `${bed.sun_hours.toFixed(1)} h/Tag · L ${bed.ellenberg_l.toFixed(1)}`;
   // The slope is said, never scored. At this latitude it barely moves the
   // hours; what it moves is the energy per square metre, which this model does
   // not compute — so it belongs beside the figure rather than inside it.
