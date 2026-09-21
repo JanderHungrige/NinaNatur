@@ -42,15 +42,37 @@ const SAMPLE_PX = 3;
 const visible = (wave: Wave | null, metresPerPixel: number): wave is Wave =>
   wave !== null && wave.amplitude >= metresPerPixel;
 
+/**
+ * His scale, 1:250 at 96 dpi, as metres per pixel: what his widths and waves
+ * were drawn to be seen at.
+ */
+export const REFERENCE_MPP = (0.0254 / 96) * 250;
+
+/**
+ * A length of his, never larger on screen than it was at his own scale.
+ *
+ * His data is in metres, so zooming in past 1:250 grew every line and every
+ * wave with it: forty pixels of ink and a wobble that moved a whole bed off
+ * its corners at the closest view (the owner's check, 2026-09-21, #1 and #2).
+ * Capped here, at run time, and his generated numbers stay his.
+ */
+export const onScreen = (metres: number, metresPerPixel: number): number =>
+  Math.min(metres, (metres / REFERENCE_MPP) * metresPerPixel);
+
+const drawnAt = (wave: Wave | null, metresPerPixel: number): Wave | null =>
+  wave === null ? null : { ...wave, amplitude: onScreen(wave.amplitude, metresPerPixel) };
+
 /** An outline as his wave draws it. */
-export function outline(points: Point[], wave: Wave | null, metresPerPixel: number): string {
+export function outline(points: Point[], his: Wave | null, metresPerPixel: number): string {
+  const wave = drawnAt(his, metresPerPixel);
   if (!visible(wave, metresPerPixel) || points.length < 3) return ring(points);
   return smoothRing(wobble(points, wave.amplitude, wave.period, wave.seed,
     SAMPLE_PX * metresPerPixel));
 }
 
 /** An open line as his wave draws it. */
-export function stroke(points: Point[], wave: Wave | null, metresPerPixel: number): string {
+export function stroke(points: Point[], his: Wave | null, metresPerPixel: number): string {
+  const wave = drawnAt(his, metresPerPixel);
   if (!visible(wave, metresPerPixel) || points.length < 2) return polyline(points);
   const drawn = wobbleLine(points, wave.amplitude, wave.period, wave.seed,
     SAMPLE_PX * metresPerPixel);
@@ -71,6 +93,10 @@ export function disc(centre: Point, radius: number): string {
     + `a${r},${r} 0 1,0 ${mm(-radius * 2)},0`;
 }
 
-/** His line at 1:250 is a hair at 1:2,000; it never gets thinner than a pixel. */
+/** His line at 1:250 is a hair at 1:2,000; it never gets thinner than a pixel,
+ *  and zoomed in past his scale it never gets fatter than it was at it. */
+export const inkWidth = (metres: number, metresPerPixel: number): number =>
+  Math.max(onScreen(metres, metresPerPixel), metresPerPixel);
+
 export const width = (metres: number, metresPerPixel: number): string =>
-  mm(Math.max(metres, metresPerPixel));
+  mm(inkWidth(metres, metresPerPixel));

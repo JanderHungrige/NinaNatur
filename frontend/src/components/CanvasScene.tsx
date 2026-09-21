@@ -104,14 +104,17 @@ export function CanvasScene({
   return (
     <g className={`plan-theme plan-theme--${theme.id}`}>
         <defs>
-        <theme.Defs />
+        <theme.Defs metresPerPixel={scale} />
           <pattern
             id="grid"
             width={spacing}
             height={spacing}
             patternUnits="userSpaceOnUse"
           >
-            <path d={`M ${spacing} 0 L 0 0 0 ${spacing}`} className="grid-line" />
+            {/* 3 cm, or a pixel once 3 cm is more: in metres alone it was a
+                13-pixel bar at the closest zoom (the owner's check, #1). */}
+            <path d={`M ${spacing} 0 L 0 0 0 ${spacing}`} className="grid-line"
+                  style={{ strokeWidth: Math.min(0.03, scale) }} />
           </pattern>
         </defs>
         {/* The sheet the plan is drawn on, where the theme brings one: under
@@ -193,7 +196,7 @@ export function CanvasScene({
           <g data-testid="draft" className="draft">
             <polyline points={svgPoints(draft)} className="draft__line" />
             {draft.map((p) => (
-              <circle key={`${p.x},${p.y}`} cx={p.x} cy={-p.y} r={spacing * 0.12} />
+              <circle key={`${p.x},${p.y}`} cx={p.x} cy={-p.y} r={3.5 * metresPerPixel} />
             ))}
           </g>
         )}

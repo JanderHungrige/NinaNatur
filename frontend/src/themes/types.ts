@@ -77,8 +77,9 @@ export interface PlanTheme {
   label: string;
   /** Whose marks these are, in the words the provenance rule allows. */
   provenance: string;
-  /** Every pattern and filter the plan's layers refer to by id, drawn once in its defs. */
-  Defs: () => JSX.Element;
+  /** Every pattern and filter the plan's layers refer to by id, drawn once in its defs.
+   *  Told the plan's scale, for a filter that should not grow with the zoom. */
+  Defs: (props: { metresPerPixel: number }) => JSX.Element;
   /** The paint for an element that `kinds.ts` draws as `symbol`, at this level
    *  of detail — `url(#…)`, or undefined to leave it to the stylesheet. Its
    *  `kind` too, for a theme that draws kinds of one symbol apart (doc 98). */

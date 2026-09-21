@@ -487,16 +487,22 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 /* Wave 7 moved the plan's viewBox into garden metres, so every length in here
    is metres too. These were pixel values under the old 10-px-per-metre viewBox
    and became a 1 m grid line and a 2 m bed outline — the outline painted a
-   metre outside the bed on every side and swallowed most of the shape. */
+   metre outside the bed on every side and swallowed most of the shape.
+
+   Outlines are the exception since the owner's check (2026-09-21): a width in
+   metres grew with the zoom, to forty pixels at the closest view, which is no
+   way to draw anything in detail. They are screen pixels now, held there by
+   non-scaling-stroke. The grid's width comes from the component, which thins
+   it the same way (`CanvasScene`). */
 .grid-line { fill: none; stroke: var(--line); stroke-width: 0.03; }
 .compass { fill: var(--ink-muted); font-size: 1.6px; }
 /* The --plan-* tokens are a theme's hooks (doc 97); unset, each is what it always was. */
-.bed { fill: var(--plan-bed-fill, color-mix(in srgb, var(--leaf) 35%, transparent)); stroke: var(--plan-bed-stroke, var(--leaf)); stroke-width: 0.08; cursor: pointer; }
-.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke: var(--leaf); stroke-width: 0.16; }
+.bed { fill: var(--plan-bed-fill, color-mix(in srgb, var(--leaf) 35%, transparent)); stroke: var(--plan-bed-stroke, var(--leaf)); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
+.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke: var(--leaf); stroke-width: 2; vector-effect: non-scaling-stroke; }
 /* No fill here. The fill is a `fill="url(#symbol-…)"` attribute per object, and
    a fill declared in CSS would win over it — every kind would be drawn as the
    same grey no matter which texture it asked for. */
-.obstacle { stroke: var(--plan-shape-stroke, var(--outline)); stroke-width: 0.08; }
+.obstacle { stroke: var(--plan-shape-stroke, var(--outline)); stroke-width: 1; vector-effect: non-scaling-stroke; }
 
 /* The ground the plan is drawn on: seen, never pointed at.
  *
@@ -509,8 +515,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   pointer-events: none;
   fill: var(--plan-ground-fill, color-mix(in srgb, var(--leaf) 5%, transparent));
   stroke: var(--plan-ground-stroke, var(--outline));
-  stroke-width: 0.12;
-  stroke-dasharray: 0.6 0.3;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 6 3;
 }
 
 /* What just happened, where it can be seen: over the page at the window's foot,
@@ -900,8 +907,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .draft__line {
   fill: none;
   stroke: var(--leaf);
-  stroke-width: 0.12;
-  stroke-dasharray: 0.4 0.3;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 6 4;
 }
 
 .draft circle {
@@ -1315,8 +1323,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    plan that only reads as a picture is not one that reads. */
 @media (prefers-contrast: more) {
   .canvas__objects { filter: none; }
-  /* 15 cm, not 2.5: this canvas measures in metres. */
-  .obstacle { fill: none !important; stroke-width: 0.15; }
+  /* Pixels, like every outline since the owner's check: twice the usual one. */
+  .obstacle { fill: none !important; stroke-width: 2; vector-effect: non-scaling-stroke; }
 }
 
 @media (forced-colors: active) {

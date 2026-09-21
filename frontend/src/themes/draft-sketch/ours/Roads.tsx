@@ -15,7 +15,7 @@ import type { Point } from '../../../canvas/viewport';
 import type { PlanProps } from '../../types';
 import { OVERLAYS } from '../generated/rules';
 import type { Ink } from '../overlays';
-import { disc, mm, outline, width } from '../paths';
+import { disc, inkWidth, mm, outline } from '../paths';
 
 const STREET = 'street';
 /** A way that ends on another way's edge puts the two boundaries on top of each
@@ -55,11 +55,13 @@ export function DraftSketchRoads({ shapes, metresPerPixel }: PlanProps) {
     // The same line for the mask and for the ink, so a wobble cannot poke out
     // past the band it belongs to.
     const grow = metresPerPixel * SEAM_PX;
+    // His width as it is drawn at this scale: capped when zoomed in (paths.ts).
+    const ink = inkWidth(INK.width, metresPerPixel);
     return { d: roads.map((points) => outline(points, INK.wave, metresPerPixel)).join(''),
-             corners, box: bounds(roads, INK.width * 2 + grow * 2), grow };
+             corners, box: bounds(roads, ink * 2 + grow * 2), grow, ink };
   }, [shapes, metresPerPixel]);
   if (network === null || INK === undefined) return null;
-  const { d, corners, box, grow } = network;
+  const { d, corners, box, grow, ink } = network;
   return (
     <g data-mark="roads">
       {/* By luminance, not alpha: what is painted black here is what is cut away.
@@ -76,7 +78,7 @@ export function DraftSketchRoads({ shapes, metresPerPixel }: PlanProps) {
       {/* Twice his width, and twice the grown mask's on top: everything inside
           the roads is masked away, and what is left outside is his line. */}
       <path d={d + corners} fill="none" stroke={INK.colour} strokeOpacity={INK.opacity}
-            strokeWidth={width((INK.width + grow) * 2, (metresPerPixel + grow) * 2)}
+            strokeWidth={mm(Math.max((ink + grow) * 2, (metresPerPixel + grow) * 2))}
             strokeLinejoin="round" mask="url(#ds-roads)" />
     </g>
   );
