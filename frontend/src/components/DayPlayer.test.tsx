@@ -90,6 +90,17 @@ describe('DayPlayer — playing the day', () => {
     expect(screen.getByText('08:30 Uhr')).toBeDefined();
   });
 
+  it('does not read its clock out while it plays', async () => {
+    // An <output> is a live region: every frame, a few times a second, would
+    // have been announced over the page's one live region, the toast.
+    await show();
+    fireEvent.click(screen.getByRole('button', { name: 'Tag abspielen' }));
+    tick(FRAME_MS * 2);
+    const player = screen.getByRole('group', { name: 'Tagesverlauf abspielen' });
+    expect(player.querySelector('output, [role="status"], [aria-live]')).toBeNull();
+    expect(scrubber().getAttribute('aria-valuetext')).toBe('09:00 Uhr');
+  });
+
   it('goes round to dawn again after dusk', async () => {
     await show();
     fireEvent.click(screen.getByRole('button', { name: 'Tag abspielen' }));

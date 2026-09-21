@@ -76,7 +76,10 @@ export function DayPlayer({ watch }: Props) {
         aria-valuetext={`${time} Uhr`}
         onChange={(event) => watch.setFrame(Number(event.target.value))}
       />
-      <output className="day-player__time">{time} Uhr</output>
+      {/* Not an <output>: that is a live region, and a playing day would have
+          read its clock out several times a second. The slider's valuetext
+          says the time to a screen reader; this is for the eye. */}
+      <span className="day-player__time" aria-hidden="true">{time} Uhr</span>
     </div>
   );
 }
