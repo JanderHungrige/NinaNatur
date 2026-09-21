@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { GardenOut, LightMap, NinaNaturClient, SightlinesOut } from '../api/client';
 import type { MapMode } from '../components/SunMap';
@@ -61,12 +61,37 @@ export function useLight(
     setViewpoint(null);
   }, []);
 
+  /** "Sonne & Schatten" in the header. Before any map exists it computes one
+   *  and shows it once it lands: it used to be disabled until somebody found
+   *  the rebuild in the panel, and a disabled button wore the busy cursor, so a
+   *  new garden looked as if its shade were loading for ever (the owner,
+   *  2026-09-21). */
+  const showOnceBuilt = useRef(false);
+  const { rebuild, rebuilt } = sunMap;
+  const toggleOrCompute = useCallback(
+    (hasMap: boolean) => {
+      if (shadeOn || hasMap) {
+        setShadeOn(!shadeOn);
+        return;
+      }
+      showOnceBuilt.current = true;
+      rebuild();
+    },
+    [shadeOn, rebuild],
+  );
+  useEffect(() => {
+    if (rebuilt === 0 || !showOnceBuilt.current) return;
+    showOnceBuilt.current = false;
+    setShadeOn(true);
+  }, [rebuilt]);
+
   return {
     shadeOn,
     // Leaving the map also leaves the day: the two are one question, and a day
     // playing behind a hidden map is a timer nobody can see. `useDay` sees the
     // switch go off and stops.
     toggleShade: setShadeOn,
+    toggleOrCompute,
     mapMode,
     setMapMode,
     ...sunMap,

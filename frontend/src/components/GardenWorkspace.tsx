@@ -106,8 +106,10 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
               type="button"
               className="header-link"
               aria-pressed={light.shadeOn}
-              disabled={derived.lightMap === null}
-              onClick={() => light.toggleShade(!light.shadeOn)}
+              disabled={light.rebuilding}
+              title={derived.lightMap === null
+                ? 'Berechnet Sonne und Schatten und legt sie über den Plan' : undefined}
+              onClick={() => light.toggleOrCompute(derived.lightMap !== null)}
             >
               {'Sonne & Schatten'}
             </button>

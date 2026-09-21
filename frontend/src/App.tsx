@@ -187,7 +187,8 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
 
   return (
     // The front door is dark all the way out to the edges; a garden is not.
-    <div className={garden === null ? 'app app--front-door' : 'app app--workspace'}>
+    <div className={garden === null ? 'app app--front-door' : 'app app--workspace'}
+         data-busy={status.busy ? '' : undefined}>
       <a className="skip-link" href="#main">
         Zum Inhalt springen
       </a>

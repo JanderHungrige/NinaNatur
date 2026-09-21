@@ -95,3 +95,11 @@ def test_the_way_back_stays_in_sight() -> None:
     rules = re.findall(r"\.inspector__back \{([^}]*)\}", css)
     assert any("position: sticky" in body for body in rules), "the way back scrolls away"
     assert any("top: 1.75rem" in body for body in rules), "it hides under the sheet's handle"
+
+
+def test_a_disabled_button_looks_busy_only_while_something_is_under_way() -> None:
+    """Every disabled button wore the busy cursor, and the header's "Sonne &
+    Schatten", disabled for want of a map, looked as if it loaded for ever."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    assert "cursor: progress" not in _rule(css, "button[disabled]")
+    assert "cursor: progress" in _rule(css, ".app[data-busy] button[disabled]")

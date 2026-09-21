@@ -57,10 +57,17 @@ describe('App — a garden is a workspace', () => {
     expect((undo as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('keeps the shade switch off until there is a map to show', async () => {
-    await openWorkspace(fakeClient());
-    expect((screen.getByRole('button', { name: 'Sonne & Schatten' }) as HTMLButtonElement).disabled)
-      .toBe(true);
+  it('computes the shade from the header when there is no map yet, then shows it', async () => {
+    // It was disabled until somebody found the rebuild in the panel, and a
+    // disabled button wore the busy cursor: a new garden's shade looked as if
+    // it were loading for ever (the owner, 2026-09-21).
+    const client = fakeClient({ rebuildLightMap: vi.fn(async () => lightMap()) });
+    await openWorkspace(client);
+    const shade = screen.getByRole('button', { name: 'Sonne & Schatten' }) as HTMLButtonElement;
+    expect(shade.disabled).toBe(false);
+    fireEvent.click(shade);
+    expect(client.rebuildLightMap).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(shade.getAttribute('aria-pressed')).toBe('true'));
   });
 
   it('puts the map over the plan from the header once there is one', async () => {

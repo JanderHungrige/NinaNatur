@@ -572,7 +572,12 @@ button {
   border: 1px solid var(--leaf); border-radius: var(--radius-sm);
   background: var(--leaf); color: #fff; font: inherit; font-weight: 560; cursor: pointer;
 }
-button[disabled] { opacity: 0.55; cursor: progress; }
+/* The busy cursor only while something is actually under way. Every disabled
+   button wore it, and a control disabled for another reason — the header's
+   "Sonne & Schatten" before any map existed — looked like it was loading for
+   ever (the owner, 2026-09-21). */
+button[disabled] { opacity: 0.55; cursor: default; }
+.app[data-busy] button[disabled] { cursor: progress; }
 
 /* Something is under way (doc 87): a ring that turns, or on the front door
    three motes that rise like the meadow's. Indeterminate, because nothing the
