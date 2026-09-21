@@ -132,6 +132,19 @@ def test_obstacle_rule_declares_no_fill() -> None:
     assert "fill" not in rule.group(1)
 
 
+def test_the_gardens_ground_is_a_flat_grass_wash() -> None:
+    """A 5 % tint left the plan nearly white where it opens (owner's check,
+    2026-09-21). Flat, not a pattern: the blades are a drawn lawn's, and the two
+    must still tell apart. More contrast takes it away with every other fill."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    rule = re.search(r"^\.obstacle--garden \{([^}]*)\}", css, re.M)
+    assert rule is not None, ".obstacle--garden rule not found"
+    fill = re.search(r"\bfill:\s*([^;]+);", rule.group(1))
+    assert fill is not None and "--wash-grass" in fill.group(1) and "url(" not in fill.group(1)
+    contrast = css[css.index("@media (prefers-contrast: more)"):]
+    assert re.search(r"\.obstacle \{[^}]*fill: none !important", contrast)
+
+
 # The breakpoint guard for the two columns moved to tests/test_workspace_layout.py
 # with the workspace that replaced them (Wave 23, doc 87): the plan must still
 # never get narrower when the window gets wider.

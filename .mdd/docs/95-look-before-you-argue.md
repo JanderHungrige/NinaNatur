@@ -24,7 +24,7 @@ test_files:
   - frontend/src/sheet/gardens.test.ts
   - frontend/src/sheet/SheetCell.test.tsx
 data_flow: greenfield
-last_synced: 2026-09-18
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -33,7 +33,8 @@ path: Canvas/Style
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "2026-09-21: Technisch's garden ground became a flat grass wash (owner's check, #10). All 24 cells, light and dark, differ from the record until it is taken again with `--update` (not done on the branch that made the change, on purpose)."
 ---
 
 # 95 — Look Before You Argue
@@ -165,6 +166,13 @@ too and both of the layer's inks are on the sheet.
 
 ## Known Issues
 
+- **The record is behind the plan (2026-09-21).** The garden's own ground in
+  Technisch is a flat grass wash now (`.obstacle--garden`, 70 % of
+  `--wash-grass`) instead of a 5 % leaf tint, because the plan opened nearly
+  white. Every cell shows a garden ground, so `--check` names all 24 — light
+  and dark, each garden at 12, 40 and 120 m and with the sun map — until the
+  record is taken again with `--update`. Nothing else moved: a `--check` just
+  before the change found all 24 as recorded.
 - In dark mode the sun map's sun ink covers the plan almost entirely (the
   "40 m, Sonne" column). It is the app's own look, recorded as it is; feature 5
   measures the contrast of every wash over paper.

@@ -59,7 +59,7 @@ test_files:
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
 data_flow: reads-existing
-last_synced: 2026-09-20
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -213,7 +213,8 @@ a map import brings sixty ways, and each one's wobble is real work.
 
 **The ground is grass, not paper.** His lawn wash under the whole garden at
 half opacity — pale green over the paper, with a real lawn darker on top of
-it. `--plan-ground-fill` in `theme.css`; ours keeps the plain ground.
+it. `--plan-ground-fill` in `theme.css`. Technisch's ground has been a flat
+grass wash since 2026-09-21 (no blades, so a drawn lawn still tells apart).
 
 ## The paint budget, measured
 
