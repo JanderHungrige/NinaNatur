@@ -14,6 +14,7 @@ from ninanatur.garden.plantings import add_planting, place_planting
 from ninanatur.garden.store import create_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.solar.light import ellenberg_from_sun_hours
 from ninanatur.solar.shading import Obstacle
 
 EIVE = {"source": "EIVE-1.0", "license": "CC-BY-4.0"}
@@ -28,7 +29,10 @@ WALL = Obstacle(footprint=[(0.0, -1.0), (10.0, -1.0), (10.0, -0.4), (0.0, -0.4)]
 def conn() -> Iterator[sqlite3.Connection]:
     c: sqlite3.Connection = connect(":memory:", same_thread=False)
     init_schema(c)
-    for tid, name, light in ((1, "Sonnenkraut", 8.0), (2, "Schattenkraut", 3.0),
+    # EIVE values: a plant of full sun (9.0, what an open spot gets) and one of
+    # deep shade. The sun plant was 8.0 while an open spot read 8 on the old
+    # staircase (until 2026-09-21).
+    for tid, name, light in ((1, "Sonnenkraut", 9.0), (2, "Schattenkraut", 3.0),
                              (3, "Namenlos", None)):
         c.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (?, ?)", (tid, name))
         if light is not None:
@@ -93,8 +97,14 @@ def test_a_small_difference_is_not_worth_saying(conn: sqlite3.Connection) -> Non
     assumed, and a warning nobody can act on is one people learn to scroll
     past."""
     garden_id, bed_id = _garden(conn)
+    # Just inside the tolerance of what the spot itself gets, whatever the
+    # hours->L convention of the day makes of its sun.
+    grid = compute_grid(load_garden(conn, garden_id), [WALL])
+    hours = None if grid is None else grid.at(5.0, 7.5)
+    assert hours is not None
+    spot = ellenberg_from_sun_hours(hours)
     conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (4, 'Fast')")
-    upsert_trait(conn, 4, "ellenberg_l", value_num=8.0 - (TOLERANCE - 0.5), **EIVE)
+    upsert_trait(conn, 4, "ellenberg_l", value_num=spot - (TOLERANCE - 0.5), **EIVE)
     conn.commit()
     planting_id = add_planting(conn, bed_id, taxon_id=4, quantity=1)
     place_planting(conn, planting_id, 5.0, 7.5)

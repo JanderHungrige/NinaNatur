@@ -8,9 +8,9 @@ cluster had no position to compare it against.
 For what is already planted: a warning, never a refusal. A gardener may know
 something the model does not: a cultivar bred for shade, a wall that throws
 light back, or simply that they want it there. What is *offered* is stricter:
-by the owner's decision of 2026-09-21 the suggestions leave out a species the
-bed is far too bright for, because scorch and drought usually kill it
-(`api.filters.light_verdict`). Too dark is still only ranked down there.
+by the owner's decisions of 2026-09-21 the suggestions leave out a species
+whose light is unsuitable either way (`api.filters.light_verdict`) — the best
+fit for the shade as much as for the sun.
 """
 from __future__ import annotations
 
@@ -22,13 +22,15 @@ from ninanatur.garden.lightgrid import LightGrid
 from ninanatur.garden.models import Garden
 from ninanatur.solar.light import ellenberg_from_sun_hours
 
-#: How far apart the plant's Ellenberg L and the spot's have to be before it is
-#: worth saying anything.
+#: How far apart the plant's light value and the spot's have to be before it is
+#: worth saying anything, on EIVE's 0–10 scale.
 #:
-#: Two whole rungs. One is inside the noise of a model whose building heights
-#: are mostly assumed, and a warning nobody can act on is a warning people learn
-#: to scroll past.
-TOLERANCE = 2.0
+#: Two whole classic Ellenberg rungs, which EIVE's rescale makes 2 × 1.25. One
+#: is inside the noise of a model whose building heights are mostly assumed,
+#: and a warning nobody can act on is a warning people learn to scroll past.
+#: It was 2.0 while the spot's value sat on rungs of 1 (`solar.light`, until
+#: 2026-09-21); the species' value was on EIVE's scale all along.
+TOLERANCE = 2.5
 
 
 @dataclass(frozen=True)

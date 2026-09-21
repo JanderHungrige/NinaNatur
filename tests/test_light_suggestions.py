@@ -18,14 +18,16 @@ from fastapi.testclient import TestClient
 from ninanatur.api.deps import get_connection
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.solar.light import SUN_HOUR_ANCHORS
 from ninanatur.web.app import app
 
 SQUARE = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]
 EIVE = {"source": "EIVE-1.0", "license": "CC-BY-4.0"}
 # Loam, fresh: what `site_axes_from_soil` gives the bed.
 SOIL = {"ellenberg_m": 5.0, "ellenberg_n": 5.5, "ellenberg_r": 6.5}
-# The light model's deepest rung (`SUN_HOUR_BANDS`).
-DEEP_SHADE = 3.0
+# The ends of the light model (`SUN_HOUR_ANCHORS`): full sun and deep shade.
+FULL_SUN = SUN_HOUR_ANCHORS[-1][1]
+DEEP_SHADE = SUN_HOUR_ANCHORS[0][1]
 
 
 def _species(c: sqlite3.Connection, tid: int, name: str, light: tuple[float, float] | None,
@@ -71,7 +73,7 @@ def client() -> Iterator[TestClient]:
 
 
 def _bed(client: TestClient, *, lit: bool = True) -> tuple[str, int]:
-    """An open 16 m² bed. With `lit` the light is computed: 8, full sun."""
+    """An open 16 m² bed. With `lit` the light is computed: full sun."""
     token = client.post(
         "/api/v1/gardens", json={"name": "G", "latitude": 52.5, "longitude": 13.4}
     ).json()["share_token"]
@@ -81,7 +83,7 @@ def _bed(client: TestClient, *, lit: bool = True) -> tuple[str, int]:
     ).json()["beds"][0]
     if lit:
         garden = client.post(f"/api/v1/gardens/{token}/recompute").json()
-        assert garden["beds"][0]["ellenberg_l"] == 8.0, "the fixture needs full sun"
+        assert garden["beds"][0]["ellenberg_l"] == FULL_SUN, "the fixture needs full sun"
     return token, int(bed["bed_id"])
 
 
@@ -123,9 +125,9 @@ def test_a_full_sun_bed_does_not_offer_woodland_herbs(client: TestClient) -> Non
 def test_what_the_light_left_out_is_counted(client: TestClient) -> None:
     """So the list can say "N Arten wegen Licht ausgeblendet" rather than hide it."""
     light = _ask(client, *_bed(client))["filters"]["light"]
-    # Galium, Pulmonaria and Carex sylvatica; Schattenstrauch too — the count is
+    # Galium, Pulmonaria and Carex sylvatica; Schattenstrauch and Taxus too — the count is
     # over every candidate, woody ones included.
-    assert light["excluded"] == 4
+    assert light["excluded"] == 5
     assert light["unknown"] == 1  # Ohne Lichtwert, kept
 
 
