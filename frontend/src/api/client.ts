@@ -369,7 +369,7 @@ export class NinaNaturClient {
       ['flowering_month', options.floweringMonth],
       ['growth_form', options.growthForm],
       ['include_unknown', options.includeUnknown === true ? true : undefined],
-      ['include_trees', options.includeTrees === true ? true : undefined],
+      ['include_trees', options.includeTrees === false ? false : undefined],
     ];
     for (const [key, value] of chosen) {
       if (value !== undefined && value !== '') {
