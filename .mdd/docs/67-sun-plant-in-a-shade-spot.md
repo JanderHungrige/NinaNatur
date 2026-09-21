@@ -19,7 +19,7 @@ test_files:
   - tests/test_light_grid.py
   - frontend/src/components/ShadeSwitch.test.tsx
 data_flow: reads-existing
-last_synced: 2026-09-05
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -55,6 +55,11 @@ gets talked about.
 **A warning, never a refusal.** The gardener may know something the model does
 not: a cultivar bred for shade, a wall that throws light back, or simply that
 they want it there. The panel says so in as many words, under the list.
+
+That holds for what is already planted. What is *offered* became stricter on
+2026-09-21, by the owner's decision (review #9, `13-bed-suggestions`): the
+suggestions leave out a species the bed is far too bright for, because scorch
+and drought usually kill it, and only rank down one it is too dark for.
 
 ## Which hours
 
