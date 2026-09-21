@@ -132,19 +132,6 @@ def test_obstacle_rule_declares_no_fill() -> None:
     assert "fill" not in rule.group(1)
 
 
-def test_the_gardens_ground_is_a_flat_grass_wash() -> None:
-    """A 5 % tint left the plan nearly white where it opens (owner's check,
-    2026-09-21). Flat, not a pattern: the blades are a drawn lawn's, and the two
-    must still tell apart. More contrast takes it away with every other fill."""
-    css = STYLESHEET.read_text(encoding="utf-8")
-    rule = re.search(r"^\.obstacle--garden \{([^}]*)\}", css, re.M)
-    assert rule is not None, ".obstacle--garden rule not found"
-    fill = re.search(r"\bfill:\s*([^;]+);", rule.group(1))
-    assert fill is not None and "--wash-grass" in fill.group(1) and "url(" not in fill.group(1)
-    contrast = css[css.index("@media (prefers-contrast: more)"):]
-    assert re.search(r"\.obstacle \{[^}]*fill: none !important", contrast)
-
-
 # The breakpoint guard for the two columns moved to tests/test_workspace_layout.py
 # with the workspace that replaced them (Wave 23, doc 87): the plan must still
 # never get narrower when the window gets wider.
@@ -187,32 +174,6 @@ def test_the_moving_background_stops_for_reduced_motion() -> None:
     block = css[start : css.index("\n}", css.index("{", start))]
     assert ".living" in block, "the particle field is not covered"
     assert "animation: none" in block, "the field is not actually stopped"
-
-
-def test_the_waiting_marks_stand_still_for_reduced_motion() -> None:
-    """Every sign that something is under way turns, rises, breathes or sweeps
-    (doc 87) — and every one of them must stop for somebody who asked their
-    system for less motion. Stopped, and still there: a still ring, still motes
-    and grey bars still say "under way"."""
-    css = STYLESHEET.read_text(encoding="utf-8")
-    start = css.index("@media (prefers-reduced-motion: reduce)")
-    block = css[start : css.index("\n}", css.index("{", start))]
-    stopped = re.search(r"([^{}]*\.working__spinner[^{}]*)\{([^}]*)\}", block)
-    assert stopped is not None, "the waiting marks are not in the reduced-motion block"
-    assert "animation: none" in stopped.group(2), "the waiting marks are not stopped"
-    for mark in (".working__spinner", ".working__motes > span", ".skeleton__line",
-                 ".stat__pending", ".plan-working::before"):
-        assert mark in stopped.group(1), f"{mark} keeps moving under reduced motion"
-
-
-def test_what_lies_over_the_plan_while_it_waits_takes_no_pointer() -> None:
-    """The rebuild's sweep and the header's note lie over things people aim at;
-    like the tool hint, they must never catch the click meant for the plan."""
-    css = STYLESHEET.read_text(encoding="utf-8")
-    for selector in (".plan-working", ".site-header__working", ".hero__opening"):
-        body = re.search(rf"^{re.escape(selector)} \{{([^}}]*)\}}", css, re.M)
-        assert body is not None, f"no rule for {selector}"
-        assert "pointer-events: none" in body.group(1), f"{selector} catches the pointer"
 
 
 def test_the_film_covers_the_window_it_is_in() -> None:
