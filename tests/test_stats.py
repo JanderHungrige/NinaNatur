@@ -58,6 +58,15 @@ def test_it_names_its_sources_with_their_licences(client: TestClient) -> None:
         assert source["url"].startswith("https://")
 
 
+def test_openstreetmap_is_named_among_the_sites_sources(client: TestClient) -> None:
+    """The address search and every garden made from the map draw on it, and
+    ODbL asks for the credit (owner's check, 2026-09-21)."""
+    body = client.get("/api/v1/stats").json()
+    [osm] = [s for s in body["sources"] if s["name"] == "OpenStreetMap"]
+    assert osm["licence"] == "ODbL-1.0"
+    assert osm["url"] == "https://www.openstreetmap.org/copyright"
+
+
 def test_every_ingest_adapter_is_declared_as_a_source() -> None:
     """A new adapter that nobody adds here makes the page understate its own
     provenance — which is the one thing this project cannot be sloppy about."""

@@ -13,6 +13,10 @@ in principle offer.
 
 **A credit is not a caption.** A height shown without it is a height used
 outside its licence, which is the one thing this project cannot do quietly.
+
+OpenStreetMap joined the list on 2026-09-21 (owner's check, #10): a garden
+made from the map draws its streets and its houses' outlines, and ODbL asks
+for the credit wherever they are shown.
 """
 from __future__ import annotations
 
@@ -28,7 +32,8 @@ from geokachel.tile_sources import (
     name_of,
 )
 
-from ninanatur.garden.models import Garden
+from ninanatur.garden.models import Element, Garden
+from ninanatur.garden.objects import ROOFED, ObjectKind
 from ninanatur.geo.far_horizon import GLO30_SOURCE
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surroundings import HeightSource
@@ -39,12 +44,18 @@ from ninanatur.geo.terrain import TerrainWindow
 #: building model was never credited for the houses it measured.
 SURVEYED = HeightSource.SURVEYED.value
 
+#: OpenStreetMap's licence, and its credit in the words the map picker uses.
+OSM_LICENCE = "ODbL-1.0"
+OSM_ATTRIBUTION = "© OpenStreetMap-Mitwirkende"
+
+_BUILDINGS = frozenset(kind.value for kind in ROOFED)
+
 
 @dataclass(frozen=True)
 class Credit:
     """One source a garden's numbers rest on."""
 
-    #: `ground`, `horizon` or `buildings` — what it decided.
+    #: `ground`, `horizon`, `buildings`, `laser` or `map` — what it decided.
     about: str
     #: What it is called on the page: "DGM1 Bayern", "Copernicus GLO-30".
     name: str
@@ -96,6 +107,39 @@ def _laser_credit(whose: str | None) -> Credit | None:
                   detail=density or None)
 
 
+def from_the_map(element: Element) -> bool:
+    """Whether this element's shape is OpenStreetMap's (what `garden_from_map` imports).
+
+    Nothing records where an outline came from, so this reads what the import
+    leaves behind: a street, or a building whose height, roof or eaves were not
+    the gardener's. A house drawn by hand starts as the gardener's in all three
+    and no survey measures it (`measured` skips those), so any other source
+    means the map brought it — and a later survey replaces its height and roof,
+    never its outline. A street drawn by hand is credited too: the one mistake
+    this can make is thanking OpenStreetMap once too often. The page asks the
+    same question of the same fields (`PlanCredit.tsx`).
+    """
+    if element.kind == ObjectKind.STREET.value:
+        return True
+    if element.kind not in _BUILDINGS:
+        return False
+    return (element.height_source != HeightSource.USER.value
+            or element.roof_source == "osm"
+            or element.eaves_source == "osm_levels")
+
+
+def _osm_credit(garden: Garden) -> Credit | None:
+    """OpenStreetMap, wherever the plan draws its streets or houses.
+
+    ODbL 1.0 asks for the credit where a work made from its data is shown, and
+    the plan is such a work from the moment a garden is made from the map.
+    """
+    if not any(from_the_map(element) for element in garden.obstacles):
+        return None
+    return Credit(about="map", name="OpenStreetMap", licence=OSM_LICENCE,
+                  attribution=OSM_ATTRIBUTION)
+
+
 def credits_for(garden: Garden, *, ground: TerrainWindow | None,
                 horizon_source: str | None, laser_source: str | None = None) -> list[Credit]:
     """Every source this garden's numbers actually rest on, once each.
@@ -121,6 +165,9 @@ def credits_for(garden: Garden, *, ground: TerrainWindow | None,
     laser = _laser_credit(laser_source)
     if laser is not None:
         found.append(laser)
+    osm = _osm_credit(garden)
+    if osm is not None:
+        found.append(osm)
     return _without_repeats(found)
 
 
@@ -146,4 +193,4 @@ def tiles_available(state: str | None) -> bool:
     return state is not None and ground_tiles_for(state) is not None
 
 
-__all__ = ["Credit", "LatLon", "credits_for", "tiles_available"]
+__all__ = ["Credit", "LatLon", "credits_for", "from_the_map", "tiles_available"]

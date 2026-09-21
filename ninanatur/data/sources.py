@@ -1,4 +1,8 @@
-"""The open sources this catalogue is built from, and what they permit.
+"""The open sources the site's data comes from, and what they permit.
+
+The four the catalogue is built from, and OpenStreetMap: the address search,
+and the streets and houses every garden made from the map arrives with (added
+2026-09-21; a garden's own sources are listed with it, doc 106).
 
 Listed here rather than counted from the data because the count is a property
 of the build, not of a row: GloBI supplies the interaction summaries, which
@@ -45,5 +49,11 @@ SOURCES: tuple[Source, ...] = (
         licence="CC0-1.0",
         url="https://www.globalbioticinteractions.org",
         contributes="Beziehungen zwischen Pflanzen und Tieren",
+    ),
+    Source(
+        name="OpenStreetMap",
+        licence="ODbL-1.0",
+        url="https://www.openstreetmap.org/copyright",
+        contributes="Adresssuche, Gebäude und Straßen rund um den Garten",
     ),
 )

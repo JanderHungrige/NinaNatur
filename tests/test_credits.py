@@ -7,12 +7,15 @@ touch, and that a state which gave two things is thanked once for both.
 """
 from __future__ import annotations
 
-from ninanatur.garden.credits import credits_for, tiles_available
+import pytest
+
+from ninanatur.garden.credits import credits_for, from_the_map, tiles_available
 from ninanatur.garden.models import Element, Garden
 from ninanatur.geo.terrain import TerrainWindow
 
 
-def _garden(height_source: str = "assumed") -> Garden:
+def _garden(height_source: str = "user", *extra: Element) -> Garden:
+    """One house — drawn by hand unless its height came from somewhere else."""
     house = Element(
         element_id=1, kind="house", shape="polygon", x=0.0, y=0.0,
         points=[[-4.5, -3.0], [4.5, -3.0], [4.5, 3.0], [-4.5, 3.0]],
@@ -21,7 +24,7 @@ def _garden(height_source: str = "assumed") -> Garden:
     return Garden(
         garden_id=1, share_token="t", owner_id=None, name="G",
         latitude=48.137, longitude=11.575, created_at="", updated_at="",
-        elements=[house],
+        elements=[house, *extra],
     )
 
 
@@ -61,12 +64,13 @@ def test_the_building_model_is_credited_only_where_it_measured_something() -> No
     """A state publishing LoD2 is not a credit. A house in this garden carrying
     a surveyed height is. Which state is read off the ground window, which is
     what the garden was measured against."""
-    [ground_only] = credits_for(_garden(height_source="assumed"), ground=_ground(),
+    [ground_only] = credits_for(_garden(height_source="user"), ground=_ground(),
                                 horizon_source=None)
     assert ground_only.about == "ground"
+    # A surveyed house came from the map: its outline is still OpenStreetMap's.
     both = credits_for(_garden(height_source="surveyed"), ground=_ground(),
                        horizon_source=None)
-    assert [c.about for c in both] == ["ground, buildings"]
+    assert [c.about for c in both] == ["ground, buildings", "map"]
 
 
 def test_the_building_credit_answers_to_what_the_survey_writes() -> None:
@@ -107,8 +111,7 @@ def test_a_state_that_gave_two_things_is_thanked_once_for_both() -> None:
     identical paragraphs under a plan is not more correct, only longer."""
     found = credits_for(_garden(height_source="surveyed"), ground=_ground(),
                         horizon_source=None)
-    assert len(found) == 1
-    assert found[0].about == "ground, buildings"
+    assert [c.about for c in found] == ["ground, buildings", "map"]
 
 
 def test_two_different_sources_are_two_credits() -> None:
@@ -165,3 +168,77 @@ def test_the_laser_is_credited_where_one_was_read() -> None:
 def test_a_state_with_no_open_cloud_is_credited_for_nothing() -> None:
     assert credits_for(_garden(), ground=None, horizon_source=None,
                        laser_source="Hessen") == []
+
+
+# OpenStreetMap (owner's check, 2026-09-21, #10): a garden made from the map
+# draws OSM's streets and house outlines, and ODbL asks for the credit wherever
+# they are shown. Nothing records where an outline came from; the import leaves
+# its mark on the provenance columns, and those are what is read.
+
+def _street() -> Element:
+    return Element(element_id=2, kind="street", shape="line", x=0.0, y=-12.0,
+                   points=[[-20.0, 0.0], [20.0, 0.0]], width=6.0, label="Hauptstraße")
+
+
+def test_openstreetmap_is_credited_where_its_streets_are_drawn() -> None:
+    [osm] = credits_for(_garden("user", _street()), ground=None, horizon_source=None)
+    assert osm.about == "map"
+    assert osm.name == "OpenStreetMap"
+    assert osm.licence == "ODbL-1.0"
+    assert osm.attribution == "© OpenStreetMap-Mitwirkende"
+
+
+@pytest.mark.parametrize("height_source", [
+    "osm_height", "osm_levels", "neighbourhood",
+    # A survey or the laser replaces the height and the roof, never the outline.
+    "surveyed", "measured",
+])
+def test_a_house_from_the_map_is_credited_whatever_later_measured_it(height_source: str) -> None:
+    found = credits_for(_garden(height_source), ground=None, horizon_source=None)
+    assert [c.about for c in found] == ["map"]
+
+
+def test_a_house_the_gardener_corrected_keeps_the_credit_its_roof_or_eaves_carry() -> None:
+    roof = Element(element_id=3, kind="house", shape="polygon", x=0.0, y=0.0,
+                   points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]], roof_source="osm")
+    eaves = Element(element_id=4, kind="shed", shape="polygon", x=0.0, y=0.0,
+                    points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]], eaves_source="osm_levels")
+    assert from_the_map(roof) and from_the_map(eaves)
+
+
+def test_a_garden_drawn_by_hand_owes_openstreetmap_nothing() -> None:
+    """A tree found in the laser and accepted is `measured` too, and no building."""
+    tree = Element(element_id=5, kind="tree", shape="circle", x=3.0, y=3.0, width=6.0,
+                   height=11.0, height_source="measured")
+    lawn = Element(element_id=6, kind="lawn", shape="polygon", x=0.0, y=0.0,
+                   points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]])
+    assert credits_for(_garden("user", tree, lawn), ground=None, horizon_source=None) == []
+
+
+def test_the_page_is_told_about_openstreetmap_once_a_street_is_drawn() -> None:
+    import sqlite3
+
+    from fastapi.testclient import TestClient
+
+    from ninanatur.api.deps import get_connection
+    from ninanatur.ingest.db import connect, init_schema
+    from ninanatur.web.app import app
+
+    conn: sqlite3.Connection = connect(":memory:", same_thread=False)
+    init_schema(conn)
+    app.dependency_overrides[get_connection] = lambda: conn
+    try:
+        client = TestClient(app)
+        token = client.post("/api/v1/gardens",
+                            json={"name": "G", "latitude": 48.137, "longitude": 11.575}
+                            ).json()["share_token"]
+        client.post(f"/api/v1/gardens/{token}/obstacles",
+                    json={"kind": "house", "x": 0, "y": 0, "height": 8})
+        assert client.get(f"/api/v1/gardens/{token}/sources").json() == []
+        client.post(f"/api/v1/gardens/{token}/obstacles",
+                    json={"kind": "street", "x": 0, "y": -12})
+        [osm] = client.get(f"/api/v1/gardens/{token}/sources").json()
+        assert osm["about"] == "map"
+        assert osm["licence"] == "ODbL-1.0"
+    finally:
+        app.dependency_overrides.clear()
