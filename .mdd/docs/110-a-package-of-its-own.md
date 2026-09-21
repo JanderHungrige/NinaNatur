@@ -8,11 +8,6 @@ wave_status: active
 depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service, 109-is-it-still-there]
 relates: [106-which-source-said-so, 17-terrain-window]
 source_files:
-  - packages/geokachel/pyproject.toml
-  - packages/geokachel/geokachel/__init__.py
-  - packages/geokachel/geokachel/addressing.py
-  - packages/geokachel/geokachel/net.py
-  - packages/geokachel/geokachel/cli.py
   - ninanatur/geo/tiles.py
   - Dockerfile
 routes: []
@@ -30,7 +25,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 110 — A Package of Its Own
@@ -87,30 +82,61 @@ word. Three "returning Any" errors were the only trace.
 `url` and `coverage` as mutable attributes; the registries are frozen
 dataclasses, whose attributes are read-only. Declared as properties, they match.
 
-## The registry stays one commit away
+## Its own repository, and the cost of that
 
-The strongest argument against extracting this was that the registry is both
-the only thing worth packaging and the thing that churns most — a state moves a
-file and a fix becomes publish-then-bump instead of edit-then-deploy.
+It lived in `packages/` here for about an hour. Then the owner asked the right
+question — *wouldn't a separate repo be better for improvements and
+collaboration?* — and it moved to
+**[JanderHungrige/geokachel](https://github.com/JanderHungrige/geokachel)**,
+published as **`geokachel` 0.1.0** on PyPI on 2026-09-21.
 
-That is answered by **not depending on PyPI**. The package lives in this
-repository and the image installs it from the same commit:
+Four reasons, and the timing mattered. **The repository URL is baked into the
+published metadata**, so moving after a release means a version that exists
+only to fix links. A contributor to an elevation library should not have to
+clone a React frontend and a plant-trait pipeline, nor should a bug report
+about a Sachsen share token land in a garden app's tracker. The package's CI
+runs in 27 seconds against this repository's ninety-plus and an image build.
+And **Warren Davison's Draft Sketch style is here under a personal permission**
+— a stranger forking a monorepo to fix a tile URL would take that with them,
+which is a courtesy argument rather than a tidiness one.
 
-```dockerfile
-COPY packages ./packages
-RUN pip install --prefix=/install --require-hashes -r requirements.txt \
- && pip install --prefix=/install --no-deps ./packages/geokachel \
- && pip install --prefix=/install --no-deps .
+**The cost is real and was argued against.** The registry is the thing most
+likely to need a fix, and a fix is now four steps rather than one: correct it
+in geokachel, tag, let Trusted Publishing release, bump the pin here. What
+makes that bearable is that doc 109's check says *when* a fix is needed, and a
+release is `git tag && git push`.
+
+So this repository depends on it like any other package, hash-pinned in both
+locks so CI tests exactly what the image ships:
+
+```
+geokachel==0.1.0 \
+    --hash=sha256:1b398592af44147ee96feeca84fcda6937a8f30cde1b4bc2a01e4f422098a7da \
+    --hash=sha256:8eb1ed9f5f86d35d2a43f3ee0297588f4465877289e7ac240e831e7e6d330a2f
 ```
 
-`--no-deps` because numpy, defusedxml and requests are already in the
-hash-locked lock. Publishing to PyPI is an occasional act, not a dependency.
+Pinned exactly, not `>=`: a new state should arrive because somebody chose it,
+not because a resolver did. The supply-chain test caught `requirements-dev.txt`
+missing it on the first run — the drift it exists to catch.
+
+## Published without a token
+
+`release.yml` in the package's repository uses **PyPI Trusted Publishing**:
+GitHub mints a short-lived OIDC identity for that exact workflow in that exact
+repository, and PyPI trusts it instead of a long-lived secret. There is no
+token to leak, rotate or paste into a terminal.
+
+The first attempt failed with `invalid-publisher`, because the pending
+publisher had not been created yet — and **nothing was published**, which is
+the right way for it to fail. The workflow also refuses a tag that disagrees
+with the version in `pyproject.toml`, because a PyPI version can never be
+reused, even after deletion.
 
 ## The check ships with it
 
 Doc 109's health check is `geokachel check`, so whoever installs the package
 gets the means to find out that a state moved — not only this app. It runs
-weekly in `.github/workflows/sources.yml`, and **it does not fail the build**:
+weekly in the package's own `.github/workflows/sources.yml`, and **it does not fail the build**:
 it opens an issue, or comments on the open one. A red build nobody can fix by
 changing code is a red build everybody learns to scroll past.
 
@@ -123,8 +149,8 @@ changing code is a red build everybody learns to scroll past.
 3. **No geocoder.** `state=` is required.
 4. **A credit is a required field**, in the publisher's exact words, and the
    NOTICE says the MIT licence does not relicense the data.
-5. **The image installs it from this commit**, so a registry fix stays one
-   commit.
+5. **The image installs it from PyPI, hash-pinned and exact**, so a new state
+   arrives by somebody choosing it.
 6. **The scheduled check opens an issue, never a red build.**
 
 ## Security
@@ -140,11 +166,14 @@ brand and appears only inside credits they require.
 
 ## Known Issues
 
-- **Not published to PyPI yet.** The wheel builds, installs into a clean
-  environment and works there; the release is the owner's to make.
-- **The package's tests live in the repository's `tests/`**, not beside it.
-  They exercise it fully and run in CI; a standalone repository would want them
-  moved.
+- **A fix to the registry is now four steps**, not one (above). That is the
+  price of the split and it was paid knowingly.
+- **Nothing checks the two repositories agree.** This app pins 0.1.0; nothing
+  yet notices when geokachel's own health check has gone red and a newer
+  release carries the fix.
+- **Its history is thin**: three commits, because `git subtree split` only
+  sees the hour the directory existed. The reasoning lives in these docs, and
+  the package's CONTRIBUTING points back here for it.
 - **`pointcloud.py` did not move**, so LAZ reading stays in the app for now. It
   is clean enough to follow whenever the laser is wanted outside a garden.
 - The copyright line says `JanderHungrige`, on the owner's instruction — and

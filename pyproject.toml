@@ -18,6 +18,13 @@ dependencies = [
     # does not run. The standard library accepts a DTD and expands what it
     # declares; this refuses both.
     "defusedxml>=0.7",
+    # Wave 25 (doc 110): the elevation registry, the readers and the tile
+    # fetch are their own package now, published from
+    # github.com/JanderHungrige/geokachel. Pinned exactly, because a registry
+    # that moved under a running deployment is the failure doc 109 exists to
+    # catch — a new state should arrive by somebody choosing it, not by a
+    # resolver.
+    "geokachel==0.1.0",
     # Wave 25, feature 4 (doc 107): the states publish their laser scans as
     # LAZ, which is LAS packed with an arithmetic coder — not something to
     # reimplement. `laspy` reads the format and `lazrs` unpacks it; both are

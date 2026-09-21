@@ -9,11 +9,8 @@ depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service]
 relates: [80-surface-sources, 84-canopies-found, 107-the-cloud-under-the-crown]
 source_files:
   - ninanatur/geo/tiles.py
-  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/surface.py
-  - ninanatur/geo/tile_sources.py
   - ninanatur/garden/building_sync.py
-  - ninanatur/geo/tiff.py
 routes: []
 models: []
 test_files:
@@ -29,7 +26,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 108 — The Trees in the Other States

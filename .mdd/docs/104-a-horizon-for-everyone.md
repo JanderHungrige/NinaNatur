@@ -9,14 +9,11 @@ depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service]
 relates: [07-solar-geometry, 68-terrain-sources]
 source_files:
   - ninanatur/geo/far_horizon.py
-  - ninanatur/geo/tiff.py
-  - ninanatur/geo/tile_sources.py
   - ninanatur/garden/terrain_sync.py
 routes: []
 models: []
 test_files:
   - tests/test_far_horizon.py
-  - tests/test_tiff.py
   - tests/test_terrain_sync.py
 data_flow: mixed
 last_synced: 2026-09-20
@@ -29,7 +26,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 104 — A Horizon for Everyone

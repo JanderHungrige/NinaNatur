@@ -9,9 +9,7 @@ depends_on: [102-which-tiles-and-whose, 40-lod2-roofs]
 relates: [103-a-tile-not-a-service, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs]
 source_files:
   - ninanatur/garden/building_sync.py
-  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/lod2.py
-  - ninanatur/geo/tile_sources.py
 routes: []
 models: []
 test_files:
@@ -28,7 +26,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 105 — Every Roof in the Country

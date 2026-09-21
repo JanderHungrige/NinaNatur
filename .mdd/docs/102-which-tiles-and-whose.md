@@ -8,14 +8,10 @@ wave_status: active
 depends_on: [68-terrain-sources, 80-surface-sources]
 relates: [07-solar-geometry, 32-object-heights]
 source_files:
-  - ninanatur/geo/tile_sources.py
-  - ninanatur/geo/tile_entries.py
-  - ninanatur/geo/tile_grid.py
   - scripts/probe_tile_sources.py
 routes: []
 models: []
-test_files:
-  - tests/test_tile_sources.py
+test_files: []
 data_flow: greenfield
 last_synced: 2026-09-20
 status: complete
@@ -27,7 +23,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 102 — Which Tiles, and Whose

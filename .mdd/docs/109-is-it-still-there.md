@@ -8,13 +8,10 @@ wave_status: active
 depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service]
 relates: [68-terrain-sources, 80-surface-sources, 106-which-source-said-so]
 source_files:
-  - ninanatur/geo/health.py
-  - scripts/check_sources.py
   - ninanatur/ingest/http.py
 routes: []
 models: []
-test_files:
-  - tests/test_health.py
+test_files: []
 data_flow: reads-existing
 last_synced: 2026-09-20
 status: complete
@@ -26,7 +23,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 109 — Is It Still There

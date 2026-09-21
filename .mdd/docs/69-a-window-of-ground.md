@@ -10,16 +10,12 @@ relates: [68-which-ground-and-whose, 63-neighbours-from-the-plot]
 source_files:
   - ninanatur/geo/terrain.py
   - ninanatur/geo/terrain_store.py
-  - ninanatur/geo/tiff.py
-  - ninanatur/geo/utm.py
   - ninanatur/ingest/http.py
   - ninanatur/ingest/schema_user.py
 routes: []
 models: [terrain_window]
 test_files:
   - tests/test_terrain.py
-  - tests/test_tiff.py
-  - tests/test_utm.py
 data_flow: mixed
 last_synced: 2026-09-05
 status: complete

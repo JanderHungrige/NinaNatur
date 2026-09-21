@@ -199,7 +199,9 @@ click==8.5.0 \
 defusedxml==0.7.1 \
     --hash=sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69 \
     --hash=sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61
-    # via ninanatur (pyproject.toml)
+    # via
+    #   ninanatur (pyproject.toml)
+    #   geokachel
 et-xmlfile==2.0.0 \
     --hash=sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa \
     --hash=sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54
@@ -207,6 +209,10 @@ et-xmlfile==2.0.0 \
 fastapi==0.141.1 \
     --hash=sha256:bfb91aa2d334c61cb35ba9a116fc123b3d3df31640b801cf57a7a78ec3f603b3 \
     --hash=sha256:e8822fc40db1e1858054d7a949a888695bc9bdce70139178e33bd2871a453ca1
+    # via ninanatur (pyproject.toml)
+geokachel==0.1.0 \
+    --hash=sha256:1b398592af44147ee96feeca84fcda6937a8f30cde1b4bc2a01e4f422098a7da \
+    --hash=sha256:8eb1ed9f5f86d35d2a43f3ee0297588f4465877289e7ac240e831e7e6d330a2f
     # via ninanatur (pyproject.toml)
 h11==0.16.0 \
     --hash=sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1 \
@@ -378,6 +384,7 @@ numpy==2.5.3 \
     --hash=sha256:ffdc76bfcae6b255dff75202c5e7feaf95b40246bc0a17944facc1fecf9f79ab
     # via
     #   ninanatur (pyproject.toml)
+    #   geokachel
     #   laspy
     #   pandas
 openpyxl==3.1.5 \
@@ -640,7 +647,9 @@ pyyaml==6.0.3 \
 requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
-    # via ninanatur (pyproject.toml)
+    # via
+    #   ninanatur (pyproject.toml)
+    #   geokachel
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81

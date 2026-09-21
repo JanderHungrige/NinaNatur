@@ -9,10 +9,8 @@ depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service, 105-every-roof
 relates: [84-canopies-found, 106-which-source-said-so, 07-solar-geometry]
 source_files:
   - ninanatur/geo/pointcloud.py
-  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/cloud_store.py
   - ninanatur/garden/cloud_sync.py
-  - ninanatur/geo/tile_cache.py
   - ninanatur/ingest/schema_computed.py
   - pyproject.toml
 routes: []
@@ -30,7 +28,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 107 — The Cloud Under the Crown

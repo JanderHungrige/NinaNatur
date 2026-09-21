@@ -12,7 +12,6 @@ source_files:
   - ninanatur/api/light.py
   - ninanatur/garden/lightgrid.py
   - ninanatur/geo/terrain_store.py
-  - ninanatur/geo/tile_sources.py
 routes:
   - GET /api/v1/gardens/{token}/sources
 models: []
@@ -29,7 +28,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 106 — Which Source Said So

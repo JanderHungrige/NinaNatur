@@ -8,22 +8,12 @@ wave_status: active
 depends_on: [102-which-tiles-and-whose, 68-terrain-sources]
 relates: [17-terrain-window, 07-solar-geometry]
 source_files:
-  - ninanatur/geo/tile_cache.py
-  - ninanatur/geo/tile_index.py
-  - ninanatur/geo/remote_zip.py
   - ninanatur/geo/tiles.py
-  - ninanatur/geo/tile_zip.py
   - ninanatur/geo/terrain.py
-  - ninanatur/geo/tile_sources.py
-  - ninanatur/geo/tile_grid.py
 routes: []
 models: []
 test_files:
-  - tests/test_tile_cache.py
   - tests/test_tiles.py
-  - tests/test_tile_zip.py
-  - tests/test_tile_index.py
-  - tests/test_remote_zip.py
 data_flow: mixed
 last_synced: 2026-09-20
 status: complete
@@ -35,7 +25,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects: []
+sister_projects: [https://github.com/JanderHungrige/geokachel]
 ---
 
 # 103 — A Tile, Not a Service

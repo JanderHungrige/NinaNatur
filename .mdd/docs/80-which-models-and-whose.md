@@ -7,12 +7,10 @@ wave: ninanatur-wave-19
 wave_status: active
 depends_on: [68-which-ground-and-whose]
 relates: [68-which-ground-and-whose]
-source_files:
-  - ninanatur/geo/surface_sources.py
+source_files: []
 routes: []
 models: []
-test_files:
-  - tests/test_surface_sources.py
+test_files: []
 data_flow: greenfield
 last_synced: 2026-09-06
 status: complete
