@@ -582,6 +582,22 @@ Three stages:
   generate:api` could not run; and seven doc passages said what was no longer
   so.
 
+- **2026-09-21 — released to production as V0.23.217** (merge `50a617b` from
+  `dev-deployment`, at the owner's word "push und merge into main"). The
+  release runbook's gate failed first: on the phone the smoke test's new patch
+  lay hidden under the chosen bed's handles, because an unplaced patch's seeded
+  spot can land on a corner; default spots now keep off the bed's rim, and the
+  gate passed in both windows on the preview. Production serves the preview's
+  assets exactly (`index-DFDjOJu1.js`, `index-COJrsAG7.css`). Its migrations,
+  after the automatic pre-migration copy: `element.outline_source` added, four
+  reshaped paths given their width back, two undrawable elements of garden 3
+  removed (an outline with no points, a zero-length freehand line — that garden
+  could not be read before), and 394 map outlines marked as OpenStreetMap's.
+  Found on the way: the header's "Sonne & Schatten" looked as if it loaded for
+  ever on dev and on main — it was disabled until a map existed, and every
+  disabled button wore the busy cursor; the host's logs showed no rebuild was
+  ever asked for. Fixed in this release.
+
 ## What each one is
 
 ### 0. which-tiles-and-whose
