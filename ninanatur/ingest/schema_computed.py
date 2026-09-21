@@ -1,5 +1,5 @@
 """What is computed about a garden and kept: its light, its ground, its horizon,
-and the trees a survey found that nobody has drawn yet.
+the trees a survey found that nobody has drawn yet, and the land around it.
 
 These live on the volume beside the gardens, but nobody types them: each is
 derived from a garden and a public source, stored because producing it again
@@ -135,4 +135,19 @@ CREATE TABLE IF NOT EXISTS canopy_suggestion (
 );
 
 CREATE INDEX IF NOT EXISTS idx_canopy_garden ON canopy_suggestion(garden_id);
+
+-- What the ground around a garden is, from OpenStreetMap (doc 114): woods,
+-- fields, water, parks, built-up land, cut to a box around the plot and placed
+-- in the garden's own metres. A JSON list of {kind, rings}.
+--
+-- Its own table, never elements: an element would stretch the light grid over
+-- a forest's corner and appear in the element list. A row with `[]` is an
+-- answer — nothing mapped here — and is kept, so it is not asked again.
+-- `placed_by` says from which anchor (`landcover_store.PLACEMENTS`).
+CREATE TABLE IF NOT EXISTS garden_landcover (
+    garden_id  INTEGER PRIMARY KEY REFERENCES garden(garden_id) ON DELETE CASCADE,
+    areas      TEXT    NOT NULL,
+    placed_by  TEXT    NOT NULL,
+    fetched_at TEXT    NOT NULL
+);
 """

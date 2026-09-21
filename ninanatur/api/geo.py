@@ -30,6 +30,7 @@ from ninanatur.api.schemas_map import (
 )
 from ninanatur.auth.sessions import Account
 from ninanatur.garden.footprint import require_buildable
+from ninanatur.garden.landcover_sync import add_landcover
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import (
     add_obstacle,
@@ -134,6 +135,8 @@ def garden_from_map(
         owner_id=None if account is None else str(account.account_id),
     )
     _add_streets(conn, garden_id, anchor, south, west, north, east)
+    # What the ground around it is (doc 114), from the same exact anchor.
+    add_landcover(conn, garden_id, anchor, polygon)
 
     # The ground, not a bed. It used to arrive as one large flower bed, which
     # made the whole plot a planting site — the beds are what the gardener draws

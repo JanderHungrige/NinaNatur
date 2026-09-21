@@ -120,21 +120,26 @@ def from_the_map(element: Element) -> bool:
     return element.kind == ObjectKind.STREET.value or element.outline_source == "osm"
 
 
-def _osm_credit(garden: Garden) -> Credit | None:
-    """OpenStreetMap, wherever the plan draws its streets or houses.
+def _osm_credit(garden: Garden, landcover: bool) -> Credit | None:
+    """OpenStreetMap, wherever the plan draws its streets, houses or the land
+    around them (doc 114).
 
     ODbL 1.0 asks for the credit where a work made from its data is shown, and
     the plan is such a work from the moment a garden is made from the map.
     """
-    if not any(from_the_map(element) for element in garden.obstacles):
+    if not landcover and not any(from_the_map(element) for element in garden.obstacles):
         return None
     return Credit(about="map", name="OpenStreetMap", licence=OSM_LICENCE,
                   attribution=OSM_ATTRIBUTION)
 
 
 def credits_for(garden: Garden, *, ground: TerrainWindow | None,
-                horizon_source: str | None, laser_source: str | None = None) -> list[Credit]:
+                horizon_source: str | None, laser_source: str | None = None,
+                landcover: bool = False) -> list[Credit]:
     """Every source this garden's numbers actually rest on, once each.
+
+    `landcover` is whether the plan draws OpenStreetMap's land around the
+    garden (`landcover_store.draws_landcover`).
 
     Built from what is stored and nothing else. Naming the building model needs
     a state, and the stored window already says which one measured the ground —
@@ -157,7 +162,7 @@ def credits_for(garden: Garden, *, ground: TerrainWindow | None,
     laser = _laser_credit(laser_source)
     if laser is not None:
         found.append(laser)
-    osm = _osm_credit(garden)
+    osm = _osm_credit(garden, landcover)
     if osm is not None:
         found.append(osm)
     return _without_repeats(found)
