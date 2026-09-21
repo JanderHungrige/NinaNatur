@@ -519,6 +519,55 @@ Three stages:
   nothing. The lock resolves 33 wheels for `lazrs`, so the Linux one is in it —
   and the run is what turns that from an inference into a fact.
 
+- **2026-09-21 — the owner's check of waves 24 and 25.** Waves 24 and 25 went
+  to the preview together, and the owner used them and sent eleven items. Each
+  was investigated before anything was changed (nine read-only agents, three
+  adversarial verifiers for the bugs); then four agents in parallel worktrees
+  built #5+#8, #6, #7+#10 and #9, while the canvas items (#1–#4, #11) were done
+  here. The branch `feat/ninanatur-owner-check` merges all of it.
+
+  | # | Asked | Done | Doc |
+  |---|---|---|---|
+  | 1 | lines too thick to draw in detail | outlines in screen pixels; his ink and waves never larger than at 1:250; the wobble capped at 7 px | 112 |
+  | 2 | Vieleck corner lands next to the click | it was the grid rounding every click to a metre: magnetic within 6 px, Alt never; closing at 12 px, which also stopped a 3 × 1 m bed saving as a triangle | 112 |
+  | 3 | freehand "needs two points", then every add fails with 422 | the server stored a row and only then failed to draw it, for ever after. It checks before it writes now, a reshape keeps a path's width, and a one-time repair opens broken gardens | 111 |
+  | 4 | zoom with the wheel | a plain wheel, in proportion, about the pointer; Safari's pinch; the address map too | 112 |
+  | 5 | day play button under Tagesverlauf | a day player in the sun panel, following the Zeitraum, pausing when hidden | 65, 87 |
+  | 6 | shade raster too coarse | the grid covers the plot + 5 m, not the neighbourhood: 3 m → 1 m on a map-made garden in the same time; stored maps read stale once | 64 |
+  | 7 | Zurück zum Garten more prominent | a filled button, first, sticky | 88 |
+  | 8 | animations while things compute | a pending counter, a spinner, a note in the header, a sweep over the plan, the front page's waits | 87 |
+  | 9 | do suggestions use the sun? | yes, and they did; now a bed too bright for a species leaves it out, the list says when light is missing or stale, and the woody list follows light | 13 |
+  | 10 | colour the ground, from OSM? | Technisch's ground is grass now; OSM is credited where its shapes are drawn; landcover polygons not built (recommendation: an orthophoto first) | 95, 106 |
+  | 11 | laggy when zooming and dragging | a pan redraws the backdrop, not the garden; the sun map and relief are a few paths; the costly paint pauses while moving | 113 |
+
+  **Checked in the running app** (a local server on a copy of a scratch database,
+  2026-09-21): a freehand press refused on the client with "zu kurz" and nothing
+  sent; corners landing on the click, pulled onto a grid point only a few pixels
+  away; a path reshaped by its corner keeping its 1 m width, the garden still
+  reading 200; the wheel zooming about the pointer, the outlines staying one
+  pixel at the closest zoom in both styles; the sun map drawn as 10 paths and no
+  rects; the day player under the chip, playing; the rebuild's spinner, header
+  note and sweep; "Suche…" and "Wird angelegt…" on the front page; a garden made
+  from the map in Kleinmachnow with "Karte: © OpenStreetMap-Mitwirkende" under
+  its plan; the address map stepping a level on one wheel notch while the page
+  stayed put.
+
+  **What the browser found that the tests had not**: a rebuild left every bed
+  saying "noch nicht berechnet" beside the map it had just computed (it did not
+  read the garden again); the drawing's instructions and a complaint lay under
+  the tool's hint, unreadable; with the sheet up, the plan's scale and credits
+  climbed over the header. All three fixed, the first with a test that fails
+  without it.
+
+  **What the merge and the review found**: a perennial planted from the list
+  marked the shade stale (the signature hashed every planting; now only those
+  that shade); CI's "API types in sync" gate had compared nothing since it was
+  written (`git diff` run from inside `frontend/`), and the schema it would
+  have compared depended on git and on a built bundle, both fixed and the gate
+  seen failing on purpose; the day player's clock was a live region that would
+  have read out every frame; and the repair would have deleted zero-area beds
+  that still opened, with their plants. `api/light.py` (350 lines) was split.
+
 ## What each one is
 
 ### 0. which-tiles-and-whose
