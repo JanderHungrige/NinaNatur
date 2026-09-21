@@ -213,6 +213,14 @@ body {
   color: var(--ink-muted);
   font-size: var(--text-sm);
   pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+/* Seven seconds, then out of the way (`PlanHint`). Hidden once faded, so it
+   leaves the accessibility tree with the eye; at once under reduced motion. */
+.plan-hint--faded {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
 }
 
 /* While the shade is computed (doc 65): a band of sunlight sweeps across the
@@ -2435,6 +2443,7 @@ button[disabled] { opacity: 0.55; cursor: default; }
   }
   .living__bokeh { opacity: 0.2; }
   .status-toast { transition: none; }
+  .plan-hint, .plan-hint--faded { transition: none; }
   .timeline-dock__toggle::before { transition: none; }
   .cluster--fresh .cluster__reach { animation: none; }
   /* The waiting marks stand still and stay: a ring with a gap, three motes,

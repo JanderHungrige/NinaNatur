@@ -24,8 +24,9 @@ from ninanatur.auth.sessions import Account
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
+from ninanatur.garden.roof_lines import roof_lines
 from ninanatur.garden.roofs import Roof, shading_height
-from ninanatur.garden.roofshape import pitch_of, roof_lines
+from ninanatur.garden.roofshape import pitch_of
 from ninanatur.garden.store import (
     create_garden,
     delete_garden,

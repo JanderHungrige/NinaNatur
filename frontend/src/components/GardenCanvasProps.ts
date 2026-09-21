@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 import type { CanopySuggestion, GardenOut, Landcover, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Box } from '../canvas/handles';
@@ -49,8 +47,9 @@ export interface GardenCanvasProps {
   tool?: Tool | null;
   /** What the armed tool expects, floated in the drawing's own corner. It hangs
    *  inside the stage, not under it, so a caption beneath the drawing — whose
-   *  hand it is in (doc 98) — has a line of its own. */
-  hint?: ReactNode;
+   *  hand it is in (doc 98) — has a line of its own. Seven seconds each
+   *  (`PlanHint`). */
+  hint?: string;
   onDrawShape?: ((shape: DrawnShape) => void) | undefined;
   /** A freehand stroke: an outline the hand closed, or a path. */
   onDrawTrace?:

@@ -148,6 +148,48 @@ describe('streets, which arrive as ways and meet at junctions', () => {
     expect(cut).toContain('a');
   });
 
+  /* The owner, 2026-09-21: a house standing over a street was drawn over the
+     road's grey, and the road's line still ran straight through it. */
+  const houseOnRoad = shape('house', 'building', box(0, 1, 8, 6));
+  const built = (shapes: DecoratedShape[]) => render(
+    <svg><Plan shapes={shapes} metresPerPixel={0.05} /></svg>,
+  ).container.querySelector('mask [data-mark="built"]');
+
+  it('keeps its line out of a house that stands on the road', () => {
+    const cut = built([across, houseOnRoad])!;
+    expect(cut.getAttribute('fill')).toBe('#000000');
+    // The house's outline, as it is drawn: from -4..4 across, -2..4 up.
+    expect(cut.getAttribute('d')).toContain('-4,2');
+    expect(cut.getAttribute('d')).toContain('4,-4');
+  });
+
+  it('but not out of what grows or lies there', () => {
+    expect(built([across, shape('tree', 'crown', box(0, 0, 6, 6))])).toBeNull();
+    expect(built([across, shape('lawn', 'grass', box(0, 0, 6, 6))])).toBeNull();
+  });
+
+  it('turns every built outline the same way, so two that overlap do not cancel', () => {
+    const turned = shape('shed', 'building', [...box(2, 1, 4, 4)].reverse());
+    const d = built([across, houseOnRoad, turned])!.getAttribute('d') ?? '';
+    const areas = d.split('Z').filter(Boolean).map((ring) => {
+      const pts = [...ring.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+      return pts.reduce((sum, p, i) => {
+        const q = pts[(i + 1) % pts.length]!;
+        return sum + p[0]! * q[1]! - q[0]! * p[1]!;
+      }, 0);
+    });
+    expect(areas).toHaveLength(2);
+    expect(Math.sign(areas[0]!)).toBe(Math.sign(areas[1]!));
+  });
+
+  it('holds the rounded ends in its mask, so they keep their line', () => {
+    // The band ends at ±18 m and its disc, 3 m round, reaches 21 m.
+    const { container } = render(<svg><Plan shapes={[across]} metresPerPixel={0.05} /></svg>);
+    const mask = container.querySelector('mask')!;
+    expect(Number(mask.getAttribute('x'))).toBeLessThan(-21);
+    expect(Number(mask.getAttribute('x')) + Number(mask.getAttribute('width'))).toBeGreaterThan(21);
+  });
+
   it('and draws nothing at all where a garden has no street', () => {
     const { container } = render(<svg><Plan shapes={[]} metresPerPixel={0.05} /></svg>);
     expect(container.querySelector('[data-mark="roads"]')).toBeNull();

@@ -9,6 +9,7 @@ depends_on: [86-the-plan-that-stayed-a-strip, 11-garden-canvas, 47-panel-order, 
 relates: [51-element-context-menu, 53-account-in-header, 65-the-shade-switch, 29-bloom-playback, 30-landing-and-garden-id, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style]
 source_files:
   - frontend/src/App.tsx
+  - frontend/src/components/PlanHint.tsx
   - frontend/src/useStatus.ts
   - frontend/src/useShownAfter.ts
   - frontend/src/components/Working.tsx
@@ -43,6 +44,7 @@ routes: []
 models: []
 test_files:
   - frontend/src/App.test.tsx
+  - frontend/src/components/PlanHint.test.tsx
   - frontend/src/components/ToolRail.test.tsx
   - frontend/src/components/Inspector.test.tsx
   - frontend/src/components/TimelineDock.test.tsx
@@ -196,7 +198,13 @@ None. The same client calls, from new places.
 6. **Escape still puts the tool down and drops the selection** (doc 49). The
    canvas's listener is untouched; the rail only shows the tool it is given.
 7. **The armed tool says what to do,** in a polite live region over the plan's
-   corner — the hints `ShapeTools` carried.
+   corner — the hints `ShapeTools` carried — **for seven seconds** (`PlanHint`).
+   Always there, "Wähle eine Form und …" covered the top of the plan for good
+   (the owner, 2026-09-21: "vielleicht nach 7 Sekunden ausblenden"). Picking
+   another tool shows its hint for seven seconds of its own; the paragraph stays
+   mounted so the live region reads each one, and faded it is `visibility:
+   hidden`, gone from the accessibility tree as from the eye. No fade under
+   reduced motion, only the hiding.
 8. **One undo.** The header's ↶ — named *Letzte Änderung rückgängig*, so it is not
    mistaken for the polygon draft's own *Rückgängig* — runs the same undo as
    Ctrl/Cmd+Z and is disabled when there is nothing to take back. There is no redo stack; the polygon
