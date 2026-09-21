@@ -20,7 +20,7 @@ test_files:
   - frontend/src/components/GardenCanvas.vertices.test.tsx
   - tests/test_object_editing.py
 data_flow: writes-existing
-last_synced: 2026-08-31
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -88,6 +88,12 @@ Both were live and neither had a test:
 The update path now converts geometry on the way in: width, depth and an angle
 go in, points come out, and anything not named keeps what the element already
 has. A move that names only x and y no longer resets the shape to its default.
+
+*Found in the owner's check (2026-09-21, doc 111):* "anything not named" did not
+yet cover a line's width. A vertex drag of a path sends points and no width, and
+the width was written as the `None` it arrived as. The garden then failed to
+read at all. A reshape now keeps a line's (and a circle's) width, and the edit is
+checked to leave a buildable footprint before it is written.
 
 ## Definition of done
 

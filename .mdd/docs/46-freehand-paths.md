@@ -19,7 +19,7 @@ test_files:
   - frontend/src/components/GardenCanvas.freehand.test.tsx
   - tests/test_polyline.py
 data_flow: writes-existing
-last_synced: 2026-08-31
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -57,6 +57,12 @@ feature does something with that fact instead of only using it to close a ring.
 exactly that stroke. So a straight sweep, which used to earn *"Der Umriss spannt
 keine Fläche auf"*, is now a path. The only thing still refused is a stroke too
 short to be either.
+
+*Since the owner's check (2026-09-21, doc 111):* "too short" is judged after
+rounding. A path needs two different points and 25 cm of length. A press that
+stayed within one centimetre used to become a line of one point twice, which the
+server stored and then could not draw, and every later request on that garden
+failed.
 
 ### A path is a metre wide, and stays editable
 

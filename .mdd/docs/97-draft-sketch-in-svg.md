@@ -147,7 +147,10 @@ the gate when the switch was built (doc 100, `tests/test_draft_sketch_served.py`
 
 CIM measures in points at print scale; the plan in metres. One reference scale
 converts them — **1:250, so a point is 0.0882 m**. Ink is never drawn thinner
-than a pixel. His three levels of detail are for 0–1:1,500, 1:1,500–2,500 and
+than a pixel, and since the owner's check (2026-09-21, doc 112) never fatter
+on screen than at 1:250 either. The same cap applies to his waves: zoomed in, a
+width in metres grew to 75 px, and a wave moved an edge 40 px. The cap is ours,
+at run time (`paths.onScreen`); his generated numbers are untouched. His three levels of detail are for 0–1:1,500, 1:1,500–2,500 and
 beyond; at 96 dpi that is 0.40 and 0.66 metres per pixel, which `lodAt` uses.
 
 ## What is converted (our symbol → his)

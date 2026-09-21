@@ -200,9 +200,14 @@ over a building. A wash cannot be read to one decimal place, and *Halbschatten*
 is the word printed on the label the gardener is holding.
 
 An HTML readout over the plan, driven by the surface's own pointer handler —
-not a `<title>` on each cell. The map is six hundred rects with
-`pointer-events: none`, which is what lets a click reach the bed underneath;
-turning that on for a tooltip would make the wash swallow every selection.
+not a `<title>` on each cell. The map has `pointer-events: none`, which is what
+lets a click reach the bed underneath; turning that on for a tooltip would make
+the wash swallow every selection.
+
+*Since the owner's check (2026-09-21, doc 113)* the map is drawn as one path per
+wash rather than a rect per cell, the readout is its own component (a mouse move
+re-renders the label and nothing else), and it is not read while a pan holds the
+plan.
 
 The coordinate is checked for being finite before it is used. An SVG that has
 not been laid out measures zero and the viewport arithmetic returns NaN — and
