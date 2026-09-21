@@ -14,6 +14,7 @@ source_files:
   - ninanatur/api/schemas_plants.py
   - ninanatur/garden/light_state.py
   - frontend/src/components/SuggestionList.tsx
+  - frontend/src/components/SuggestionLight.tsx
   - frontend/src/garden/useComputeShade.ts
 routes:
   - GET /api/v1/gardens/{token}/beds/{bed_id}/suggestions
@@ -113,8 +114,8 @@ back up. Three changes:
   the garden re-read once the new map has arrived. Light is **not** computed
   inside the suggestion request: that costs seconds on a big garden.
 
-The signature counts plantings, because planted trees cast shade, so the list
-turns stale after every planting — as the sun map already does. Two things the
+The signature counts every planting, so the list turns stale after every
+planting — as the sun map already does (see Known Issues). Two things the
 owner still has to decide are left alone: the hours→L table sits on
 classic-looking rungs (3–8) against EIVE's 0–10 species values, and a bed's
 light is the mean over its cells, which a bed half in sun and half in shade
@@ -153,6 +154,13 @@ property of the plant — the same rule that keeps flower colour a soft filter.
 - **The light cut sits on an unsettled scale.** See "The light": the hours→L
   rungs and the mean over a bed's cells decide which species are too bright,
   and both wait for the owner.
+- **Planting a perennial makes the light "stale".** `lightgrid.signature_of`
+  hashes every planting, though only woody ones cast shade
+  (`lightview._planted_obstacles`). So after planting a Salbei from the list,
+  the list and the sun map both say the shade is out of date when it cannot
+  be. Hashing only the plantings that shade would end the false alarm in both
+  (every stored map would turn stale once); `lightgrid.py` was out of reach
+  for this change.
 - **Two copies of "the current signature".** `api/light.py::_read` should call
   `light_state.current_signature` instead of repeating it, so the map and the
   list cannot drift apart. Left for now: that file is over the length limit
