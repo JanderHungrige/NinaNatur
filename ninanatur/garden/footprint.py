@@ -59,7 +59,7 @@ def footprint_of(
         # no direction, and `band_of` would refuse it with a message about
         # bands that nobody drawing a path can act on.
         if points is None or len(_distinct(points)) < 2:
-            raise ValueError("a line needs two different points")
+            raise ValueError("a line needs a centreline of two different points")
         if width is None or width <= 0:
             raise ValueError(f"a line footprint needs a positive width, got {width}")
         return band_of(
