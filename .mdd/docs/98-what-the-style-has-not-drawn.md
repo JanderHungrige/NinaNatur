@@ -146,7 +146,7 @@ Add-only: a computed field of the answer, no column.
 | his line symbols | `drawAlong` | the ink layer; a wall's clipped to its outline |
 | north, scale, title | the theme's `Furniture` | the plan's corner (`PlanFurniture`) |
 | the street network's ink | the theme's `Plan` | first in the ink layer, under every shape's own marks |
-| his credit | `PlanCredit` | a caption beneath the plan |
+| his credit | `PlanCredit` | a caption beneath the plan — with OpenStreetMap's on a line of its own where the plan draws OSM content (doc 106) |
 
 **Shadows moved.** Doc 97 drew every shadow in one layer under every shape.
 A tree's shadow then fell under the lawn it stands on, and a raised bed's

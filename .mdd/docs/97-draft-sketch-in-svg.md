@@ -50,7 +50,7 @@ test_files:
   - frontend/src/canvas/sketch.test.ts
   - frontend/src/themes/draftSketch.test.tsx
 data_flow: greenfield
-last_synced: 2026-09-20
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -120,7 +120,7 @@ frontend/src/themes/draft-sketch/draw.tsx   overlays → SVG, from each shape's 
 frontend/src/canvas/sketch.ts               wobble, overshoots, ticks, offset — pure geometry
 frontend/src/components/PlanDecorations.tsx each shadow beneath its shape (doc 98), ink over them; never a target
 frontend/src/themes/draft-sketch/ours/      what his style never drew (doc 98)  Provenance: NinaNatur, in the style of Draft Sketch
-frontend/src/components/PlanCredit.tsx      his credit beneath the plan, whenever it is his style
+frontend/src/components/PlanCredit.tsx      his credit beneath the plan, whenever it is his style (and OSM's, doc 106)
 ```
 
 **Two halves, because SVG has two halves.** What fills a shape — base wash,
