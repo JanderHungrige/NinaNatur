@@ -79,6 +79,22 @@ describe('defaultCentre', () => {
   it('puts different plantings in different places', () => {
     expect(defaultCentre(1, L_SHAPE)).not.toEqual(defaultCentre(2, L_SHAPE));
   });
+
+  it('keeps a patch off the rim, where the chosen bed\'s handles sit', () => {
+    // A 6 × 3 m bed: a quarter of its narrow side is 0.75 m. A patch on a
+    // corner lay hidden under the handles (the release's smoke test).
+    const bed = [{ x: 0, y: 0 }, { x: 6, y: 0 }, { x: 6, y: 3 }, { x: 0, y: 3 }];
+    for (let id = 1; id < 200; id += 1) {
+      const at = defaultCentre(id, bed);
+      const fromEdge = Math.min(at.x, 6 - at.x, at.y, 3 - at.y);
+      expect(fromEdge).toBeGreaterThanOrEqual(0.75);
+    }
+  });
+
+  it('still finds a place in a bed too thin to keep the margin', () => {
+    const strip = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 0.2 }, { x: 0, y: 0.2 }];
+    expect(covers(strip, defaultCentre(5, strip))).toBe(true);
+  });
 });
 
 describe('clustersFor', () => {

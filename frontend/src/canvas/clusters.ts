@@ -116,12 +116,20 @@ function bounds(polygon: Point[]) {
 export function defaultCentre(plantingId: number, outline: Point[]): Point {
   const box = bounds(outline);
   const next = random(plantingId * 2654435761);
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    const at = {
-      x: box.minX + next() * (box.maxX - box.minX),
-      y: box.minY + next() * (box.maxY - box.minY),
-    };
-    if (covers(outline, at)) return at;
+  // Away from the edge: a quarter of the bed's narrow side, at most a metre.
+  // The edge is where the chosen bed's handles sit, and a patch placed on a
+  // corner lay hidden under them (found by the release's smoke test,
+  // 2026-09-21). Nobody plants a clump on the bed's rim either. The margin
+  // halves if a bed is too thin to keep it, and goes last.
+  const narrow = Math.min(box.maxX - box.minX, box.maxY - box.minY);
+  for (const margin of [Math.min(narrow / 4, 1), narrow / 8, 0]) {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const at = {
+        x: box.minX + next() * (box.maxX - box.minX),
+        y: box.minY + next() * (box.maxY - box.minY),
+      };
+      if (covers(outline, at) && fromEdge(outline, at) >= margin) return at;
+    }
   }
   // A bed so thin that sixty guesses all missed. The centroid of the bounding
   // box is wrong in an L, and visible, which is better than not drawn at all.
@@ -270,4 +278,12 @@ function nearestOnSegment(a: Point, b: Point, at: Point): Point {
   if (length === 0) return a;
   const t = Math.max(0, Math.min(1, ((at.x - a.x) * dx + (at.y - a.y) * dy) / length));
   return { x: a.x + t * dx, y: a.y + t * dy };
+}
+
+/** How far a point inside an outline is from its nearest edge. */
+function fromEdge(outline: Point[], at: Point): number {
+  return Math.min(...outline.map((a, i) => {
+    const near = nearestOnSegment(a, outline[(i + 1) % outline.length]!, at);
+    return Math.hypot(near.x - at.x, near.y - at.y);
+  }));
 }
