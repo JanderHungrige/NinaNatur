@@ -16,6 +16,9 @@ interface Props {
   /** The filters — what is chosen, and the fields to choose with — in the
    *  list's header, above the rows (doc 90, rule 7). */
   filters?: ReactNode;
+  /** „Schatten berechnen“: the sun panel's rebuild, offered where the list was
+   *  ranked without the bed's light, or with an old one. */
+  onComputeShade?: () => void;
 }
 
 /** "1.234 passende Arten", or how many of them the list holds when it holds
@@ -26,12 +29,33 @@ function listed(shown: number, total: number): string {
   return shown === 1 ? `Die passendste von ${all} Arten` : `Die ${shown} passendsten von ${all} Arten`;
 }
 
+/** What the list could not rank by, in words — owner review #9. Null when the
+ *  light is current and the list really was ranked by the bed's whole site. */
+const LIGHT_HINT: Partial<Record<BedSuggestions['light_state'], string>> = {
+  missing: 'Licht noch nicht berechnet — die Liste berücksichtigt nur den Boden.',
+  stale:
+    'Der Schatten wurde seit der letzten Änderung im Garten nicht neu berechnet — ' +
+    'die Liste rechnet noch mit dem alten Licht.',
+};
+
+/** "4 Arten, denen es hier zu hell ist, sind ausgeblendet." — or nothing. */
+function hiddenByLight(counts: BedSuggestions['filters']): string | null {
+  const hidden = counts.light?.excluded ?? 0;
+  if (hidden === 0) return null;
+  const n = hidden.toLocaleString('de-DE');
+  return hidden === 1
+    ? `${n} Art, der es hier zu hell ist, ist ausgeblendet.`
+    : `${n} Arten, denen es hier zu hell ist, sind ausgeblendet.`;
+}
+
 /**
  * A bed's suggestions (doc 90): a header that says what is listed and holds the
  * filters, the rows as a window that scrolls in itself, and the woody plants
  * under their own heading in a window of their own (doc 25).
  */
-export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo, busy, filters }: Props) {
+export function SuggestionList({
+  suggestions, includeTrees, onPlant, onShowInfo, busy, filters, onComputeShade,
+}: Props) {
   const section = useRef<HTMLElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const hadFocus = holdsFocus(section.current);
@@ -56,6 +80,8 @@ export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo,
   const showsBirds = [...suggestions.items, ...suggestions.woody].some(
     (i) => (i.bird_partners ?? 0) > 0,
   );
+  const lightHint = LIGHT_HINT[suggestions.light_state] ?? null;
+  const hidden = hiddenByLight(suggestions.filters ?? {});
 
   return (
     <section ref={section} className="panel suggestions" aria-labelledby="suggestions-heading">
@@ -64,12 +90,28 @@ export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo,
           Vorschläge für {suggestions.bed_name}
         </h2>
         <p className="hint">
-          {listed(suggestions.items.length, suggestions.total)}, gewertet nach den
-          Standortwerten dieses Beetes.{' '}
+          {listed(suggestions.items.length, suggestions.total)}
+          {lightHint === null ? ', gewertet nach den Standortwerten dieses Beetes. ' : '. '}
+          {hidden !== null && `${hidden} `}
           {includeTrees
             ? 'Gehölze stehen weiter unten in einer eigenen Liste.'
             : 'Bäume und Sträucher sind ausgeblendet.'}
         </p>
+        {lightHint !== null && <p className="hint">{lightHint}</p>}
+        {lightHint !== null && onComputeShade !== undefined && (
+          // In reach while a request runs, and ignored: a button disabled under
+          // the keyboard's focus throws the focus to the page (doc 88, rule 11).
+          <button
+            type="button"
+            className="suggestions__shade"
+            aria-disabled={busy || undefined}
+            onClick={() => {
+              if (!busy) onComputeShade();
+            }}
+          >
+            Schatten berechnen
+          </button>
+        )}
         {filters}
         {showsBirds && (
           <p className="hint">

@@ -32,6 +32,7 @@ function suggestions(overrides: Partial<BedSuggestions> = {}): BedSuggestions {
     woody: [],
     woody_total: 0,
     filters: {},
+    light_state: 'current',
     ...overrides,
   } as BedSuggestions;
 }

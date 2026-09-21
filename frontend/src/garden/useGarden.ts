@@ -4,6 +4,7 @@ import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useUndoShortcut, useUndoStack } from '../useUndoStack';
 import type { Status } from '../useStatus';
 import { useClipboard } from './useClipboard';
+import { useComputeShade } from './useComputeShade';
 import { useDerived } from './useDerived';
 import { useElements } from './useElements';
 import { useGeometry } from './useGeometry';
@@ -54,6 +55,8 @@ export function useGarden(
     suggestions.filters.floweringMonth ?? null,
   );
 
+  const computeShade = useComputeShade(derived.lightMap, light.rebuild, suggestions.afterShade);
+
   const { run, setStatus } = status;
   const undoLast = useCallback(() => {
     void run('Rückgängig', async () => {
@@ -93,6 +96,7 @@ export function useGarden(
     askedFor: chosen.askedFor,
     focusTaken: chosen.focusTaken,
     speciesInfo,
+    computeShade,
     showFoundTrees,
     treesAsked,
     treesShown,
