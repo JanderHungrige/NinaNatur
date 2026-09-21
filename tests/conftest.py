@@ -59,3 +59,21 @@ def _no_state_surveys(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
         module = importlib.import_module(f"ninanatur.garden.{name}")
         monkeypatch.setattr(module, "state_at", lambda *_a, **_k: None)
     yield
+
+
+#: Where the garden's surroundings are fetched from Overpass (doc 114): at the
+#: map import and on the shade rebuild, both through this one module. Its two
+#: fetches answer "nothing mapped here" in every test that does not ask for
+#: more, so a map import stubbed for buildings and streets alone never reaches
+#: out for the land around it — `test_no_network.py` holds this name to the code.
+LANDCOVER_FETCHING = "ninanatur.garden.landcover_sync"
+
+
+@pytest.fixture(autouse=True)
+def _no_landcover(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    import importlib
+
+    module = importlib.import_module(LANDCOVER_FETCHING)
+    monkeypatch.setattr(module, "landcover_in", lambda *_a, **_k: [])
+    monkeypatch.setattr(module, "streets_in", lambda *_a, **_k: [])
+    yield

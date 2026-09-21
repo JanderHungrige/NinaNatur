@@ -6,21 +6,24 @@ initiative: ninanatur
 wave: ninanatur-wave-25
 wave_status: active
 depends_on: [102-which-tiles-and-whose, 104-a-horizon-for-everyone, 105-every-roof-in-the-country]
-relates: [93-where-the-roof-came-from, 68-terrain-sources]
+relates: [93-where-the-roof-came-from, 68-terrain-sources, 114-the-ground-around-the-garden]
 source_files:
   - ninanatur/garden/credits.py
   - ninanatur/api/light.py
   - ninanatur/garden/lightgrid.py
   - ninanatur/geo/terrain_store.py
   - ninanatur/data/sources.py
+  - ninanatur/geo/landcover_store.py
   - frontend/src/components/SourceCredits.tsx
   - frontend/src/components/PlanCredit.tsx
+  - frontend/src/components/GardenCanvas.tsx
 routes:
   - GET /api/v1/gardens/{token}/sources
 models: []
 test_files:
   - tests/test_credits.py
   - tests/test_stats.py
+  - tests/test_landcover_api.py
   - frontend/src/components/SourceCredits.test.tsx
   - frontend/src/components/PlanCredit.test.tsx
 data_flow: reads-existing
@@ -79,7 +82,12 @@ Bayern got a horizon: the ring was drawn and nobody was named.
   backfill (`ingest/outline_provenance.py`) marked what the history made
   certain; a map house corrected in both before the backfill cannot be told
   from a drawn one. A hand-drawn street is credited as well: the one mistake
-  left is thanking OpenStreetMap once too often.
+  left is thanking OpenStreetMap once too often. **And wherever the plan draws
+  OpenStreetMap's land around the garden** (doc 114): `credits_for(...,
+  landcover=True)` when the garden's `garden_landcover` row holds areas
+  (`landcover_store.draws_landcover`). A row of `[]` — nothing mapped — owes
+  nothing, because nothing of it is drawn. A garden drawn by hand gets the
+  credit on the shade rebuild that brings it surroundings.
 
 One line per licence and attribution: a state that gave both the ground and the
 roofs is thanked once, for both, because two identical paragraphs under a plan
@@ -144,8 +152,10 @@ asks. Nothing is drawn for a garden that rests on nothing.
 whenever it holds OSM content — in Technisch as its only caption, under Draft
 Sketch as a second line beneath his. The source panel sits at the foot of the
 details, and the OSMF guideline wants the credit where the map is seen. The
-page asks `drawsOpenStreetMap(garden)`, the same rule over the same fields as
-the server, because `GardenCanvas` has the garden and not the credits. The
+page asks `drawsOpenStreetMap(garden, landcover)`, the same rule over the same
+fields as the server, because `GardenCanvas` has the garden and not the
+credits; `landcover` is whether the plan draws any of the land it was sent
+(doc 114). The
 landing page's footer names OpenStreetMap among the site's sources too
 (`ninanatur/data/sources.py`): the address search and every map import use it.
 
@@ -176,6 +186,8 @@ from anything a garden carries.
   `PlanCredit.drawsOpenStreetMap`, each with tests over the same cases; both
   now read one stored field. A map house corrected in height and roof *before*
   the 2026-09-21 backfill reads as drawn by hand; a map import nearly always
-  brings streets too, which keep the credit.
+  brings streets too, which keep the credit. The land around the garden is a
+  third input to both (doc 114): the server reads it from the stored row, the
+  page from the areas it was sent — the same row, so the two agree.
 
 ## Bugs

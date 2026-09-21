@@ -34,6 +34,7 @@ export type ShadowDay = components['schemas']['ShadowDay'];
 export type Terrain = components['schemas']['TerrainOut'];
 export type Credit = components['schemas']['CreditOut'];
 export type CanopySuggestion = components['schemas']['CanopyOut'];
+export type Landcover = components['schemas']['LandcoverOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -294,6 +295,12 @@ export class NinaNaturClient {
     return this.request<Terrain | null>(
       `/api/v1/gardens/${encodeURIComponent(token)}/terrain`,
     );
+  }
+
+  /** The land around the garden, from OpenStreetMap (doc 114). Stored; never
+   *  a request of the server's own. */
+  async landcover(token: string): Promise<Landcover> {
+    return this.request<Landcover>(`/api/v1/gardens/${encodeURIComponent(token)}/landcover`);
   }
 
   /** Every survey this garden's numbers rest on, with the credit each licence

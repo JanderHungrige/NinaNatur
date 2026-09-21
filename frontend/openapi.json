@@ -1192,6 +1192,71 @@
         "title": "ImprovementsOut",
         "type": "object"
       },
+      "LandAreaOut": {
+        "description": "One mapped area: what it is, and its rings in garden metres, y north.\n\nOuter rings run anticlockwise and holes clockwise, for the nonzero rule.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "allotments",
+              "built",
+              "field",
+              "grass",
+              "paved",
+              "residential",
+              "water",
+              "wood"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "rings": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Rings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "rings"
+        ],
+        "title": "LandAreaOut",
+        "type": "object"
+      },
+      "LandcoverOut": {
+        "description": "What the ground around the garden is. Empty where nothing is mapped or\nnothing has been fetched yet; the credit is OpenStreetMap's either way.",
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/LandAreaOut"
+            },
+            "title": "Areas",
+            "type": "array"
+          },
+          "attribution": {
+            "title": "Attribution",
+            "type": "string"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          }
+        },
+        "required": [
+          "areas",
+          "attribution",
+          "licence"
+        ],
+        "title": "LandcoverOut",
+        "type": "object"
+      },
       "LatLonIn": {
         "properties": {
           "lat": {
@@ -4292,6 +4357,49 @@
         "summary": "Improvements",
         "tags": [
           "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/landcover": {
+      "get": {
+        "description": "The garden's surroundings, from the stored row; never a request of its own.",
+        "operationId": "landcover_api_v1_gardens__token__landcover_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandcoverOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Landcover",
+        "tags": [
+          "landcover"
         ]
       }
     },

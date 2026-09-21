@@ -52,6 +52,10 @@
   --wash-crown: #bcd6a8;
   --wash-crown-leaf: #9cc086;
   --wash-soil: #e3d7c6;
+  /* The land around the garden that no symbol draws (doc 114): a field as
+     stubble, and houses' land as the palest neutral — context, not content. */
+  --wash-field: #eadfb8;
+  --wash-residential: #e6e4dc;
   --outline: #6f7a67;
 }
 
@@ -96,6 +100,8 @@
     --wash-crown: #2c3f26;
     --wash-crown-leaf: #4f7440;
     --wash-soil: #3a3226;
+    --wash-field: #36331f;
+    --wash-residential: #22261f;
     --outline: #8d9a85;
   }
 }
@@ -1498,6 +1504,16 @@ button[disabled] { opacity: 0.55; cursor: default; }
    of what a frame cost. It comes back once the plan stands still (`useMoving`). */
 .canvas--moving .canvas__objects { filter: none; }
 
+/* The land around the garden (doc 114). Faint, flat-edged and without an
+   outline, so OpenStreetMap's meadow never reads as a lawn somebody drew. The
+   symbol classes are painted by the theme's fill attribute; these two have no
+   symbol and take a wash. Opacity per path rather than on the group: a group's
+   opacity is one more offscreen image to paint on every frame of a pan. */
+.landcover { pointer-events: none; }
+.landcover__area { fill-opacity: 0.45; stroke: none; }
+.landcover__area--field { fill: var(--wash-field); }
+.landcover__area--residential { fill: var(--wash-residential); }
+
 
 /* Texture is decoration. When the system asks for more contrast, or paints its
    own colours, the washes go and the outline carries the meaning alone — a
@@ -1506,11 +1522,14 @@ button[disabled] { opacity: 0.55; cursor: default; }
   .canvas__objects { filter: none; }
   /* Pixels, like every outline since the owner's check: twice the usual one. */
   .obstacle { fill: none !important; stroke-width: 2; vector-effect: non-scaling-stroke; }
+  /* The neighbourhood is all wash and no outline, so it goes entirely. */
+  .landcover { display: none; }
 }
 
 @media (forced-colors: active) {
   .canvas__objects { filter: none; }
   .obstacle { fill: none !important; forced-color-adjust: none; stroke: CanvasText; }
+  .landcover { display: none; }
 }
 
 /* --- Drawing tools (Wave 11, feature 43) ---------------------------------- */

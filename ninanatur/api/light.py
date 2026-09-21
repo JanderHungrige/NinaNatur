@@ -26,6 +26,7 @@ from ninanatur.garden.building_sync import measure_buildings
 from ninanatur.garden.cloud_sync import ensure_cloud
 from ninanatur.garden.credits import credits_for
 from ninanatur.garden.elements import now
+from ninanatur.garden.landcover_sync import ensure_landcover
 from ninanatur.garden.light_state import current_signature
 from ninanatur.garden.light_worker import month_grid, recompute_light
 from ninanatur.garden.lightgrid import extent_of
@@ -35,6 +36,7 @@ from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
 from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
 from ninanatur.geo.cloud_store import cloud_source
+from ninanatur.geo.landcover_store import draws_landcover
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain_store import cache_key, horizon_source
 from ninanatur.solar.day import MONTHS, shadow_day
@@ -91,6 +93,8 @@ def rebuild_light_map(
     # too long for a page load and fine for a button somebody pressed.
     standing = load_garden(conn, garden.garden_id)
     ensure_terrain(conn, standing)
+    # The land around it, for a garden made before it was fetched (doc 114).
+    ensure_landcover(conn, standing)
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
     measure_buildings(conn, load_garden(conn, garden.garden_id))
@@ -159,6 +163,7 @@ def sources(
         ground=ground_for(conn, anchor),
         horizon_source=horizon_source(conn, cache_key(anchor)),
         laser_source=cloud_source(conn, cache_key(anchor)),
+        landcover=draws_landcover(conn, garden.garden_id),
     )
     return [CreditOut(**vars(credit)) for credit in found]
 
