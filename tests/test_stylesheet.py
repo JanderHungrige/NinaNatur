@@ -176,6 +176,32 @@ def test_the_moving_background_stops_for_reduced_motion() -> None:
     assert "animation: none" in block, "the field is not actually stopped"
 
 
+def test_the_waiting_marks_stand_still_for_reduced_motion() -> None:
+    """Every sign that something is under way turns, rises, breathes or sweeps
+    (doc 87) — and every one of them must stop for somebody who asked their
+    system for less motion. Stopped, and still there: a still ring, still motes
+    and grey bars still say "under way"."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    start = css.index("@media (prefers-reduced-motion: reduce)")
+    block = css[start : css.index("\n}", css.index("{", start))]
+    stopped = re.search(r"([^{}]*\.working__spinner[^{}]*)\{([^}]*)\}", block)
+    assert stopped is not None, "the waiting marks are not in the reduced-motion block"
+    assert "animation: none" in stopped.group(2), "the waiting marks are not stopped"
+    for mark in (".working__spinner", ".working__motes > span", ".skeleton__line",
+                 ".stat__pending", ".plan-working::before"):
+        assert mark in stopped.group(1), f"{mark} keeps moving under reduced motion"
+
+
+def test_what_lies_over_the_plan_while_it_waits_takes_no_pointer() -> None:
+    """The rebuild's sweep and the header's note lie over things people aim at;
+    like the tool hint, they must never catch the click meant for the plan."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    for selector in (".plan-working", ".site-header__working", ".hero__opening"):
+        body = re.search(rf"^{re.escape(selector)} \{{([^}}]*)\}}", css, re.M)
+        assert body is not None, f"no rule for {selector}"
+        assert "pointer-events: none" in body.group(1), f"{selector} catches the pointer"
+
+
 def test_the_film_covers_the_window_it_is_in() -> None:
     """A 16:9 clip and a window of any shape at all. `contain` would letterbox
     it — a photograph in a frame rather than the page's ground — and no

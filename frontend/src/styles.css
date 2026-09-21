@@ -145,6 +145,7 @@ body {
 }
 
 .site-header {
+  position: relative;
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
 }
@@ -152,6 +153,26 @@ body {
 .badge {
   padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: 999px;
   color: var(--ink-muted); font-size: var(--text-xs);
+}
+/* Something the site asked for is still running (doc 87). Hung across the
+   header's lower edge rather than set in its row, so nothing in the row moves
+   when it comes and goes, and it is there on a phone, whose row keeps the rest
+   behind *Menü*. Beneath the header's own drop-downs, and never in the way. */
+.site-header__working {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 18;
+  transform: translate(-50%, -50%);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  pointer-events: none;
 }
 
 /* --- The workspace (Wave 23, doc 87) -------------------------------------- */
@@ -187,6 +208,50 @@ body {
   font-size: var(--text-sm);
   pointer-events: none;
 }
+
+/* While the shade is computed (doc 65): a band of sunlight sweeps across the
+   plan, and a note in its middle names the steps. Over the plan like the hint
+   above, and like it never in the way of a finger or a pointer. */
+.plan-working {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+.plan-working::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--wash-sun) 22%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: plan-sweep 2.8s ease-in-out infinite;
+}
+.plan-working__note {
+  position: relative;
+  max-width: 24rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 14%);
+}
+@keyframes plan-sweep {
+  to { transform: translateX(100%); }
+}
+/* A month's map on its way: the one showing is the last period's answer, so
+   it steps back until the new one lands. */
+.workspace__plan--waiting .sun-map { opacity: 0.4; transition: opacity 0.2s; }
 
 .inspector {
   display: grid;
@@ -434,6 +499,23 @@ input:not([type='checkbox']):not([type='radio']), select, textarea,
 .panel h3 { margin: var(--space-6) 0 var(--space-2); font-size: var(--text-md); color: var(--ink-muted); }
 .hint { margin: 0 0 var(--space-3); color: var(--ink-muted); font-size: var(--text-sm); }
 
+/* The place a panel will take while its answer is on the way (doc 87): grey
+   bars in the panel's own box, breathing slowly. */
+.skeleton { display: grid; gap: var(--space-3); }
+.skeleton__line {
+  display: block;
+  width: 88%;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  animation: skeleton-breathe 1.8s ease-in-out infinite;
+}
+.skeleton__line:nth-child(odd) { width: 70%; }
+.skeleton__line--title { width: 42%; height: 1rem; }
+@keyframes skeleton-breathe {
+  50% { opacity: 0.45; }
+}
+
 label { display: block; margin: 0.5rem 0 0.2rem; font-size: var(--text-xs); color: var(--ink-muted); }
 /* Everything you type in, at the panel's width — but not a tick box. A
    checkbox took `width: 100%` too and came out 908 pixels wide, pushing its own
@@ -468,6 +550,37 @@ button {
   background: var(--leaf); color: #fff; font: inherit; font-weight: 560; cursor: pointer;
 }
 button[disabled] { opacity: 0.55; cursor: progress; }
+
+/* Something is under way (doc 87): a ring that turns, or on the front door
+   three motes that rise like the meadow's. Indeterminate, because nothing the
+   server sends says how far along it is. Sized by the text it sits in. */
+.working { display: inline-flex; align-items: center; gap: var(--space-2); }
+.working__spinner {
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: working-spin 0.9s linear infinite;
+}
+@keyframes working-spin {
+  to { transform: rotate(360deg); }
+}
+.working__motes { display: inline-flex; flex: none; align-items: flex-end; gap: 0.25em; height: 1em; }
+.working__motes > span {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: working-mote 1.5s ease-in-out infinite;
+}
+.working__motes > span:nth-child(2) { background: var(--wash-sun); animation-delay: 0.25s; }
+.working__motes > span:nth-child(3) { animation-delay: 0.5s; }
+@keyframes working-mote {
+  50% { opacity: 1; transform: translateY(-0.5em); }
+}
 
 .bed-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
 .bed-button {
@@ -1014,6 +1127,17 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-variant-numeric: tabular-nums;
 }
 
+/* A figure's room while the figures are on their way: the placeholder is a
+   figure, set in the figure's font and drawn as a blank, so the block is
+   exactly as tall as it will be. */
+.landing__stats .stat dd.stat__pending {
+  width: max-content;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: transparent;
+  animation: skeleton-breathe 1.8s ease-in-out infinite;
+}
+
 .landing__ways {
   display: grid;
   gap: 1rem;
@@ -1144,6 +1268,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   gap: 0.6rem;
   margin-top: 0.75rem;
 }
+.map-picker__creating { margin: var(--space-2) 0 0; }
 
 .map-picker__aerial {
   display: block;
@@ -1673,6 +1798,19 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
 }
 .shade-switch__month select { margin: 0; font-size: var(--text-md); }
+/* The Zeitraum, and beside it the note while a month's map is computed. */
+.shade-switch__period { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-3); }
+.shade-switch__period .shade-switch__month { flex: 1 1 12rem; }
+.shade-switch__period > .working { padding-bottom: var(--space-2); color: var(--ink-muted); font-size: var(--text-sm); }
+
+/* Playing the day, directly under the chip that chose it (doc 65): play or
+   pause, a scrubber for any moment by hand, and the clock time it shows. */
+.day-player { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.day-player button { margin: 0; padding: 0.3rem 0.85rem; cursor: pointer; }
+.day-player > .working { color: var(--ink-muted); font-size: var(--text-sm); }
+.day-player__scrubber { flex: 1 1 8rem; min-width: 0; margin: 0; accent-color: var(--leaf); }
+.day-player__time { min-width: 5ch; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.day-player__problem { margin: 0; }
 .shade-switch__modes .chip { margin: 0; padding: 0.3rem 0.85rem; cursor: pointer; }
 
 .shade-switch__legend {
@@ -1965,6 +2103,26 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .hero { position: relative; }
 .hero__content { position: relative; z-index: 1; }
+/* A garden on its way from a link (doc 30): a card over the hero, the meadow
+   still moving behind it. */
+.hero__opening {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.hero__opening-card {
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid rgb(233 238 227 / 26%);
+  border-radius: var(--radius);
+  background: rgb(6 20 14 / 72%);
+  color: #f4f8ef;
+  font-size: var(--text-base);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 30%);
+}
 .landing__title { color: #f4f8ef; }
 .landing__lede { color: #cfdcc6; }
 /* Lighter than the panels' own hint grey. These two sit on the film itself
@@ -2195,6 +2353,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   .status-toast { transition: none; }
   .timeline-dock__toggle::before { transition: none; }
   .cluster--fresh .cluster__reach { animation: none; }
+  /* The waiting marks stand still and stay: a ring with a gap, three motes,
+     grey bars and a faint wash still say "under way" without moving. */
+  .working__spinner,
+  .working__motes > span,
+  .skeleton__line,
+  .landing__stats .stat dd.stat__pending,
+  .plan-working::before {
+    animation: none;
+  }
+  .working__motes > span { opacity: 0.7; }
+  .plan-working::before { transform: none; background: color-mix(in srgb, var(--wash-sun) 10%, transparent); }
+  .workspace__plan--waiting .sun-map { transition: none; }
 }
 
 /* --- The gardens an account has claimed ---------------------------------- */
