@@ -42,12 +42,13 @@ test_files:
   - frontend/src/canvas/useEscapeKey.test.ts
   - frontend/src/components/ClusterLayer.test.tsx
   - frontend/src/components/SpeciesInfo.test.tsx
+  - frontend/src/components/InspectorSubject.test.tsx
   - frontend/src/components/GardenCanvas.focus.test.tsx
   - tests/test_workspace_layout.py
   - frontend/src/testing/gardens.ts
   - frontend/src/testing/appFixtures.tsx
 data_flow: mixed
-last_synced: 2026-09-14
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -63,6 +64,7 @@ known_issues:
   - "GardenCanvas (380 lines) and CanvasScene (383 lines) were over the 300-line rule before this feature; it added a prop to each and an attribute to the scene."
   - "Since doc 90 (Wave 23, 2026-09-14) the suggestion rows' + and the filter fields stay focusable and aria-disabled while a request runs. Entfernen (BedPlantings) and Eintragen (ExistingPlanting) still use disabled."
   - "Since doc 91 (Wave 23, 2026-09-14) below 66rem the details are a sheet from below that rests at a quarter, where the name of whatever is chosen on the plan shows at once."
+  - "Since 2026-09-21 the way back is sticky in the phone's sheet too. At 'peek' (146 px of sheet on a 375×812 phone) a scrolled view keeps the handle (28 px) and the button in its band (50 px) in sight, which leaves about 68 px for what scrolls: the button stays reachable, the view is tight. Unscrolled, peek shows the button and the title as before."
   - "Since doc 92 (Wave 23, 2026-09-14) ? opens the keyboard's shortcuts as a modal dialog, and while it is open no key reaches the page, so its Escape never clears the selection."
 ---
 
@@ -126,9 +128,21 @@ aside.inspector "Details"
 | an element | its subject line · the element form |
 | a patch | its subject line · species info with the colour note, or a line saying the catalogue does not know the plant |
 
-Every view but the garden's starts with `InspectorSubject`: an `h2` naming the
-thing, one line saying what it is and what it covers, and the way back —
-*Zurück zum Garten* from a bed or an element, *Zurück zu <bed>* from a patch.
+Every view but the garden's starts with `InspectorSubject`: the way back —
+*Zurück zum Garten* from a bed or an element, *Zurück zu <bed>* from a patch —
+then an `h2` naming the thing and one line saying what it is and what it covers.
+
+The way back is the main route back to the garden (owner's check, 2026-09-21):
+a filled button (the base `button` look, with an `aria-hidden` "←", so its name
+stays its words), first in the view and `position: sticky` at the top of the
+details — under the handle in the phone's sheet. It is a sibling of
+`.inspector__subject` rather than inside it, because a sticky box sticks only
+within its parent. Held there it stands in a band of the page colour (a clipped
+spread shadow, which adds no scroll width), and `scroll-padding-top` on the
+details keeps a keyboard focus from landing under it. It was a grey underlined
+link under the title before, which read as a footnote and scrolled away with a
+long bed view. The heading still takes the focus on a view change; the reading
+order is now "back, title".
 
 ### Rehung, and what changes
 
