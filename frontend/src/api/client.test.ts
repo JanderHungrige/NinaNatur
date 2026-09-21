@@ -95,6 +95,15 @@ describe('NinaNaturClient', () => {
     expect(String(vi.mocked(spy).mock.calls[1]?.[0])).not.toContain('include_trees');
   });
 
+  it('asks for the species the light is too bright for only when told to', async () => {
+    const spy = respondWith({ bed_id: 1, items: [], woody: [] });
+    const client = new NinaNaturClient({ fetch: spy });
+    await client.bedSuggestions('tok', 1, { includeLightUnsuitable: true });
+    await client.bedSuggestions('tok', 1, {});
+    expect(String(vi.mocked(spy).mock.calls[0]?.[0])).toContain('include_light_unsuitable=true');
+    expect(String(vi.mocked(spy).mock.calls[1]?.[0])).not.toContain('include_light_unsuitable');
+  });
+
   it('omits undefined query parameters rather than sending "undefined"', async () => {
     const spy = respondWith({ total: 0, limit: 50, offset: 0, items: [] });
     const client = new NinaNaturClient({ fetch: spy });
