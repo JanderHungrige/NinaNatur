@@ -80,7 +80,7 @@ function chipsFor(filters: SuggestionFilters): Chip[] {
   if (filters.includeLightUnsuitable === true) {
     chips.push({
       key: 'light_asked',
-      label: 'auch Arten, denen es zu hell ist',
+      label: 'auch Arten, denen das Licht nicht passt',
       clears: ['includeLightUnsuitable'],
     });
   }

@@ -255,8 +255,9 @@ export interface paths {
          * @description Species that suit this bed, ranked by fit against its own site vector.
          *
          *     Woody plants get a shortlist of their own. Introduced species are left out
-         *     (the product promises native plants), and so, unless asked for, are species
-         *     the bed is far too bright for (`filters.light_verdict`). `light_state` says
+         *     (the product promises native plants), and so, unless asked for
+         *     (`include_light_unsuitable`), are species whose light is unsuitable here —
+         *     too bright or too dark (`filters.light_verdict`). `light_state` says
          *     whether there was a light value to judge by.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];

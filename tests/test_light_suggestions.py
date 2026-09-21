@@ -1,9 +1,9 @@
 """Suggestions and the light — the owner's review item #9 (2026-09-21).
 
-"Half-shade plants should not be placed in full sun." A bed far too bright for a
-species does not offer it; one too dark only ranks it down; the woody shortlist
-takes only what the light suits; and the answer says whether there was a light
-value to judge by at all.
+"Half-shade plants should not be placed in full sun" — and, the same day, "not
+only sun but also shade". A bed whose light is unsuitable for a species, too
+bright or too dark, does not offer it; the woody shortlist takes only what the
+light suits; and the answer says whether there was a light value to judge by.
 
 The named woodland species carry their real EIVE 1.0 values from the shipped
 catalogue. The rest share the bed's soil values, so only their light differs.
@@ -144,16 +144,29 @@ def test_a_species_with_no_light_value_is_kept(client: TestClient) -> None:
     assert "Ohne Lichtwert" in _names(_ask(client, *_bed(client)))
 
 
-# --- too dark is only ranked down -------------------------------------------
+# --- too dark is left out too -------------------------------------------------
 
-def test_too_dark_is_ranked_down_not_removed(client: TestClient) -> None:
-    """A sun plant in shade lives, flowers less and gets leggy: priced, not hidden."""
+def test_a_deep_shade_bed_does_not_offer_sun_plants(client: TestClient) -> None:
+    """The owner's second word on it: the best fit for the shade as much as for
+    the sun. Ranked down, sun plants filled a shade bed's list whenever filters
+    narrowed it."""
     answer = _ask(client, *_deep_shade(client))
     names = _names(answer)
-    hungry = next(i for i in answer["items"] if i["canonical_name"] == "Lichthungrig")
-    assert hungry["fit"]["axes"]["ellenberg_l"]["band"] == "unsuitable"
-    assert names.index("Carex sylvatica") < names.index("Lichthungrig")
-    assert answer["filters"]["light"]["excluded"] == 0
+    assert "Lichthungrig" not in names
+    assert "Sonnenstaude" not in names
+    assert {"Carex sylvatica", "Galium odoratum", "Ohne Lichtwert"} <= set(names)
+    assert answer["filters"]["light"]["excluded"] >= 2
+
+
+def test_the_opt_out_brings_both_directions_back_ranked_below(client: TestClient) -> None:
+    for bed, fits, misfit in ((_deep_shade, "Carex sylvatica", "Lichthungrig"),
+                              (_bed, "Sonnenstaude", "Galium odoratum")):
+        answer = _ask(client, *bed(client), include_light_unsuitable=True)
+        names = _names(answer)
+        shown = next(i for i in answer["items"] if i["canonical_name"] == misfit)
+        assert shown["fit"]["axes"]["ellenberg_l"]["band"] == "unsuitable"
+        assert names.index(fits) < names.index(misfit)
+        assert "light" not in answer["filters"]
 
 
 # --- the woody shortlist -----------------------------------------------------
