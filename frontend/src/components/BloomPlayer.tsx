@@ -3,13 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   month: number | null;
   onSelectMonth: (month: number) => void;
-  /** With the shade switch on, play walks a day instead of the year. One
-   *  control, two meanings — so the label has to say which. */
-  shadowDay?: {
-    frames: number;
-    frame: number;
-    onFrame: (frame: number) => void;
-  } | undefined;
 }
 
 /** ~7 seconds for twelve months, as the wave plan asks. */
@@ -30,45 +23,26 @@ function prefersReducedMotion(): boolean {
  * The month it lands on is the same `floweringMonth` the filter bar shows and
  * the timeline marks — one piece of state, three ways in. A second "playback
  * month" would drift from the filter the moment either could be cleared alone.
+ *
+ * The year and nothing else. It used to play the day's shadows too, once the
+ * sun map was on — one button, two meanings, and the second one at the other
+ * end of the page from the chip that asked for it. The day has its own player
+ * in the sun panel now (doc 65).
  */
-export function BloomPlayer({ month, onSelectMonth, shadowDay }: Props) {
+export function BloomPlayer({ month, onSelectMonth }: Props) {
   const [playing, setPlaying] = useState(false);
   const reduced = prefersReducedMotion();
   const current = useRef(month ?? 0);
   current.current = month ?? current.current;
-  const day = shadowDay;
-
-  // Switching between the day and the year stops the playback rather than
-  // handing it over: the play button means two different things, and one that
-  // silently starts animating the *year* because the map mode changed is a
-  // control that did something nobody asked for.
-  const watchingDay = shadowDay !== undefined;
-  useEffect(() => {
-    setPlaying(false);
-  }, [watchingDay]);
 
   useEffect(() => {
     if (!playing) return undefined;
-    if (day !== undefined) {
-      // A day is far more frames than a year is months, so it steps faster —
-      // twelve seconds sunrise to dusk, which is slow enough to follow a
-      // shadow across a lawn and quick enough to watch twice.
-      let frame = day.frame;
-      const timer = setInterval(() => {
-        frame = (frame + 1) % Math.max(1, day.frames);
-        day.onFrame(frame);
-      }, Math.round(12000 / Math.max(1, day.frames)));
-      return () => clearInterval(timer);
-    }
     const timer = setInterval(() => {
       current.current = (current.current % 12) + 1;
       onSelectMonth(current.current);
     }, STEP_MS);
     return () => clearInterval(timer);
-    // `day.frame` deliberately absent: it changes on every tick, and depending
-    // on it would tear the interval down and rebuild it each time.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, onSelectMonth, day?.frames, day?.onFrame, day !== undefined]);
+  }, [playing, onSelectMonth]);
 
   const step = (delta: number) => {
     const next = (((month ?? 0) + delta + 11) % 12) + 1;
@@ -93,12 +67,8 @@ export function BloomPlayer({ month, onSelectMonth, shadowDay }: Props) {
             ⏸ Anhalten
           </button>
         ) : (
-          <button
-            type="button"
-            aria-label={shadowDay === undefined ? 'Jahr abspielen' : 'Tag abspielen'}
-            onClick={() => setPlaying(true)}
-          >
-            {shadowDay === undefined ? '▶ Jahr abspielen' : '▶ Tag abspielen'}
+          <button type="button" aria-label="Jahr abspielen" onClick={() => setPlaying(true)}>
+            ▶ Jahr abspielen
           </button>
         ))}
     </div>

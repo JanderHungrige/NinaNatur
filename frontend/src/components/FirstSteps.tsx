@@ -1,5 +1,6 @@
 import type { GardenOut, LightMap } from '../api/client';
 import { SoilLine } from './SoilLine';
+import { Working } from './Working';
 
 interface Props {
   soilType: string | null;
@@ -8,6 +9,8 @@ interface Props {
   /** Whether the garden's light has been computed at least once. */
   hasMap: boolean;
   onComputeShade: () => void;
+  /** The shade is being computed: the button says so while it waits. */
+  computing?: boolean | undefined;
   /** How many beds the garden has. */
   beds: number;
   /** Arms the tool a bed is drawn with. */
@@ -44,6 +47,7 @@ export function FirstSteps({
   onSaveSoil,
   hasMap,
   onComputeShade,
+  computing = false,
   beds,
   onDrawBed,
   busy,
@@ -85,7 +89,7 @@ export function FirstSteps({
                 sich danach. Nach neuen Objekten wieder: das geschieht nicht von selbst.
               </p>
               <button type="button" aria-disabled={busy || undefined} onClick={unlessBusy(onComputeShade)}>
-                Schatten berechnen
+                {computing ? <Working label="Wird berechnet…" /> : 'Schatten berechnen'}
               </button>
             </>
           )}
