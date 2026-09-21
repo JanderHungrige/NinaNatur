@@ -20,6 +20,7 @@ routes:
   - POST /api/v1/gardens/{token}/obstacles
   - PATCH /api/v1/gardens/{token}/obstacles/{obstacle_id}
   - POST /api/v1/gardens/from-map
+  - POST /api/v1/gardens/{token}/beds
 models: [element]
 test_files:
   - tests/test_unbuildable_geometry.py
@@ -89,6 +90,11 @@ stored before this check must still open.
 - `api/geo._add_streets` skips a way whose nodes collapse to one point once
   rounded, and logs it. One lost street, never a half-made garden: the garden
   row is already committed when the streets are added.
+- The map import checks the plot before it creates the garden, so a plot whose
+  corners merge commits nothing and answers 422. A neighbour's building whose
+  corners merge arrives as its equal-area square — the size the reach filter
+  judged it by — and one that cannot be built at all is logged and left out
+  (`api/geo._add_house`; found by the integration review).
 
 ### The client does not send what the server would refuse
 

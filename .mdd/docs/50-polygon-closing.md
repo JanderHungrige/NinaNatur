@@ -65,9 +65,12 @@ same function.
 *Changed 2026-09-21 (doc 112).* The distance was the grid spacing, on the
 grounds that corners snapped to it anyway. With snapped corners that dropped a
 real one: a last corner exactly a square from the first counted as a closure, and
-a 3 × 1 m bed was saved as a triangle. Now it is twelve screen pixels in metres,
-with a 5 cm floor, the same rule freehand's closing uses. "Near enough" still
-means the same on screen at every zoom.
+a 3 × 1 m bed was saved as a triangle. Now it is twelve screen pixels in metres —
+the same reach freehand's closing uses — with a 5 cm floor where freehand keeps
+50 cm (`useFreehandStroke`): a clicked corner is placed exactly, and 50 cm would
+drop a small bed's real last corner when zoomed in, while a hand-drawn loop needs
+the looser floor to close at all. "Near enough" still means the same on screen
+at every zoom.
 
 ### Never below three corners
 

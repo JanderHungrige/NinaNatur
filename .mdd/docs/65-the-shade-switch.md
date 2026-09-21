@@ -13,6 +13,7 @@ source_files:
   - frontend/src/garden/useDay.ts
   - frontend/src/garden/useLight.ts
   - frontend/src/components/SunMap.tsx
+  - ninanatur/api/schemas_light.py
   - frontend/src/components/CanvasScene.tsx
   - ninanatur/solar/day.py
   - ninanatur/api/light.py
@@ -37,7 +38,7 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues:
-  - "The server counts a day frame's `minute` from midnight UTC (`solar/day.py` starts the day at 00:00 UTC), while `ShadowFrame.minute`'s comment in `api/light.py` calls it local solar time. The player reads it as UTC and shows it on a German clock (Europe/Berlin); the backend comment is wrong, not the frames."
+  - "Fixed 2026-09-21: `ShadowFrame.minute`'s comment (now in `api/schemas_light.py`) called it local solar time; the server counts it from 00:00 UTC (`solar/day.py`), which is what the player reads and shows on a Europe/Berlin clock."
   - "The rebuild's words name its steps (Gelände, Gebäude, Laserdaten, Licht) without saying which one is running: the endpoint is one blocking request with no progress to report. Staged progress would need a job endpoint (decided against on 2026-09-21)."
 ---
 

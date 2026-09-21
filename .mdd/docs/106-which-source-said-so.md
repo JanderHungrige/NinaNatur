@@ -71,13 +71,15 @@ Bayern got a horizon: the ring was drawn and nobody was named.
 - **the laser**, where a point cloud was read (doc 107);
 - **the map** — OpenStreetMap, ODbL-1.0, *© OpenStreetMap-Mitwirkende* —
   wherever the plan draws its shapes (owner's check, 2026-09-21): a street, or
-  a building whose height, roof or eaves did not come from the gardener
-  (`credits.from_the_map`). Nothing records where an outline came from, so
-  this reads what the import leaves behind. A hand-drawn house is the
-  gardener's in all three and is never surveyed; a map house keeps its OSM
-  outline after a survey replaces its height and roof, so `surveyed` and
-  `measured` count too. A hand-drawn street is credited as well: the one
-  mistake the rule can make is thanking OpenStreetMap once too often.
+  an outline the map import brought (`element.outline_source = 'osm'`, which
+  only the server writes and nothing changes — `credits.from_the_map`). It was
+  first inferred from a house's height, roof and eaves, and the integration
+  review found a map house whose height and roof the gardener corrected lost
+  its credit while the plan still drew OpenStreetMap's outline. A one-time
+  backfill (`ingest/outline_provenance.py`) marked what the history made
+  certain; a map house corrected in both before the backfill cannot be told
+  from a drawn one. A hand-drawn street is credited as well: the one mistake
+  left is thanking OpenStreetMap once too often.
 
 One line per licence and attribution: a state that gave both the ground and the
 roofs is thanked once, for both, because two identical paragraphs under a plan
@@ -171,9 +173,9 @@ from anything a garden carries.
   those panels come from the same surveys, and a credit per panel would be four
   copies of the same paragraph.
 - The OSM rule is written twice, in `credits.from_the_map` and in
-  `PlanCredit.drawsOpenStreetMap`, each with tests over the same cases. A house
-  from the map whose height, roof and eaves the gardener all replaced loses
-  its credit, although its outline is still OpenStreetMap's; a map import
-  nearly always brings streets too, which keep it.
+  `PlanCredit.drawsOpenStreetMap`, each with tests over the same cases; both
+  now read one stored field. A map house corrected in height and roof *before*
+  the 2026-09-21 backfill reads as drawn by hand; a map import nearly always
+  brings streets too, which keep the credit.
 
 ## Bugs

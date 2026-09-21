@@ -568,6 +568,20 @@ Three stages:
   have read out every frame; and the repair would have deleted zero-area beds
   that still opened, with their plants. `api/light.py` (350 lines) was split.
 
+  The review ran as a workflow of five reviewers and three adversarial
+  skeptics per finding (80 agents; the first run hit a session limit and was
+  resumed). Of 25 findings, 20 were confirmed and fixed, 5 refuted. Beyond the
+  four above: a map import failed after committing its garden when one OSM
+  building's corners merged (now its square); a plotless garden of surfaces got
+  no grid and an old map read stale for ever; OpenStreetMap's credit was
+  inferred and lost for a corrected map house (now `element.outline_source`,
+  written by the import only, with a backfill); an iPhone pinch zoomed twice;
+  a month picked during a rebuild was overwritten; the list's "Schatten
+  berechnen" was fooled by any new map; reduced motion mid-play hid the pause
+  button of a running day; two buttons dropped the keyboard focus; `npm run
+  generate:api` could not run; and seven doc passages said what was no longer
+  so.
+
 ## What each one is
 
 ### 0. which-tiles-and-whose

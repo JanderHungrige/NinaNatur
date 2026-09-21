@@ -34,7 +34,6 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues:
-  - "2026-09-21: Technisch's garden ground became a flat grass wash (owner's check, #10). All 24 cells, light and dark, differ from the record until it is taken again with `--update` (not done on the branch that made the change, on purpose)."
 ---
 
 # 95 — Look Before You Argue
@@ -164,15 +163,17 @@ path, the beds and the paving meet; and the first sun map shaded only north of
 buildings, which here is mostly street, so trees, hedges and walls cast shade
 too and both of the layer's inks are on the sheet.
 
+## Retaken on 2026-09-21
+
+The owner's check changed every cell, on purpose, and the record was taken again
+with `--update` after all 24 were looked at in both themes: Technisch's garden
+ground is a flat grass wash instead of a 5 % leaf tint (#10), outlines are
+screen pixels, the grid is 3 cm or a pixel and the watercolour wobble is capped
+at 7 px (#1), and the sun map and relief are drawn as paths (#11). A `--check`
+just before the first of these found all 24 as recorded.
+
 ## Known Issues
 
-- **The record is behind the plan (2026-09-21).** The garden's own ground in
-  Technisch is a flat grass wash now (`.obstacle--garden`, 70 % of
-  `--wash-grass`) instead of a 5 % leaf tint, because the plan opened nearly
-  white. Every cell shows a garden ground, so `--check` names all 24 — light
-  and dark, each garden at 12, 40 and 120 m and with the sun map — until the
-  record is taken again with `--update`. Nothing else moved: a `--check` just
-  before the change found all 24 as recorded.
 - In dark mode the sun map's sun ink covers the plan almost entirely (the
   "40 m, Sonne" column). It is the app's own look, recorded as it is; feature 5
   measures the contrast of every wash over paper.

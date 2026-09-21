@@ -107,7 +107,11 @@ every save, reads as drawn and widens the grid as it always did.
 ground from the neighbours', so every standing element counts, imported or not,
 still without streets and heightless surfaces, and no margin is added: those
 gardens' outermost house or hedge already is the edge, and 5 m more on every
-side would have doubled a small garden's cells.
+side would have doubled a small garden's cells. A plotless garden of surfaces
+alone — a lawn, a path — is covered by its surfaces; only a garden of streets
+alone has no grid, and a map stored for a garden that can no longer be covered
+is removed on the next press rather than left reading stale for ever (review,
+2026-09-21).
 
 `extent_of` is kept, unchanged, for cropping the relief (`GET /terrain`).
 `check_extent`, the refusal, is asked about the box the grid actually covers:
@@ -216,7 +220,14 @@ into shade.
 The map is expensive enough to store, and a stored map can be wrong. It is
 therefore kept next to a **signature** of everything that can move a shadow —
 latitude, longitude, and each element's id, kind, height, roof, eaves, height
-above ground and outline, plus each planting's species, count and position.
+above ground and outline, plus each planting that casts a shadow, by species,
+count and position. Since 2026-09-21 (owner's check #9) that is only the species
+`lightview.shading_taxa` returns — those `canopy.shades` makes crowns of, the same
+plants `_planted_obstacles` shades with — so a perennial planted from the list
+leaves the map current and a shrub makes it stale
+(`tests/test_light_signature_plantings.py`). All three places that make a
+signature pass that set: `lighting.recompute_light`, `light_state` and, through
+it, `api/light.py`.
 `stale` is that signature disagreeing with the garden as it stands.
 
 Since 2026-09-21 it also carries the grid's own shape: `grid_model()` — the

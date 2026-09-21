@@ -102,20 +102,23 @@ back up. Three changes:
   light value — drawn after the last press of the button, since nothing
   computes light on a write (`lighting.py`). Stale: the stored sun map's
   signature no longer matches the garden's — the comparison the map's own
-  `stale` flag makes (`api/light.py::_read`, which spells the same two lines
-  out rather than calling `light_state.current_signature`; see Known Issues).
+  `stale` flag makes (`api/light.py::_read` calls the same
+  `light_state.current_signature`, so the map and the list cannot disagree).
   Also stale when there is no stored map to say what the value was computed
   from. Measured on 2026-09-21 at about 4 ms per request
   (a real 200 × 200 terrain window, 40 houses, 20 beds of 10 plantings),
   nearly all of it decoding the terrain window. A cheaper timestamp test was
   not available: `garden.updated_at` is not touched when an element moves.
   The list replaces "gewertet nach den Standortwerten" with the reason and a
-  „Schatten berechnen“ button — the sun panel's rebuild, then the list and
-  the garden re-read once the new map has arrived. Light is **not** computed
+  „Schatten berechnen“ button — the sun panel's rebuild, which re-reads the
+  garden, then the list re-read once that rebuild has landed (it counts its
+  landings; a refresh meanwhile or a failed rebuild does not count). Light is **not** computed
   inside the suggestion request: that costs seconds on a big garden.
 
-The signature counts every planting, so the list turns stale after every
-planting — as the sun map already does (see Known Issues). Two things the
+The signature counts only the plantings that shade (`lightview.shading_taxa`:
+species whose recorded height reaches `canopy.MIN_SHADING_HEIGHT_M`, the plants
+the light model turns into crowns), so a perennial planted from the list leaves
+the list and the map current, and a shrub makes both stale. Two things the
 owner still has to decide are left alone: the hours→L table sits on
 classic-looking rungs (3–8) against EIVE's 0–10 species values, and a bed's
 light is the mean over its cells, which a bed half in sun and half in shade
