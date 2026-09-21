@@ -181,19 +181,33 @@ def test_the_woody_shortlist_in_deep_shade_holds_no_sun_shrub(client: TestClient
     woody = _names(answer, "woody")
     assert "Salix repens" not in woody
     assert "Prunus spinosa" not in woody
-    # Value still orders what the light suits: borderline Salix caprea stays,
-    # and stays above the shade shrubs with fewer partners.
-    assert woody.index("Salix caprea") < woody.index("Hedera helix") < woody.index("Taxus baccata")
     assert "unsuitable" not in _light_bands(answer)
 
 
-def test_the_shortlist_leaves_out_too_bright_even_when_asked(client: TestClient) -> None:
-    """The opt-out widens the list; the shortlist cannot rank down, so it never does."""
+def test_the_woody_shortlist_respects_fit_before_partners(client: TestClient) -> None:
+    """Salix caprea, the catalogue's most visited plant, is *borderline* on
+    light in deep shade; Hedera and Taxus are optimal there. Partners no longer
+    buy the willow a place above them — among the shrubs that grow well, the
+    one insects visit most still leads."""
+    answer = _ask(client, *_deep_shade(client))
+    woody = _names(answer, "woody")
+    bands = dict(zip(woody, _light_bands(answer), strict=True))
+    assert bands["Salix caprea"] == "borderline"
+    assert bands["Hedera helix"] == bands["Taxus baccata"] == "optimal"
+    assert woody == ["Schattenstrauch", "Hedera helix", "Taxus baccata", "Salix caprea"]
+
+
+def test_the_opt_out_widens_the_shortlist_too_ranked_below(client: TestClient) -> None:
+    """The shortlist follows the main list's order now, so the opt-out means
+    the same there: what the light does not suit comes back, below the rest."""
     token, bed_id = _bed(client)
-    for params in ({}, {"include_light_unsuitable": True}):
-        answer = _ask(client, token, bed_id, **params)
-        assert "Schattenstrauch" not in _names(answer, "woody")
-        assert "unsuitable" not in _light_bands(answer)
+    assert "Schattenstrauch" not in _names(_ask(client, token, bed_id), "woody")
+
+    answer = _ask(client, token, bed_id, include_light_unsuitable=True)
+    bands = _light_bands(answer)
+    assert _names(answer, "woody")[-1] == "Schattenstrauch", "2,000 partners, the wrong light"
+    first_misfit = bands.index("unsuitable")
+    assert all(band == "unsuitable" for band in bands[first_misfit:])
 
 
 # --- whether there was a light to judge by ---------------------------------

@@ -9,7 +9,9 @@ import sqlite3
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 
+from ninanatur.data.interactions import german_partner_totals
 from ninanatur.data.traits import source_rank
+from ninanatur.fit.rank import suggestion_rank
 from ninanatur.fit.score import AXES, FitResult, SpeciesNiche
 
 # Where a gardener's own answer about a species is carried through the ranking,
@@ -36,6 +38,9 @@ class PlantRow:
     family: str | None
     niche: SpeciesNiche
     extras: dict[str, float | str] = field(default_factory=dict)
+    #: German insect partners (`partner_totals.german`), which the ranking
+    #: weighs; None when GloBI holds no relations for the plant at all.
+    insect_partners: int | None = None
 
     def colour(self) -> str | None:
         """The colour to judge this plant by.
@@ -62,10 +67,18 @@ class ScoredPlant:
 
     plant: PlantRow
     fit: FitResult
+    #: How well it grows here and what it feeds, both 0–1 (`fit.rank`).
+    growing: float = 0.0
+    insect: float = 0.0
 
     @property
     def score(self) -> float:
         return self.fit.score or 0.0
+
+    @property
+    def rank(self) -> float:
+        """What the lists are ordered by: growing conditions, then insect value."""
+        return suggestion_rank(self.growing, self.insect)
 
 
 def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
@@ -113,6 +126,7 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
         elif row["value_text"] is not None and _better(ranks, tid, key, rank):
             extras.setdefault(tid, {})[key] = str(row["value_text"])
 
+    insects = german_partner_totals(conn)
     return [
         PlantRow(
             taxon_id=tid,
@@ -120,6 +134,7 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
             family=family,
             niche=SpeciesNiche(tid, values.get(tid, {}), widths.get(tid, {})),
             extras=extras.get(tid, {}),
+            insect_partners=insects.get(tid),
         )
         for tid, (name, family) in names.items()
     ]

@@ -787,6 +787,9 @@ button[disabled] { opacity: 0.55; cursor: default; }
    does, because it names what does not suit the place. */
 .suggestion-row__colour { display: inline-flex; flex: 0 1 auto; min-width: 0; align-items: center; gap: 0.3rem; }
 .suggestion-row__colour-word { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* The insect count gives way too, its whole kept in the title; the fit badge
+   after it still never does. */
+.suggestion-row__insects { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .suggestion-row__dot { flex: none; width: 0.65rem; height: 0.65rem; }
 .suggestion-row__dot circle { fill: var(--line); stroke: var(--ink-muted); stroke-width: 1; }
 .suggestion-row__dot--unknown circle { fill: none; stroke-dasharray: 2 1.5; }

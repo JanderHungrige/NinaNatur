@@ -22,6 +22,13 @@ interface Props {
   onComputeShade?: () => void;
 }
 
+/** What the order means (owner, 2026-09-21: "nach besten Wachstumsbedingungen
+ *  + Insektenwert"). Growing conditions first, so a plant that clearly grows
+ *  worse never climbs over one that grows well; among equals, the insects
+ *  decide (`fit/rank.py`). The woody list is in the same order. */
+const ORDER =
+  'Oben steht, was hier am besten wächst; bei gleich guter Eignung entscheidet der Insektenwert.';
+
 /** "1.234 passende Arten", or how many of them the list holds when it holds
  *  fewer: the window ends at fifty, and its header should not promise the rest. */
 function listed(shown: number, total: number): string {
@@ -74,6 +81,7 @@ export function SuggestionList({
         <p className="hint">
           {listed(suggestions.items.length, suggestions.total)}
           {lightKnown ? ', gewertet nach den Standortwerten dieses Beetes. ' : '. '}
+          {ORDER}{' '}
           {hidden !== null && `${hidden} `}
           {includeTrees
             ? 'Gehölze stehen weiter unten in einer eigenen Liste.'
@@ -97,7 +105,8 @@ export function SuggestionList({
           <h3>Gehölze für diesen Standort</h3>
           <p className="hint">
             Sträucher und Bäume passen selten in ein Beet und tragen am meisten —
-            sie führen den Katalog bei Insekten wie bei Vögeln an. Was mehr Platz
+            sie führen den Katalog bei Insekten wie bei Vögeln an. Sortiert sind
+            sie wie die Liste oben, nach Standort und Insektenwert. Was mehr Platz
             braucht, als dieses Beet hat, steht mit seinem Platzbedarf dabei. Ein
             gepflanztes Gehölz verschattet anschließend sein Beet und die
             Nachbarbeete, und die Vorschläge dort ändern sich entsprechend.

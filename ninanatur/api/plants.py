@@ -63,6 +63,7 @@ def to_summary(
         observed_colour=plant.text(OBSERVED_COLOUR),
         colour_known=plant.colour() is not None,
         bird_partners=birds,
+        insect_partners=plant.insect_partners,
         space_m2=canopy.area_m2 if canopy is not None else None,
         fits_bed=(
             None
@@ -103,7 +104,8 @@ def search_plants(
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PlantSearchResponse:
-    """Species ranked by how well they fit the given site conditions."""
+    """Species ranked by how well they grow at the given site conditions, the
+    insect value deciding among equals (`fit.rank`, the bed lists' order)."""
     axes = {
         AXIS_PARAMS[name]: value
         for name, value in (
