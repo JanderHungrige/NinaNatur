@@ -119,9 +119,15 @@ function useSunMap(
     [client, token, run, setLightMap],
   );
 
+  /** How many rebuilds have landed: the list's own "Schatten berechnen" waits
+   *  for this to move rather than for any new map, which a refresh during the
+   *  rebuild also brings (review, 2026-09-21). */
+  const [rebuilt, setRebuilt] = useState(0);
+
   const rebuild = useCallback(() => {
     // A month still on its way would land on top of the season this stores.
     latestMonth.current += 1;
+    const asked = latestMonth.current;
     setMonthLoading(false);
     setRebuilding(true);
     // The longest wait in the garden — terrain, buildings, laser points, then
@@ -131,13 +137,19 @@ function useSunMap(
       try {
         // The button computes and stores the season. Coming back to a month
         // view afterwards would show a figure the button did not produce.
-        setMapMonth(null);
-        setLightMap(await client.rebuildLightMap(token));
+        const season = await client.rebuildLightMap(token);
+        // The Zeitraum is locked while this runs; should a month have been
+        // chosen anyway, its map stands, and the season does not cover it.
+        if (asked === latestMonth.current) {
+          setMapMonth(null);
+          setLightMap(season);
+        }
         // The rebuild wrote every bed's light too. Without reading the garden
         // again, a bed went on saying "noch nicht berechnet" beside a map that
         // had just been computed (the owner's check, 2026-09-21).
         const fresh = await client.getGarden(token);
         if (fresh !== null) setGarden(fresh);
+        setRebuilt((n) => n + 1);
         setStatus('Schatten berechnet.');
       } finally {
         setRebuilding(false);
@@ -145,5 +157,5 @@ function useSunMap(
     });
   }, [client, token, run, setLightMap, setGarden, setStatus]);
 
-  return { mapMonth, changeMonth, monthLoading, rebuild, rebuilding };
+  return { mapMonth, changeMonth, monthLoading, rebuild, rebuilding, rebuilt };
 }

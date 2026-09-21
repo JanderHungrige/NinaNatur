@@ -12,7 +12,7 @@
  * strip until a reload (doc 86). The stage takes its height from the page, so
  * nothing drawn inside it can change what is measured.
  */
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
 import { useMoving } from './useMoving';
 import { type Viewport, measuredView, zoomAt } from './viewport';
@@ -42,7 +42,11 @@ export function wheelFactor(event: WheelEvent, pageHeight: number): number {
   return Math.min(MAX_STEP, Math.max(1 / MAX_STEP, factor));
 }
 
-export function useViewport(size?: { widthPx: number; heightPx: number } | undefined) {
+export function useViewport(
+  size?: { widthPx: number; heightPx: number } | undefined,
+  /** True while two fingers pinch the plan (`usePinch`), which zooms it then. */
+  touchPinch?: RefObject<boolean> | undefined,
+) {
   const [view, setView] = useState<Viewport>({
     centreX: 0,
     centreY: 0,
@@ -83,10 +87,12 @@ export function useViewport(size?: { widthPx: number; heightPx: number } | undef
     if (element === null) return undefined;
     const zoomTo = (clientX: number, clientY: number, factor: number) => {
       const rect = element.getBoundingClientRect();
+      // A gesture without a position zooms about the middle rather than
+      // writing NaN into the view, which blanks the plan until a reload.
+      const x = Number.isFinite(clientX) ? clientX - rect.left : rect.width / 2;
+      const y = Number.isFinite(clientY) ? clientY - rect.top : rect.height / 2;
       moving.pulse();
-      setView((current) =>
-        zoomAt(current, { x: clientX - rect.left, y: clientY - rect.top }, factor),
-      );
+      setView((current) => zoomAt(current, { x, y }, factor));
     };
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
@@ -99,6 +105,11 @@ export function useViewport(size?: { widthPx: number; heightPx: number } | undef
     };
     const onGestureChange = (event: Event) => {
       event.preventDefault();
+      // On an iPhone or iPad the same pinch arrives as touches too, and
+      // `usePinch` zooms by them: applied twice, the plan zoomed by the square
+      // of the spread. Safari's gesture is only the answer when no fingers are
+      // on the plan — a trackpad (the owner's check, review).
+      if (touchPinch?.current === true) return;
       const gesture = event as GestureEvent;
       if (!(gesture.scale > 0)) return;
       zoomTo(gesture.clientX, gesture.clientY, lastScale / gesture.scale);
@@ -112,7 +123,7 @@ export function useViewport(size?: { widthPx: number; heightPx: number } | undef
       element.removeEventListener('gesturestart', onGestureStart);
       element.removeEventListener('gesturechange', onGestureChange);
     };
-  }, [moving]);
+  }, [moving, touchPinch]);
 
   /** The buttons, in words rather than in a factor: a caller passing 1.6 for
    *  "in" is a caller who will eventually pass it for "out". */

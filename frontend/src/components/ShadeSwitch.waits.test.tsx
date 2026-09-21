@@ -52,6 +52,13 @@ describe('ShadeSwitch — saying what it waits for', () => {
     expect(screen.queryByRole('button', { name: 'Schatten neu berechnen' })).toBeNull();
   });
 
+  it('holds the Zeitraum still while the shade is computed', () => {
+    // A month picked mid-rebuild was overwritten by the rebuild's season map,
+    // and the select went on naming the month (review, 2026-09-21).
+    show({ rebuilding: true });
+    expect((screen.getByLabelText(/Zeitraum/) as HTMLSelectElement).disabled).toBe(true);
+  });
+
   it('keeps its own name while nothing is computed', () => {
     show({ busy: true });
     expect(screen.getByRole('button', { name: 'Schatten neu berechnen' })).toBeDefined();

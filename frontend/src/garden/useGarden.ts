@@ -53,7 +53,7 @@ export function useGarden(
     client, garden.share_token, status, derived.setLightMap, selection.kind === 'none', setGarden,
   );
 
-  const computeShade = useComputeShade(derived.lightMap, light.rebuild, suggestions.afterShade);
+  const computeShade = useComputeShade(light.rebuilt, light.rebuild, suggestions.afterShade);
 
   const { run, setStatus } = status;
   const undoLast = useCallback(() => {

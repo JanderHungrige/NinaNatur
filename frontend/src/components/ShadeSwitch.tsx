@@ -168,7 +168,7 @@ export function ShadeSwitch({
               Zeitraum
               <select
                 value={month ?? 'season'}
-                disabled={!on}
+                disabled={!on || rebuilding}
                 onChange={(e) =>
                   onMonth(e.target.value === 'season' ? null : Number(e.target.value))
                 }

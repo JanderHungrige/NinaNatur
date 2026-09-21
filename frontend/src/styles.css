@@ -769,7 +769,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: var(--text-lg); line-height: 1;
 }
 .suggestion-row__plant[aria-disabled='true'],
-.suggestions__shade[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
+.suggestions__shade[aria-disabled='true'],
+.map-picker button[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
 .suggestion-row__traits,
 .suggestion-row__extra {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem; min-width: 0;

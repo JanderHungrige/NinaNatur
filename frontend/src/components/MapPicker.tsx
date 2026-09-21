@@ -178,7 +178,9 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
           if (e.key === 'Enter') find();
         }}
       />
-      <button type="button" onClick={find} disabled={busy || searching}>
+      {/* aria-disabled while it searches, not disabled: a button disabled
+          under the keyboard throws its focus to the page (review). */}
+      <button type="button" onClick={find} disabled={busy} aria-disabled={searching || undefined}>
         {searching ? <Working label="Suche…" /> : 'Suchen'}
       </button>
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GardenOut } from '../api/client';
@@ -151,6 +151,32 @@ describe('GardenCanvas — two fingers', () => {
     finger('pointerUp', 2, 500);
     finger('pointerUp', 1, 300);
     expect(span()).toBeCloseTo(before * 2, 1);
+  });
+
+  it('zooms once when Safari sends its own gesture for the same pinch', () => {
+    // On an iPhone the pinch arrives as touches *and* as gesturechange; both
+    // zoomed, so a spread to twice the distance zoomed four times over.
+    show();
+    const before = span();
+    finger('pointerDown', 1, 300);
+    finger('pointerDown', 2, 500);
+    finger('pointerMove', 2, 700);
+    const gesture = Object.assign(new Event('gesturechange', { cancelable: true }),
+      { scale: 2, clientX: 500, clientY: 300 });
+    act(() => { surface().dispatchEvent(gesture); });
+    finger('pointerUp', 2, 700);
+    finger('pointerUp', 1, 300);
+    expect(gesture.defaultPrevented).toBe(true);
+    expect(span()).toBeCloseTo(before / 2, 1);
+  });
+
+  it('keeps the plan when a gesture comes without a position', () => {
+    show();
+    const gesture = Object.assign(new Event('gesturechange', { cancelable: true }), { scale: 2 });
+    act(() => { surface().dispatchEvent(gesture); });
+    expect(Number.isFinite(span())).toBe(true);
+    expect((surface().getAttribute('viewBox') ?? '').split(' ').every((n) => Number.isFinite(Number(n))))
+      .toBe(true);
   });
 
   it('a second finger ends whatever the first was dragging', () => {

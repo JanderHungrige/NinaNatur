@@ -70,7 +70,9 @@ export function GardenCanvas({
   onMoveObstacle,
   onReshapeObstacle,
 }: GardenCanvasProps) {
-  const { view, setView, surface, stage, zoom, moving } = useViewport(size);
+  // Set while two fingers pinch, so Safari's own gesture does not zoom as well.
+  const touchPinch = useRef(false);
+  const { view, setView, surface, stage, zoom, moving } = useViewport(size, touchPinch);
   const readout = useRef<SunReadoutHandle>(null);
   // The same functions from render to render, or the memoised scene redraws.
   const handlers = useStableHandlers({
@@ -173,11 +175,15 @@ export function GardenCanvas({
       gestures.cancelPan();
       elementDrag.cancel();
       clusterDrag.cancel();
+      touchPinch.current = true;
       moving.start();
     },
     onChange: ({ scale, at, moved }) =>
       setView((current) => panBy(zoomAt(current, at, 1 / scale), moved.x, moved.y)),
-    onEnd: moving.stop,
+    onEnd: () => {
+      touchPinch.current = false;
+      moving.stop();
+    },
   });
 
   return (

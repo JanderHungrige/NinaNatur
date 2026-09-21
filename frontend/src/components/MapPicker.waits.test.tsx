@@ -24,11 +24,19 @@ describe('MapPicker — saying what it waits for', () => {
     // Nominatim is a free service and answers when it can; a button that only
     // greys out looks like a click that did nothing.
     let answer: (places: typeof ORTE) => void = () => undefined;
-    show({ search: () => new Promise((resolve) => { answer = resolve; }) });
+    const search = vi.fn(() => new Promise<typeof ORTE>((resolve) => { answer = resolve; }));
+    show({ search });
     fireEvent.change(screen.getByLabelText(/Adresse/), { target: { value: 'Weinberg' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+    const button = screen.getByRole('button', { name: 'Suchen' });
+    button.focus();
+    fireEvent.click(button);
     const searching = screen.getByRole('button', { name: 'Suche…' }) as HTMLButtonElement;
-    expect(searching.disabled).toBe(true);
+    // Held, not disabled: a disabled button under the keyboard drops the focus.
+    expect(searching.disabled).toBe(false);
+    expect(searching.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(searching);
+    fireEvent.click(searching);
+    expect(search).toHaveBeenCalledTimes(1);
     expect(searching.querySelector('.working__spinner')?.getAttribute('aria-hidden')).toBe('true');
 
     answer(ORTE);

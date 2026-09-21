@@ -1,3 +1,5 @@
+import { type MouseEvent, useEffect, useLayoutEffect, useRef } from 'react';
+
 import type { DayWatch } from '../garden/useDay';
 import { usePrefersReducedMotion } from '../usePrefersReducedMotion';
 import { Working } from './Working';
@@ -34,20 +36,27 @@ export function clockTime(month: number, dayOfMonth: number, minute: number): st
  */
 export function DayPlayer({ watch }: Props) {
   const reduced = usePrefersReducedMotion();
-  const { shadows, frame, loading, failed } = watch;
+  const { shadows, frame, loading, failed, pause } = watch;
+  const retrying = useKeptFocus(loading, failed, shadows);
+
+  // Reduced motion switched on mid-play: stop the day rather than hide the only
+  // way to stop it (review, 2026-09-21).
+  useEffect(() => {
+    if (reduced) pause();
+  }, [reduced, pause]);
 
   if (loading) {
     return (
-      <div className="day-player">
+      <div className="day-player" ref={retrying.root} tabIndex={-1}>
         <Working label="Tagesverlauf wird berechnet…" />
       </div>
     );
   }
   if (failed) {
     return (
-      <div className="day-player">
+      <div className="day-player" ref={retrying.root} tabIndex={-1}>
         <p className="hint day-player__problem">Tagesverlauf konnte nicht berechnet werden.</p>
-        <button type="button" className="chip" onClick={watch.retry}>
+        <button type="button" className="chip" onClick={(event) => retrying.press(event, watch.retry)}>
           Noch einmal versuchen
         </button>
       </div>
@@ -55,7 +64,11 @@ export function DayPlayer({ watch }: Props) {
   }
   if (shadows === null) return null;
   if (shadows.frames.length === 0) {
-    return <p className="hint">An diesem Tag steht die Sonne nie hoch genug für Schatten.</p>;
+    return (
+      <p className="hint" ref={retrying.root} tabIndex={-1}>
+        An diesem Tag steht die Sonne nie hoch genug für Schatten.
+      </p>
+    );
   }
 
   const last = shadows.frames.length - 1;
@@ -63,7 +76,8 @@ export function DayPlayer({ watch }: Props) {
   const time = clockTime(shadows.month, shadows.day, shown.minute);
 
   return (
-    <div className="day-player" role="group" aria-label="Tagesverlauf abspielen">
+    <div className="day-player" role="group" aria-label="Tagesverlauf abspielen" ref={retrying.root}
+         tabIndex={-1}>
       {!reduced && <PlayButton playing={watch.playing} onPlay={watch.play} onPause={watch.pause} />}
       <input
         type="range"
@@ -96,4 +110,40 @@ function PlayButton({ playing, onPlay, onPause }: {
       <span aria-hidden="true">▶</span> Tag abspielen
     </button>
   );
+}
+
+/**
+ * Where the keyboard goes after "Noch einmal versuchen".
+ *
+ * The button goes the moment it is pressed, because the player shows its wait
+ * instead, and focus fell to the page (review, 2026-09-21). It is held on the
+ * player while the day is computed, and handed to its first control once it
+ * is there — unless the reader has moved on by then.
+ */
+function useKeptFocus(loading: boolean, failed: boolean, shadows: unknown) {
+  const root = useRef<HTMLElement | null>(null);
+  const pending = useRef(false);
+  const press = (event: MouseEvent<HTMLButtonElement>, retry: () => void) => {
+    pending.current = document.activeElement === event.currentTarget;
+    retry();
+  };
+  useLayoutEffect(() => {
+    if (!pending.current) return;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (!lost && !root.current?.contains(document.activeElement)) {
+      pending.current = false;
+      return;
+    }
+    const control = root.current?.querySelector<HTMLElement>('button, input');
+    if (loading || control === null || control === undefined) {
+      root.current?.focus();
+    } else {
+      control.focus();
+    }
+    if (!loading) pending.current = false;
+  }, [loading, failed, shadows]);
+  return {
+    root: (element: HTMLElement | null) => { root.current = element; },
+    press,
+  };
 }
