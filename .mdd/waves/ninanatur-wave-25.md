@@ -598,6 +598,30 @@ Three stages:
   disabled button wore the busy cursor; the host's logs showed no rebuild was
   ever asked for. Fixed in this release.
 
+- **2026-09-21 — the owner's second round, after V0.23.217** (branch
+  `feat/ninanatur-owner-check`, not yet on the preview). Built as two parallel
+  builders and reviewed like the first round.
+  - *Suggestions by growing conditions and insect value* (doc 13, `fit/rank.py`):
+    rank = growing × (1 + weight × insect), the weight derived per number of
+    axes so a borderline plant never outranks an all-optimal one. The light cut
+    works both ways — the best fit for the shade as for the sun — and
+    parasites (Lathraea, Orobanche, Cuscuta, Viscum …) are never suggested.
+  - *Sun hours on EIVE's scale* (doc 07): straight lines between anchors instead
+    of a staircase of classic rungs; stored beds moved across once from their
+    stored hours (`ingest/light_scale.py`), so no garden rebuilds for it.
+  - *The map's warning and the list agree* (doc 67, `fit/light_fit.py`): one rule,
+    the species' niche width, for what is offered and what is called misplaced.
+  - *The ground around the garden* from OpenStreetMap landcover (doc 114),
+    fetched after the answer, never while somebody waits, with a six-hour pause
+    after a failure.
+  - *A street is drawn like a building*: the garden's ground is not coloured
+    across it.
+- **2026-09-21 — the owner's look at V0.23.217 itself**: the tool hint fades
+  after seven seconds (doc 87); roof lines stay inside a house that is not a
+  rectangle, hips ending on its own corners (doc 98, `garden/roof_lines.py`);
+  Draft Sketch's street line no longer runs through a house standing on the
+  road, and a road's rounded end has its line again (doc 98).
+
 ## What each one is
 
 ### 0. which-tiles-and-whose
