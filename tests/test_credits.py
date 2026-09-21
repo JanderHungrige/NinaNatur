@@ -64,9 +64,19 @@ def test_the_building_model_is_credited_only_where_it_measured_something() -> No
     [ground_only] = credits_for(_garden(height_source="assumed"), ground=_ground(),
                                 horizon_source=None)
     assert ground_only.about == "ground"
-    both = credits_for(_garden(height_source="survey"), ground=_ground(),
+    both = credits_for(_garden(height_source="surveyed"), ground=_ground(),
                        horizon_source=None)
     assert [c.about for c in both] == ["ground, buildings"]
+
+
+def test_the_building_credit_answers_to_what_the_survey_writes() -> None:
+    """It compared against "survey", which nothing writes, and these tests used
+    the same word — so the building model was credited here and never on a page."""
+    from ninanatur.geo.surroundings import HeightSource
+
+    found = credits_for(_garden(height_source=HeightSource.SURVEYED.value), ground=_ground(),
+                        horizon_source=None)
+    assert "buildings" in found[0].about
 
 
 def test_every_state_with_a_building_model_also_publishes_its_ground() -> None:
@@ -95,7 +105,7 @@ def test_every_state_with_a_building_model_also_publishes_its_ground() -> None:
 def test_a_state_that_gave_two_things_is_thanked_once_for_both() -> None:
     """Bayern's ground and its roofs are one licence and one attribution. Two
     identical paragraphs under a plan is not more correct, only longer."""
-    found = credits_for(_garden(height_source="survey"), ground=_ground(),
+    found = credits_for(_garden(height_source="surveyed"), ground=_ground(),
                         horizon_source=None)
     assert len(found) == 1
     assert found[0].about == "ground, buildings"

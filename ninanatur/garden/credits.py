@@ -31,10 +31,13 @@ from geokachel.tile_sources import (
 from ninanatur.garden.models import Garden
 from ninanatur.geo.far_horizon import GLO30_SOURCE
 from ninanatur.geo.projection import LatLon
+from ninanatur.geo.surroundings import HeightSource
 from ninanatur.geo.terrain import TerrainWindow
 
-#: What a surveyed height means about where it came from (doc 93).
-SURVEYED = "survey"
+#: What a surveyed height means about where it came from (doc 93): the value
+#: the survey writes. It was the literal "survey", which nothing writes, so the
+#: building model was never credited for the houses it measured.
+SURVEYED = HeightSource.SURVEYED.value
 
 
 @dataclass(frozen=True)
