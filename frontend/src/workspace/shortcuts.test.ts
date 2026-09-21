@@ -28,7 +28,7 @@ describe('SHORTCUTS', () => {
     // menu key), useClipboard (C and V), useViewport (the wheel), and
     // useCanvasGestures and useHandleDrag (Alt).
     expect(chords('Im Plan')).toEqual([
-      'Tab', 'Eingabe', 'Leertaste', 'Umschalt+F10', 'Kontextmenü', 'Strg+C', 'Strg+V', 'Strg+Mausrad', 'Alt',
+      'Tab', 'Eingabe', 'Leertaste', 'Umschalt+F10', 'Kontextmenü', 'Strg+C', 'Strg+V', 'Mausrad', 'Alt',
     ]);
   });
 

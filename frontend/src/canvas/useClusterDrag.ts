@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { type Cluster, keepInside } from './clusters';
 import { type Point, type Viewport, toGarden } from './viewport';
@@ -29,20 +29,24 @@ export function useClusterDrag(options: Options) {
   const [dragging, setDragging] = useState<{ id: number; at: Point } | null>(null);
   const held = useRef<{ id: number; grabOffset: Point; moved: boolean } | null>(null);
   const latest = useRef<Point | null>(null);
+  // Through a ref, as in `useElementDrag`: listeners once per drag rather than
+  // once per move, and a `grab` that stays the same function.
+  const current = useRef(options);
+  current.current = options;
 
-  const metres = (event: { clientX: number; clientY: number }): Point => {
-    const rect = options.surface.current?.getBoundingClientRect();
+  const metres = useCallback((event: { clientX: number; clientY: number }): Point => {
+    const rect = current.current.surface.current?.getBoundingClientRect();
     return toGarden(
       { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) },
-      options.view,
+      current.current.view,
     );
-  };
+  }, []);
 
-  const grab = (plantingId: number, event: React.PointerEvent) => {
-    const cluster = options.clusters.find((c) => c.plantingId === plantingId);
+  const grab = useCallback((plantingId: number, event: React.PointerEvent) => {
+    const cluster = current.current.clusters.find((c) => c.plantingId === plantingId);
     if (cluster === undefined) return;
     // A refused grab is left to the surface beneath, which pans.
-    if (!options.movable(plantingId, event.pointerType === 'touch')) return;
+    if (!current.current.movable(plantingId, event.pointerType === 'touch')) return;
     // Otherwise the bed underneath reads this as the start of its own drag, and
     // the whole bed moves while the gardener is moving one patch in it.
     event.stopPropagation();
@@ -57,7 +61,7 @@ export function useClusterDrag(options: Options) {
     };
     latest.current = cluster.centre;
     setDragging({ id: plantingId, at: cluster.centre });
-  };
+  }, [metres]);
 
   /** Ended by a second finger (doc 91, B1): the patch stays where it was. */
   const cancel = () => {
@@ -66,8 +70,9 @@ export function useClusterDrag(options: Options) {
     setDragging(null);
   };
 
+  const holding = dragging !== null;
   useEffect(() => {
-    if (dragging === null) return undefined;
+    if (!holding) return undefined;
 
     const onMove = (event: PointerEvent) => {
       const active = held.current;
@@ -77,7 +82,7 @@ export function useClusterDrag(options: Options) {
         x: pointer.x + active.grabOffset.x,
         y: pointer.y + active.grabOffset.y,
       };
-      const outline = options.bedOf(active.id);
+      const outline = current.current.bedOf(active.id);
       const at = outline === null ? wanted : keepInside(outline, wanted);
       active.moved = true;
       latest.current = at;
@@ -92,7 +97,7 @@ export function useClusterDrag(options: Options) {
       // A click selects a patch. Saving a move of nothing still costs a request
       // and a re-read of the whole garden.
       if (active === null || at === null || !active.moved) return;
-      options.onFinish(active.id, {
+      current.current.onFinish(active.id, {
         x: Math.round(at.x * 100) / 100,
         y: Math.round(at.y * 100) / 100,
       });
@@ -104,7 +109,19 @@ export function useClusterDrag(options: Options) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [dragging, options]);
+  }, [holding, metres]);
 
-  return { dragging, grab, cancel };
+  // While a patch is being dragged it is drawn where the pointer has it, not
+  // where the server last saw it — otherwise it snaps back on every frame. The
+  // same array otherwise, so the scene is not redrawn for nothing.
+  const { clusters } = options;
+  const shown = useMemo(() => clusters.map((cluster) => {
+    if (dragging?.id !== cluster.plantingId) return cluster;
+    const dx = dragging.at.x - cluster.centre.x;
+    const dy = dragging.at.y - cluster.centre.y;
+    return { ...cluster, centre: dragging.at,
+             dots: cluster.dots.map((dot) => ({ ...dot, x: dot.x + dx, y: dot.y + dy })) };
+  }), [clusters, dragging]);
+
+  return { dragging, grab, cancel, shown };
 }

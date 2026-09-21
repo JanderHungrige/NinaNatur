@@ -58,10 +58,10 @@ export const SHORTCUTS: readonly ShortcutGroup[] = [
         keys: [['Strg', 'V']],
         does: 'Pflanzt sie noch einmal, ins gewählte Beet oder ins Beet der gewählten Pflanzfläche.',
       },
-      { keys: [['Strg', 'Mausrad']], does: 'Zoomt dort, wo der Zeiger steht.' },
+      { keys: [['Mausrad']], does: 'Zoomt dort, wo der Zeiger steht.' },
       {
         keys: [['Alt']],
-        does: 'Gedrückt gehalten: setzt eine Ecke abseits des Rasters und dreht ohne 15°-Schritte.',
+        does: 'Gedrückt gehalten: setzt eine Ecke frei, ohne einzurasten, und dreht ohne 15°-Schritte.',
       },
     ],
   },

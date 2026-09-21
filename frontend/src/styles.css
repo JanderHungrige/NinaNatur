@@ -1315,7 +1315,12 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 /* The wobble goes on the group, not on each shape: a filter per object is a
    filter re-run per object. */
 /* The objects' filter is the theme's now (doc 96): an attribute, which the
-   two `filter: none` rules below still override. */
+   `filter: none` rules below still override. */
+
+/* While the plan moves, the filter pauses (the owner's check, 2026-09-21, #11).
+   It is worked out per pixel on every frame of a pan or a zoom, and it was most
+   of what a frame cost. It comes back once the plan stands still (`useMoving`). */
+.canvas--moving .canvas__objects { filter: none; }
 
 
 /* Texture is decoration. When the system asks for more contrast, or paints its

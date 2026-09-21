@@ -9,6 +9,7 @@
 import { useRef } from 'react';
 
 import { snapNear } from './snap';
+import type { Moving } from './useMoving';
 import { type Point, type Viewport, panBy, toGarden } from './viewport';
 
 /** Two decimals: a viewpoint is a place someone stands, not a survey mark. */
@@ -40,6 +41,8 @@ interface Options {
   placing: boolean;
   onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
   onViewpointPlaced: () => void;
+  /** Told when a pan starts and stops, so the costly paint can pause. */
+  moving?: Moving | undefined;
 }
 
 export function useCanvasGestures(options: Options) {
@@ -92,6 +95,7 @@ export function useCanvasGestures(options: Options) {
     if (from === null) return;
     const start = began.current;
     if (start !== null && Math.hypot(event.clientX - start.x, event.clientY - start.y) > MOVED_PX) {
+      if (!panned.current) options.moving?.start();
       panned.current = true;
     }
     pan.current = { x: event.clientX, y: event.clientY };
@@ -110,12 +114,16 @@ export function useCanvasGestures(options: Options) {
       return;
     }
     pan.current = null;
+    options.moving?.stop();
   };
 
   /** A second finger landed (doc 91, B1): whatever the first was panning stops. */
   const cancelPan = () => {
     pan.current = null;
   };
+
+  /** Whether a pan holds the plan: nothing under the pointer is worth reading then. */
+  const isPanning = () => pan.current !== null && panned.current;
 
   /** Swallows the click that ends a pan, before any shape under it hears it. */
   const onClickCapture = (event: React.MouseEvent<SVGSVGElement>) => {
@@ -141,5 +149,5 @@ export function useCanvasGestures(options: Options) {
     options.addVertex(snapNear(at, options.spacing, reach));
   };
 
-  return { onPointerDown, onPointerMove, endDrag, cancelPan, onClickCapture, onClick };
+  return { onPointerDown, onPointerMove, endDrag, cancelPan, isPanning, onClickCapture, onClick };
 }

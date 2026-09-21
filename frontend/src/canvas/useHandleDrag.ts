@@ -23,8 +23,16 @@ export function useHandleDrag(options: Options): {
   preview: Box | null;
   grabHandle: (handle: Handle | 'rotate', event: React.PointerEvent) => void;
 } {
-  const perPixel = options.view.spanM / options.view.widthPx;
   const [preview, setPreview] = useState<Box | null>(null);
+  // Options and the box being shown, through refs: the listeners below are put
+  // on once per drag, not once per pointer move (the owner's check, #11).
+  const current = useRef(options);
+  current.current = options;
+  const shown = useRef<Box | null>(null);
+  const show = (box: Box | null) => {
+    shown.current = box;
+    setPreview(box);
+  };
   const grab = useRef<{
     handle: Handle | 'rotate';
     startPx: { x: number; y: number };
@@ -43,7 +51,7 @@ export function useHandleDrag(options: Options): {
       box: options.selectedBox,
       moved: false,
     };
-    setPreview(options.selectedBox);
+    show(options.selectedBox);
   };
 
   /**
@@ -51,46 +59,49 @@ export function useHandleDrag(options: Options): {
    * leaves the little square mid-gesture must keep resizing, which is what
    * makes a handle feel like a handle.
    */
+  const holding = preview !== null;
   useEffect(() => {
-    if (preview === null) return undefined;
+    if (!holding) return undefined;
     const onMove = (event: PointerEvent) => {
       const active = grab.current;
       if (active === null) return;
+      const { view, surface, keepSquare } = current.current;
+      const perPixel = view.spanM / view.widthPx;
       const dxPx = event.clientX - active.startPx.x;
       const dyPx = event.clientY - active.startPx.y;
       if (dxPx !== 0 || dyPx !== 0) active.moved = true;
 
       if (active.handle === 'rotate') {
-        const rect = options.surface.current?.getBoundingClientRect();
+        const rect = surface.current?.getBoundingClientRect();
         const pointer = toGarden(
           { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) },
-          options.view,
+          view,
         );
-        setPreview({
+        show({
           ...active.box,
           rotation: rotateBy(active.box, pointer, { free: event.altKey }),
         });
         return;
       }
       // Screen y grows downward, garden y grows north.
-      setPreview(
+      show(
         resizeBy(
           active.box,
           active.handle,
           { dx: dxPx * perPixel, dy: -dyPx * perPixel },
-          { keepSquare: options.keepSquare },
+          { keepSquare },
         ),
       );
     };
     const onUp = () => {
       const active = grab.current;
       grab.current = null;
-      const shape = preview;
-      setPreview(null);
+      const shape = shown.current;
+      show(null);
       // Clicking a handle is not a resize. Saving one anyway costs a PATCH and
       // a recomputation of every bed's light for a gesture that changed nothing.
       if (active === null || !active.moved || shape === null) return;
-      options.onFinish(shape);
+      current.current.onFinish(shape);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -98,7 +109,7 @@ export function useHandleDrag(options: Options): {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [preview, perPixel, options]);
+  }, [holding]);
 
   return { preview, grabHandle };
 }

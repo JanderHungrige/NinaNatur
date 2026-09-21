@@ -44,6 +44,18 @@
   transform: scale(1.8);
 }
 
+/* While the plan moves (#11), his paper and his splotches pause: they are the
+   costliest paint on every frame of a pan. Plain dots stand in for the dabs
+   until it stops (`useMoving`). */
+.canvas--moving .plan-theme--draft-sketch .canvas__paper {
+  display: none;
+}
+
+.canvas--moving .plan-theme--draft-sketch .bloom-dot {
+  mask: none;
+  transform: none;
+}
+
 /* The viewpoint in his ink: a black dot with the paper round it. */
 .plan-theme--draft-sketch .viewpoint circle {
   fill: #000000;

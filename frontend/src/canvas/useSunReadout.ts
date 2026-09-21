@@ -15,13 +15,12 @@ export interface Readout {
 /**
  * What the sun map says under the pointer.
  *
- * A readout rather than a `<title>` on every cell: the map is up to six hundred
- * rects with `pointer-events: none`, which is what lets a click reach the bed
- * underneath it. Turning that on for a tooltip would make the wash swallow
- * every selection on the plan.
+ * A readout rather than a `<title>` on the map: the map is a few paths with
+ * `pointer-events: none`, which is what lets a click reach the bed underneath
+ * it. Turning that on for a tooltip would make the wash swallow every selection
+ * on the plan.
  *
- * Its own hook because `GardenCanvas` is long, and because this is the same
- * shape as every other pointer concern already living in `canvas/`.
+ * Its state lives in `SunReadout`, which is all a pointer move re-renders.
  */
 export function useSunReadout(
   map: LightMap | undefined,

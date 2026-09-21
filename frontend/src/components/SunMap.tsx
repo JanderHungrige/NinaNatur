@@ -1,4 +1,7 @@
+import { memo, useMemo } from 'react';
+
 import type { LightMap } from '../api/client';
+import { cellPaths } from '../canvas/cellPaths';
 
 /** What is drawn over the plan. Exactly one of the two at a time.
  *
@@ -146,44 +149,46 @@ export function atPoint(map: LightMap, x: number, y: number): AtPoint | null {
  * the first version used one ink for both themes and was simply not there in
  * the dark one.
  */
-export function SunMap({ map, mode }: Props) {
+function SunMapPaths({ map, mode }: Props) {
+  // One path per wash and per ground-or-roof (#11): at most twenty, however
+  // fine the grid. Worked out again only when the map or the mode changes.
+  const paths = useMemo(() => [...cellPaths(map, (index) => {
+    const hours = map.hours[index];
+    // Null is a building whose height nobody has recorded — the one case
+    // the model cannot answer. Everything else has a surface: the ground,
+    // or the roof standing on it.
+    if (hours === null || hours === undefined) return null;
+    const wash = washFor(hours);
+    if (wash === null || wash.strength <= 0) return null;
+    // The day keeps only the sunny half. A grey wash under a grey shadow
+    // hides the one thing on the plan that is supposed to be moving.
+    if (mode === 'day' && wash.ink === 'shade') return null;
+    return `${wash.ink}|${wash.strength}|${map.roof[index] === true ? 'roof' : 'ground'}`;
+  })], [map, mode]);
   return (
     <g
       className={`sun-map sun-map--${mode}`}
       aria-hidden="true"
       pointerEvents="none"
     >
-      {map.hours.map((hours, index) => {
-        // Null is a building whose height nobody has recorded — the one case
-        // the model cannot answer. Everything else has a surface: the ground,
-        // or the roof standing on it.
-        if (hours === null) return null;
-        const wash = washFor(hours);
-        if (wash === null || wash.strength <= 0) return null;
-        // The day keeps only the sunny half. A grey wash under a grey shadow
-        // hides the one thing on the plan that is supposed to be moving.
-        if (mode === 'day' && wash.ink === 'shade') return null;
-        const col = index % map.cols;
-        const row = Math.floor(index / map.cols);
+      {paths.map(([key, d]) => {
+        const [ink, strength, surface] = key.split('|');
         return (
-          <rect
-            key={index}
-            className={
-              map.roof[index] === true
-                ? `sun-map__cell sun-map__cell--${wash.ink} sun-map__cell--roof`
-                : `sun-map__cell sun-map__cell--${wash.ink}`
-            }
-            x={map.min_x + col * map.cell_m}
-            y={-(map.min_y + (row + 1) * map.cell_m)}
-            width={map.cell_m}
-            height={map.cell_m}
-            opacity={wash.strength * MAX_OPACITY}
+          <path
+            key={key}
+            className={surface === 'roof'
+              ? `sun-map__cell sun-map__cell--${ink} sun-map__cell--roof`
+              : `sun-map__cell sun-map__cell--${ink}`}
+            d={d}
+            opacity={Number(strength) * MAX_OPACITY}
           />
         );
       })}
     </g>
   );
 }
+
+export const SunMap = memo(SunMapPaths);
 
 /** The five bands the legend names, brightest first. */
 export const BANDS: ReadonlyArray<readonly [number, string]> = [

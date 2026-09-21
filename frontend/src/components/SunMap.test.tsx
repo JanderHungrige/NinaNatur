@@ -24,6 +24,12 @@ function map(overrides: Partial<LightMap> = {}): LightMap {
   } as LightMap;
 }
 
+/** How many cells a path covers: each rectangle is `M x,y h width …`, one cell tall. */
+function cellsIn(path: Element, cell = 1): number {
+  const widths = [...(path.getAttribute('d') ?? '').matchAll(/M[^h]*h([\d.]+)/g)];
+  return widths.reduce((sum, m) => sum + Number(m[1]) / cell, 0);
+}
+
 describe('SunMap — one map, two inks', () => {
   function draw(mode: 'hours' | 'day', over = map()) {
     const { container } = render(
@@ -86,13 +92,27 @@ describe('SunMap — one map, two inks', () => {
       max_hours: 9.0,
     });
     const cells = draw('hours', roofed);
-    expect(cells).toHaveLength(4);
-    expect(cells.filter((c) => c.classList.contains('sun-map__cell--roof'))).toHaveLength(2);
+    expect(cells.reduce((sum, c) => sum + cellsIn(c), 0)).toBe(4);
+    const roofs = cells.filter((c) => c.classList.contains('sun-map__cell--roof'));
+    expect(roofs.reduce((sum, c) => sum + cellsIn(c), 0)).toBe(2);
   });
 
   it('draws nothing for a building whose height nobody recorded', () => {
     const unknown = map({ hours: [null, null, 9.0, 9.0], roof: [true, true, false, false] });
-    expect(draw('hours', unknown)).toHaveLength(2);
+    expect(draw('hours', unknown).reduce((sum, c) => sum + cellsIn(c), 0)).toBe(2);
+  });
+
+  it('draws as many paths as there are washes, however fine the grid', () => {
+    // One rect per cell was thousands of nodes on a garden made from the map,
+    // rebuilt and repainted on every pan (the owner's check, #11).
+    const cols = 120;
+    const hours = Array.from({ length: cols * cols }, (_, i) => (i % cols < cols / 2 ? 1.0 : 9.0));
+    const fine = map({ cols, rows: cols, cell_m: 0.5, hours, roof: hours.map(() => false) });
+    const paths = draw('hours', fine);
+    expect(paths).toHaveLength(2);
+    // A run of equal cells along a row is one rectangle.
+    expect(paths.every((p) => (p.getAttribute('d')?.match(/M/g) ?? []).length === cols)).toBe(true);
+    expect(cellsIn(paths[0]!, 0.5) + cellsIn(paths[1]!, 0.5)).toBe(cols * cols);
   });
 });
 

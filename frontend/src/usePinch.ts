@@ -13,6 +13,8 @@ interface Options {
   /** A second finger landed: whatever the first one was doing is over. */
   onStart: () => void;
   onChange: (change: PinchChange) => void;
+  /** The pair is broken: one finger or none is left. */
+  onEnd?: () => void;
 }
 
 type Handler = (event: ReactPointerEvent<Element>) => void;
@@ -33,7 +35,7 @@ interface Pinch {
  * every finger before a shape under one does, and while two are down it keeps
  * their moves from the pan and the drags beneath.
  */
-export function usePinch({ onStart, onChange }: Options): Pinch {
+export function usePinch({ onStart, onChange, onEnd }: Options): Pinch {
   const fingers = useRef(new Map<number, { x: number; y: number }>());
   const last = useRef<{ spread: number; middle: { x: number; y: number } } | null>(null);
 
@@ -77,7 +79,10 @@ export function usePinch({ onStart, onChange }: Options): Pinch {
   const onPointerUpCapture: Handler = (event) => {
     if (!fingers.current.delete(event.pointerId)) return;
     // One finger left of two is no pan either: it waits to be lifted.
-    if (fingers.current.size < 2) last.current = null;
+    if (fingers.current.size < 2 && last.current !== null) {
+      last.current = null;
+      onEnd?.();
+    }
   };
 
   return {

@@ -13,6 +13,8 @@ const TAP_PX = 6;
 /** How far apart two fingers must go for the map to step a level: half as far
  *  again for one in, two thirds for one out (doc 31, B2). */
 const PINCH_STEP = 1.5;
+/** One mouse-wheel notch, in pixels: one level of tiles. */
+const WHEEL_NOTCH_PX = 100;
 
 interface Options {
   /** The size to draw at until the surface has been measured. */
@@ -118,6 +120,24 @@ export function useMapSurface({ fallback, size, shown, look, onLook, onZoom }: O
       window.removeEventListener('pointercancel', done);
     };
   }, [panning, box.widthPx, box.heightPx]);
+
+  // The wheel steps the zoom too, a level a notch (the owner's check,
+  // 2026-09-21, #4). Small trackpad deltas add up to a notch before they count.
+  // Over the map only, so the page still scrolls past it everywhere else.
+  useEffect(() => {
+    const element = ref.current;
+    if (element === null || !shown) return undefined;
+    let scrolled = 0;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      scrolled += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1);
+      if (Math.abs(scrolled) < WHEEL_NOTCH_PX) return;
+      zoomBy.current(scrolled < 0 ? 1 : -1);
+      scrolled = 0;
+    };
+    element.addEventListener('wheel', onWheel, { passive: false });
+    return () => element.removeEventListener('wheel', onWheel);
+  }, [shown]);
 
   // The tiles come in whole levels, so a spread or a pinch steps the zoom
   // rather than stretching the picture between levels (B2).
