@@ -192,5 +192,22 @@ def test_a_pent_wall_split_where_the_ring_starts_is_one_line() -> None:
     assert _rounded(lines) == {frozenset({(10.0, 4.0), (0.0, 4.0)})}
 
 
+def test_a_node_in_an_oblique_upper_wall_keeps_the_whole_wall() -> None:
+    """Judged piece by piece, the low end of a garage row's upper wall fell
+    below the house's middle and was left out (review, 2026-09-21)."""
+    row = [(0.0, 0.0), (30.0, 0.0), (30.0, 5.0), (3.0, 5.0), (0.0, 5.0)]
+    whole = roof_lines(row, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=192.0)
+    assert _rounded(whole) == {frozenset({(30.0, 5.0), (0.0, 5.0)})}
+
+
+def test_a_real_kink_in_the_upper_wall_is_not_straightened_over_the_garden() -> None:
+    """Joined across, a wall kinked a quarter of a metre inwards was drawn
+    outside the house (review, 2026-09-21)."""
+    house = [(0.0, 0.0), (20.0, 0.0), (20.0, 6.0), (10.0, 5.756), (0.0, 6.0)]
+    lines = roof_lines(house, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=180.0)
+    assert _rounded(lines) == {frozenset({(20.0, 6.0), (10.0, 5.756)}),
+                               frozenset({(10.0, 5.756), (0.0, 6.0)})}
+
+
 def _round(point: tuple[float, float]) -> tuple[float, float]:
     return (round(point[0], 3) + 0.0, round(point[1], 3) + 0.0)

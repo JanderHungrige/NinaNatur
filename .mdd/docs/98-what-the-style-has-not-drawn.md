@@ -58,6 +58,7 @@ test_files:
   - frontend/src/canvas/along.test.ts
   - frontend/src/canvas/scaleBar.test.ts
   - frontend/src/themes/draftSketchVocabulary.test.tsx
+  - frontend/src/themes/draftSketchRoads.test.tsx
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
 data_flow: reads-existing
@@ -138,11 +139,16 @@ the roof the model knows, in garden metres.
   model's edge is its rectangle's, across the surveyed fall; a surveyed fall is
   a mean over roof faces and never exactly square to a wall, so that edge
   touches a real house at one corner, and cut to the outline nothing was left
-  of it — nor of its arrow (review, 2026-09-21). Walls that run straight on
-  (within 3°) are one line: an OpenStreetMap outline carries a node wherever a
-  neighbour's wall meets it, and half the buildings in a street have one. The
-  arrow stands in the middle of the whole upper edge, end to end, so a notch in
-  it keeps the arrow and does not tilt it.
+  of it — nor of its arrow (review, 2026-09-21). The walls are chosen on the
+  outline without the nodes that do not turn it (within 5 cm of the straight
+  line past them): an OpenStreetMap outline carries a node wherever a
+  neighbour's wall meets it, half the buildings in a street have one, and judged
+  piece by piece a split wall lost its low end or came back as two lines. A real
+  kink stays. The arrow starts on a drawn wall, the one nearest the middle of
+  the whole upper edge, and runs down the surveyed fall (`roofFall` on the
+  shape, from `roof_fall_deg`): aimed at the outline's middle, it leaned with
+  the shape of the house, and from the middle of an L's step it began over the
+  garden.
 - **flat, mixed, other, unknown, an unsurveyed pent, a pitch under 5°** — no
   lines: the model treats them as a plane at one height, and so does the
   drawing.

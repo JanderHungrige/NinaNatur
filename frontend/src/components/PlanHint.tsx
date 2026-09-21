@@ -58,6 +58,9 @@ function useSeen(ref: RefObject<HTMLElement | null>): boolean {
   useEffect(() => {
     const changed = () => setShowing(document.visibilityState !== 'hidden');
     document.addEventListener('visibilitychange', changed);
+    // Once more now that it listens: a tab switched between the render and
+    // this effect would otherwise go unnoticed until the next switch.
+    changed();
     return () => document.removeEventListener('visibilitychange', changed);
   }, []);
   return inView && showing;

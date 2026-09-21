@@ -78,7 +78,7 @@ def uphill_walls(footprint: list[Point], fall_deg: float) -> list[Line]:
     The wall the roof rises to is the one to draw.
     """
     down = (math.sin(math.radians(fall_deg)), math.cos(math.radians(fall_deg)))
-    ring = footprint if _twice_area(footprint) > 0 else footprint[::-1]
+    ring = _simplified(footprint if _twice_area(footprint) > 0 else footprint[::-1])
     heights = [-(x * down[0] + y * down[1]) for x, y in ring]
     middle = (max(heights) + min(heights)) / 2
     facing: list[tuple[float, Line]] = []
@@ -94,36 +94,29 @@ def uphill_walls(footprint: list[Point], fall_deg: float) -> list[Line]:
             facing.append((uphill, (a, b)))
     walls = [wall for uphill, wall in facing if uphill >= FACING_UPHILL]
     if walls or not facing:
-        return _joined(walls)
+        return walls
     return [max(facing)[1]]
 
 
-#: Two walls meeting at less than this run on as one.
-STRAIGHT_ON_DEG = 3.0
-
-
-def _joined(walls: list[Line]) -> list[Line]:
-    """Consecutive walls that run straight on, as one: an OpenStreetMap outline
-    carries a node wherever a neighbour's wall meets it, and half the buildings
-    in a street have one. Split, the upper edge was two lines, and its arrow was
-    drawn from the longer piece at an angle to the fall (review, 2026-09-21)."""
-    joined: list[Line] = []
-    for wall in walls:
-        if joined and joined[-1][1] == wall[0] and _straight_on(joined[-1], wall):
-            joined[-1] = (joined[-1][0], wall[1])
-        else:
-            joined.append(wall)
-    if len(joined) > 1 and joined[-1][1] == joined[0][0] and _straight_on(joined[-1], joined[0]):
-        joined[0] = (joined[-1][0], joined[0][1])
-        joined.pop()
-    return joined
-
-
-def _straight_on(first: Line, second: Line) -> bool:
-    a = math.atan2(first[1][1] - first[0][1], first[1][0] - first[0][0])
-    b = math.atan2(second[1][1] - second[0][1], second[1][0] - second[0][0])
-    turn = abs((b - a + math.pi) % (2 * math.pi) - math.pi)
-    return math.degrees(turn) < STRAIGHT_ON_DEG
+def _simplified(ring: list[Point]) -> list[Point]:
+    """The outline without the nodes that do not turn it: those within
+    `MIN_PIECE_M` of the straight line past them. An OpenStreetMap outline
+    carries a node wherever a neighbour's wall meets it — half the buildings in
+    a street have one — and a doubled closing point. Judged piece by piece, a
+    split wall lost its low end or came back as two lines, and its arrow was
+    drawn askew (review, 2026-09-21). A real kink is more than 5 cm and stays.
+    """
+    points = list(ring)
+    dropped = True
+    while dropped and len(points) > 3:
+        dropped = False
+        for index, here in enumerate(points):
+            before, after = points[index - 1], points[(index + 1) % len(points)]
+            if _distance_to_edge(here, before, after) < MIN_PIECE_M:
+                del points[index]
+                dropped = True
+                break
+    return points
 
 
 def _twice_area(ring: list[Point]) -> float:

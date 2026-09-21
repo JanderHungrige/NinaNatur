@@ -17,10 +17,9 @@ species' own niche width, *unsuitable* past 1.5 half-widths. Until 2026-09-21
 this warning used a fixed distance of two rungs instead, and warned about
 plants the list had just offered. What still differs is only *where* the light
 is read: the list ranks by the bed's average, the warning by the cell a cluster
-stands in — a corner darker than its bed is what this is for. Where there is no
-such cell, a cluster is judged by the value the list ranks its bed by: in a
-raised bed (its light is sampled at its height), in a bed narrower than a cell
-(sampled at its middle), and in a cell under a roof.
+stands in — a corner darker than its bed is what this is for. Where a cluster
+has no cell of its own, it is judged by the value the list ranks its bed by
+(`_hours_at`).
 """
 from __future__ import annotations
 
@@ -66,14 +65,11 @@ def misplaced_plantings(
 
     found: list[Misplaced] = []
     for bed in garden.beds:
-        # Where `lighting.recompute_light` sampled a point instead of averaging
-        # the bed's own cells, there are no cells to judge a cluster by.
-        sampled = bed.height_above_ground > 0 or grid.mean_over(bed.polygon) is None
         for planting in bed.plantings:
             if planting.taxon_id is None:
                 continue
             wanted = _wanted_light(conn, planting.taxon_id)
-            hours = None if wanted is None else _hours_at(grid, bed, planting, sampled)
+            hours = None if wanted is None else _hours_at(grid, bed, planting)
             if wanted is None or hours is None:
                 continue
             wants, width = wanted
@@ -111,27 +107,26 @@ def _wanted_light(conn: sqlite3.Connection, taxon_id: int) -> tuple[float, float
     return float(trait.value_num), None if width is None else width.value_num
 
 
-def _hours_at(grid: LightGrid, bed: Element, planting: object, sampled: bool) -> float | None:
-    """The sun a cluster gets: its own cell's, or else its bed's stored hours —
-    the value the list ranks the bed by."""
-    here = None if sampled else grid.at(*_where(bed, planting))
+def _hours_at(grid: LightGrid, bed: Element, planting: object) -> float | None:
+    """The sun a cluster gets: its own cell's, where it has one.
+
+    Otherwise the bed's stored hours, the value the list ranks the bed by: in a
+    raised bed (its light is sampled at its height, over whatever darkens the
+    ground grid beside it), for a cluster nobody has placed — it stands nowhere
+    in particular, and it is what the list has just planted — and in a cell
+    under a roof or outside the grid. Until the review of 2026-09-21 an unplaced
+    cluster was read at the bed's middle, and a species the list had just
+    offered was warned about the moment it was added.
+    """
+    at = _placed_at(bed, planting)
+    here = None if at is None or bed.height_above_ground > 0 else grid.at(*at)
     return bed.sun_hours if here is None else here
 
 
-def _where(bed: object, planting: object) -> tuple[float, float]:
-    """Where the cluster stands, in garden metres.
-
-    The gardener's position when there is one, the bed's middle otherwise — the
-    same fallback the shading model uses, and for the same reason.
-    """
+def _placed_at(bed: object, planting: object) -> tuple[float, float] | None:
+    """Where the gardener put the cluster, in garden metres; None if nowhere."""
     x = getattr(planting, "x", None)
     y = getattr(planting, "y", None)
-    if x is not None and y is not None:
-        return (float(getattr(bed, "x", 0.0)) + x, float(getattr(bed, "y", 0.0)) + y)
-    outline = getattr(bed, "polygon", [])
-    if not outline:
-        return (0.0, 0.0)
-    return (
-        sum(p[0] for p in outline) / len(outline),
-        sum(p[1] for p in outline) / len(outline),
-    )
+    if x is None or y is None:
+        return None
+    return (float(getattr(bed, "x", 0.0)) + x, float(getattr(bed, "y", 0.0)) + y)

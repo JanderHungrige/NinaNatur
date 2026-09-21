@@ -41,7 +41,7 @@ function obstacleShape(o: Obstacle): DecoratedShape {
     : null;
   return { key: `obstacle-${o.obstacle_id}`, symbol: SYMBOL.get(o.kind) ?? 'plain',
            ground: isGround(o.kind), kind: o.kind, points: toPoints(o.footprint), line,
-           raised: 0, roof: o.roof,
+           raised: 0, roof: o.roof, roofFall: o.roof_fall_deg,
            bandWidth: o.shape === 'line' ? o.width : null,
            shadow: o.shadow === null || o.shadow === undefined
              ? null : { x: o.shadow[0] ?? 0, y: o.shadow[1] ?? 0 },

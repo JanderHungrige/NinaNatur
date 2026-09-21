@@ -28,6 +28,9 @@ export interface DecoratedShape {
   roofLines: [Point, Point][];
   /** Its roof's shape, as stored: a pent's one line is its upper edge. */
   roof: string;
+  /** The bearing a surveyed roof falls towards (doc 94), or null: what a pent's
+   *  arrow points along. */
+  roofFall?: number | null;
   /** How wide the band round a line is, in metres, as the element carries it —
    *  null for anything that is not drawn along a line. Measuring it from the
    *  outline works for a straight way and not for one that bends: there the

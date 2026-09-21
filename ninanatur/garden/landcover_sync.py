@@ -44,6 +44,7 @@ from ninanatur.geo.landcover_store import fetched, save_landcover
 from ninanatur.geo.osm_landcover import fetch_once, landcover_in
 from ninanatur.geo.osm_streets import streets_in
 from ninanatur.geo.projection import LatLon, to_metres
+from ninanatur.web.logs import short_hash
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +66,10 @@ _failed_at: dict[str, float] = {}
 #: slot no longer bounds them (it is let go before the answer is sent), so a
 #: second press while Overpass is slow started a second fetch of the same land,
 #: and a handful of presses held as many server threads (review, 2026-09-21).
-#: A fetch that finds its garden already being fetched, or no room, is skipped
-#: and records no failure: the next rebuild asks again.
+#: A rebuild's fetch that finds its garden already being fetched, or no room,
+#: is skipped and records no failure: the next rebuild asks again. A new
+#: garden's is never skipped for room — only it knows the exact anchor, and the
+#: from-map route's own limit already bounds how many there are.
 MAX_BACKGROUND_FETCHES = 2
 _running: set[str] = set()
 _room = threading.BoundedSemaphore(MAX_BACKGROUND_FETCHES)
@@ -90,17 +93,19 @@ def background_connection() -> Iterator[sqlite3.Connection | None]:
 def fetch_later(token: str) -> None:
     """`ensure_landcover` for a garden, after its rebuild has answered. By
     token: the garden may be gone, and its id somebody else's, by then."""
-    _in_background(token, lambda conn: _ensure_by_token(conn, token))
+    _in_background(token, lambda conn: _ensure_by_token(conn, token), roomed=True)
 
 
 def add_later(token: str, anchor: LatLon, outline: list[list[float]]) -> None:
     """`add_landcover` for a garden just made, after its answer has gone out."""
-    _in_background(token, lambda conn: add_landcover(conn, token, anchor, outline))
+    _in_background(token, lambda conn: add_landcover(conn, token, anchor, outline), roomed=False)
 
 
-def _in_background(token: str, work: Callable[[sqlite3.Connection], object]) -> None:
-    if not _claim(token):
-        log.info("landcover for %s skipped: already running, or no room", token[:6])
+def _in_background(token: str, work: Callable[[sqlite3.Connection], object],
+                   *, roomed: bool) -> None:
+    if not _claim(token, roomed):
+        log.info("landcover for garden %s skipped: already running, or no room",
+                 short_hash(token))
         return
     try:
         with background_connection() as conn:
@@ -111,12 +116,13 @@ def _in_background(token: str, work: Callable[[sqlite3.Connection], object]) -> 
     finally:
         with _claims:
             _running.discard(token)
-            _room.release()
+            if roomed:
+                _room.release()
 
 
-def _claim(token: str) -> bool:
+def _claim(token: str, roomed: bool) -> bool:
     with _claims:
-        if token in _running or not _room.acquire(blocking=False):
+        if token in _running or (roomed and not _room.acquire(blocking=False)):
             return False
         _running.add(token)
         return True
@@ -131,17 +137,20 @@ def _ensure_by_token(conn: sqlite3.Connection, token: str) -> None:
 
 
 def _paused(token: str) -> bool:
-    failed = _failed_at.get(token)
+    with _claims:
+        failed = _failed_at.get(token)
     return failed is not None and time.monotonic() - failed < FAILURE_PAUSE_S
 
 
 def _failed(token: str | None) -> None:
-    """Remember a failure, and forget the ones whose pause is over."""
+    """Remember a failure, and forget the ones whose pause is over. Under the
+    lock: two fetches failing at once changed the dict while the other walked it."""
     now = time.monotonic()
-    for over in [key for key, at in _failed_at.items() if now - at >= FAILURE_PAUSE_S]:
-        del _failed_at[over]
-    if token is not None:
-        _failed_at[token] = now
+    with _claims:
+        for over in [key for key, at in _failed_at.items() if now - at >= FAILURE_PAUSE_S]:
+            del _failed_at[over]
+        if token is not None:
+            _failed_at[token] = now
 
 
 def _id_of(conn: sqlite3.Connection, token: str) -> int | None:
@@ -206,7 +215,7 @@ def _save_if_still(conn: sqlite3.Connection, garden_id: int, token: str,
     """Save, unless the garden went while Overpass was asked: its id may be
     another garden's by now, and that garden's land is elsewhere."""
     if _id_of(conn, token) != garden_id:
-        log.info("landcover for %s not kept: the garden is gone", token[:6])
+        log.info("landcover for garden %s not kept: it is gone", short_hash(token))
         return False
     save_landcover(conn, garden_id, areas, placed_by)
     return True

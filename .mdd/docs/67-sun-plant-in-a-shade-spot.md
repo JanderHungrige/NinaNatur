@@ -60,12 +60,19 @@ rules for one question (review, 2026-09-21).
 
 **Where the light is read** is the one difference left. The list ranks a bed by
 its average; the warning reads the cell a cluster stands in, because a corner
-darker than its bed is what it is for. A raised bed has no cells of its own —
-its light is sampled at its height, over whatever darkens the ground beside
-it — and neither has a bed narrower than a cell (sampled at its middle); both
-are judged by the value the list ranks them by. So is a cluster whose cell lies
-under a roof: `LightGrid.at` answers None there, as it always said it did, and
-until the review it had handed back the roof's sun. And the warning stays
+darker than its bed is what it is for. Where a cluster has no cell of its own
+it is judged by the value the list ranks its bed by (`misplaced._hours_at`):
+- **a cluster nobody placed** — what the list's add button plants. It stands
+  nowhere in particular; read at the bed's middle, a bright cell of a bed half
+  in shade, a species the list had just offered was warned about at once.
+- **a raised bed**, whose light is sampled at its height, over whatever darkens
+  the ground grid beside it;
+- **a cell under a roof**: `LightGrid.at` answers None there, as it always said
+  it did, and until the review it had handed back the roof's sun.
+
+A placed cluster in a bed narrower than a cell reads its own cell like any other:
+for a while the whole of such a border was judged by the one sample at its
+middle, and its shaded end lost its warning. And the warning stays
 on the season's grid when a month is shown (`api/light._read`): a month's grid
 had quietly taken its place, and warnings came and went with the months.
 

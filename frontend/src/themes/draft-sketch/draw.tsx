@@ -122,15 +122,25 @@ function tickMarks(o: Ticks, points: Point[], mpp: number, key: string): ReactNo
                strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;
 }
 
-/** A pent roof's one line is its upper edge, on the wall's own line where it
- *  cannot be seen; an arrow from its middle into the roof says which way it
- *  falls — drawn from the server's line and the outline, nothing else. */
-function fall(edge: [Point, Point], points: Point[]): string {
-  const [a, b] = edge;
-  const from = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+/** A pent roof's upper edge lies on the walls it rises to, where it cannot be
+ *  seen; an arrow from it into the roof says which way it falls. The arrow
+ *  starts on a drawn wall — the one nearest the middle of the whole edge, so a
+ *  notch or an L's step neither tilts it nor sets it over the garden — and runs
+ *  down the surveyed fall. Aimed at the outline's middle, it leaned with the
+ *  shape of the house (review, 2026-09-21); that is left for a roof whose fall
+ *  the drawing was not given. */
+function fall(lines: [Point, Point][], points: Point[], bearing: number | null | undefined): string {
+  const [a, b] = upperEdge(lines);
+  const from = nearestOn(lines, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
   const c = centreOf(points);
-  const tail = { x: from.x + (c.x - from.x) * 0.25, y: from.y + (c.y - from.y) * 0.25 };
-  const tip = { x: from.x + (c.x - from.x) * 1.1, y: from.y + (c.y - from.y) * 1.1 };
+  const reach = Math.hypot(c.x - from.x, c.y - from.y) || 1;
+  const down = bearing === null || bearing === undefined
+    ? { x: (c.x - from.x) / reach, y: (c.y - from.y) / reach }
+    : { x: Math.sin((bearing * Math.PI) / 180), y: Math.cos((bearing * Math.PI) / 180) };
+  const at = (share: number): Point => ({ x: from.x + down.x * reach * share,
+                                          y: from.y + down.y * reach * share });
+  const tail = at(0.25);
+  const tip = at(1.1);
   const back = Math.hypot(tip.x - tail.x, tip.y - tail.y) * 0.3;
   const heading = Math.atan2(tip.y - tail.y, tip.x - tail.x);
   const barb = (turn: number) => ({ x: tip.x - back * Math.cos(heading + turn),
@@ -138,8 +148,7 @@ function fall(edge: [Point, Point], points: Point[]): string {
   return segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]]);
 }
 
-/** A pent's whole upper edge, end to end: two walls where a notch cuts it, and
- *  its arrow stands in the middle of both, not of the longer piece. */
+/** A pent's whole upper edge, end to end: the two ends farthest apart. */
 function upperEdge(lines: [Point, Point][]): [Point, Point] {
   const ends = lines.flat();
   let best: [Point, Point] = lines[0]!;
@@ -153,10 +162,29 @@ function upperEdge(lines: [Point, Point][]): [Point, Point] {
   return best;
 }
 
+/** The point on the drawn lines nearest to `p`. */
+function nearestOn(lines: [Point, Point][], p: Point): Point {
+  let best = lines[0]![0];
+  let distance = Infinity;
+  for (const [a, b] of lines) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const length = dx * dx + dy * dy;
+    const t = length === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length));
+    const q = { x: a.x + t * dx, y: a.y + t * dy };
+    const d = Math.hypot(q.x - p.x, q.y - p.y);
+    if (d < distance) {
+      best = q;
+      distance = d;
+    }
+  }
+  return best;
+}
+
 function roof(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
   const lines = shape.roofLines;
   if (lines.length === 0) return null;
-  const arrow = shape.roof === 'pent' ? fall(upperEdge(lines), shape.points) : '';
+  const arrow = shape.roof === 'pent' ? fall(lines, shape.points, shape.roofFall) : '';
   const d = lines.map((line) => stroke(line, o.wave, mpp)).join('') + arrow;
   return <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
                strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;

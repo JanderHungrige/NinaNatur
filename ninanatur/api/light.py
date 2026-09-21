@@ -36,7 +36,7 @@ from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
 from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
 from ninanatur.geo.cloud_store import cloud_source
-from ninanatur.geo.landcover_store import draws_landcover
+from ninanatur.geo.landcover_store import draws_landcover, fetched
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain_store import cache_key, horizon_source
 from ninanatur.solar.day import MONTHS, shadow_day
@@ -96,7 +96,8 @@ def rebuild_light_map(
     ensure_terrain(conn, standing)
     # The land around it, for a garden made before it was fetched (doc 114):
     # after this answer has gone out, never while somebody waits for the light.
-    if not draws_landcover(conn, garden.garden_id):
+    # Asked and answered — nothing mapped is an answer too — is not asked again.
+    if not fetched(conn, garden.garden_id):
         background.add_task(landcover_sync.fetch_later, garden.share_token)
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.

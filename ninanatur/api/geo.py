@@ -142,8 +142,7 @@ def garden_from_map(
     # dozen buildings and no beds; the light is the slowest thing this app does
     # and the first thing somebody does next is draw, not read a shade map.
     made = load_garden(conn, garden_id)
-    # What the ground around it is (doc 114), from the same exact anchor —
-    # after the answer: creation already waits on Overpass twice.
+    # The ground around it (doc 114), from the exact anchor, after the answer.
     background.add_task(landcover_sync.add_later, made.share_token, anchor, polygon)
 
     return MapGardenOut(

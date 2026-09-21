@@ -221,6 +221,36 @@ def test_a_bed_narrower_than_a_cell_is_judged_by_its_own_light(conn: sqlite3.Con
     assert misplaced_plantings(conn, garden, _grid()) == []
 
 
+def test_a_placed_cluster_in_a_narrow_border_is_judged_by_its_own_cell(
+    conn: sqlite3.Connection,
+) -> None:
+    """A long border misses every cell centre, but not the cells: its shaded end
+    is still the shaded end (review, 2026-09-21 — for a while the whole border
+    was judged by the one sample at its middle)."""
+    garden_id, bed_id = _laid_out(conn, [[0, 0.55], [10, 0.55], [10, 0.95], [0, 0.95]], 9.0)
+    _species(conn, 10, 9.0, 2.0)
+    planting_id = add_planting(conn, bed_id, taxon_id=10, quantity=1)
+    bed = load_garden(conn, garden_id).beds[0]
+    place_planting(conn, planting_id, 1.0 - bed.x, 0.75 - bed.y)
+
+    [found] = misplaced_plantings(conn, load_garden(conn, garden_id), _grid())
+    assert (found.problem, found.sun_hours) == ("too_dark", 2.0)  # type: ignore[attr-defined]
+
+
+def test_an_unplaced_cluster_is_judged_by_what_the_list_ranked_its_bed_by(
+    conn: sqlite3.Connection,
+) -> None:
+    """Planted from the list, a cluster has no position. Read at the bed's middle
+    — a bright cell of a bed half in shade — a species the list had just offered
+    was warned about at once (review, 2026-09-21)."""
+    garden_id, bed_id = _laid_out(conn, [[0, 0], [10, 0], [10, 2], [0, 2]], 5.5)
+    _species(conn, 11, ellenberg_from_sun_hours(5.5), 1.0)
+    add_planting(conn, bed_id, taxon_id=11, quantity=1)
+    assert _grid().at(5.0, 1.0) == 9.0, "the middle is in the bright row"
+
+    assert misplaced_plantings(conn, load_garden(conn, garden_id), _grid()) == []
+
+
 def test_a_cluster_on_a_roofs_cell_is_not_judged_by_the_roofs_sun(
     conn: sqlite3.Connection,
 ) -> None:

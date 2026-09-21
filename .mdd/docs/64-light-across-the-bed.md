@@ -21,6 +21,7 @@ routes:
 models: [light_grid, element]
 test_files:
   - tests/test_light_grid.py
+  - tests/test_bed_light_fallback.py
   - tests/test_light_grid_extent.py
   - tests/test_roof_light.py
   - tests/test_roofshape.py
@@ -70,7 +71,11 @@ most building heights in this model are assumed and a 10 cm grid would claim
 more than the model knows.
 
 A bed's own light value is now the mean of the cells its polygon covers, not a
-point sample. Raised beds and beds narrower than one cell fall back to the point.
+point sample. Raised beds and beds narrower than one cell fall back to the point:
+the bed's middle, unless something built stands there — a border drawn across a
+map house's wall line had its middle inside the house and was stored as 0 h,
+deep shade, in full sun; then the first of its edges' middles and corners that is
+in the open (`lighting._open_point`, review of 2026-09-21).
 `mean_over` only asks the cells inside the bed's bounding box, widened by one
 cell each way (2026-09-21): the answer is the same to the last bit
 (`tests/test_light_grid_extent.py` checks it against the old full scan), and a

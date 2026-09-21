@@ -40,6 +40,7 @@ test_files:
   - tests/test_landcover_clip.py
   - tests/test_landcover_api.py
   - tests/test_landcover_sync.py
+  - tests/test_landcover_background.py
   - tests/test_no_network.py
   - tests/test_security_matrix.py
   - tests/test_plan_stylesheet.py
@@ -157,11 +158,15 @@ failed. The routes' heavy slot is let go when their own work ends
 hours by the garden's share token (an id is reused after a delete, a token
 never); a street fetch that fails still keeps the land, placed from the anchor.
 With the slot gone, nothing else bounded them, so one garden is fetched once at
-a time and at most two fetches run at once (`MAX_BACKGROUND_FETCHES`): a press
-while its garden is being fetched, or with no room, is skipped and records no
-failure. The tasks carry the token, not the id, and save only if the token still
+a time and at most two rebuild fetches run at once (`MAX_BACKGROUND_FETCHES`): a
+press while its garden is being fetched, or with no room, is skipped and records
+no failure. A new garden's fetch is never skipped for room — only the import
+knows the exact anchor, and the from-map route's own limit bounds how many there
+are. A garden whose answer is stored, nothing mapped included, is not scheduled
+at all. The tasks carry the token, not the id, and save only if the token still
 names the same garden: one deleted while Overpass was asked leaves its land and
-its pause to nobody.
+its pause to nobody. The log names a garden by `short_hash` of its token, as the
+access log does, never by the token's first characters.
 
 - **At creation from the map**, after the streets, from the **exact** centre of
   the outline — the anchor the streets and houses were placed by. A refusal
