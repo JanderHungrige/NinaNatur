@@ -621,6 +621,15 @@ Three stages:
   rectangle, hips ending on its own corners (doc 98, `garden/roof_lines.py`);
   Draft Sketch's street line no longer runs through a house standing on the
   road, and a road's rounded end has its line again (doc 98).
+  Both rounds were reviewed together (five reviewers, three skeptics per
+  finding, 59 agents): 18 findings, 17 upheld, 14 distinct, all fixed in
+  `4a273f4`. The worst: clipping the roof lines had taken the line and the fall
+  arrow off every real surveyed pent roof (its edge now sits on the house's
+  uphill walls); the fading hint came back already faded when a tool was put
+  down within seven seconds, and ran out while the phone's sheet hid it; a
+  raised bed was warned about from the ground grid while the list ranked it by
+  its own sampled light; and the landcover fetch run after the answer still
+  held one of the two heavy slots until Overpass replied.
 
 ## What each one is
 
