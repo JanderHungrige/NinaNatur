@@ -12,41 +12,28 @@ every one of them.
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass, field
 
 from ninanatur.garden.ground import lowest_ground, standing_on
 from ninanatur.garden.lightcells import answer_at, roofs_of
+
+# The box and the cell size live in `lightgrid_extent` since 2026-09-21. The
+# names are re-exported because this is where every caller has imported them.
+from ninanatur.garden.lightgrid_extent import CELL_COST_MS as CELL_COST_MS
+from ninanatur.garden.lightgrid_extent import CELL_LADDER_M as CELL_LADDER_M
+from ninanatur.garden.lightgrid_extent import GRID_BUDGET_S as GRID_BUDGET_S
+from ninanatur.garden.lightgrid_extent import OBSTACLE_COST_MS as OBSTACLE_COST_MS
+from ninanatur.garden.lightgrid_extent import GardenTooLarge as GardenTooLarge
+from ninanatur.garden.lightgrid_extent import cell_size_for as cell_size_for
+from ninanatur.garden.lightgrid_extent import check_extent as check_extent
+from ninanatur.garden.lightgrid_extent import extent_of as extent_of
+from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model
 from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle
-
-#: Cell sizes to choose from, finest first. A garden is measured in metres and a
-#: gardener thinks in them; anything below half a metre says more than the model
-#: knows, given that most building heights are assumed and a roof pitch is
-#: inferred from a rectangle.
-CELL_LADDER_M: tuple[float, ...] = (0.5, 1.0, 2.0, 3.0, 5.0)
-
-#: Seconds the recompute may spend on the grid.
-#:
-#: It was a flat cap of 600 cells, chosen when every write recomputed the light
-#: and half a second was the whole budget. Nothing recomputes on a write any
-#: more — it happens when somebody presses a button knowing it will take a
-#: moment — so the limit can be what it should always have been: a time, not a
-#: count.
-#:
-#: A count was the wrong shape anyway, because a cell is not a fixed price. It
-#: costs what the obstacles around it cost. Measured on 2026-09-07: 0.24 ms in a
-#: garden with three buildings and 1.9 ms in one with forty, which a single
-#: number has to be wrong about at one end or the other. At 600 cells a small
-#: garden waited 0.16 s for a 1 m grid it did not need to be that coarse.
-GRID_BUDGET_S = 5.0
-
-#: The straight line those measurements sit on: a fixed cost per cell, plus what
-#: each obstacle adds to it. Rounded from 0.105 and 0.045 ms.
-CELL_COST_MS = 0.1
-OBSTACLE_COST_MS = 0.05
 
 
 @dataclass(frozen=True)
@@ -115,86 +102,36 @@ class LightGrid:
         from ninanatur.garden.footprint import covers
 
         ring = [(float(p[0]), float(p[1])) for p in polygon]
+        if len(ring) < 3:
+            return None  # `covers` holds nothing inside fewer than three corners
+        cols, rows = self._cells_near(ring)
         inside = [
             hours
-            for row in range(self.rows)
-            for col in range(self.cols)
+            for row in rows
+            for col in cols
             if covers(ring, self.centre_of(col, row))
             and not self.is_roof(row * self.cols + col)
             and (hours := self.hours[row * self.cols + col]) is not None
         ]
         return sum(inside) / len(inside) if inside else None
 
+    def _cells_near(self, ring: list[tuple[float, float]]) -> tuple[range, range]:
+        """The columns and rows whose centres could fall inside this outline.
 
-class GardenTooLarge(ValueError):
-    """A garden whose light grid cannot be computed in any reasonable time.
-
-    A ValueError, so the API's one backstop turns it into a 422 with its reason
-    rather than a 500 — or, as before this existed, no answer at all.
-    """
-
-
-#: How far past the grid budget a garden may go before it is refused outright.
-#: `cell_size_for` stops at its coarsest cell and simply runs long beyond that;
-#: a little over is a slow button, far over is a request that never returns.
-REFUSE_AT_BUDGET_MULTIPLE = 4.0
-
-
-def check_extent(
-    min_x: float, min_y: float, max_x: float, max_y: float, obstacles: int = 0
-) -> None:
-    """Refuse a garden whose grid would take far longer than the budget allows.
-
-    The second line of defence, behind the API's coordinate bounds. It asks the
-    same question `cell_size_for` does — cells times the measured cost of each —
-    at the coarsest cell the ladder has, so the limit is the budget rather than
-    a second number somebody has to keep in step with it.
-
-    Reproduced before it existed: one obstacle at x = 1e9 made the grid a
-    billion metres wide, and `POST /light` did not come back.
-    """
-    width = max(max_x - min_x, 1.0)
-    depth = max(max_y - min_y, 1.0)
-    coarsest = CELL_LADDER_M[-1]
-    cells = (width / coarsest + 1) * (depth / coarsest + 1)
-    seconds = cells * (CELL_COST_MS + OBSTACLE_COST_MS * obstacles) / 1000
-    if seconds > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
-        raise GardenTooLarge(
-            f"Garten zu groß: {width:.0f} × {depth:.0f} m lassen sich nicht in "
-            f"vertretbarer Zeit berechnen"
-        )
-
-
-def cell_size_for(width_m: float, depth_m: float, obstacles: int = 0) -> float:
-    """The finest cell that keeps the recompute inside `GRID_BUDGET_S`.
-
-    A small garden with three buildings gets 0.5 m and takes half a second; a
-    150 m street with forty gets 3 m and takes four and a half. Both are the
-    finest grid that fits the same budget, which is the point of asking about
-    time rather than about a cell count.
-    """
-    allowed = GRID_BUDGET_S * 1000 / (CELL_COST_MS + OBSTACLE_COST_MS * obstacles)
-    for cell in CELL_LADDER_M:
-        if (width_m / cell) * (depth_m / cell) <= allowed:
-            return cell
-    return CELL_LADDER_M[-1]
-
-
-def extent_of(garden: Garden) -> tuple[float, float, float, float] | None:
-    """(min_x, min_y, max_x, max_y) over everything drawn, or None if nothing is.
-
-    Everything, not only the beds: the ground between them is where somebody
-    decides to put the next one, and a map that stops at the bed edges cannot
-    help with that.
-    """
-    points: list[tuple[float, float]] = []
-    for element in list(garden.beds) + list(garden.obstacles):
-        points.extend(element.footprint)
-    if not points:
-        return None
-    xs = [p[0] for p in points]
-    ys = [p[1] for p in points]
-    return (min(xs), min(ys), max(xs), max(ys))
+        Its bounding box, widened by a cell each way so a centre lying on the
+        edge is still asked; `covers` decides, exactly as before. It only stops
+        every cell of the garden being tested for every bed, which at 0.5 m over
+        a whole plot is thousands of point-in-polygon tests per bed.
+        """
+        xs = [x for x, _ in ring]
+        ys = [y for _, y in ring]
+        if not all(math.isfinite(v) for v in xs + ys):
+            return range(self.cols), range(self.rows)
+        first_col = max(0, int((min(xs) - self.min_x) // self.cell_m) - 1)
+        last_col = min(self.cols - 1, int((max(xs) - self.min_x) // self.cell_m) + 1)
+        first_row = max(0, int((min(ys) - self.min_y) // self.cell_m) - 1)
+        last_row = min(self.rows - 1, int((max(ys) - self.min_y) // self.cell_m) + 1)
+        return range(first_col, last_col + 1), range(first_row, last_row + 1)
 
 
 def compute_grid(
@@ -207,6 +144,10 @@ def compute_grid(
     month: int | None = None,
 ) -> LightGrid | None:
     """Sun hours for every cell of the garden. None when nothing is drawn yet.
+
+    The garden: its plot, its beds and what the gardener drew, with a margin —
+    `grid_extent_of`. The neighbours' houses are in `obstacles` and cast their
+    shadows into it; the ground under them is not computed.
 
     `month` narrows the average from the whole March-to-October season to one
     month. A garden with a house on its south side is a different garden in
@@ -223,7 +164,7 @@ def compute_grid(
     5° altitude the model already stops counting at. In a valley it decides
     whether the garden sees December at all.
     """
-    box = extent_of(garden)
+    box = grid_extent_of(garden)
     if box is None:
         return None
     min_x, min_y, max_x, max_y = box
@@ -281,8 +222,21 @@ def signature_of(garden: Garden, ground: object = None, horizon: object = None) 
     would otherwise have stayed flat for ever, quietly. What is deliberately
     not: names, labels, colours, soil, bed membership — none of them move a
     shadow.
+
+    And the grid's own shape: the rule for what it covers, its margin, ladder
+    and budget (`grid_model`), and the box it covers. A map laid over another
+    box is out of date even where no shadow moved — which is how every map
+    stored before 2026-09-21, laid over the neighbours' land in 3 m cells, now
+    says so and offers the finer one. The box is here rather than implied by the
+    outlines because it also reads where an element came from: a neighbour's
+    house the gardener makes their own joins it.
     """
-    parts: list[str] = [f"{garden.latitude:.5f},{garden.longitude:.5f}"]
+    box = grid_extent_of(garden)
+    parts: list[str] = [
+        f"{garden.latitude:.5f},{garden.longitude:.5f}",
+        grid_model(),
+        "box|" + ("" if box is None else ",".join(f"{v:.2f}" for v in box)),
+    ]
     # Where the ground came from and how finely it was measured: a better source
     # for the same place is a different map.
     whose = getattr(ground, "source", None)

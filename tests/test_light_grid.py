@@ -13,9 +13,9 @@ from ninanatur.garden.lightgrid import (
     OBSTACLE_COST_MS,
     cell_size_for,
     compute_grid,
-    extent_of,
     signature_of,
 )
+from ninanatur.garden.lightgrid_extent import grid_extent_of
 from ninanatur.garden.lightgrid_store import load_grid, save_grid
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import add_planting, place_planting
@@ -91,10 +91,14 @@ def test_even_a_field_stays_bounded() -> None:
 
 # --- what it covers --------------------------------------------------------
 
-def test_the_grid_covers_everything_drawn_not_only_the_beds(
+def test_the_grid_covers_what_was_drawn_not_only_the_beds(
     conn: sqlite3.Connection,
 ) -> None:
-    """The ground between beds is where somebody decides to put the next one."""
+    """The ground between beds is where somebody decides to put the next one.
+
+    Since 2026-09-21 that means the garden rather than everything on the plan:
+    with a plot it is the plot and a margin (tests/test_light_grid_extent.py);
+    without one, as here, what the gardener drew that stands up."""
     garden_id = _garden(conn)
     insert_element(
         conn, garden_id, kind="shed", shape="polygon", x=0, y=0,
@@ -102,10 +106,9 @@ def test_the_grid_covers_everything_drawn_not_only_the_beds(
     )
     conn.commit()
 
-    box = extent_of(load_garden(conn, garden_id))
+    box = grid_extent_of(load_garden(conn, garden_id))
 
-    assert box is not None
-    assert box[2] >= 24.0 and box[3] >= 23.0
+    assert box == (0.0, 0.0, 24.0, 23.0)
 
 
 def test_an_empty_garden_has_no_grid(conn: sqlite3.Connection) -> None:
