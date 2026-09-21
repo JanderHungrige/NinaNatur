@@ -466,6 +466,50 @@ Three stages:
   network is a script whose exit code is the alarm, never a test — doc 102's
   rule, kept. **Baseline: 49 of 49.**
 
+- **2026-09-21 — the elevation stack became a package** (doc 110). Not one of
+  the wave's eight features; asked for once the wave had built something with
+  no equivalent on PyPI. `packages/geokachel`, MIT — and the repository has a
+  LICENSE for the first time, having been public with none, which meant all
+  rights reserved and nobody able to reuse any of it.
+
+  The seam is one sentence: **the package stops at a north-up raster in the
+  source's own UTM, and putting that on somebody's own axes is theirs.** UTM
+  grid north is up to 2.3° off true north here; a shadow model must correct for
+  it and a map-maker must not have the correction imposed. So `resample` and
+  the garden frame stayed, and everything about where a tile lives and what
+  comes out of it moved — seventeen modules unchanged, `addressing.py` cut out
+  of `tiles.py`, `net.py` and `cli.py` written for it, forty-five files'
+  imports rewritten. 1,530 tests passing before and 1,530 after.
+
+  **A panel said not yet, and the owner overruled it.** The argument against
+  was real — the registry is both the only thing worth packaging and the thing
+  that churns most, so extraction turns a one-step fix into two and a half.
+  That is answered by not depending on PyPI: the package lives in this
+  repository and the image installs it from the same commit, so a state moving
+  a file is still one commit. Publishing is an occasional act, not a dependency.
+
+  Three things the build caught that reading would not. **There was no
+  `py.typed`**, so mypy silently treated every symbol from the new package as
+  `Any` and the app that had just been refactored onto it lost its types
+  without a word — three stray "returning Any" errors were the only trace. The
+  `Coverage` protocol declared **mutable attributes**, which a frozen dataclass
+  cannot satisfy. And the **supply-chain test caught the new workflow** using
+  `@v4` tags instead of pinned commits, which is exactly what it is for.
+
+  Doc 109's health check ships inside it as `geokachel check`, so whoever
+  installs the package can find out that a state moved — not only this app. It
+  runs weekly in `.github/workflows/sources.yml` and **does not fail the
+  build**: it opens an issue, or comments on the open one.
+
+  Verified as a package rather than as a directory: the wheel builds, carries
+  `py.typed` and both licence files, and installs into a clean 3.13 venv with
+  three dependencies and no trace of NinaNatur, where its registry, readers and
+  CLI all work. And verified in the image, because the Dockerfile changed —
+  built, run against a **fresh empty volume**, `/healthz` ok, `geokachel` 0.1.0
+  importable inside with all sixteen states carrying ground, the CLI on the
+  path at `/usr/local/bin/geokachel`, a garden created and the front page
+  served.
+
 - **2026-09-20 — the image was built and run, because the wave added a binary
   dependency.** `docker build` (404 MB) and a run against a fresh empty volume,
   as the project's own rule asks: `laspy` 2.7.0 with the `Lazrs` and
