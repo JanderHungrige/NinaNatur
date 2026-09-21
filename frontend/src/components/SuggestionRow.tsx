@@ -115,6 +115,37 @@ function readFit(axes: Suggestion['fit']['axes']): Fit | null {
   };
 }
 
+/** The flower colour as a dot and a word. The word gives way before the fit
+ *  badge does; its whole stays in the title. */
+function ColourMark({ item }: { item: Suggestion }) {
+  const colour = item.observed_colour ?? item.flower_colour;
+  const swatch = colour != null ? SWATCH[colour] : undefined;
+  const words = describeColour(item);
+  return (
+    <span className="suggestion-row__colour" title={words}>
+      <svg
+        className={colour == null ? 'suggestion-row__dot suggestion-row__dot--unknown' : 'suggestion-row__dot'}
+        viewBox="0 0 10 10"
+        aria-hidden="true"
+      >
+        <circle cx="5" cy="5" r="4" style={swatch !== undefined ? { fill: swatch } : undefined} />
+      </svg>
+      <span className="suggestion-row__colour-word">{words}</span>
+    </span>
+  );
+}
+
+/** "214 Insektenarten", or nothing where GloBI records none. */
+function InsectCount({ item }: { item: Suggestion }) {
+  const visited = insectsFor(item);
+  if (visited === null) return null;
+  return (
+    <span className="suggestion-row__insects" title={`${visited}, in Deutschland als Partner dieser Pflanze erfasst`}>
+      {visited}
+    </span>
+  );
+}
+
 /**
  * One suggestion as one compact row (doc 90): its name, which opens what is
  * known about the species; its colour, months, insects and fit on the second
@@ -127,10 +158,6 @@ export function SuggestionRow(props: Props) {
   const fit = readFit(item.fit.axes);
   const room = roomFor(item);
   const eaten = birdsFor(item);
-  const visited = insectsFor(item);
-  const colour = item.observed_colour ?? item.flower_colour;
-  const swatch = colour != null ? SWATCH[colour] : undefined;
-  const colourWords = describeColour(item);
 
   return (
     <li
@@ -151,26 +178,9 @@ export function SuggestionRow(props: Props) {
         {item.canonical_name}
       </button>
       <span className="suggestion-row__traits">
-        {/* The word gives way before the fit badge does; its whole stays in the title. */}
-        <span className="suggestion-row__colour" title={colourWords}>
-          <svg
-            className={colour == null ? 'suggestion-row__dot suggestion-row__dot--unknown' : 'suggestion-row__dot'}
-            viewBox="0 0 10 10"
-            aria-hidden="true"
-          >
-            <circle cx="5" cy="5" r="4" style={swatch !== undefined ? { fill: swatch } : undefined} />
-          </svg>
-          <span className="suggestion-row__colour-word">{colourWords}</span>
-        </span>
+        <ColourMark item={item} />
         <MonthStrip start={item.flowering_start_month} end={item.flowering_end_month} />
-        {visited !== null ? (
-          <span
-            className="suggestion-row__insects"
-            title={`${visited}, in Deutschland als Partner dieser Pflanze erfasst`}
-          >
-            {visited}
-          </span>
-        ) : null}
+        <InsectCount item={item} />
         {fit !== null ? (
           <span className={`suggestion-row__fit suggestion-row__fit--${fit.band}`} title={fit.full}>
             <span aria-hidden="true">{fit.short}</span>

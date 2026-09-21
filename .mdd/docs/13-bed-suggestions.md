@@ -11,6 +11,7 @@ source_files:
   - ninanatur/api/suggestions.py
   - ninanatur/api/search.py
   - ninanatur/api/filters.py
+  - ninanatur/fit/light_fit.py
   - ninanatur/api/schemas_plants.py
   - ninanatur/api/parasites.py
   - ninanatur/fit/rank.py
@@ -27,7 +28,7 @@ test_files:
   - tests/test_light_suggestions.py
   - tests/test_suggestion_rank.py
   - tests/test_parasites_hidden.py
-  - tests/test_light_model_version.py
+  - tests/test_light_scale_migration.py
   - frontend/src/components/SuggestionList.light.test.tsx
   - frontend/src/components/SuggestionRow.test.tsx
   - frontend/src/garden/useComputeShade.test.ts
@@ -44,7 +45,7 @@ satisfies_contracts:
     function: score_species(site, species)
     when: ranking suggestions for a bed
     status: done
-    verified_at: "ninanatur/api/search.py:90"
+    verified_at: "ninanatur/api/search.py:120"
 security_read_sites: []
 known_issues: []
 sister_projects: []
@@ -103,7 +104,10 @@ best passendste Pflanze" — that made the cut symmetric and the order new (see
   left out; `unknown`: kept without an L value), and the list says "N Arten,
   denen das Licht hier nicht passt, sind ausgeblendet".
   `include_light_unsuitable=true` — the name kept, the meaning widened to both
-  directions — shows them, ranked last; FilterControls offers it as "auch Arten
+  directions — shows them, ranked last: after every species the light suits,
+  however badly its soil fits, in the woody shortlist too (`search._order_key`;
+  until the review of 2026-09-21 they were ordered by growing conditions alone
+  and came back among the poor soil fits). FilterControls offers it as "auch Arten
   zeigen, denen das Licht hier nicht passt". The planting improvements
   (`19-swap-suggestions`) apply the same cut; the catalogue search, `GET
   /plants`, does not.
@@ -138,9 +142,9 @@ Ellenberg L"): straight lines between anchors at 0 / 1.5 / 2.5 / 4 / 6 / 8 h →
 2.5 / 3.75 / 5.0 / 6.25 / 7.5 / 9.0, each the old classic rung carried through
 EIVE's rescale (L − 1) × 1.25. The staircase it replaced (3–8) squeezed every
 bed towards the middle: full sun read as classic 7.4, deep shade as 3.4, so
-both cuts sat in the wrong place. The signature carries `LIGHT_MODEL`, so every
-stored map and every bed list read *stale* once and offer the button; a bed
-keeps its old value until it is pressed. What is left for the owner: a bed's
+both cuts sat in the wrong place. A one-time migration (`ingest/light_scale.py`)
+moved every computed bed across from its stored hours, so no garden has to
+rebuild for it and no list reads stale over it. What is left for the owner: a bed's
 light is still the mean over its cells, which a bed half in sun and half in
 shade does not have anywhere.
 
@@ -151,7 +155,7 @@ Insektenwert gerankt werden." Until then the list was ordered by fit alone and
 ignored insect value; the woody shortlist by partners alone and ignored fit.
 Both now follow one rule (`fit/rank.py`):
 
-    rank = growing × (1 + 0.1 × insect)
+    rank = growing × (1 + weight × insect),   weight = exp(0.375 / n) − 1
 
 - **growing** is `score_species`'s fit — the geometric mean over L, M, N, R,
   each axis against the species' niche width, an unknown axis at the neutral
@@ -162,15 +166,19 @@ Both now follow one rule (`fit/rank.py`):
 - **insect** is the German insect partner count on a log scale, 0 for none and
   1 for the catalogue's most visited plant (*Salix caprea*, 1,055): the tenth
   partner means more than the thousandth.
-- **Why 0.1.** Among plants optimal everywhere the insects alone decide, whatever
-  the weight. The weight only says how far below that a plant rich in insects
-  may climb, and 0.1 puts the limit on a band edge: with one axis `z`
-  half-widths off, growing = exp(−(z² − 0.25)/8), and with the top partner count
-  it passes an all-optimal plant with none only while z < 1.006 — the end of
-  *suitable*. **A plant whose light or soil is borderline never outranks one
-  optimal everywhere, however many insects it feeds.** Against an all-optimal
-  plant with the median count (67 partners, insect 0.60) it takes the top count
-  and z < 0.74. The plain fit breaks ties.
+- **The weight is derived, not chosen.** Among plants optimal everywhere the
+  insects alone decide, whatever the weight; it only says how far below that a
+  plant rich in insects may climb. With one of n axes `z` half-widths off,
+  growing = exp(−(z² − 0.25)/(2n)), so the weight that lets the top partner
+  count lift a plant level with an all-optimal one exactly at the end of
+  *suitable* (z = 1) is exp(0.375/n) − 1: 0.098 for a lit bed's four axes, 0.133
+  for the three of a bed whose light is not computed, 0.078 for GET /plants'
+  five. **A plant whose light or soil is borderline never outranks one optimal
+  everywhere, however many insects it feeds.** Against an all-optimal plant with
+  the median count (67 partners, insect 0.60) it takes the top count and
+  z < 0.74. The plain fit breaks ties. Until the review of 2026-09-21 the weight
+  was a flat 0.1, which let a plant a hair past the band edge through (z < 1.006
+  on four axes, 1.097 on five).
 
 Every list takes this order: the main list (after the colour/unknown grouping
 it always had), the woody shortlist (room left out, doc 25), the improvements'

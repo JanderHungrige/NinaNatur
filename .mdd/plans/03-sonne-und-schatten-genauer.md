@@ -26,7 +26,7 @@
 | Bäume | **Zylinder** vom Boden bis zur Spitze, Kronenradius aus Höhe geschätzt, Transmission 0,20 / 0,08 / 0,75 (belaubt / immergrün / kahl), Laub Mai–Okt | `garden/canopy.py`, `canopies.py`, `lightview.py` |
 | Gelände | Zelle auf eigener Höhe, Hindernis auf dem Grund unter seinem Grundriss, Hangring pro Zelle, Horizontring 5 km / 20 m | `ground.py`, `slopes.py`, `geo/horizon.py` |
 | Gitter | 0,5–5 m nach Zeitbudget 5 s; Beet = **Mittel** seiner Zellen | `lightgrid.py` |
-| Ergebnis | Sonnenstunden/Tag → Ellenberg L über eine **Stufentabelle** (`SUN_HOUR_BANDS`, „a convention, not a measurement") | `solar/light.py` |
+| Ergebnis | Sonnenstunden/Tag → Ellenberg L über Geraden zwischen Stützstellen auf EIVEs 0–10-Skala (`SUN_HOUR_ANCHORS`, seit 2026-09-21; davor die Stufentabelle `SUN_HOUR_BANDS`), „a convention, not a measurement" | `solar/light.py` |
 | Warnung | Pflanze vs. Standort, Toleranz 2 L-Stufen | `garden/misplaced.py` |
 
 **Was bestätigt ist und bleibt:** die Sonnenstand-Konventionen sind getestet
@@ -81,7 +81,7 @@ Mittag (Himmelsanteil ~20 %) ist dunkel. Das Modell kann sie nicht auseinanderha
 **relative Beleuchtungsstärke** (r.B., Anteil des Freilandlichts) definiert:
 L9 nur bei vollem Licht, selten unter 50 % r.B.; L8 selten unter 40 %; L7 meist
 volles Licht, auch bis ~30 %; L6 selten unter 20 %; L5 meist über 10 %;
-L3 meist unter 5 %; L1 unter 1 %. `SUN_HOUR_BANDS` ersetzt diese Definition
+L3 meist unter 5 %; L1 unter 1 %. `SUN_HOUR_ANCHORS` (vormals `SUN_HOUR_BANDS`) ersetzt diese Definition
 durch eine Konvention aus Stunden — das Modell sagt selbst, dass es keine
 Messung ist. Mit einem Himmelsanteil wird daraus eine Ableitung aus der
 Definition.

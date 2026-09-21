@@ -140,9 +140,8 @@ export function FilterControls({ filters, onChange, busy }: Props) {
       </label>
 
       {/* Owner review #9 (2026-09-21): a bed no longer offers what its light
-          does not suit, too bright or too dark — the best fit for the shade
-          as much as for the sun. The gardener may still want to see them,
-          ranked last. */}
+          does not suit, too bright or too dark. The gardener may still want to
+          see them, ranked last (doc 13). */}
       <label className="filter-controls__toggle">
         <input
           type="checkbox"

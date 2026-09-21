@@ -25,6 +25,7 @@ from ninanatur.api.search import (
     with_observed,
 )
 from ninanatur.data.interactions import bird_counts
+from ninanatur.fit.light_fit import light_mismatch
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.light_state import LightState, light_state
@@ -53,8 +54,9 @@ def _woody_order(woody: list[ScoredPlant]) -> list[ScoredPlant]:
 
     Room is deliberately not part of the order: the plant that is worth the most
     is worth seeing even when it does not fit, with what it would take beside it.
+    The light is: what it does not suit, shown on request, still comes last.
     """
-    return sorted(woody, key=lambda s: (-s.rank, -s.score))
+    return sorted(woody, key=lambda s: (light_mismatch(s.fit) is not None, -s.rank, -s.score))
 
 
 @router.get("/{token}/beds/{bed_id}/suggestions", response_model=BedSuggestions)
@@ -74,15 +76,11 @@ def bed_suggestions(
     exclude_planted: bool = True,
     include_light_unsuitable: bool = False,
 ) -> BedSuggestions:
-    """Species that suit this bed: ranked by how well they grow against its own
-    site vector, and among those that grow equally well by insect value
-    (`fit.rank`).
+    """Species that suit this bed, in the order `fit.rank` describes (doc 13).
 
-    Woody plants get a shortlist of their own, in the same order. Introduced species are left out
-    (the product promises native plants), and so, unless asked for
-    (`include_light_unsuitable`), are species whose light is unsuitable here —
-    too bright or too dark (`filters.light_verdict`). `light_state` says
-    whether there was a light value to judge by.
+    Woody plants get a shortlist of their own. Introduced species are left out,
+    and unless asked for so are those the light does not suit (`light_verdict`).
+    `light_state` says whether there was a light value to judge by.
     """
     garden = require_garden(conn, token)
     bed = require_bed(garden, bed_id)

@@ -19,10 +19,10 @@ from fastapi.testclient import TestClient
 from ninanatur.api.deps import get_connection
 from ninanatur.bloom import improve
 from ninanatur.fit.rank import (
-    INSECT_WEIGHT,
     OPTIMAL_AXIS_SCORE,
     growing_conditions,
     insect_value,
+    insect_weight,
     suggestion_rank,
 )
 from ninanatur.fit.score import BAND_EDGES, SiteVector, SpeciesNiche, score_species
@@ -44,9 +44,9 @@ WIDTH = 3.0
 
 # --- the arithmetic -----------------------------------------------------------
 
-def _fit(light: float, target: float = 5.0) -> tuple[float, float]:
-    site = SiteVector(values={"ellenberg_l": target, **SOIL})
-    niche = SpeciesNiche(1, {"ellenberg_l": light, **SOIL}, {"ellenberg_l": WIDTH})
+def _fit(light: float, target: float = 5.0, **more: float) -> tuple[float, float]:
+    site = SiteVector(values={"ellenberg_l": target, **SOIL, **more})
+    niche = SpeciesNiche(1, {"ellenberg_l": light, **SOIL, **more}, {"ellenberg_l": WIDTH})
     fit = score_species(site, niche)
     return fit.score or 0.0, growing_conditions(fit, len(site.values))
 
@@ -86,21 +86,42 @@ def test_insect_value_is_a_log_scale_over_the_catalogues_range() -> None:
     assert insect_value(5, 0) == 0.0
 
 
-def test_a_borderline_axis_never_beats_an_all_optimal_plant_whatever_its_insects() -> None:
+#: Four axes for a bed, five for GET /plants when it is given a temperature.
+AXES_ASKED = pytest.mark.parametrize("more", [{}, {"ellenberg_t": 5.0}], ids=["4 axes", "5 axes"])
+
+
+@AXES_ASKED
+def test_a_borderline_axis_never_beats_an_all_optimal_plant_whatever_its_insects(
+    more: dict[str, float],
+) -> None:
     """The weight's reason: with the catalogue's top count a plant climbs over
-    an all-optimal one with none only while its one off axis is *suitable*."""
-    suitable = 1.0 * WIDTH / 2 * 0.99      # just inside suitable
-    borderline = 1.0 * WIDTH / 2 * 1.02     # just past it
-    best = suggestion_rank(_fit(5.0)[1], insect_value(0, 1055))
-    assert suggestion_rank(_fit(5.0 + suitable)[1], 1.0) > best
-    assert suggestion_rank(_fit(5.0 + borderline)[1], 1.0) < best
+    an all-optimal one with none only while its one off axis is *suitable* —
+    not a hair past the band edge, and not with five axes either (review,
+    2026-09-21: at a flat 0.1 both went through)."""
+    axes = 4 + len(more)
+    half = WIDTH / 2
+    best = suggestion_rank(_fit(5.0, **more)[1], insect_value(0, 1055), axes)
+    assert suggestion_rank(_fit(5.0 + 0.99 * half, **more)[1], 1.0, axes) > best
+    for past in (1.003, 1.02, 1.09):
+        assert suggestion_rank(_fit(5.0 + past * half, **more)[1], 1.0, axes) < best
 
 
-def test_the_weight_is_the_end_of_suitable() -> None:
-    """Derived rather than asserted: a four-axis plant with one axis at the
-    suitable edge, lifted by the full weight, meets an all-optimal plant."""
+@pytest.mark.parametrize("axes", [1, 2, 3, 4, 5])
+def test_the_weight_is_the_end_of_suitable(axes: int) -> None:
+    """Derived rather than asserted: a plant with one axis at the suitable
+    edge, lifted by the full weight, meets an all-optimal plant exactly."""
     edge = math.exp(-0.5 * BAND_EDGES[1] ** 2) / OPTIMAL_AXIS_SCORE
-    assert edge ** 0.25 * (1 + INSECT_WEIGHT) == pytest.approx(1.0, abs=0.002)
+    assert edge ** (1 / axes) * (1 + insect_weight(axes)) == pytest.approx(1.0, abs=1e-12)
+    assert insect_weight(0) == 0.0
+
+
+def test_a_typical_count_needs_an_axis_well_inside_suitable() -> None:
+    """The docstring's second promise: against an all-optimal plant with the
+    catalogue's median count, the top count helps only below z = 0.74."""
+    half = WIDTH / 2
+    typical = suggestion_rank(1.0, insect_value(67, 1055), 4)
+    assert suggestion_rank(_fit(5.0 + 0.73 * half)[1], 1.0, 4) > typical
+    assert suggestion_rank(_fit(5.0 + 0.75 * half)[1], 1.0, 4) < typical
 
 
 # --- a bed's list ------------------------------------------------------------

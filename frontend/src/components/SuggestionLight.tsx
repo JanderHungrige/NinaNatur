@@ -11,8 +11,7 @@ type LightState = BedSuggestions['light_state'];
 const HINTS: Partial<Record<LightState, string>> = {
   missing: 'Licht noch nicht berechnet — die Liste berücksichtigt nur den Boden.',
   stale:
-    'Der Schatten wurde seit der letzten Änderung im Garten nicht neu berechnet — ' +
-    'die Liste rechnet noch mit dem alten Licht.',
+    'Der Schatten ist nicht mehr aktuell — die Liste rechnet noch mit dem alten Licht.',
 };
 
 /** What the list could not rank by, in words. Null when the light is current

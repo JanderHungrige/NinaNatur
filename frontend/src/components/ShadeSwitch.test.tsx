@@ -92,7 +92,7 @@ describe('ShadeSwitch', () => {
   });
 
   it('keeps the band names agreeing with the naming convention', () => {
-    // Two tables, one truth. `bandFor` mirrors the server's SUN_HOUR_BANDS and
+    // Two tables, one truth. `bandFor` mirrors the server's SUN_HOUR_ANCHORS and
     // the legend reads its names off the map's steps; a name that drifted
     // would label the map with something the server never said.
     for (const level of LEVELS) {
@@ -111,7 +111,7 @@ describe('ShadeSwitch', () => {
 
   it('says so when it is stale rather than showing an old date', () => {
     show({ map: map({ stale: true }) });
-    expect(screen.getByText(/nicht neu gerechnet/)).toBeDefined();
+    expect(screen.getByText(/Nicht mehr aktuell/)).toBeDefined();
   });
 
   it('can be told to rebuild', () => {

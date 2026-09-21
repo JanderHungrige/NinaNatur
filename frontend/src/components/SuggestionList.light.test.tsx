@@ -59,7 +59,7 @@ describe('SuggestionList and the light', () => {
 
   it('says when the light is older than the last change, and offers the same button', () => {
     const onComputeShade = show({ light_state: 'stale' });
-    expect(screen.getByText(/seit der letzten Änderung im Garten nicht neu berechnet/))
+    expect(screen.getByText(/Schatten ist nicht mehr aktuell/))
       .toBeDefined();
     expect(screen.queryByText(/gewertet nach den Standortwerten/)).toBeNull();
     fireEvent.click(button()!);

@@ -70,6 +70,8 @@ class ScoredPlant:
     #: How well it grows here and what it feeds, both 0–1 (`fit.rank`).
     growing: float = 0.0
     insect: float = 0.0
+    #: How many axes the site asked about, which sets the insect weight.
+    axes: int = 0
 
     @property
     def score(self) -> float:
@@ -78,7 +80,7 @@ class ScoredPlant:
     @property
     def rank(self) -> float:
         """What the lists are ordered by: growing conditions, then insect value."""
-        return suggestion_rank(self.growing, self.insect)
+        return suggestion_rank(self.growing, self.insect, self.axes)
 
 
 def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:

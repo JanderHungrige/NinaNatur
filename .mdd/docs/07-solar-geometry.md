@@ -12,13 +12,14 @@ source_files:
   - ninanatur/solar/position.py
   - ninanatur/solar/shading.py
   - ninanatur/solar/light.py
+  - ninanatur/ingest/light_scale.py
 routes: []
 models: []
 test_files:
   - tests/test_solar_position.py
   - tests/test_shading.py
   - tests/test_bed_light.py
-  - tests/test_light_model_version.py
+  - tests/test_light_scale_migration.py
   - tests/test_light_legend.py
 data_flow: greenfield
 last_synced: 2026-09-21
@@ -130,10 +131,12 @@ the ends it is flat.
 - **Why not below 2.5.** Classic 1–2 is a closed forest floor; a bed with no
   direct sun still has the sky.
 
-`LIGHT_MODEL` names the convention, and the light map's signature carries it:
-a new convention makes every stored map, and every bed list ranked by its
-values, read stale once (doc 13). A bed's value comes from its hours as stored,
-so the two always agree.
+A bed's value comes from its hours as stored, so the two always agree — and a
+new convention needs no shadow work. `ingest/light_scale.py` is a one-time
+migration that carried every computed bed onto these lines from its stored
+hours when they replaced the staircase. No map read stale over it: the
+convention is not an input of the map, because no shadow moved. The next change
+to the anchors adds a marker there and runs it again.
 
 Sun hours are physical; an indicator value is ecological, read from where
 plants are found growing. **This conversion is a convention, not a

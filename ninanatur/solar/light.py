@@ -48,7 +48,8 @@ MONTH_DAY_STEP = 5
 # - **Anchored at the lower edges,** so every value leans a little bright of
 #   the middle of its old interval. Deliberate: the model counts direct sun
 #   only, and a bed in the open with a wall to its south still sees most of
-#   the sky — it is lighter than its hours say (doc 64, gap E).
+#   the sky — it is lighter than its hours say (`.mdd/plans/03-sonne-und-schatten-
+#   genauer.md`, E2).
 # - **8 h and above: 9.0,** between classic 8 (8.75) and 9 (10). A bed that
 #   long in direct sun is open ground; the hours past eight are low sun at the
 #   ends of the day and add little. EIVE's 9.5–10 is dunes and scree.
@@ -57,7 +58,8 @@ MONTH_DAY_STEP = 5
 #
 # The words are the sun map's legend (`frontend/src/components/SunMap.tsx`,
 # `BANDS`), whose steps begin at these hours; `tests/test_light_legend.py`
-# holds the two together.
+# holds the two together. Changing the anchors changes what every stored bed
+# value means: `ingest/light_scale.py` carries them across from the stored hours.
 SUN_HOUR_ANCHORS: tuple[tuple[float, float], ...] = (
     (0.0, 2.5),   # tiefer Schatten — classic 3
     (1.5, 3.75),  # Schatten — classic 4
@@ -66,13 +68,6 @@ SUN_HOUR_ANCHORS: tuple[tuple[float, float], ...] = (
     (6.0, 7.5),   # volle Sonne — classic 7
     (8.0, 9.0),   # open ground — between classic 8 and 9
 )
-
-#: Which hours->L convention the stored bed values were computed with. The map's
-#: signature carries it (`lightgrid.signature_of`), so raising it makes every
-#: stored map, and every bed list ranked by its values, read stale once and
-#: offer the recompute — a bed keeps its old value until somebody presses it.
-#: 1 was the staircase; 2 is `SUN_HOUR_ANCHORS`.
-LIGHT_MODEL = 2
 
 
 @dataclass(frozen=True)

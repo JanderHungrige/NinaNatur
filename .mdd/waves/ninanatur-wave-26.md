@@ -51,7 +51,7 @@ It is also the definition the model claims to serve. Ellenberg's L is defined
 on **relative illuminance** — L9 rarely below 50 % of open-field light, L8
 rarely below 40 %, L7 down to ~30 %, L6 rarely below 20 %, L5 mostly above
 10 %, L3 mostly below 5 %, L1 below 1 % — and classically it is *measured under
-an overcast sky*, i.e. from diffuse light. `SUN_HOUR_BANDS` replaces that
+an overcast sky*, i.e. from diffuse light. `SUN_HOUR_ANCHORS` (until 2026-09-21 `SUN_HOUR_BANDS`) replaces that
 definition with a convention out of hours; its own comment says so. With a sky
 term the number becomes a derivation from the definition.
 

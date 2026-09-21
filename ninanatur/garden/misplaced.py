@@ -11,6 +11,11 @@ light back, or simply that they want it there. What is *offered* is stricter:
 by the owner's decisions of 2026-09-21 the suggestions leave out a species
 whose light is unsuitable either way (`api.filters.light_verdict`) — the best
 fit for the shade as much as for the sun.
+
+Both ask the same question, so both use one rule (`fit.light_fit`): the
+species' own niche width, *unsuitable* past 1.5 half-widths. A species the list
+offers for a spot is never one the map then says stands in the wrong light.
+Until 2026-09-21 this warning used a fixed distance of two rungs instead.
 """
 from __future__ import annotations
 
@@ -18,19 +23,10 @@ import sqlite3
 from dataclasses import dataclass
 
 from ninanatur.data.traits import resolve_trait
+from ninanatur.fit.light_fit import light_mismatch_at
 from ninanatur.garden.lightgrid import LightGrid
 from ninanatur.garden.models import Garden
 from ninanatur.solar.light import ellenberg_from_sun_hours
-
-#: How far apart the plant's light value and the spot's have to be before it is
-#: worth saying anything, on EIVE's 0–10 scale.
-#:
-#: Two whole classic Ellenberg rungs, which EIVE's rescale makes 2 × 1.25. One
-#: is inside the noise of a model whose building heights are mostly assumed,
-#: and a warning nobody can act on is a warning people learn to scroll past.
-#: It was 2.0 while the spot's value sat on rungs of 1 (`solar.light`, until
-#: 2026-09-21); the species' value was on EIVE's scale all along.
-TOLERANCE = 2.5
 
 
 @dataclass(frozen=True)
@@ -68,15 +64,14 @@ def misplaced_plantings(
         for planting in bed.plantings:
             if planting.taxon_id is None:
                 continue
-            wants = _wanted_light(conn, planting.taxon_id)
-            if wants is None:
+            wanted = _wanted_light(conn, planting.taxon_id)
+            hours = None if wanted is None else grid.at(*_where(bed, planting))
+            if wanted is None or hours is None:
                 continue
-            at = _where(bed, planting)
-            hours = grid.at(*at)
-            if hours is None:
-                continue
+            wants, width = wanted
             gets = ellenberg_from_sun_hours(hours)
-            if abs(wants - gets) < TOLERANCE:
+            problem = light_mismatch_at(gets, wants, width)
+            if problem is None:
                 continue
             found.append(
                 Misplaced(
@@ -87,21 +82,25 @@ def misplaced_plantings(
                     wants=wants,
                     gets=gets,
                     sun_hours=round(hours, 1),
-                    problem="too_dark" if wants > gets else "too_bright",
+                    problem=problem,
                 )
             )
     return found
 
 
-def _wanted_light(conn: sqlite3.Connection, taxon_id: int) -> float | None:
-    """The species' Ellenberg L, or None where nothing recorded one.
+def _wanted_light(conn: sqlite3.Connection, taxon_id: int) -> tuple[float, float | None] | None:
+    """The species' Ellenberg L and its niche width, or None where nothing
+    recorded an L.
 
     None is common and is not a failure: EIVE covers a good part of the flora
     and not all of it, and a plant nobody has an indicator value for cannot be
-    said to be in the wrong light.
+    said to be in the wrong light. A missing width takes EIVE's median.
     """
     trait = resolve_trait(conn, taxon_id, "ellenberg_l")
-    return None if trait is None or trait.value_num is None else float(trait.value_num)
+    if trait is None or trait.value_num is None:
+        return None
+    width = resolve_trait(conn, taxon_id, "ellenberg_l_nw")
+    return float(trait.value_num), None if width is None else width.value_num
 
 
 def _where(bed: object, planting: object) -> tuple[float, float]:

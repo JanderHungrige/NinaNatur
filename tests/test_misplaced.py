@@ -6,9 +6,11 @@ from collections.abc import Iterator
 
 import pytest
 
+from ninanatur.fit.light_fit import light_mismatch_at
+from ninanatur.fit.score import MEDIAN_WIDTH
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.lightgrid import compute_grid
-from ninanatur.garden.misplaced import TOLERANCE, misplaced_plantings
+from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import add_planting, place_planting
 from ninanatur.garden.store import create_garden, load_garden
@@ -92,24 +94,66 @@ def test_a_shade_plant_in_full_sun_is_flagged_too(conn: sqlite3.Connection) -> N
     assert found[0].problem == "too_bright"  # type: ignore[attr-defined]
 
 
-def test_a_small_difference_is_not_worth_saying(conn: sqlite3.Connection) -> None:
-    """One rung is inside the noise of a model whose building heights are mostly
-    assumed, and a warning nobody can act on is one people learn to scroll
-    past."""
-    garden_id, bed_id = _garden(conn)
-    # Just inside the tolerance of what the spot itself gets, whatever the
-    # hours->L convention of the day makes of its sun.
+def _spot_value(conn: sqlite3.Connection, garden_id: int, x: float, y: float) -> float:
+    """What the spot itself gets, whatever the hours->L convention of the day
+    makes of its sun."""
     grid = compute_grid(load_garden(conn, garden_id), [WALL])
-    hours = None if grid is None else grid.at(5.0, 7.5)
+    hours = None if grid is None else grid.at(x, y)
     assert hours is not None
-    spot = ellenberg_from_sun_hours(hours)
-    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (4, 'Fast')")
-    upsert_trait(conn, 4, "ellenberg_l", value_num=spot - (TOLERANCE - 0.5), **EIVE)
+    return ellenberg_from_sun_hours(hours)
+
+
+def _species(conn: sqlite3.Connection, tid: int, light: float, width: float | None) -> None:
+    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (?, ?)", (tid, f"Art {tid}"))
+    upsert_trait(conn, tid, "ellenberg_l", value_num=light, **EIVE)
+    if width is not None:
+        upsert_trait(conn, tid, "ellenberg_l_nw", value_num=width, **EIVE)
     conn.commit()
+
+
+def test_a_borderline_difference_is_not_worth_saying(conn: sqlite3.Connection) -> None:
+    """Inside the noise of a model whose building heights are mostly assumed,
+    and a warning nobody can act on is one people learn to scroll past. The
+    list keeps a borderline species; so does the map."""
+    garden_id, bed_id = _garden(conn)
+    spot = _spot_value(conn, garden_id, 5.0, 7.5)
+    # 1.4 half-widths below, on EIVE's median width: borderline, not unsuitable.
+    _species(conn, 4, spot - 1.4 * MEDIAN_WIDTH["ellenberg_l"] / 2, None)
     planting_id = add_planting(conn, bed_id, taxon_id=4, quantity=1)
     place_planting(conn, planting_id, 5.0, 7.5)
 
     assert _found(conn, garden_id) == []
+
+
+def test_a_wide_niche_the_list_offers_for_full_sun_is_not_called_too_bright(
+    conn: sqlite3.Connection,
+) -> None:
+    """The review of 2026-09-21: an open bed's shortlist offered *Quercus
+    robur* (L 6.24, width 3.7), and once planted the map said it stood too
+    bright — two rules for one question. It is judged by its width now."""
+    garden_id, bed_id = _garden(conn)
+    spot = _spot_value(conn, garden_id, 5.0, 7.5)
+    _species(conn, 5, 6.24, 3.7)
+    assert light_mismatch_at(spot, 6.24, 3.7) is None, "the list keeps it"
+    planting_id = add_planting(conn, bed_id, taxon_id=5, quantity=1)
+    place_planting(conn, planting_id, 5.0, 7.5)
+
+    assert _found(conn, garden_id) == []
+
+
+def test_a_narrow_niche_at_the_same_distance_is_called_too_bright(
+    conn: sqlite3.Connection,
+) -> None:
+    """The same distance means something else for a specialist."""
+    garden_id, bed_id = _garden(conn)
+    spot = _spot_value(conn, garden_id, 5.0, 7.5)
+    _species(conn, 6, 6.24, 1.5)
+    planting_id = add_planting(conn, bed_id, taxon_id=6, quantity=1)
+    place_planting(conn, planting_id, 5.0, 7.5)
+
+    [found] = _found(conn, garden_id)
+    assert found.problem == "too_bright"  # type: ignore[attr-defined]
+    assert light_mismatch_at(spot, 6.24, 1.5) == "too_bright", "and the list leaves it out"
 
 
 def test_a_species_with_no_indicator_value_is_left_alone(

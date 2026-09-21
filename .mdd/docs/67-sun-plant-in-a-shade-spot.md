@@ -7,6 +7,7 @@ depends_on: [64-light-across-the-bed]
 relates: [64-light-across-the-bed, 65-the-shade-switch]
 source_files:
   - ninanatur/garden/misplaced.py
+  - ninanatur/fit/light_fit.py
   - ninanatur/garden/lightgrid.py
   - ninanatur/solar/field.py
   - ninanatur/api/light.py
@@ -42,16 +43,19 @@ and until the grid existed nothing could: one number per bed can say the bed is
 wrong, never the corner. "This bed is too dark" for a bed whose far end is in
 full sun is the kind of advice that teaches people to ignore advice.
 
-Each cluster's Ellenberg L is now compared against the light in the cell it
-actually stands in, and the difference is reported when it exceeds **two rungs**.
-Two rather than one: one rung is inside the noise of a model whose building
-heights are mostly assumed, and a warning nobody can act on is a warning people
-learn to scroll past.
+Each cluster's Ellenberg L is compared against the light in the cell it
+actually stands in, and a warning is given when the light is **unsuitable** for
+it: more than 1.5 of the species' own niche half-widths away (`03-niche-fit`).
+That is the rule the suggestions cut by (`fit.light_fit`, shared by both), so a
+species the list offers for a spot is never one the map then says stands in the
+wrong light. A borderline difference says nothing: it is inside the noise of a
+model whose building heights are mostly assumed, and a warning nobody can act
+on is a warning people learn to scroll past.
 
-Two *classic* rungs, on EIVE's 0–10 scale: `TOLERANCE = 2.5`, since 2026-09-21.
-It was 2.0 while the spot's value sat on the old staircase of 1-wide rungs; the
-species' value was on EIVE's scale all along, so the two were compared across
-scales. Both are on EIVE's now (doc 07, "Sun hours to Ellenberg L").
+Until 2026-09-21 the warning used a fixed distance of two classic rungs instead
+(2.0, then 2.5 on EIVE's scale). With an open spot at 9.0 the list offered
+*Quercus robur* (L 6.2, a niche 3.7 wide) for full sun and the map then called
+it too bright — two rules for one question (review, 2026-09-21).
 
 Both directions are named. `too_bright` is as real as `too_dark` — a fern in the
 open is as misplaced as a sedum under a hedge — and only one of the two ever

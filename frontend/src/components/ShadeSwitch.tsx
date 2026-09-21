@@ -97,7 +97,7 @@ export function ShadeSwitch({
         {map !== null && (
           <span className="hint">
             {map.stale
-              ? 'Seit der letzten Änderung nicht neu gerechnet.'
+              ? 'Nicht mehr aktuell: seitdem hat sich am Garten oder an der Berechnung etwas geändert.'
               : `Berechnet am ${whenText(map.computed_at)}.`}
           </span>
         )}

@@ -9,20 +9,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
 
 from ninanatur.api.candidates import PlantRow
 from ninanatur.api.parasites import is_parasitic
 from ninanatur.bloom.timeline import flowering_months
-from ninanatur.fit.score import FitBand, FitResult
+from ninanatur.fit.light_fit import light_mismatch
+from ninanatur.fit.score import FitResult
 from ninanatur.garden.canopy import canopy_of
 
 #: The report key for the light cut, beside `height`, `colour` and the rest.
 LIGHT = "light"
-
-#: Which way a bed's light is wrong for a species. The same two words the
-#: misplaced-planting warning uses.
-LightMismatch = Literal["too_bright", "too_dark"]
 
 # Growth forms that are not bed plants. A bed is a few square metres; a hemlock
 # fits its light and moisture perfectly and is still a useless suggestion.
@@ -201,19 +197,6 @@ def _colour_verdict(plant: PlantRow, colour: str | None) -> Verdict | None:
     if value is None:
         return Verdict.UNKNOWN
     return Verdict.MATCH if value.lower() == colour.lower() else Verdict.MISMATCH
-
-
-def light_mismatch(fit: FitResult) -> LightMismatch | None:
-    """Which way the bed's light is wrong for a species, when it is *unsuitable*.
-
-    None when it suits, when it is merely borderline, and when it cannot be
-    judged: a species with no L value, or a bed whose light was never computed.
-    Unknown is not a mismatch.
-    """
-    axis = fit.explanation.get("ellenberg_l")
-    if axis is None or axis.band is not FitBand.UNSUITABLE:
-        return None
-    return "too_bright" if axis.value < axis.target else "too_dark"
 
 
 def light_verdict(fit: FitResult, filters: SearchFilters, *, lit: bool) -> Verdict | None:

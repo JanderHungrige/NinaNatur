@@ -32,7 +32,7 @@ satisfies_contracts:
     function: garden_score(conn, garden)
     when: ranking any proposed change
     status: done
-    verified_at: "ninanatur/bloom/improve.py:113"
+    verified_at: "ninanatur/bloom/improve.py:117"
 security_read_sites: []
 known_issues: []
 sister_projects: []

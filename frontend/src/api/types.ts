@@ -252,15 +252,11 @@ export interface paths {
         };
         /**
          * Bed Suggestions
-         * @description Species that suit this bed: ranked by how well they grow against its own
-         *     site vector, and among those that grow equally well by insect value
-         *     (`fit.rank`).
+         * @description Species that suit this bed, in the order `fit.rank` describes (doc 13).
          *
-         *     Woody plants get a shortlist of their own, in the same order. Introduced species are left out
-         *     (the product promises native plants), and so, unless asked for
-         *     (`include_light_unsuitable`), are species whose light is unsuitable here —
-         *     too bright or too dark (`filters.light_verdict`). `light_state` says
-         *     whether there was a light value to judge by.
+         *     Woody plants get a shortlist of their own. Introduced species are left out,
+         *     and unless asked for so are those the light does not suit (`light_verdict`).
+         *     `light_state` says whether there was a light value to judge by.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
         put?: never;
@@ -804,8 +800,7 @@ export interface paths {
         };
         /**
          * Search Plants
-         * @description Species ranked by how well they grow at the given site conditions, the
-         *     insect value deciding among equals (`fit.rank`, the bed lists' order).
+         * @description Species at the given site conditions, in the bed lists' order (`fit.rank`).
          */
         get: operations["search_plants_api_v1_plants_get"];
         put?: never;

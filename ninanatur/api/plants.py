@@ -104,8 +104,7 @@ def search_plants(
     limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PlantSearchResponse:
-    """Species ranked by how well they grow at the given site conditions, the
-    insect value deciding among equals (`fit.rank`, the bed lists' order)."""
+    """Species at the given site conditions, in the bed lists' order (`fit.rank`)."""
     axes = {
         AXIS_PARAMS[name]: value
         for name, value in (

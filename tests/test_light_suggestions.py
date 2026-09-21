@@ -58,6 +58,8 @@ def client() -> Iterator[TestClient]:
     _species(conn, 4, "Sonnenstaude", (8.0, 3.0))
     _species(conn, 5, "Ohne Lichtwert", None)
     _species(conn, 6, "Lichthungrig", (7.82, 2.49))
+    # Full sun suits it; the soil does not: far wetter than a fresh loam.
+    _species(conn, 7, "Nasser Fuß", (9.0, 3.0), ellenberg_m=9.5)
     # Woody, with their real L and German insect partners: by value alone the
     # two sun shrubs would lead a deep-shade bed's shortlist.
     _species(conn, 10, "Salix caprea", (6.52, 6.81), form="shrub", partners=1055)
@@ -198,8 +200,8 @@ def test_the_woody_shortlist_respects_fit_before_partners(client: TestClient) ->
 
 
 def test_the_opt_out_widens_the_shortlist_too_ranked_below(client: TestClient) -> None:
-    """The shortlist follows the main list's order now, so the opt-out means
-    the same there: what the light does not suit comes back, below the rest."""
+    """The shortlist follows the main list's order, so the opt-out means the
+    same there: what the light does not suit comes back, below the rest."""
     token, bed_id = _bed(client)
     assert "Schattenstrauch" not in _names(_ask(client, token, bed_id), "woody")
 
@@ -208,6 +210,20 @@ def test_the_opt_out_widens_the_shortlist_too_ranked_below(client: TestClient) -
     assert _names(answer, "woody")[-1] == "Schattenstrauch", "2,000 partners, the wrong light"
     first_misfit = bands.index("unsuitable")
     assert all(band == "unsuitable" for band in bands[first_misfit:])
+
+
+def test_the_opt_out_puts_every_light_misfit_below_what_the_light_suits(
+    client: TestClient,
+) -> None:
+    """Asked to see them is not asked to mix them in. Ordered by how well they
+    grow alone, the woodland herbs came back above a sun plant whose soil fits
+    badly (review, 2026-09-21); the doc and the toggle said "ranked last"."""
+    answer = _ask(client, *_bed(client), include_light_unsuitable=True)
+    items = answer["items"]
+    bands = [i["fit"]["axes"].get("ellenberg_l", {}).get("band") for i in items]
+    first_misfit = bands.index("unsuitable")
+    assert all(band == "unsuitable" for band in bands[first_misfit:])
+    assert _names(answer).index("Nasser Fuß") < first_misfit
 
 
 # --- whether there was a light to judge by ---------------------------------
