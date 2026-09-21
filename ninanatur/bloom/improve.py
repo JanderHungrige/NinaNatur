@@ -28,8 +28,11 @@ MONTH_NAMES = {
     8: "August", 9: "September", 10: "Oktober",
 }
 MAX_SUGGESTIONS = 8
-# How many of the best candidates — by the suggestion list's order, growing
-# conditions then insect value — to consider per bed. A cap, not a filter.
+# How many of the best candidates to consider per bed. A cap, not a filter.
+# "Best" is the suggestion list's own order since 2026-09-21 — growing
+# conditions, then insect value (`fit.rank`) — so what is weighed for a gap is
+# what grows best here and feeds most; `MIN_FIT` became a filter rather than a
+# place to stop, the order no longer being the fit's.
 CANDIDATE_POOL = 60
 # A candidate must actually suit the bed, not merely be among the least bad.
 # 0.3 is roughly the "borderline" band from 03-niche-fit; below it the species is
@@ -138,12 +141,8 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
             ),
         )
 
-        # The pool is the suggestion list's own order — growing conditions,
-        # then insect value (`fit.rank`) — so what is weighed for a gap is what
-        # grows best here and feeds most. Not sorted by fit any more, so the
-        # fit floor is a filter rather than a place to stop.
-        pool = [s for s in fitting.items if s.score >= MIN_FIT][:CANDIDATE_POOL]
-        for scored in pool:
+        # In the list's order (`fit.rank`), not the fit's: the floor filters.
+        for scored in [s for s in fitting.items if s.score >= MIN_FIT][:CANDIDATE_POOL]:
             plant = scored.plant
             origin = plant.text("native_de") or "unknown"
             forage, partners = _candidate_forage(conn, plant.taxon_id, origin)

@@ -108,15 +108,13 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
                 everything,
                 height_above_ground=bed.height_above_ground,
             ).sun_hours
-        # The value from the hours as stored, so a bed's two numbers agree.
-        mean = round(mean, 2)
         conn.execute(
             "UPDATE element SET ellenberg_l = ?, sun_hours = ?, slope_deg = ?,"
             " aspect_deg = ?,"
             " light_computed_at = ? WHERE element_id = ?",
             (
-                ellenberg_from_sun_hours(mean),
-                mean,
+                ellenberg_from_sun_hours(round(mean, 2)),  # as stored: they agree
+                round(mean, 2),
                 *_fall_of(ground, bed),
                 _now(),
                 bed.bed_id,

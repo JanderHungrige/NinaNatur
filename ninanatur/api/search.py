@@ -73,6 +73,15 @@ def _order_key(
     return (mismatch, unknown, -scored.rank, -scored.score)
 
 
+def _passes(verdicts: dict[str, Verdict], filters: SearchFilters) -> bool:
+    """Colour never removes anything; the other filters remove known
+    mismatches, and remove unknowns only when the user did not ask for them."""
+    hard = [v for name, v in verdicts.items() if name not in RANKS_ONLY]
+    if any(v is Verdict.MISMATCH for v in hard):
+        return False
+    return filters.include_unknown or not any(v is Verdict.UNKNOWN for v in hard)
+
+
 def rank_plants(
     candidates: list[PlantRow],
     site: SiteVector,
@@ -113,12 +122,7 @@ def rank_plants(
             if light is Verdict.MISMATCH:
                 continue
 
-        # Colour never removes anything; the other filters remove known
-        # mismatches, and remove unknowns only when the user did not ask for them.
-        hard = {n: v for n, v in verdicts.items() if n not in RANKS_ONLY}
-        if any(v is Verdict.MISMATCH for v in hard.values()):
-            continue
-        if not filters.include_unknown and any(v is Verdict.UNKNOWN for v in hard.values()):
+        if not _passes(verdicts, filters):
             continue
         kept.append((ScoredPlant(
             plant=plant, fit=fit,

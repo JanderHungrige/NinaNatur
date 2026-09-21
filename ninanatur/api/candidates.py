@@ -87,12 +87,9 @@ def load_candidates(conn: sqlite3.Connection) -> list[PlantRow]:
     Per-species queries would be thousands of round trips for a single search.
     """
     rows = conn.execute(
-        """
-        SELECT x.taxon_id, x.canonical_name, x.family,
-               t.trait_key, t.value_num, t.value_text, t.source
-        FROM taxon x LEFT JOIN trait t ON t.taxon_id = x.taxon_id
-        WHERE x.occurs_de = 1
-        """
+        "SELECT x.taxon_id, x.canonical_name, x.family, t.trait_key, t.value_num,"
+        " t.value_text, t.source FROM taxon x LEFT JOIN trait t ON t.taxon_id = x.taxon_id"
+        " WHERE x.occurs_de = 1"
     ).fetchall()
 
     values: dict[int, dict[str, float | None]] = {}
