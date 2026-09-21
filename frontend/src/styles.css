@@ -210,13 +210,36 @@ body {
 }
 .inspector__subject {
   display: grid;
-  gap: 0.25rem;
+  gap: var(--space-2);
   justify-items: start;
 }
 .inspector__title { margin: 0; font-size: 1.3rem; }
 .inspector__detail { margin: 0; }
-.inspector__back,
 .inspector__action { margin: 0; justify-self: start; }
+/* The main route back to the garden (owner's check, 2026-09-21): a filled
+   button, first in the view, and held at the top of the details while they
+   scroll — the phone's sheet moves it under its handle. Held there, it stands
+   in a band of the page's own colour, the width of the details: what scrolls
+   under it goes out of sight instead of past its side. A shadow, so the band
+   is paint only — it adds nothing to the scrolled width. */
+.inspector__back {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-self: start;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-md);
+  box-shadow: 0 0 0 100vmax var(--bg);
+  clip-path: inset(calc(-1 * var(--space-3)) -100vmax calc(-1 * var(--space-2)));
+}
+/* Close above the subject it leaves: the view's own gap is for its panels. */
+.inspector__back + .inspector__subject { margin-top: calc(var(--space-2) - var(--space-6)); }
+/* Something the keyboard moves to is scrolled clear of the band, not under it. */
+.inspector:has(.inspector__back) { scroll-padding-top: 4rem; }
 
 /* A view's heading takes the focus from code when the view changes under the
    keyboard. The ring shows when the keyboard is what moved it. */
@@ -510,10 +533,15 @@ button[disabled] { opacity: 0.55; cursor: progress; }
  * the one that matters for the pointer. Without it the shape still swallows
  * clicks meant for the canvas underneath — a drawing tool armed over the middle
  * of the garden would hit the ground and do nothing, which is exactly how the
- * whole-garden bed used to get in the way. */
+ * whole-garden bed used to get in the way.
+ *
+ * Its fill is a flat grass wash (owner's check, 2026-09-21): a 5 % tint left
+ * the plan nearly white where it opens, on the garden. Flat, not the lawn's
+ * blades, so a lawn drawn on it still reads as a lawn. Where the system asks
+ * for more contrast, `.obstacle` takes every fill away, this one included. */
 .obstacle--garden {
   pointer-events: none;
-  fill: var(--plan-ground-fill, color-mix(in srgb, var(--leaf) 5%, transparent));
+  fill: var(--plan-ground-fill, color-mix(in srgb, var(--wash-grass) 70%, transparent));
   stroke: var(--plan-ground-stroke, var(--outline));
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
@@ -853,6 +881,10 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   text-align: right;
   overflow-wrap: anywhere;
 }
+/* The map's credit under the style's (2026-09-21): one caption in two lines. */
+.plan-credit + .plan-credit { margin-top: 0; }
+/* A credit that links to its terms keeps the caption's ink, underlined. */
+.plan-credit a { color: inherit; }
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so
    it never sits under the thing being pointed at, and `pointer-events: none` so
@@ -1815,6 +1847,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: var(--text-xs);
   overflow-wrap: anywhere;
 }
+.source-credits__credit a { color: inherit; }
 
 /* Which style the plan is drawn in (doc 100), in the menu beside the sun map.
    A fieldset rather than a row of buttons: the two choices belong together and
@@ -2582,6 +2615,9 @@ kbd {
   }
   .sheet-handle:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
   .sheet-handle__grip { width: 2.5rem; height: 0.3rem; border-radius: 999px; background: var(--outline); }
+  /* The way back stops under the handle, whose height this is. */
+  .inspector__back { top: 1.75rem; }
+  .inspector:has(.inspector__back) { scroll-padding-top: 5rem; }
 
   .tool-rail {
     position: fixed;

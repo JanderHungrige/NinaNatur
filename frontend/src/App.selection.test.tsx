@@ -91,6 +91,25 @@ describe('App — one selection, whichever way it was reached', () => {
     expect(bedOnPlan().getAttribute('aria-pressed')).toBe('false');
   });
 
+  it('offers the way back first in every view, as a button rather than a link', async () => {
+    // The main route back (owner's check, 2026-09-21): a grey link under the
+    // title read as a footnote. The same in the bed, the element and the patch.
+    await open();
+    const firstInView = () => details().querySelector('.inspector__view button');
+    for (const [choose, name] of [
+      [bedOnPlan, 'Zurück zum Garten'],
+      [shedOnPlan, 'Zurück zum Garten'],
+      [patchOnPlan, 'Zurück zu Südbeet'],
+    ] as const) {
+      fireEvent.click(choose());
+      const back = within(details()).getByRole('button', { name });
+      expect(firstInView()).toBe(back);
+      expect(back.classList.contains('link-button')).toBe(false);
+      expect(back.compareDocumentPosition(viewHeading()!) & Node.DOCUMENT_POSITION_FOLLOWING)
+        .toBeTruthy();
+    }
+  });
+
   it('drops the selection on Escape', async () => {
     await open();
     fireEvent.click(shedOnPlan());

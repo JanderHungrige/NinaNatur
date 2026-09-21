@@ -27,13 +27,9 @@ export const ON_OFFER: readonly ThemeOnOffer[] = [
   { id: DRAFT_SKETCH, label: 'Draft Sketch' },
 ];
 
-/**
- * Which theme this page may draw. Draft Sketch only on the preview, and only
- * when asked for by name: nothing of his is shown in public before he has seen
- * it. Which deployment this is, only the server knows (`/healthz`).
- */
 /** The theme with this id. Draft Sketch is a chunk of its own, fetched only
- *  when it is drawn — which production never asks for. */
+ *  when it is drawn: a page that never shows it never downloads it. Every
+ *  style is on offer everywhere since 2026-09-20 (`choice.ts`, doc 100). */
 export async function loadTheme(id: string): Promise<PlanTheme> {
   if (id === DRAFT_SKETCH) return (await import('./draft-sketch')).draftSketch;
   return themeById(id);

@@ -285,7 +285,7 @@ export function GardenCanvas({
                      updatedAt={garden.updated_at} />
       {hint !== undefined && <p className="plan-hint" aria-live="polite">{hint}</p>}
       </div>
-      <PlanCredit />
+      <PlanCredit garden={garden} />
     </div>
   );
 }

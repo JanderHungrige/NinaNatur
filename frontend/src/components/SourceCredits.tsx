@@ -1,4 +1,5 @@
 import type { Credit } from '../api/client';
+import { ATTRIBUTION_URL } from '../map/tiles';
 
 /**
  * Which survey said so (doc 106).
@@ -7,7 +8,8 @@ import type { Credit } from '../api/client';
  * from Copernicus, roofs from a state building model — and every licence here
  * asks for the named credit. A height shown without it is a height used outside
  * its licence, so this is not a caption: it is the condition under which the
- * numbers above it may be shown at all.
+ * numbers above it may be shown at all. OpenStreetMap is one of them wherever
+ * the plan draws its streets or houses (2026-09-21).
  *
  * Nothing is drawn where a garden rests on nothing, which is most of them.
  */
@@ -20,6 +22,15 @@ const ABOUT: Record<string, string> = {
   ground: 'Gelände',
   horizon: 'Horizont',
   buildings: 'Gebäude',
+  laser: 'Baumkronen',
+  map: 'Karte',
+};
+
+/** A credit whose terms ask for a link to them, by the source's name: OSM's
+ *  attribution guideline wants "© OpenStreetMap-Mitwirkende" to lead to its
+ *  copyright page, as it does in the map picker. */
+const LINKED: Record<string, string> = {
+  OpenStreetMap: ATTRIBUTION_URL,
 };
 
 const decided = (about: string): string =>
@@ -38,7 +49,13 @@ export function SourceCredits({ credits }: Props) {
               {credit.detail === null || credit.detail === undefined ? '' : ` · ${credit.detail}`}
             </span>
             {/* The credit itself, word for word as the licence asks. */}
-            <span className="source-credits__credit">{credit.attribution}</span>
+            <span className="source-credits__credit">
+              {LINKED[credit.name] === undefined ? credit.attribution : (
+                <a href={LINKED[credit.name]} target="_blank" rel="noreferrer noopener">
+                  {credit.attribution}
+                </a>
+              )}
+            </span>
           </li>
         ))}
       </ul>

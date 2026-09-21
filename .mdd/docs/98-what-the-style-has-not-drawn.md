@@ -59,7 +59,7 @@ test_files:
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
 data_flow: reads-existing
-last_synced: 2026-09-20
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -146,7 +146,7 @@ Add-only: a computed field of the answer, no column.
 | his line symbols | `drawAlong` | the ink layer; a wall's clipped to its outline |
 | north, scale, title | the theme's `Furniture` | the plan's corner (`PlanFurniture`) |
 | the street network's ink | the theme's `Plan` | first in the ink layer, under every shape's own marks |
-| his credit | `PlanCredit` | a caption beneath the plan |
+| his credit | `PlanCredit` | a caption beneath the plan — with OpenStreetMap's on a line of its own where the plan draws OSM content (doc 106) |
 
 **Shadows moved.** Doc 97 drew every shadow in one layer under every shape.
 A tree's shadow then fell under the lawn it stands on, and a raised bed's
@@ -213,7 +213,8 @@ a map import brings sixty ways, and each one's wobble is real work.
 
 **The ground is grass, not paper.** His lawn wash under the whole garden at
 half opacity — pale green over the paper, with a real lawn darker on top of
-it. `--plan-ground-fill` in `theme.css`; ours keeps the plain ground.
+it. `--plan-ground-fill` in `theme.css`. Technisch's ground has been a flat
+grass wash since 2026-09-21 (no blades, so a drawn lawn still tells apart).
 
 ## The paint budget, measured
 
