@@ -9,10 +9,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Literal
 
 from ninanatur.api.candidates import PlantRow
 from ninanatur.bloom.timeline import flowering_months
+from ninanatur.fit.score import FitBand, FitResult
 from ninanatur.garden.canopy import canopy_of
+
+#: The report key for the light cut, beside `height`, `colour` and the rest.
+LIGHT = "light"
+
+#: Which way a bed's light is wrong for a species. The same two words the
+#: misplaced-planting warning uses.
+LightMismatch = Literal["too_bright", "too_dark"]
 
 # Growth forms that are not bed plants. A bed is a few square metres; a hemlock
 # fits its light and moisture perfectly and is still a useless suggestion.
@@ -100,6 +109,10 @@ class SearchFilters:
     exclude_woody: bool = False
     exclude_introduced: bool = False
     exclude_taxa: frozenset[int] = frozenset()
+    # Leave out species the bed is far too bright for. False here, so the
+    # catalogue search is untouched; the bed routes turn it on (see
+    # `light_verdict`).
+    exclude_light_unsuitable: bool = False
 
 
 def excluded_outright(plant: PlantRow, filters: SearchFilters) -> bool:
@@ -161,7 +174,10 @@ def _space_verdict(plant: PlantRow, filters: SearchFilters) -> Verdict | None:
 
     Ranks rather than excludes, like colour. A 24 m oak in a 4 m² bed is a bad
     idea and the user is entitled to see it, priced — telling them what it would
-    take is more use than pretending the catalogue does not contain it.
+    take is more use than pretending the catalogue does not contain it. Light is
+    the one site mismatch that is refused rather than priced, and only in one
+    direction (`light_verdict`): a plant that outgrows its bed can be cut back
+    or moved, a scorched one is usually dead.
     """
     if filters.bed_area_m2 is None or filters.bed_area_m2 <= 0:
         return None
@@ -179,6 +195,37 @@ def _colour_verdict(plant: PlantRow, colour: str | None) -> Verdict | None:
     if value is None:
         return Verdict.UNKNOWN
     return Verdict.MATCH if value.lower() == colour.lower() else Verdict.MISMATCH
+
+
+def light_mismatch(fit: FitResult) -> LightMismatch | None:
+    """Which way the bed's light is wrong for a species, when it is *unsuitable*.
+
+    None when it suits, when it is merely borderline, and when it cannot be
+    judged: a species with no L value, or a bed whose light was never computed.
+    Unknown is not a mismatch.
+    """
+    axis = fit.explanation.get("ellenberg_l")
+    if axis is None or axis.band is not FitBand.UNSUITABLE:
+        return None
+    return "too_bright" if axis.value < axis.target else "too_dark"
+
+
+def light_verdict(fit: FitResult, filters: SearchFilters, *, lit: bool) -> Verdict | None:
+    """The light cut: too bright is left out, too dark is only ranked down.
+
+    Asymmetric by the owner's decision (2026-09-21). A shade plant in full sun
+    scorches and dries out, which is usually fatal; a sun plant in shade lives,
+    flowers less and gets leggy. So the first is a refusal, not a warning, and
+    the second keeps the price the geometric mean already puts on it. Inactive
+    (None) when the bed has no light value (`lit`) or the caller did not ask.
+    A species with no L value is UNKNOWN, and kept whatever `include_unknown`
+    says: it is a gap in the data, and it already scores the neutral middle.
+    """
+    if not filters.exclude_light_unsuitable or not lit:
+        return None
+    if "ellenberg_l" not in fit.explanation:
+        return Verdict.UNKNOWN
+    return Verdict.MISMATCH if light_mismatch(fit) == "too_bright" else Verdict.MATCH
 
 
 def verdicts_for(

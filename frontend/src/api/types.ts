@@ -254,11 +254,10 @@ export interface paths {
          * Bed Suggestions
          * @description Species that suit this bed, ranked by fit against its own site vector.
          *
-         *     The bed's derived axes are the query, so the user never types an Ellenberg
-         *     number. Trees and shrubs are excluded by default: a bed is a few square
-         *     metres, and a hemlock that fits the light perfectly is still a useless
-         *     suggestion. Introduced species are excluded for a different reason: the
-         *     product promises native plants, and a third of the catalogue is not.
+         *     Woody plants get a shortlist of their own. Introduced species are left out
+         *     (the product promises native plants), and so, unless asked for, are species
+         *     the bed is far too bright for (`filters.light_verdict`). `light_state` says
+         *     whether there was a light value to judge by.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
         put?: never;
@@ -1035,6 +1034,11 @@ export interface components {
             };
             /** Items */
             items: components["schemas"]["PlantSummary"][];
+            /**
+             * Light State
+             * @enum {string}
+             */
+            light_state: "missing" | "stale" | "current";
             /** Site Axes */
             site_axes: {
                 [key: string]: number;
@@ -2381,6 +2385,7 @@ export interface operations {
                 include_trees?: boolean;
                 include_introduced?: boolean;
                 exclude_planted?: boolean;
+                include_light_unsuitable?: boolean;
             };
             header?: never;
             path: {

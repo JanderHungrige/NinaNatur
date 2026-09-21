@@ -31,7 +31,8 @@ MONTH_DAY_STEP = 5
 # THIS IS A CONVENTION, NOT A MEASUREMENT. Sun hours are physical; Ellenberg L is
 # an ecological indicator derived from where plants are found growing. It is a
 # table so it can be argued with and adjusted in one place, and so nobody mistakes
-# it for physics.
+# it for physics. Since 2026-09-21 it also decides what a bed is too bright for
+# (`api.filters.light_verdict`), against species values on EIVE's 0–10 scale.
 SUN_HOUR_BANDS: tuple[tuple[float, float], ...] = (
     (8.0, 8.0),   # full sun
     (6.0, 7.0),   # sunny

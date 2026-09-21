@@ -184,3 +184,22 @@ def test_a_barely_fitting_species_is_not_proposed_even_with_few_candidates(
     names = [c.canonical_name for c in garden_improvements(conn, load_garden(conn, gid)).additions]
     assert "Passt" in names
     assert "Passt nicht" not in names, "900 partners cannot buy a place in the wrong bed"
+
+
+def test_a_half_shade_species_is_not_proposed_for_a_full_sun_bed(
+    conn: sqlite3.Connection,
+) -> None:
+    """Owner review #9: too bright is a refusal, here as in the suggestions.
+
+    L 4.5 in a bed of 8 is *unsuitable* on light, yet with good soil it scores
+    about 0.42 overall — above `MIN_FIT`, so only the light cut keeps it out.
+    """
+    _species(conn, 1, "Sonnenkraut", 6, 6, partners=100, light=8.0)
+    _species(conn, 2, "Halbschattenkraut", 4, 4, partners=900, light=4.5)
+    gid = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    add_bed(conn, gid, BedInput(name="Beet", polygon=SQUARE,
+                                soil_type="loam", moisture="fresh"))
+    recompute_light(conn, gid)
+    names = [c.canonical_name for c in garden_improvements(conn, load_garden(conn, gid)).additions]
+    assert "Sonnenkraut" in names
+    assert "Halbschattenkraut" not in names

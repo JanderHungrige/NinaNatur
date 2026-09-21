@@ -10,6 +10,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from ninanatur.garden.light_state import LightState
+
 
 class AxisFitOut(BaseModel):
     """Why one axis scored what it did — Wave 4 renders the band, not the number."""
@@ -115,6 +117,11 @@ class BedSuggestions(BaseModel):
     woody: list[PlantSummary] = []
     woody_total: int = 0
     filters: dict[str, FilterCountsOut] = {}
+    # Whether the light in `site_axes` can be trusted. 'missing': never
+    # computed, so the list rests on the soil alone; 'stale': computed before
+    # something that moves a shadow changed. The list says so either way,
+    # rather than claiming a site it only half knows.
+    light_state: LightState
 
 
 class MonthOut(BaseModel):

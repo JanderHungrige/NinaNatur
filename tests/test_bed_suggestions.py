@@ -60,9 +60,14 @@ def _names(client: TestClient, token: str, bed_id: int, **params: object) -> lis
 
 
 def test_suggestions_use_the_beds_own_conditions(client: TestClient) -> None:
-    """The user never types an Ellenberg number."""
+    """The user never types an Ellenberg number.
+
+    Asked with `include_light_unsuitable`, because a sunny bed no longer offers
+    Schattenkraut at all (owner review #9, `test_light_suggestions.py`); the
+    order among what is shown is the point here.
+    """
     token, bed_id = _sunny_bed(client)
-    names = _names(client, token, bed_id)
+    names = _names(client, token, bed_id, include_light_unsuitable=True)
     assert names[0] == "Sonnenkraut"
     assert names.index("Sonnenkraut") < names.index("Schattenkraut")
 

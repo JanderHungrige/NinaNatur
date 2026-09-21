@@ -15,11 +15,14 @@ from ninanatur.api.candidates import (
     with_observed,
 )
 from ninanatur.api.filters import (
+    LIGHT,
     FilterCounts,
     SearchFilters,
     Verdict,
     excluded_outright,
     is_woody,
+    light_mismatch,
+    light_verdict,
     verdicts_for,
 )
 from ninanatur.fit.score import SiteVector, score_species
@@ -38,6 +41,7 @@ __all__ = [
     "SearchFilters",
     "Verdict",
     "is_woody",
+    "light_mismatch",
     "load_candidates",
     "rank_plants",
     "with_observed",
@@ -78,6 +82,7 @@ def rank_plants(
     """
     report: dict[str, FilterCounts] = {}
     kept: list[tuple[ScoredPlant, dict[str, Verdict]]] = []
+    lit = "ellenberg_l" in site.values
 
     for plant in candidates:
         if excluded_outright(plant, filters):
@@ -91,6 +96,14 @@ def rank_plants(
             report.setdefault(name, FilterCounts()).record(
                 verdict, excludes=name not in RANKS_ONLY
             )
+        # Counted beside the others, but kept out of `verdicts`: a species with
+        # no L value must neither be dropped as an unknown nor sorted below
+        # every species that has one.
+        light = light_verdict(fit, filters, lit=lit)
+        if light is not None:
+            report.setdefault(LIGHT, FilterCounts()).record(light, excludes=True)
+            if light is Verdict.MISMATCH:
+                continue
 
         # Colour never removes anything; the other filters remove known
         # mismatches, and remove unknowns only when the user did not ask for them.
