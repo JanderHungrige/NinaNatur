@@ -205,7 +205,10 @@ def compute_grid(
     )
 
 
-def signature_of(garden: Garden, ground: object = None, horizon: object = None) -> str:
+def signature_of(
+    garden: Garden, ground: object = None, horizon: object = None,
+    *, shading_taxa: frozenset[int] | None = None,
+) -> str:
     """A hash of everything that changes where the shadows fall.
 
     **Not a list of actions that ought to trigger a recomputation.** That was the
@@ -215,7 +218,8 @@ def signature_of(garden: Garden, ground: object = None, horizon: object = None) 
     cannot forget to declare itself.
 
     What is in it: where the garden is, and every obstacle's kind, height, roof
-    and outline, and every planting's species and position — and **what the
+    and outline, and every planting that casts a shadow, by species and position
+    (`shading_taxa`; without it, every planting) — and **what the
     ground and the horizon were measured from** (Wave 25, doc 106). A state that
     gains a source is the case this last part is for: Bayern had no terrain at
     all until its tiles were read, and a garden whose map was computed flat
@@ -254,6 +258,8 @@ def signature_of(garden: Garden, ground: object = None, horizon: object = None) 
             f"|{element.height_above_ground}|{outline}"
         )
         for planting in element.plantings:
+            if shading_taxa is not None and planting.taxon_id not in shading_taxa:
+                continue
             parts.append(
                 f"p{planting.planting_id}|{planting.taxon_id}|{planting.quantity}"
                 f"|{planting.x}|{planting.y}"

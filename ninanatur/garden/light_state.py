@@ -7,9 +7,8 @@ says "ranked by this bed's site" in either case is claiming more than it knows
 (owner review #9, 2026-09-21).
 
 "Stale" is the sun map's own test: the stored grid's signature against a
-signature of what stands in the garden now, from the same inputs
-`api/light.py::_read` uses for the map's `stale` flag (it spells them out
-rather than calling `current_signature`, so the two must be kept in step).
+signature of what stands in the garden now. `api/light.py::_read` calls
+`current_signature` for the map's `stale` flag, so the two cannot drift apart.
 Measured on 2026-09-21 against a real 200 × 200 terrain window and a
 garden of 40 houses and 20 beds of 10 plantings: about 4 ms per request, nearly
 all of it decoding the terrain window — against a ranking of the whole catalogue
@@ -21,6 +20,7 @@ import sqlite3
 from typing import Literal
 
 from ninanatur.garden.lightgrid import signature_of
+from ninanatur.garden.lightview import shading_taxa
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.terrain_sync import ground_for, horizon_for
 from ninanatur.geo.projection import LatLon
@@ -35,7 +35,10 @@ def current_signature(conn: sqlite3.Connection, garden: Garden) -> str:
     the ground and the horizon read here are the stored ones, never fetched.
     """
     anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
-    return signature_of(garden, ground_for(conn, anchor), horizon_for(conn, anchor))
+    return signature_of(
+        garden, ground_for(conn, anchor), horizon_for(conn, anchor),
+        shading_taxa=shading_taxa(conn, garden),
+    )
 
 
 def stored_signature(conn: sqlite3.Connection, garden_id: int) -> str | None:

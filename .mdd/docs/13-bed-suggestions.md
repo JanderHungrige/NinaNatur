@@ -154,17 +154,17 @@ property of the plant — the same rule that keeps flower colour a soft filter.
 - **The light cut sits on an unsettled scale.** See "The light": the hours→L
   rungs and the mean over a bed's cells decide which species are too bright,
   and both wait for the owner.
-- **Planting a perennial makes the light "stale".** `lightgrid.signature_of`
-  hashes every planting, though only woody ones cast shade
-  (`lightview._planted_obstacles`). So after planting a Salbei from the list,
-  the list and the sun map both say the shade is out of date when it cannot
-  be. Hashing only the plantings that shade would end the false alarm in both
-  (every stored map would turn stale once); `lightgrid.py` was out of reach
-  for this change.
-- **Two copies of "the current signature".** `api/light.py::_read` should call
-  `light_state.current_signature` instead of repeating it, so the map and the
-  list cannot drift apart. Left for now: that file is over the length limit
-  and was being changed in parallel on 2026-09-21.
+- ~~**Planting a perennial makes the light "stale".**~~ *Fixed the same day,
+  after the merge:* the signature hashes only the plantings that shade
+  (`lightview.shading_taxa`, the plants `canopy.shades` makes crowns of), so a
+  Salbei planted from the list leaves the map and the list current. A shrub
+  still makes them stale (`tests/test_light_signature_plantings.py`). Every
+  stored map had to turn stale once anyway for doc 64's new grid, so this cost
+  no extra recompute.
+- ~~**Two copies of "the current signature".**~~ *Fixed the same day:*
+  `api/light.py::_read` calls `light_state.current_signature`. `api/light.py`
+  was split to get under the length limit (its response shapes are now in
+  `api/schemas_light.py`).
 
 ## Bugs
 
