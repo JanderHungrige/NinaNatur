@@ -97,7 +97,9 @@ jobs:
       - name: API types are in sync with the backend
         run: |
           python scripts/generate_openapi.py
-          cd frontend && npx openapi-typescript openapi.json -o src/api/types.ts
+          # In a subshell: after a plain `cd frontend` the diff below looked for
+          # frontend/frontend/…, found nothing, and passed — for every change.
+          (cd frontend && npx openapi-typescript openapi.json -o src/api/types.ts)
           git diff --exit-code -- frontend/openapi.json frontend/src/api/types.ts \
             || { echo "::error::Generated API types are stale — run npm run generate:api"; exit 1; }
 
