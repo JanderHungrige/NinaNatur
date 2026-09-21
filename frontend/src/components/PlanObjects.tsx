@@ -52,13 +52,23 @@ function coverage(item: Drawn): number {
  * a lawn stays visible without anybody special-casing either.
  */
 export function surfacesFirst(items: Drawn[]): Drawn[] {
-  const standing = (item: Drawn): number => {
-    const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
-    return BY_KIND.get(kind)?.standing === false ? 0 : 1;
-  };
-  return [...items].sort(
-    (a, b) => standing(a) - standing(b) || coverage(b) - coverage(a),
-  );
+  return [...items].sort((a, b) => layer(a) - layer(b) || coverage(b) - coverage(a));
+}
+
+/**
+ * Which layer a shape is drawn in: the garden's own ground at the very bottom,
+ * then the surfaces, then everything that stands — and streets with those.
+ *
+ * A street is a surface by what it is, and sorted by size it fell behind the
+ * garden's ground wherever the plot drawn on the map reached over it: the
+ * garden was coloured across the street (the owner, 2026-09-21). Like a
+ * building, a street is somebody else's ground that the garden stops at.
+ */
+function layer(item: Drawn): number {
+  const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
+  if (kind === 'garden') return 0;
+  if (kind === 'street') return 2;
+  return BY_KIND.get(kind)?.standing === false ? 1 : 2;
 }
 
 function bedLabel(bed: Bed): string {
