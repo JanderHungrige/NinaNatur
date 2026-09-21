@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Literal
 
 from ninanatur.api.candidates import PlantRow
+from ninanatur.api.parasites import is_parasitic
 from ninanatur.bloom.timeline import flowering_months
 from ninanatur.fit.score import FitBand, FitResult
 from ninanatur.garden.canopy import canopy_of
@@ -119,9 +120,14 @@ def excluded_outright(plant: PlantRow, filters: SearchFilters) -> bool:
     """The category exclusions, which are not trait filters and are not counted.
 
     These answer "is this a candidate at all" rather than "does it match what
-    was asked for": a species already in the bed, a tree in a flower bed, a
-    plant the product does not promise.
+    was asked for": a plant that lives on a host or a fungus (`parasites`), a
+    species already in the bed, a tree in a flower bed, a plant the product
+    does not promise. The first holds for every caller and has no opt-out: a
+    plant nobody can grow is no suggestion anywhere, the catalogue search
+    included.
     """
+    if is_parasitic(plant.canonical_name):
+        return True
     if plant.taxon_id in filters.exclude_taxa:
         return True
     if filters.exclude_woody and is_woody(plant):
