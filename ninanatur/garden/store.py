@@ -51,6 +51,10 @@ def _validate_polygon(polygon: Polygon) -> Polygon:
     for point in polygon:
         if len(point) != 2 or not all(isinstance(c, int | float) for c in point):
             raise PolygonError(f"polygon points must be [x, y] numbers, got {point!r}")
+    # Different corners, as every other write asks (`require_buildable`): three
+    # points two of which coincide cover no ground.
+    if len({(float(x), float(y)) for x, y in polygon}) < MIN_POLYGON_POINTS:
+        raise PolygonError(f"a bed needs {MIN_POLYGON_POINTS} different corners")
     return polygon
 
 

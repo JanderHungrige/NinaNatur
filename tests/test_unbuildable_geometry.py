@@ -73,6 +73,17 @@ def test_a_shape_with_no_footprint_is_refused_and_nothing_is_stored(
     assert added.status_code == 201
 
 
+def test_a_bed_needs_three_different_corners_too(
+    client: TestClient, conn: sqlite3.Connection
+) -> None:
+    token = _token(client)
+    refused = client.post(f"/api/v1/gardens/{token}/beds", json={
+        "name": "B", "polygon": [[0, 0], [2, 0], [2, 0]], "soil_type": "loam", "moisture": "fresh",
+    })
+    assert refused.status_code == 422
+    assert _count(conn) == 0
+
+
 def test_reshaping_a_path_keeps_its_width(client: TestClient) -> None:
     """A vertex drag sends points, a resize sends points and a position, and
     neither sends the band. Both used to clear it."""
@@ -144,6 +155,28 @@ def test_the_repair_gives_a_path_its_width_back_and_removes_what_cannot_be_drawn
     assert dot not in widths
     assert widths[reshaped] is not None and widths[reshaped] > 0
     assert widths[fine] == 0.6
+
+
+def test_the_repair_keeps_an_outline_that_opened_and_its_plantings(
+    conn: sqlite3.Connection,
+) -> None:
+    """Three corners, two of them the same, cover no ground — but a garden with
+    such a bed opened, and the bed may hold plants. The repair is for rows that
+    broke reading, and this one broke nothing."""
+    conn.execute("DELETE FROM catalogue_meta WHERE key = ?", (UNBUILDABLE_KEY,))
+    garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    flat = _stored(conn, garden_id, kind="bed", shape="polygon",
+                   points=[[0.0, 0.0], [2.0, 0.0], [2.0, 0.0]])
+    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Salvia pratensis')")
+    conn.execute(
+        "INSERT INTO planting (element_id, taxon_id, quantity, added_at) VALUES (?, 1, 3, 'now')",
+        (flat,),
+    )
+    conn.commit()
+
+    assert mend_unbuildable_elements(conn) is None
+    assert conn.execute("SELECT COUNT(*) FROM element").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM planting").fetchone()[0] == 1
 
 
 def test_the_repair_runs_once(conn: sqlite3.Connection) -> None:

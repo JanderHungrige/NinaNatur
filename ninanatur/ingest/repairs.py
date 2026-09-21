@@ -10,7 +10,7 @@ import json
 import logging
 import sqlite3
 
-from ninanatur.garden.footprint import require_buildable
+from ninanatur.garden.footprint import Shape, footprint_of
 from ninanatur.garden.objects import ObjectKind, default_size
 
 logger = logging.getLogger(__name__)
@@ -35,11 +35,15 @@ def mend_unbuildable_elements(conn: sqlite3.Connection) -> str | None:
 
     A cleared width is restored. The path is real and somebody drew it; only its
     band was lost, so it gets its kind's usual width. A line without two
-    different points, or an outline without three different corners, covers no
-    ground and could never be seen or selected on a plan. The lines never even
-    reached one, because no request that stored one ever returned. Those rows
-    are removed rather than flagged, since a garden that cannot open is the
-    greater loss. Each removal is logged by id.
+    different points, or an outline of fewer than three points, is removed,
+    and each removal is logged by id: such a row never reached a plan, because
+    no request that stored one ever returned, and a garden that cannot open is
+    the greater loss.
+
+    Judged by what *reading* needs (`footprint_of`), not by the stricter check
+    a write now makes. An outline of three corners two of which coincide covers
+    no ground, but it opened, and a bed like that may hold plantings. Removing
+    it would take them too, for good, for a row that broke nothing.
     """
     conn.execute(
         "CREATE TABLE IF NOT EXISTS catalogue_meta"
@@ -84,8 +88,10 @@ def mend_unbuildable_elements(conn: sqlite3.Connection) -> str | None:
 
 
 def _buildable(shape: str, width: float | None, points: list[list[float]] | None) -> bool:
+    """Whether the garden can be read with this row in it."""
     try:
-        require_buildable(shape=shape, width=width, points=points)
+        footprint_of(shape=Shape(shape), x=0.0, y=0.0, width=width, depth=None,
+                     rotation=0.0, points=points)
     except ValueError:
         return False
     return True

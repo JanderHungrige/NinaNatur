@@ -78,6 +78,7 @@ row would have, and raises if there is none. An outline also needs three
 *different* corners there, which reading does not insist on, because rows
 stored before this check must still open.
 
+- A new bed needs three different corners too (`store._validate_polygon`).
 - `store.add_obstacle` calls it before `insert_element`. A refusal is a clean
   422, and nothing is written. A check after the insert would leave the
   outcome to whether anything commits the connection before it is closed.
@@ -106,12 +107,16 @@ stored before this check must still open.
 
 - A line whose width was cleared gets its kind's usual width back. The path was
   real and somebody drew it; only its band was lost.
-- A line without two different points, or an outline without three different
-  corners, is **removed**, and each removal is logged by id. Such a row covers
-  no ground and could never be seen or selected, and the lines never even
-  reached a plan, because no request that stored one ever returned. Removing
-  them was chosen over flagging them, because a garden that cannot open is the
-  greater loss.
+- A line without two different points, or an outline of fewer than three
+  points, is **removed**, and each removal is logged by id. Such a row never
+  reached a plan, because no request that stored one ever returned. Removing it
+  was chosen over flagging it, because a garden that cannot open is the greater
+  loss.
+- The repair judges by what **reading** needs (`footprint_of`), not by the
+  stricter rule a write now applies. An outline of three corners, two of which
+  coincide, covers no ground but it opened, and a bed like that may hold
+  plantings. The first version removed it too, and its plants with it (caught by
+  the integration review before it ever ran on the preview).
 
 **What the owner should know before looking at a garden that broke.** Every
 add, edit and delete that showed the 422 *was* carried out. Once the repair
