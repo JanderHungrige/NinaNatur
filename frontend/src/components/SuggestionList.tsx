@@ -2,6 +2,7 @@ import { type ReactNode, useLayoutEffect, useRef } from 'react';
 
 import type { BedSuggestions } from '../api/client';
 import { focusLost, holdsFocus } from '../suggestions/focus';
+import { hiddenByLight, lightHint, LightNote } from './SuggestionLight';
 import { SuggestionWindow } from './SuggestionWindow';
 
 interface Props {
@@ -27,25 +28,6 @@ function listed(shown: number, total: number): string {
   const all = total.toLocaleString('de-DE');
   if (shown >= total) return `${all} passende ${total === 1 ? 'Art' : 'Arten'}`;
   return shown === 1 ? `Die passendste von ${all} Arten` : `Die ${shown} passendsten von ${all} Arten`;
-}
-
-/** What the list could not rank by, in words — owner review #9. Null when the
- *  light is current and the list really was ranked by the bed's whole site. */
-const LIGHT_HINT: Partial<Record<BedSuggestions['light_state'], string>> = {
-  missing: 'Licht noch nicht berechnet — die Liste berücksichtigt nur den Boden.',
-  stale:
-    'Der Schatten wurde seit der letzten Änderung im Garten nicht neu berechnet — ' +
-    'die Liste rechnet noch mit dem alten Licht.',
-};
-
-/** "4 Arten, denen es hier zu hell ist, sind ausgeblendet." — or nothing. */
-function hiddenByLight(counts: BedSuggestions['filters']): string | null {
-  const hidden = counts.light?.excluded ?? 0;
-  if (hidden === 0) return null;
-  const n = hidden.toLocaleString('de-DE');
-  return hidden === 1
-    ? `${n} Art, der es hier zu hell ist, ist ausgeblendet.`
-    : `${n} Arten, denen es hier zu hell ist, sind ausgeblendet.`;
 }
 
 /**
@@ -80,7 +62,7 @@ export function SuggestionList({
   const showsBirds = [...suggestions.items, ...suggestions.woody].some(
     (i) => (i.bird_partners ?? 0) > 0,
   );
-  const lightHint = LIGHT_HINT[suggestions.light_state] ?? null;
+  const lightKnown = lightHint(suggestions.light_state) === null;
   const hidden = hiddenByLight(suggestions.filters ?? {});
 
   return (
@@ -91,27 +73,13 @@ export function SuggestionList({
         </h2>
         <p className="hint">
           {listed(suggestions.items.length, suggestions.total)}
-          {lightHint === null ? ', gewertet nach den Standortwerten dieses Beetes. ' : '. '}
+          {lightKnown ? ', gewertet nach den Standortwerten dieses Beetes. ' : '. '}
           {hidden !== null && `${hidden} `}
           {includeTrees
             ? 'Gehölze stehen weiter unten in einer eigenen Liste.'
             : 'Bäume und Sträucher sind ausgeblendet.'}
         </p>
-        {lightHint !== null && <p className="hint">{lightHint}</p>}
-        {lightHint !== null && onComputeShade !== undefined && (
-          // In reach while a request runs, and ignored: a button disabled under
-          // the keyboard's focus throws the focus to the page (doc 88, rule 11).
-          <button
-            type="button"
-            className="suggestions__shade"
-            aria-disabled={busy || undefined}
-            onClick={() => {
-              if (!busy) onComputeShade();
-            }}
-          >
-            Schatten berechnen
-          </button>
-        )}
+        <LightNote state={suggestions.light_state} busy={busy} onComputeShade={onComputeShade} />
         {filters}
         {showsBirds && (
           <p className="hint">
