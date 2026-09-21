@@ -177,5 +177,20 @@ def test_a_pent_is_the_same_whichever_way_round_the_outline_runs() -> None:
     assert _rounded(forward) == _rounded(backward) == {frozenset({(-5.0, 3.0), (5.0, 3.0)})}
 
 
+@pytest.mark.parametrize("fall", [180.0, 180.5])
+def test_a_pent_wall_with_a_node_in_it_is_one_line(fall: float) -> None:
+    """Where a neighbour's wall meets it, an OpenStreetMap outline has a node in
+    the upper wall; the edge is still one line, so its arrow stands in its middle."""
+    garage = [(0.0, 0.0), (10.0, 0.0), (10.0, 4.0), (8.5, 4.0), (0.0, 4.0)]
+    lines = roof_lines(garage, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=fall)
+    assert _rounded(lines) == {frozenset({(10.0, 4.0), (0.0, 4.0)})}
+
+
+def test_a_pent_wall_split_where_the_ring_starts_is_one_line() -> None:
+    garage = [(8.5, 4.0), (0.0, 4.0), (0.0, 0.0), (10.0, 0.0), (10.0, 4.0)]
+    lines = roof_lines(garage, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=180.5)
+    assert _rounded(lines) == {frozenset({(10.0, 4.0), (0.0, 4.0)})}
+
+
 def _round(point: tuple[float, float]) -> tuple[float, float]:
     return (round(point[0], 3) + 0.0, round(point[1], 3) + 0.0)

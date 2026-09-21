@@ -81,6 +81,22 @@ describe('PlanHint', () => {
     }
   });
 
+  it('waits while its tab is in the background', () => {
+    const state = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    try {
+      const { container } = render(<PlanHint text="Wähle eine Form" />);
+      act(() => vi.advanceTimersByTime(HINT_VISIBLE_MS * 2));
+      expect(hint(container).classList.contains('plan-hint--faded')).toBe(false);
+
+      state.mockReturnValue('visible');
+      act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+      act(() => vi.advanceTimersByTime(HINT_VISIBLE_MS));
+      expect(hint(container).classList.contains('plan-hint--faded')).toBe(true);
+    } finally {
+      state.mockRestore();
+    }
+  });
+
   it('keeps one live region, so each new hint is read out', () => {
     const { container, rerender } = render(<PlanHint text="Wähle eine Form" />);
     const first = hint(container);

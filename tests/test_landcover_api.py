@@ -130,14 +130,24 @@ def test_a_refusal_costs_the_colours_not_the_garden(
 
 def test_reading_them_reaches_no_network(conn: sqlite3.Connection,
                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """Counted, not raised: a raise was caught and logged by the fetch itself,
+    and the background had no connection, so a page load that asked Overpass
+    passed too (review, 2026-09-21)."""
     client = TestClient(app)
     token = _from_map(client)
+    asked = {"n": 0}
 
-    def refuse(*_a: Any, **_k: Any) -> list[OsmArea]:
-        raise AssertionError("a page load asked Overpass")
+    def count(*_a: Any, **_k: Any) -> list[OsmArea]:
+        asked["n"] += 1
+        return []
 
-    monkeypatch.setattr(landcover_sync, "landcover_in", refuse)
+    monkeypatch.setattr(landcover_sync, "landcover_in", count)
+    monkeypatch.setattr(landcover_sync, "background_connection", lambda: nullcontext(conn))
     assert client.get(f"/api/v1/gardens/{token}/landcover").status_code == 200
+    assert asked["n"] == 0
+    # And the counter would have seen one: the rebuild asks.
+    client.post(f"/api/v1/gardens/{token}/light")
+    assert asked["n"] == 1
 
 
 def _sources(client: TestClient, token: str) -> list[str]:

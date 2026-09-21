@@ -83,3 +83,4 @@ def _no_landcover(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setattr(module, "background_connection", lambda: nullcontext(None))
     module._failed_at.clear()
     yield
+    assert not module._running, "a background fetch did not let go of its claim"

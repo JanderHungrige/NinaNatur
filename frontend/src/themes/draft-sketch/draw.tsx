@@ -138,16 +138,25 @@ function fall(edge: [Point, Point], points: Point[]): string {
   return segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]]);
 }
 
-/** The longest of a roof's lines: a pent's upper edge can be two walls, and
- *  its arrow belongs to the main one. */
-const longest = (lines: [Point, Point][]): [Point, Point] =>
-  lines.reduce((best, line) => (span(line) > span(best) ? line : best));
-const span = ([a, b]: [Point, Point]): number => Math.hypot(b.x - a.x, b.y - a.y);
+/** A pent's whole upper edge, end to end: two walls where a notch cuts it, and
+ *  its arrow stands in the middle of both, not of the longer piece. */
+function upperEdge(lines: [Point, Point][]): [Point, Point] {
+  const ends = lines.flat();
+  let best: [Point, Point] = lines[0]!;
+  for (const a of ends) {
+    for (const b of ends) {
+      if (Math.hypot(b.x - a.x, b.y - a.y) > Math.hypot(best[1].x - best[0].x, best[1].y - best[0].y)) {
+        best = [a, b];
+      }
+    }
+  }
+  return best;
+}
 
 function roof(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
   const lines = shape.roofLines;
   if (lines.length === 0) return null;
-  const arrow = shape.roof === 'pent' ? fall(longest(lines), shape.points) : '';
+  const arrow = shape.roof === 'pent' ? fall(upperEdge(lines), shape.points) : '';
   const d = lines.map((line) => stroke(line, o.wave, mpp)).join('') + arrow;
   return <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
                strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;

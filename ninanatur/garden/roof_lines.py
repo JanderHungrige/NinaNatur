@@ -94,8 +94,36 @@ def uphill_walls(footprint: list[Point], fall_deg: float) -> list[Line]:
             facing.append((uphill, (a, b)))
     walls = [wall for uphill, wall in facing if uphill >= FACING_UPHILL]
     if walls or not facing:
-        return walls
+        return _joined(walls)
     return [max(facing)[1]]
+
+
+#: Two walls meeting at less than this run on as one.
+STRAIGHT_ON_DEG = 3.0
+
+
+def _joined(walls: list[Line]) -> list[Line]:
+    """Consecutive walls that run straight on, as one: an OpenStreetMap outline
+    carries a node wherever a neighbour's wall meets it, and half the buildings
+    in a street have one. Split, the upper edge was two lines, and its arrow was
+    drawn from the longer piece at an angle to the fall (review, 2026-09-21)."""
+    joined: list[Line] = []
+    for wall in walls:
+        if joined and joined[-1][1] == wall[0] and _straight_on(joined[-1], wall):
+            joined[-1] = (joined[-1][0], wall[1])
+        else:
+            joined.append(wall)
+    if len(joined) > 1 and joined[-1][1] == joined[0][0] and _straight_on(joined[-1], joined[0]):
+        joined[0] = (joined[-1][0], joined[0][1])
+        joined.pop()
+    return joined
+
+
+def _straight_on(first: Line, second: Line) -> bool:
+    a = math.atan2(first[1][1] - first[0][1], first[1][0] - first[0][0])
+    b = math.atan2(second[1][1] - second[0][1], second[1][0] - second[0][0])
+    turn = abs((b - a + math.pi) % (2 * math.pi) - math.pi)
+    return math.degrees(turn) < STRAIGHT_ON_DEG
 
 
 def _twice_area(ring: list[Point]) -> float:

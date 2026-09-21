@@ -11,8 +11,8 @@ export const HINT_VISIBLE_MS = 7_000;
  * Every change of hint shows it again for seven seconds of its own, a hint
  * that comes back included: drawing a shape puts the tool down, and the select
  * hint then says the next step. The seven seconds count only while it can be
- * seen — the phone's raised sheet and the plan's own message hide it, and a
- * hint that ran out behind them was never read. The paragraph itself stays, so
+ * seen — the phone's raised sheet, the plan's own message and a background tab
+ * hide it, and a hint that ran out behind them was never read. The paragraph itself stays, so
  * the live region reads each new hint out; faded, it is hidden from the
  * accessibility tree as from the eye.
  */
@@ -37,19 +37,28 @@ export function PlanHint({ text }: { text: string }) {
   );
 }
 
-/** Whether the element is on screen: not `display: none`, not scrolled away.
- *  Seen where the browser cannot say, so a hint is never held back for ever. */
+/** Whether the element is on screen: not `display: none`, not scrolled away,
+ *  and on a tab that is showing — an observer counts a hidden tab's hint as in
+ *  view, and a garden opened in a background tab lost its hint unread (review,
+ *  2026-09-21). Seen where the browser cannot say, so a hint is never held
+ *  back for ever. */
 function useSeen(ref: RefObject<HTMLElement | null>): boolean {
-  const [seen, setSeen] = useState(true);
+  const [inView, setInView] = useState(true);
+  const [showing, setShowing] = useState(() => document.visibilityState !== 'hidden');
   useEffect(() => {
     const element = ref.current;
     if (element === null || typeof IntersectionObserver === 'undefined') return undefined;
     const observer = new IntersectionObserver((entries) => {
       const last = entries[entries.length - 1];
-      if (last !== undefined) setSeen(last.isIntersecting);
+      if (last !== undefined) setInView(last.isIntersecting);
     });
     observer.observe(element);
     return () => observer.disconnect();
   }, [ref]);
-  return seen;
+  useEffect(() => {
+    const changed = () => setShowing(document.visibilityState !== 'hidden');
+    document.addEventListener('visibilitychange', changed);
+    return () => document.removeEventListener('visibilitychange', changed);
+  }, []);
+  return inView && showing;
 }

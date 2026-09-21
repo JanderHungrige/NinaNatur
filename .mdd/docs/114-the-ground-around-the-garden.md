@@ -67,7 +67,7 @@ known_issues:
   - "OpenStreetMap maps private plots as 'residential' almost everywhere (measured: the Kleinmachnow plot lies in one landuse=residential polygon). The plot is cut out and keeps its own ground; the neighbours' gardens stay the palest neutral."
   - "Relation assembly is tested on canned answers only. The one live request used `out tags geom`, which leaves relations' members out; the query now says `out geom`, not re-measured live (one request, as agreed)."
   - "The buildings query in `geo/osm.py` still says `out tags geom`, so its multipolygon buildings arrive without members and are skipped — the same finding, outside this feature."
-  - "The shade rebuild of a garden that has no surroundings yet costs one Overpass request after its answer, two where the garden has OSM streets (the offset), once per garden. A failure is left alone for six hours; the pause is kept in memory, so a restart forgets it and costs one more attempt."
+  - "The shade rebuild of a garden that has no surroundings yet costs one Overpass request after its answer, two where the garden has OSM streets (the offset), once per garden and never two at a time. A failure is left alone for six hours; the pause is kept in memory, so a restart forgets it and costs one more attempt. A fetch skipped for want of room records nothing, so a later rebuild asks again."
   - "`frontend/src/api/client.ts` was 602 lines before this feature and is 609 after; the length hook asks for a split of the client, which is not this feature's to make."
 sister_projects: []
 ---
@@ -156,6 +156,12 @@ failed. The routes' heavy slot is let go when their own work ends
 (`scope="function"`), so the waiting holds none. A failure is remembered for six
 hours by the garden's share token (an id is reused after a delete, a token
 never); a street fetch that fails still keeps the land, placed from the anchor.
+With the slot gone, nothing else bounded them, so one garden is fetched once at
+a time and at most two fetches run at once (`MAX_BACKGROUND_FETCHES`): a press
+while its garden is being fetched, or with no room, is skipped and records no
+failure. The tasks carry the token, not the id, and save only if the token still
+names the same garden: one deleted while Overpass was asked leaves its land and
+its pause to nobody.
 
 - **At creation from the map**, after the streets, from the **exact** centre of
   the outline — the anchor the streets and houses were placed by. A refusal

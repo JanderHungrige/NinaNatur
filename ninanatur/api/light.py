@@ -97,7 +97,7 @@ def rebuild_light_map(
     # The land around it, for a garden made before it was fetched (doc 114):
     # after this answer has gone out, never while somebody waits for the light.
     if not draws_landcover(conn, garden.garden_id):
-        background.add_task(landcover_sync.fetch_later, garden.garden_id)
+        background.add_task(landcover_sync.fetch_later, garden.share_token)
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
     measure_buildings(conn, load_garden(conn, garden.garden_id))

@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 import math
 import sqlite3
+import threading
 import time
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterator
@@ -31,7 +32,14 @@ from contextlib import contextmanager
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind
 from ninanatur.garden.terrain_sync import is_precise
-from ninanatur.geo.landcover_clip import Box, Point, box_around, degrees_of, in_garden
+from ninanatur.geo.landcover_clip import (
+    Box,
+    LandArea,
+    Point,
+    box_around,
+    degrees_of,
+    in_garden,
+)
 from ninanatur.geo.landcover_store import fetched, save_landcover
 from ninanatur.geo.osm_landcover import fetch_once, landcover_in
 from ninanatur.geo.osm_streets import streets_in
@@ -53,6 +61,16 @@ FAILURE_PAUSE_S = 6 * 3600
 #: garden inherited its predecessor's pause (review, 2026-09-21). A token is
 #: never given out twice.
 _failed_at: dict[str, float] = {}
+#: Fetches running now, by share token, and how many may run at once. The heavy
+#: slot no longer bounds them (it is let go before the answer is sent), so a
+#: second press while Overpass is slow started a second fetch of the same land,
+#: and a handful of presses held as many server threads (review, 2026-09-21).
+#: A fetch that finds its garden already being fetched, or no room, is skipped
+#: and records no failure: the next rebuild asks again.
+MAX_BACKGROUND_FETCHES = 2
+_running: set[str] = set()
+_room = threading.BoundedSemaphore(MAX_BACKGROUND_FETCHES)
+_claims = threading.Lock()
 
 
 @contextmanager
@@ -69,29 +87,47 @@ def background_connection() -> Iterator[sqlite3.Connection | None]:
         conn.close()
 
 
-def fetch_later(garden_id: int) -> None:
-    """`ensure_landcover` for a garden, after its rebuild has answered."""
-    _in_background(lambda conn: _ensure_by_id(conn, garden_id))
+def fetch_later(token: str) -> None:
+    """`ensure_landcover` for a garden, after its rebuild has answered. By
+    token: the garden may be gone, and its id somebody else's, by then."""
+    _in_background(token, lambda conn: _ensure_by_token(conn, token))
 
 
-def add_later(garden_id: int, anchor: LatLon, outline: list[list[float]]) -> None:
+def add_later(token: str, anchor: LatLon, outline: list[list[float]]) -> None:
     """`add_landcover` for a garden just made, after its answer has gone out."""
-    _in_background(lambda conn: add_landcover(conn, garden_id, anchor, outline))
+    _in_background(token, lambda conn: add_landcover(conn, token, anchor, outline))
 
 
-def _in_background(work: Callable[[sqlite3.Connection], object]) -> None:
+def _in_background(token: str, work: Callable[[sqlite3.Connection], object]) -> None:
+    if not _claim(token):
+        log.info("landcover for %s skipped: already running, or no room", token[:6])
+        return
     try:
         with background_connection() as conn:
             if conn is not None:
                 work(conn)
     except Exception:  # noqa: BLE001 — decoration, after the answer; logged
         log.warning("landcover in the background failed", exc_info=True)
+    finally:
+        with _claims:
+            _running.discard(token)
+            _room.release()
 
 
-def _ensure_by_id(conn: sqlite3.Connection, garden_id: int) -> None:
-    from ninanatur.garden.store import load_garden
+def _claim(token: str) -> bool:
+    with _claims:
+        if token in _running or not _room.acquire(blocking=False):
+            return False
+        _running.add(token)
+        return True
 
-    ensure_landcover(conn, load_garden(conn, garden_id))
+
+def _ensure_by_token(conn: sqlite3.Connection, token: str) -> None:
+    from ninanatur.garden.store import garden_by_token
+
+    garden = garden_by_token(conn, token)
+    if garden is not None:
+        ensure_landcover(conn, garden)
 
 
 def _paused(token: str) -> bool:
@@ -108,20 +144,21 @@ def _failed(token: str | None) -> None:
         _failed_at[token] = now
 
 
-def _token_of(conn: sqlite3.Connection, garden_id: int) -> str | None:
-    row = conn.execute(
-        "SELECT share_token FROM garden WHERE garden_id = ?", (garden_id,)
-    ).fetchone()
-    return None if row is None else str(row[0])
+def _id_of(conn: sqlite3.Connection, token: str) -> int | None:
+    row = conn.execute("SELECT garden_id FROM garden WHERE share_token = ?", (token,)).fetchone()
+    return None if row is None else int(row[0])
 
 
-def add_landcover(conn: sqlite3.Connection, garden_id: int, anchor: LatLon,
+def add_landcover(conn: sqlite3.Connection, token: str, anchor: LatLon,
                   outline: list[list[float]]) -> None:
     """A new garden's surroundings, around the anchor its outline was drawn from.
 
     Overpass is a free service with no SLA: a refusal costs the colours, not
     the garden, as with the streets.
     """
+    garden_id = _id_of(conn, token)
+    if garden_id is None:
+        return
     box = box_around([(p[0], p[1]) for p in outline])
     try:
         found = landcover_in(*degrees_of(box, anchor), centre=anchor)
@@ -129,9 +166,9 @@ def add_landcover(conn: sqlite3.Connection, garden_id: int, anchor: LatLon,
     except Exception:  # noqa: BLE001 — the garden matters more
         log.warning("landcover unavailable, garden %s made without it", garden_id,
                     exc_info=True)
-        _failed(_token_of(conn, garden_id))
+        _failed(token)
         return
-    save_landcover(conn, garden_id, areas, "map")
+    _save_if_still(conn, garden_id, token, areas, "map")
 
 
 def ensure_landcover(conn: sqlite3.Connection, garden: Garden) -> bool:
@@ -160,7 +197,18 @@ def ensure_landcover(conn: sqlite3.Connection, garden: Garden) -> bool:
         _failed(garden.share_token)
         return False
     shift, placed_by = _alignment(garden, anchor, box)
-    save_landcover(conn, garden.garden_id, in_garden(found, anchor, box, shift), placed_by)
+    return _save_if_still(conn, garden.garden_id, garden.share_token,
+                          in_garden(found, anchor, box, shift), placed_by)
+
+
+def _save_if_still(conn: sqlite3.Connection, garden_id: int, token: str,
+                   areas: list[LandArea], placed_by: str) -> bool:
+    """Save, unless the garden went while Overpass was asked: its id may be
+    another garden's by now, and that garden's land is elsewhere."""
+    if _id_of(conn, token) != garden_id:
+        log.info("landcover for %s not kept: the garden is gone", token[:6])
+        return False
+    save_landcover(conn, garden_id, areas, placed_by)
     return True
 
 

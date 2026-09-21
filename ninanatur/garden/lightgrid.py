@@ -79,7 +79,10 @@ class LightGrid:
         row = int((y - self.min_y) // self.cell_m)
         if not (0 <= col < self.cols and 0 <= row < self.rows):
             return None
-        return self.hours[row * self.cols + col]
+        index = row * self.cols + col
+        # As the docstring always said, and the code did not: a plant beside a
+        # house was judged by the sun on its roof (review, 2026-09-21).
+        return None if self.is_roof(index) else self.hours[index]
 
     def is_roof(self, index: int) -> bool:
         """Whether this cell is a roof. False on a grid computed before roofs."""

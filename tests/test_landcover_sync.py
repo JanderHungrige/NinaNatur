@@ -154,6 +154,70 @@ def test_the_fetch_after_the_answer_holds_no_heavy_slot(
     assert free == [ratelimit.HEAVY_SLOTS]
 
 
+def test_a_second_press_while_the_first_fetch_waits_asks_no_second_time(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The slot no longer holds the fetch, so nothing stopped a press during a
+    slow Overpass from fetching the same land again (review, 2026-09-21)."""
+    client = TestClient(app)
+    token = _drawn(client, 52.5171, 13.3889)
+    calls: list[LatLon] = []
+
+    def slow(*_box: float, centre: LatLon, **_k: Any) -> list[OsmArea]:
+        calls.append(centre)
+        if len(calls) == 1:
+            landcover_sync.fetch_later(token)  # the second press, meanwhile
+        return []
+
+    monkeypatch.setattr(landcover_sync, "landcover_in", slow)
+    landcover_sync.fetch_later(token)
+    assert len(calls) == 1
+
+
+def test_no_more_than_two_fetches_run_at_once(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each holds a server thread while Overpass is slow; beyond the room, a
+    fetch is skipped, and no failure is recorded for it."""
+    client = TestClient(app)
+    tokens = [_drawn(client, 52.5171 + i / 1000, 13.3889) for i in range(3)]
+    started: list[float] = []
+
+    def nested(*_box: float, centre: LatLon, **_k: Any) -> list[OsmArea]:
+        started.append(centre.lat)
+        if len(started) < len(tokens):
+            landcover_sync.fetch_later(tokens[len(started)])
+        return []
+
+    monkeypatch.setattr(landcover_sync, "landcover_in", nested)
+    landcover_sync.fetch_later(tokens[0])
+    assert len(started) == landcover_sync.MAX_BACKGROUND_FETCHES == 2
+    assert tokens[2] not in landcover_sync._failed_at
+
+
+def test_a_garden_replaced_while_its_land_was_fetched_gets_none_of_it(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Deleted during the fetch, its id went to a new garden elsewhere: the old
+    garden's land must not become the new one's, nor its failure the new one's
+    pause (review, 2026-09-21)."""
+    client = TestClient(app)
+    old = _drawn(client, 52.5171, 13.3889)
+    new: list[str] = []
+
+    def replaced(*_box: float, **_k: Any) -> list[OsmArea]:
+        client.delete(f"/api/v1/gardens/{old}")
+        new.append(_drawn(client, 48.1374, 11.5755))
+        return [OsmArea(osm_id=1, kind="wood", inners=[], outers=[[
+            to_latlon(Metres(x, y), STORED) for x, y in ((0, 0), (20, 0), (20, 20), (0, 20))]])]
+
+    monkeypatch.setattr(landcover_sync, "landcover_in", replaced)
+    landcover_sync.add_later(old, STORED, [[0, 0], [20, 0], [20, 20], [0, 20]])
+    assert conn.execute("SELECT garden_id FROM garden").fetchone()[0] == 1, "the same id"
+    assert conn.execute("SELECT COUNT(*) FROM garden_landcover").fetchone()[0] == 0
+    assert not landcover_sync._failed_at
+
+
 def test_the_light_does_not_wait_for_the_land(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

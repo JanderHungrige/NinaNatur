@@ -47,7 +47,7 @@ describe('roofs', () => {
     expect(d.match(/M/g)).toHaveLength(4);
   });
 
-  it('keeps the arrow when the upper edge is two walls, and draws it from the longer', () => {
+  it('keeps the arrow when the upper edge is two walls, in the middle of both', () => {
     // A notch in the upper wall: the server sends both pieces (review, 2026-09-21).
     const pent = shape('house', 'building', box(0, 0, 8, 4), {
       roof: 'pent',
@@ -56,9 +56,10 @@ describe('roofs', () => {
     const d = drawn(pent).marks('roof')[0]!.getAttribute('d')!;
     // Two edges, then the shaft and its barbs.
     expect(d.match(/M/g)).toHaveLength(5);
-    // The shaft starts a quarter of the way from the longer edge's middle (-1, 2)
-    // to the house's centre (0, 0): at (-0.75, 1.5), y flipped in the drawing.
-    expect(d).toContain('M-0.75,-1.5L');
+    // The shaft starts a quarter of the way from the whole edge's middle (0, 2)
+    // to the house's centre (0, 0): at (0, 1.5), y flipped — straight down the
+    // fall, not askew from the longer piece's middle.
+    expect(d).toContain('M0,-1.5L0,');
   });
 
   it('and not at all where the model has a plane', () => {

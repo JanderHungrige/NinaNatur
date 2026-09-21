@@ -138,8 +138,11 @@ the roof the model knows, in garden metres.
   model's edge is its rectangle's, across the surveyed fall; a surveyed fall is
   a mean over roof faces and never exactly square to a wall, so that edge
   touches a real house at one corner, and cut to the outline nothing was left
-  of it — nor of its arrow (review, 2026-09-21). The arrow is drawn from the
-  longest wall, so a notch in the upper wall keeps it too.
+  of it — nor of its arrow (review, 2026-09-21). Walls that run straight on
+  (within 3°) are one line: an OpenStreetMap outline carries a node wherever a
+  neighbour's wall meets it, and half the buildings in a street have one. The
+  arrow stands in the middle of the whole upper edge, end to end, so a notch in
+  it keeps the arrow and does not tilt it.
 - **flat, mixed, other, unknown, an unsurveyed pent, a pitch under 5°** — no
   lines: the model treats them as a plane at one height, and so does the
   drawing.

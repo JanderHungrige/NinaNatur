@@ -137,16 +137,17 @@ def garden_from_map(
         owner_id=None if account is None else str(account.account_id),
     )
     _add_streets(conn, garden_id, anchor, south, west, north, east)
-    # What the ground around it is (doc 114), from the same exact anchor —
-    # after the answer: creation already waits on Overpass twice.
-    background.add_task(landcover_sync.add_later, garden_id, anchor, polygon)
     _add_ground_and_houses(conn, garden_id, polygon, payload.name, around)
     # Deliberately not computed here. A garden arrives from the map with two
     # dozen buildings and no beds; the light is the slowest thing this app does
     # and the first thing somebody does next is draw, not read a shade map.
+    made = load_garden(conn, garden_id)
+    # What the ground around it is (doc 114), from the same exact anchor —
+    # after the answer: creation already waits on Overpass twice.
+    background.add_task(landcover_sync.add_later, made.share_token, anchor, polygon)
 
     return MapGardenOut(
-        garden=to_out(load_garden(conn, garden_id)),
+        garden=to_out(made),
         heights=HeightReport(
             measured=around.measured, estimated=around.estimated, assumed=around.assumed
         ),

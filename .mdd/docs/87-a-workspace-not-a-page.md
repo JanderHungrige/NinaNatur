@@ -204,9 +204,9 @@ None. The same client calls, from new places.
    change of hint shows it for seven seconds of its own, a hint that comes back
    included: drawing a shape puts the tool down, and the select hint then says
    the next step. The seven seconds count only while the hint can be seen
-   (an `IntersectionObserver`): the phone's raised sheet and the plan's own
-   message hide it with `display: none`, and a hint that ran out behind them
-   was never read. The paragraph stays mounted so the live region reads each
+   (an `IntersectionObserver`, and the page's visibility): the phone's raised
+   sheet and the plan's own message hide it with `display: none`, a background
+   tab hides the whole page, and a hint that ran out behind them was never read. The paragraph stays mounted so the live region reads each
    one, and faded it is `visibility: hidden`, gone from the accessibility tree
    as from the eye. No fade under reduced motion, only the hiding.
 8. **One undo.** The header's ↶ — named *Letzte Änderung rückgängig*, so it is not
