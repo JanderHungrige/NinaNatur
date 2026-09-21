@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { snap, snapPoint } from './snap';
+import { snap, snapNear } from './snap';
 
 describe('snapping', () => {
   it('rounds to the nearest grid line', () => {
@@ -21,14 +21,18 @@ describe('snapping', () => {
     expect(snap(-3.6, 1)).toBe(-4);
   });
 
-  it('leaves a point alone when the user asks for free placement', () => {
-    // Alt held: a hedge does not run along grid lines just because we drew one.
-    const free = snapPoint({ x: 3.42, y: -7.19 }, 1, { free: true });
-    expect(free).toEqual({ x: 3.42, y: -7.19 });
+  it('pulls a point onto a grid intersection within reach', () => {
+    expect(snapNear({ x: 3.04, y: -6.97 }, 1, 0.1)).toEqual({ x: 3, y: -7 });
   });
 
-  it('snaps both axes when it snaps', () => {
-    expect(snapPoint({ x: 3.42, y: -7.19 }, 1, { free: false })).toEqual({ x: 3, y: -7 });
+  it('leaves a point out of reach where it is, to the centimetre', () => {
+    // Rounding every click to a metre grid put corners half a metre off.
+    expect(snapNear({ x: 3.42, y: -7.19 }, 1, 0.1)).toEqual({ x: 3.42, y: -7.19 });
+    expect(snapNear({ x: 3.4213, y: -7.1888 }, 1, 0.1)).toEqual({ x: 3.42, y: -7.19 });
+  });
+
+  it('never pulls with no reach, which is what Alt asks for', () => {
+    expect(snapNear({ x: 3.01, y: -7 }, 1, 0)).toEqual({ x: 3.01, y: -7 });
   });
 
   it('never returns -0', () => {

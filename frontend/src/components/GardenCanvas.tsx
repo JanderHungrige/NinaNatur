@@ -145,7 +145,6 @@ export function GardenCanvas({
   const { drawing, problem, freehandStroke, stroke, shapeBand, polygon, cancel } = useDrawingModes({
     tool,
     view,
-    spacing,
     onDrawBed,
     onDrawShape,
     onDrawTrace,
