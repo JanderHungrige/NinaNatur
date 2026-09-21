@@ -6,10 +6,11 @@ never computed, or on a value from before an obstacle moved — and a list that
 says "ranked by this bed's site" in either case is claiming more than it knows
 (owner review #9, 2026-09-21).
 
-"Stale" is the sun map's own test, not a second one: the stored grid's
-signature against a signature of what stands in the garden now. The map and
-the suggestions therefore cannot disagree about whether the light is out of
-date. Measured on 2026-09-21 against a real 200 × 200 terrain window and a
+"Stale" is the sun map's own test: the stored grid's signature against a
+signature of what stands in the garden now, from the same inputs
+`api/light.py::_read` uses for the map's `stale` flag (it spells them out
+rather than calling `current_signature`, so the two must be kept in step).
+Measured on 2026-09-21 against a real 200 × 200 terrain window and a
 garden of 40 houses and 20 beds of 10 plantings: about 4 ms per request, nearly
 all of it decoding the terrain window — against a ranking of the whole catalogue
 that the same request runs anyway.

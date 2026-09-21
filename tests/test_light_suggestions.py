@@ -212,6 +212,18 @@ def test_a_light_value_with_no_map_behind_it_is_stale(client: TestClient) -> Non
     assert _ask(client, token, bed_id)["light_state"] == "stale"
 
 
+def test_the_list_and_the_sun_map_agree_on_what_is_stale(client: TestClient) -> None:
+    """Two copies of one comparison — the map's `stale`, the list's `light_state`
+    — so what one says the other must say too."""
+    token, bed_id = _bed(client)
+    for step in ("just computed", "a wall since"):
+        stale = client.get(f"/api/v1/gardens/{token}/light").json()["stale"]
+        assert (_ask(client, token, bed_id)["light_state"] == "stale") is stale, step
+        client.post(f"/api/v1/gardens/{token}/obstacles",
+                    json={"kind": "wall", "x": 2.0, "y": -2.0, "shape": "rect",
+                          "width": 6.0, "depth": 0.4, "height": 3.0})
+
+
 def test_changing_the_soil_does_not_make_the_light_stale(client: TestClient) -> None:
     """The map's own test: soil moves no shadow, so it is not a reason to relight."""
     token, bed_id = _bed(client)
