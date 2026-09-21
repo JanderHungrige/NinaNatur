@@ -24,8 +24,9 @@ models:
   - insect_de
 test_files:
   - tests/test_plants_api.py
+  - tests/test_parasites_hidden.py
 data_flow: reads-existing
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -73,7 +74,12 @@ unchanged, so its shape matters more than its implementation.
 | `colour` | string | **soft** — ranks, never excludes |
 | `limit`, `offset` | int | paging, limit ≤ 200 |
 
-Response: `{ "total": N, "items": [PlantSummary] }`, ordered by fit descending.
+Response: `{ "total": N, "items": [PlantSummary] }`. Ordered by fit descending
+until 2026-09-21; since then by the bed lists' order — growing conditions, the
+insect value deciding among equals (`fit/rank.py`, doc 13) — because the
+ranking is decided in `api/search.py` once and not re-derived per route. Each
+`PlantSummary` carries `insect_partners`, the number that order weighs. Plants
+that live on a host or a fungus are never returned (`api/parasites.py`).
 
 ### `GET /api/v1/plants/{taxon_id}`
 

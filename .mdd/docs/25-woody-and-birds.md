@@ -26,6 +26,7 @@ test_files:
   - tests/test_canopy.py
   - tests/test_planted_shade.py
   - tests/test_light_suggestions.py
+  - tests/test_suggestion_rank.py
 data_flow: mixed
 last_synced: 2026-09-21
 status: complete
@@ -171,9 +172,23 @@ below the cut. A shrub is planted for what visits it.
 **Only among what the light suits** (owner review #9, 2026-09-21). Fit removed
 nothing by itself, so the order alone gave a full-sun bed, a semi-shade bed and
 a bed with no light the same eight willows. The shortlist now leaves out any
-woody species whose light band is *unsuitable* in either direction before it
-orders by partners: the main list prices a too-dark species by ranking it
-down, and a list ordered by partners cannot. `woody_total` counts what is left.
+woody species whose light band is *unsuitable* in either direction — the same
+cut as the main list since that evening. `woody_total` counts what is left.
+
+**In the main list's order since 2026-09-21** — growing conditions, then insect
+value (`fit/rank.py`, doc 13), with room still left out. Both lessons above
+survive it: among shrubs that grow equally well the most visited leads, so the
+fit alone no longer puts Ruscus first (and mistletoe is no candidate at all,
+`api/parasites.py`); and a willow that is only *borderline* on light no longer
+buys a place with partners. Measured on the real catalogue, loam and fresh:
+the full-sun shortlist is led by *Artemisia maritima*, *Rosa canina*, *Rubus
+ulmifolius* and *Salix caprea*; half shade by *Salix caprea*, *Quercus robur*
+and the hawthorns; deep shade by *Fagus sylvatica*, *Prunus avium*, *Acer
+platanoides* and *Hedera helix* — where every bed used to get the same willows.
+
+Birds no longer add to the order. It summed insects and birds, which is the
+combined number this doc's own rule refuses ("Bird counts are shown, not
+scored"); the owner asked for the Insektenwert. Birds stay on the row.
 
 ## Catalogue size
 
@@ -195,9 +210,14 @@ acting on.
   it is placed at the bed centroid — where the light is also sampled, which made
   every plant sit exactly on the sample point. Wave 7's drawing tool gives
   plantings a position and this exclusion goes with it.
-- **The woody shortlist is Salix-heavy** — seven of eight entries are willows,
-  because willows genuinely dominate German insect partner counts. Truthful and
-  monotonous; a diversity constraint would help.
+- ~~**The woody shortlist is Salix-heavy**~~ — seven of eight entries were
+  willows, because willows genuinely dominate German insect partner counts.
+  Since the shortlist is ordered by growing conditions first (2026-09-21), a
+  semi-shade bed holds one willow in eight and a deep-shade bed none; the log
+  scale on partners does the rest. No diversity constraint was needed.
+- **`is_woody` counts some tall herbs as woody**: *Pastinaca sativa* and
+  *Cichorium intybus* reach the full-sun shortlist. A data question about the
+  woodiness/height signals, not about the order.
 - **`height_max_m` is an upper bound**, so the room estimate is too: *Quercus
   robur* is reported as needing ~873 m², which is a 50 m specimen rather than a
   garden oak.

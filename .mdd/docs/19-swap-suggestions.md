@@ -17,6 +17,8 @@ routes:
 models: []
 test_files:
   - tests/test_improvements.py
+  - tests/test_suggestion_rank.py
+  - tests/test_parasites_hidden.py
 data_flow: reads-existing
 last_synced: 2026-09-21
 status: complete
@@ -91,8 +93,14 @@ The sentence names the reason the score moved, not the amount it moved by.
 - **Only species that fit the bed are proposed.** A swap that raises the score and
   kills the plant is not an improvement — candidates come through the same fit
   and nativeness filters as `13-bed-suggestions`, and since 2026-09-21 its
-  light cut: a species the bed is far too bright for is never proposed, even
-  when its overall fit clears `MIN_FIT`.
+  light cut: a species whose light is unsuitable here, too bright or too dark,
+  is never proposed, even when its overall fit clears `MIN_FIT`. Nor is a
+  plant that lives on a host or a fungus (`api/parasites.py`).
+- **The pool is the suggestion list's own order** (since 2026-09-21): the 60
+  candidates weighed per bed are the first 60 that clear `MIN_FIT` by growing
+  conditions, then insect value (`fit/rank.py`), not by fit alone — so what is
+  weighed for a gap is what grows best here and feeds most. `MIN_FIT` became a
+  filter rather than a place to stop, the order no longer being the fit's.
 - **A swap must beat leaving things alone.** Suggestions with a gain of zero or
   less are not shown; padding the list would train users to ignore it.
 - **Species already planted are never proposed for the same bed.**

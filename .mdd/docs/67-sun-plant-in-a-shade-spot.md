@@ -48,6 +48,11 @@ Two rather than one: one rung is inside the noise of a model whose building
 heights are mostly assumed, and a warning nobody can act on is a warning people
 learn to scroll past.
 
+Two *classic* rungs, on EIVE's 0–10 scale: `TOLERANCE = 2.5`, since 2026-09-21.
+It was 2.0 while the spot's value sat on the old staircase of 1-wide rungs; the
+species' value was on EIVE's scale all along, so the two were compared across
+scales. Both are on EIVE's now (doc 07, "Sun hours to Ellenberg L").
+
 Both directions are named. `too_bright` is as real as `too_dark` — a fern in the
 open is as misplaced as a sedum under a hedge — and only one of the two ever
 gets talked about.
@@ -57,9 +62,9 @@ not: a cultivar bred for shade, a wall that throws light back, or simply that
 they want it there. The panel says so in as many words, under the list.
 
 That holds for what is already planted. What is *offered* became stricter on
-2026-09-21, by the owner's decision (review #9, `13-bed-suggestions`): the
-suggestions leave out a species the bed is far too bright for, because scorch
-and drought usually kill it, and only rank down one it is too dark for.
+2026-09-21, by the owner's decisions (review #9, `13-bed-suggestions`): the
+suggestions leave out a species whose light is *unsuitable* here, too bright or
+too dark — the best fit for the shade as much as for the sun.
 
 ## Which hours
 
