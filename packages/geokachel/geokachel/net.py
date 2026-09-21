@@ -24,7 +24,7 @@ import requests
 #: a thousand tiles has no other way. Set `GEOKACHEL_USER_AGENT`, or assign to
 #: this, before fetching anything in anger — the default says it is a default.
 USER_AGENT = os.environ.get("GEOKACHEL_USER_AGENT") or (
-    "geokachel/0.1 (+https://github.com/werthvoll/NinaNatur; "
+    "geokachel/0.1 (+https://github.com/JanderHungrige/NinaNatur; "
     "set GEOKACHEL_USER_AGENT to your own contact)")
 
 #: Between requests. These are public offices, not an API.

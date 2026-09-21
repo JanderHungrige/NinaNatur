@@ -147,7 +147,9 @@ brand and appears only inside credits they require.
   moved.
 - **`pointcloud.py` did not move**, so LAZ reading stays in the app for now. It
   is clean enough to follow whenever the laser is wanted outside a garden.
-- The copyright line says `werthvoll`, the owner's public git identity, because
-  guessing a legal name into a licence is worse than asking.
+- The copyright line says `JanderHungrige`, on the owner's instruction — and
+  the package's URLs said `werthvoll` until then, which is the git commit
+  identity and **not** the GitHub account the repository actually lives under.
+  Every link in the published metadata would have pointed at nothing.
 
 ## Bugs

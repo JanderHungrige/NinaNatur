@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
-authors = [{ name = "werthvoll" }]
+authors = [{ name = "JanderHungrige" }]
 keywords = [
     "germany", "deutschland", "elevation", "dem", "dtm", "dsm",
     "dgm1", "dom", "lod2", "laz", "lidar", "pointcloud",
@@ -28,9 +28,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/werthvoll/NinaNatur"
-Source = "https://github.com/werthvoll/NinaNatur/tree/main/packages/geokachel"
-Issues = "https://github.com/werthvoll/NinaNatur/issues"
+Homepage = "https://github.com/JanderHungrige/NinaNatur"
+Source = "https://github.com/JanderHungrige/NinaNatur/tree/main/packages/geokachel"
+Issues = "https://github.com/JanderHungrige/NinaNatur/issues"
 
 [project.scripts]
 geokachel = "geokachel.cli:main"
