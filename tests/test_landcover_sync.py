@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import sqlite3
 from collections.abc import Iterator
+from contextlib import nullcontext
 from typing import Any
 
 import pytest
@@ -41,10 +42,12 @@ LANE = OsmStreet(osm_id=5, name="Am Weinberg", width_m=6.0, centreline=[
 
 
 @pytest.fixture()
-def conn() -> Iterator[sqlite3.Connection]:
+def conn(monkeypatch: pytest.MonkeyPatch) -> Iterator[sqlite3.Connection]:
     made: sqlite3.Connection = connect(":memory:", same_thread=False)
     init_schema(made)
     app.dependency_overrides[get_connection] = lambda: made
+    # The fetch runs after the answer, on a connection of its own: here, this one.
+    monkeypatch.setattr(landcover_sync, "background_connection", lambda: nullcontext(made))
     yield made
     app.dependency_overrides.clear()
 
@@ -92,9 +95,11 @@ def test_a_garden_from_before_the_precise_anchor_gets_none(
     assert asked == []
 
 
-def test_a_failed_fetch_leaves_the_light_alone_and_is_asked_again(
+def test_a_failed_fetch_leaves_the_light_alone_and_waits_before_asking_again(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Every press used to pay for the failure again, with retries, while
+    somebody waited for the light (review, 2026-09-21)."""
     calls = {"n": 0}
 
     def refuse(*_a: Any, **_k: Any) -> list[OsmArea]:
@@ -107,7 +112,40 @@ def test_a_failed_fetch_leaves_the_light_alone_and_is_asked_again(
     first = client.post(f"/api/v1/gardens/{token}/light")
     assert first.status_code == 200 and first.json() is not None
     client.post(f"/api/v1/gardens/{token}/light")
-    assert calls["n"] == 2
+    assert calls["n"] == 1, "a failure is not asked again straight away"
+    monkeypatch.setattr(landcover_sync, "FAILURE_PAUSE_S", 0)
+    client.post(f"/api/v1/gardens/{token}/light")
+    assert calls["n"] == 2, "and is asked again once the pause is over"
+
+
+def test_the_light_does_not_wait_for_the_land(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rebuild answers before the landcover is fetched: it is scheduled."""
+    scheduled: list[int] = []
+    monkeypatch.setattr(landcover_sync, "fetch_later", scheduled.append)
+    client = TestClient(app)
+    token = _drawn(client, 52.5171, 13.3889)
+    assert client.post(f"/api/v1/gardens/{token}/light").status_code == 200
+    assert len(scheduled) == 1
+    assert conn.execute("SELECT COUNT(*) FROM garden_landcover").fetchone()[0] == 0
+
+
+def test_a_street_fetch_that_fails_still_keeps_the_land(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The offset is lost, placed from the anchor; the colours are not."""
+    monkeypatch.setattr(geo_routes, "buildings_in", lambda *_a, **_k: [])
+    monkeypatch.setattr(geo_routes, "streets_in", lambda *_a, **_k: [LANE])
+    monkeypatch.setattr(landcover_sync, "landcover_in", _refuse)
+    client = TestClient(app)
+    token = client.post("/api/v1/gardens/from-map",
+                        json={"name": "Alt", "outline": OUTLINE}).json()["garden"]["share_token"]
+    monkeypatch.setattr(landcover_sync, "FAILURE_PAUSE_S", 0)
+    _asking(monkeypatch, [])
+    monkeypatch.setattr(landcover_sync, "streets_in", _refuse)
+    client.post(f"/api/v1/gardens/{token}/light")
+    assert conn.execute("SELECT placed_by FROM garden_landcover").fetchone()[0] == "anchor"
 
 
 def test_a_map_gardens_streets_move_the_land_back_under_them(
@@ -127,6 +165,7 @@ def test_a_map_gardens_streets_move_the_land_back_under_them(
         to_latlon(Metres(x, y), EXACT) for x, y in ((30, 0), (50, 0), (50, 20), (30, 20))]])
     asked = _asking(monkeypatch, [wood])
     monkeypatch.setattr(landcover_sync, "streets_in", lambda *_a, **_k: [LANE])
+    monkeypatch.setattr(landcover_sync, "FAILURE_PAUSE_S", 0)
     client.post(f"/api/v1/gardens/{token}/light")
 
     assert asked == [STORED]

@@ -9,7 +9,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 
 from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
@@ -22,11 +22,11 @@ from ninanatur.api.schemas_light import (
     ShadowFrame,
     TerrainOut,
 )
+from ninanatur.garden import landcover_sync
 from ninanatur.garden.building_sync import measure_buildings
 from ninanatur.garden.cloud_sync import ensure_cloud
 from ninanatur.garden.credits import credits_for
 from ninanatur.garden.elements import now
-from ninanatur.garden.landcover_sync import ensure_landcover
 from ninanatur.garden.light_state import current_signature
 from ninanatur.garden.light_worker import month_grid, recompute_light
 from ninanatur.garden.lightgrid import extent_of
@@ -74,6 +74,7 @@ def light_map(
 def rebuild_light_map(
     token: str,
     request: Request,
+    background: BackgroundTasks,
     _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> LightMap | None:
@@ -93,8 +94,10 @@ def rebuild_light_map(
     # too long for a page load and fine for a button somebody pressed.
     standing = load_garden(conn, garden.garden_id)
     ensure_terrain(conn, standing)
-    # The land around it, for a garden made before it was fetched (doc 114).
-    ensure_landcover(conn, standing)
+    # The land around it, for a garden made before it was fetched (doc 114):
+    # after this answer has gone out, never while somebody waits for the light.
+    if not draws_landcover(conn, garden.garden_id):
+        background.add_task(landcover_sync.fetch_later, garden.garden_id)
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
     measure_buildings(conn, load_garden(conn, garden.garden_id))

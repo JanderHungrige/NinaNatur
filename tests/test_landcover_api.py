@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Iterator
+from contextlib import nullcontext
 from typing import Any, get_args
 
 import pytest
@@ -84,6 +85,8 @@ def test_a_garden_from_the_map_arrives_with_its_surroundings(
         return [OsmArea(osm_id=1, kind="wood", outers=[_square_at(40.0, 0.0, EXACT)], inners=[])]
 
     monkeypatch.setattr(landcover_sync, "landcover_in", landcover)
+    # After the answer, on a connection of its own: here, the test's.
+    monkeypatch.setattr(landcover_sync, "background_connection", lambda: nullcontext(conn))
     client = TestClient(app)
     token = _from_map(client)
 

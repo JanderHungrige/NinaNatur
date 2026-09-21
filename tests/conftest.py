@@ -72,8 +72,14 @@ LANDCOVER_FETCHING = "ninanatur.garden.landcover_sync"
 @pytest.fixture(autouse=True)
 def _no_landcover(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     import importlib
+    from contextlib import nullcontext
 
     module = importlib.import_module(LANDCOVER_FETCHING)
     monkeypatch.setattr(module, "landcover_in", lambda *_a, **_k: [])
     monkeypatch.setattr(module, "streets_in", lambda *_a, **_k: [])
+    # The background tasks open a connection of their own, to the configured
+    # database — in a test, the developer's. Here they get none and do nothing;
+    # a test of that path hands them its own connection.
+    monkeypatch.setattr(module, "background_connection", lambda: nullcontext(None))
+    module._failed_at.clear()
     yield

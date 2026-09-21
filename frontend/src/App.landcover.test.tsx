@@ -40,6 +40,22 @@ describe('App — the land around the garden', () => {
     warn.mockRestore();
   });
 
+  it('asks again for land still on its way, and draws it once it is there', async () => {
+    // The server fetches it after answering: the first ask finds none yet.
+    const EMPTY: Landcover = { ...WOOD, areas: [] };
+    const landcover = vi.fn().mockResolvedValueOnce(EMPTY).mockResolvedValue(WOOD);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await openWorkspace(fakeClient({ landcover }));
+      expect(landcover).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(5_000);
+      await waitFor(() => expect(layer()?.querySelectorAll('.landcover__area')).toHaveLength(1));
+      expect(landcover).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('asks again once a shade rebuild has landed — where an older garden first gets it', async () => {
     const landcover = vi.fn(async () => WOOD);
     const client = fakeClient({ landcover, rebuildLightMap: vi.fn(async () => lightMap()) });

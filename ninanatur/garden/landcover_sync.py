@@ -11,23 +11,29 @@ holds OpenStreetMap's streets, the same streets are fetched again and the
 offset is read off them; where it holds none, the areas are placed from the
 stored anchor and the page is as far off as that.
 
-Either way a failure costs the colours and nothing else: a garden is made
-without them, a rebuild computes its light without them, and the next rebuild
-asks again.
+Either way it runs **after the answer has gone out** (`fetch_later`,
+`add_later`, as background tasks) with one attempt, and a failure costs the
+colours and nothing else. It was inside the rebuild at first, and the review
+found "Sonne & Schatten" — the button the owner had just called endless — then
+waited on up to two Overpass requests with retries, again on every press
+while Overpass failed. A failure is remembered for `FAILURE_PAUSE_S` now.
 """
 from __future__ import annotations
 
 import logging
 import math
 import sqlite3
+import time
 from collections import Counter, defaultdict
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind
 from ninanatur.garden.terrain_sync import is_precise
 from ninanatur.geo.landcover_clip import Box, Point, box_around, degrees_of, in_garden
 from ninanatur.geo.landcover_store import fetched, save_landcover
-from ninanatur.geo.osm_landcover import landcover_in
+from ninanatur.geo.osm_landcover import fetch_once, landcover_in
 from ninanatur.geo.osm_streets import streets_in
 from ninanatur.geo.projection import LatLon, to_metres
 
@@ -40,6 +46,54 @@ REACH_M = 8.0
 BIN_M = 0.1
 #: How many street points must agree on one offset before it is believed.
 MIN_AGREEING = 3
+#: How long a garden whose fetch failed is left alone. In memory: a restart
+#: forgets it, which costs one more attempt and no more.
+FAILURE_PAUSE_S = 6 * 3600
+_failed_at: dict[int, float] = {}
+
+
+@contextmanager
+def background_connection() -> Iterator[sqlite3.Connection | None]:
+    """A connection of the background task's own: the request's is closed by
+    the time it runs. Replaced in tests (`tests/conftest.py`) by one that opens
+    nothing, so no test can write to a real database from here."""
+    from ninanatur.ingest.db import connect, database_path
+
+    conn = connect(database_path(), same_thread=False)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def fetch_later(garden_id: int) -> None:
+    """`ensure_landcover` for a garden, after its rebuild has answered."""
+    _in_background(lambda conn: _ensure_by_id(conn, garden_id))
+
+
+def add_later(garden_id: int, anchor: LatLon, outline: list[list[float]]) -> None:
+    """`add_landcover` for a garden just made, after its answer has gone out."""
+    _in_background(lambda conn: add_landcover(conn, garden_id, anchor, outline))
+
+
+def _in_background(work: Callable[[sqlite3.Connection], object]) -> None:
+    try:
+        with background_connection() as conn:
+            if conn is not None:
+                work(conn)
+    except Exception:  # noqa: BLE001 — decoration, after the answer; logged
+        log.warning("landcover in the background failed", exc_info=True)
+
+
+def _ensure_by_id(conn: sqlite3.Connection, garden_id: int) -> None:
+    from ninanatur.garden.store import load_garden
+
+    ensure_landcover(conn, load_garden(conn, garden_id))
+
+
+def _paused(garden_id: int) -> bool:
+    failed = _failed_at.get(garden_id)
+    return failed is not None and time.monotonic() - failed < FAILURE_PAUSE_S
 
 
 def add_landcover(conn: sqlite3.Connection, garden_id: int, anchor: LatLon,
@@ -56,6 +110,7 @@ def add_landcover(conn: sqlite3.Connection, garden_id: int, anchor: LatLon,
     except Exception:  # noqa: BLE001 — the garden matters more
         log.warning("landcover unavailable, garden %s made without it", garden_id,
                     exc_info=True)
+        _failed_at[garden_id] = time.monotonic()
         return
     save_landcover(conn, garden_id, areas, "map")
 
@@ -74,17 +129,19 @@ def ensure_landcover(conn: sqlite3.Connection, garden: Garden) -> bool:
         return False
     if fetched(conn, garden.garden_id):
         return True
+    if _paused(garden.garden_id):
+        return False
     box = box_around(_plot_of(garden))
     try:
         found = landcover_in(*degrees_of(box, anchor), centre=anchor)
-        shift, placed_by = _alignment(garden, anchor, box)
-        areas = in_garden(found, anchor, box, shift)
     except Exception:
         # Logged with its context and swallowed on purpose: the light is what
         # was asked for, and a rebuild without colours is yesterday's plan.
         log.warning("landcover failed for garden %s", garden.garden_id, exc_info=True)
+        _failed_at[garden.garden_id] = time.monotonic()
         return False
-    save_landcover(conn, garden.garden_id, areas, placed_by)
+    shift, placed_by = _alignment(garden, anchor, box)
+    save_landcover(conn, garden.garden_id, in_garden(found, anchor, box, shift), placed_by)
     return True
 
 
@@ -105,8 +162,15 @@ def _alignment(garden: Garden, anchor: LatLon, box: Box) -> tuple[Point, str]:
               for p in e.points or []]
     if not stored:
         return (0.0, 0.0), "anchor"
-    again = [to_metres(p, anchor) for street in streets_in(*degrees_of(box, anchor))
-             for p in street.centreline]
+    try:
+        found = streets_in(*degrees_of(box, anchor), fetch=fetch_once)
+    except Exception:
+        # The land is already fetched; placing it from the anchor loses metres,
+        # losing it would lose the colours (review).
+        log.warning("garden %s: streets for the offset unavailable", garden.garden_id,
+                    exc_info=True)
+        return (0.0, 0.0), "anchor"
+    again = [to_metres(p, anchor) for street in found for p in street.centreline]
     offset = street_offset(stored, [(m.x, m.y) for m in again])
     if offset is None:
         log.info("garden %s: its streets did not agree on an offset", garden.garden_id)
@@ -139,4 +203,5 @@ def street_offset(stored: list[Point], again: list[Point]) -> Point | None:
     return None if count < MIN_AGREEING else (bx * BIN_M, by * BIN_M)
 
 
-__all__ = ["add_landcover", "ensure_landcover", "street_offset"]
+__all__ = ["add_landcover", "add_later", "ensure_landcover", "fetch_later", "background_connection",
+           "street_offset"]

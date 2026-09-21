@@ -100,6 +100,17 @@ def test_a_relation_keeps_its_holes() -> None:
     assert len(area.inners) == 1
 
 
+def test_a_hole_whose_outer_could_not_close_is_not_drawn_as_land() -> None:
+    """One outer closes, one lacks a member; the clearing inside the broken one
+    was kept, and filled as wood while the forest around it went blank."""
+    far = ((52.400, 13.240), (52.400, 13.241), (52.401, 13.241))
+    clearing = ((52.4002, 13.2404), (52.4002, 13.2406), (52.4004, 13.2406), (52.4002, 13.2404))
+    [area] = _found(_relation(_member("outer", A, B, C, D, A), _member("outer", *far),
+                              _member("inner", *clearing)))
+    assert len(area.outers) == 1
+    assert area.inners == []
+
+
 def test_an_outline_that_cannot_be_closed_is_dropped_never_drawn() -> None:
     """A member missing from the answer leaves a gap. Drawn, it would be a wedge."""
     assert _found(_relation(_member("outer", A, B, C))) == []

@@ -82,10 +82,16 @@ class OsmArea:
 
 
 def fetch_landcover(url: str, params: dict[str, Any] | None = None) -> Any:
-    """The live fetch: capped, patient only so long, and refusing an answer
-    Overpass gave up on before it can be cached."""
+    """The live fetch: capped, one attempt, and refusing an answer Overpass
+    gave up on before it can be cached. Decoration is not worth three tries
+    and seven seconds of back-off while Overpass is struggling (review)."""
     return get_json(url, params, accept=overpass_complete, timeout=READ_TIMEOUT,
-                    max_bytes=LANDCOVER_MAX_BYTES)
+                    max_bytes=LANDCOVER_MAX_BYTES, attempts=1)
+
+
+def fetch_once(url: str, params: dict[str, Any] | None = None) -> Any:
+    """Any other Overpass query this layer makes, on the same terms."""
+    return get_json(url, params, accept=overpass_complete, timeout=READ_TIMEOUT, attempts=1)
 
 
 def _values(key: str) -> str:
@@ -175,8 +181,28 @@ def _area_of(element: dict[str, Any]) -> OsmArea | None:
                            if m.get("role") in OUTER_ROLES])
         inners = assemble([_points(m.get("geometry")) for m in members
                            if m.get("role") == "inner"])
+        # A hole whose outer could not be closed has nothing to be a hole in:
+        # kept, it filled as the class, a clearing drawn as wood (review).
+        inners = [ring for ring in inners if any(_within(ring, outer) for outer in outers)]
         return OsmArea(osm_id=osm_id, kind=kind, outers=outers, inners=inners) if outers else None
     return None
+
+
+def _within(ring: list[LatLon], outer: list[LatLon]) -> bool:
+    """Whether a ring lies in an outer: any of its edge midpoints strictly
+    inside, so a hole touching its outline at a corner still counts."""
+    return any(_inside(LatLon(lat=(a.lat + b.lat) / 2, lon=(a.lon + b.lon) / 2), outer)
+               for a, b in zip(ring, ring[1:] + ring[:1], strict=True))
+
+
+def _inside(point: LatLon, ring: list[LatLon]) -> bool:
+    inside = False
+    for a, b in zip(ring, ring[1:] + ring[:1], strict=True):
+        if (a.lat > point.lat) != (b.lat > point.lat):
+            crossing = a.lon + (point.lat - a.lat) * (b.lon - a.lon) / (b.lat - a.lat)
+            if crossing > point.lon:
+                inside = not inside
+    return inside
 
 
 def _points(geometry: Any) -> list[LatLon] | None:

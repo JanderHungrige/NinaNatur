@@ -12,7 +12,7 @@ import sqlite3
 from dataclasses import replace
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from geokachel.orthophotos import by_state
 
 from ninanatur.api import ratelimit
@@ -29,8 +29,8 @@ from ninanatur.api.schemas_map import (
     PlaceSearchOut,
 )
 from ninanatur.auth.sessions import Account
+from ninanatur.garden import landcover_sync
 from ninanatur.garden.footprint import require_buildable
-from ninanatur.garden.landcover_sync import add_landcover
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import (
     add_obstacle,
@@ -93,6 +93,7 @@ def imagery_at(
 def garden_from_map(
     payload: MapSelection,
     request: Request,
+    background: BackgroundTasks,
     _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     account: Annotated[Account | None, Depends(current_account)] = None,
@@ -135,8 +136,9 @@ def garden_from_map(
         owner_id=None if account is None else str(account.account_id),
     )
     _add_streets(conn, garden_id, anchor, south, west, north, east)
-    # What the ground around it is (doc 114), from the same exact anchor.
-    add_landcover(conn, garden_id, anchor, polygon)
+    # What the ground around it is (doc 114), from the same exact anchor —
+    # after the answer: creation already waits on Overpass twice.
+    background.add_task(landcover_sync.add_later, garden_id, anchor, polygon)
 
     # The ground, not a bed. It used to arrive as one large flower bed, which
     # made the whole plot a planting site — the beds are what the gardener draws
