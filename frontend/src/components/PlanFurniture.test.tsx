@@ -17,7 +17,7 @@ function corner(theme: PlanTheme, metresPerPixel = 0.1) {
     <PlanThemeProvider theme={theme}>
       <PlanFurniture metresPerPixel={metresPerPixel} title="Musterblatt"
                      updatedAt="2026-09-18T10:00:00+00:00" />
-      <PlanCredit />
+      <PlanCredit garden={{ obstacles: [] }} />
     </PlanThemeProvider>,
   );
 }

@@ -874,6 +874,10 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   text-align: right;
   overflow-wrap: anywhere;
 }
+/* The map's credit under the style's (2026-09-21): one caption in two lines. */
+.plan-credit + .plan-credit { margin-top: 0; }
+/* A credit that links to its terms keeps the caption's ink, underlined. */
+.plan-credit a { color: inherit; }
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so
    it never sits under the thing being pointed at, and `pointer-events: none` so
@@ -1830,6 +1834,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: var(--text-xs);
   overflow-wrap: anywhere;
 }
+.source-credits__credit a { color: inherit; }
 
 /* Which style the plan is drawn in (doc 100), in the menu beside the sun map.
    A fieldset rather than a row of buttons: the two choices belong together and

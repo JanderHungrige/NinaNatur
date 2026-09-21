@@ -108,7 +108,7 @@ describe('where Draft Sketch can be seen', () => {
 describe('whose style it is', () => {
   it('is said on the plan in the words he agreed to, and not for a theme of our own', () => {
     const credited = (theme: typeof technisch) => (
-      <PlanThemeProvider theme={theme}><PlanCredit /></PlanThemeProvider>
+      <PlanThemeProvider theme={theme}><PlanCredit garden={{ obstacles: [] }} /></PlanThemeProvider>
     );
     const { container, rerender } = render(credited(draftSketch));
     expect(container.textContent).toContain(
