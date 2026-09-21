@@ -86,3 +86,12 @@ def test_what_lies_over_the_plan_while_it_waits_takes_no_pointer() -> None:
         body = re.search(rf"^{re.escape(selector)} \{{([^}}]*)\}}", css, re.M)
         assert body is not None, f"no rule for {selector}"
         assert "pointer-events: none" in body.group(1), f"{selector} catches the pointer"
+
+
+def test_the_way_back_stays_in_sight() -> None:
+    """#7: sticky at the top of the details, and under the sheet's handle on a
+    phone — jsdom lays nothing out, so only the sheet can say it."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    rules = re.findall(r"\.inspector__back \{([^}]*)\}", css)
+    assert any("position: sticky" in body for body in rules), "the way back scrolls away"
+    assert any("top: 1.75rem" in body for body in rules), "it hides under the sheet's handle"

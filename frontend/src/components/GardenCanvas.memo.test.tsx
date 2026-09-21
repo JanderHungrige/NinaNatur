@@ -42,9 +42,12 @@ const LIGHT = {
 describe('GardenCanvas — moving the view leaves the shapes alone', () => {
   function mounted(sunMap?: { map: LightMap; mode: 'hours' }) {
     const onSelectBed = vi.fn();
+    // Wired as the real plan wires it (`PlanArea`): with a move handler the
+    // scene is handed the element drag's `grab`, which must stay one function.
     const view = render(
       <GardenCanvas garden={garden()} selectedBedId={null} onSelectBed={onSelectBed}
-                    size={{ widthPx: 800, heightPx: 600 }} sunMap={sunMap} />,
+                    size={{ widthPx: 800, heightPx: 600 }} sunMap={sunMap}
+                    onMoveObstacle={vi.fn()} onMoveCluster={vi.fn()} onSelectObstacle={vi.fn()} />,
     );
     return { svg: screen.getByTestId('canvas-surface'), rerender: view.rerender };
   }
