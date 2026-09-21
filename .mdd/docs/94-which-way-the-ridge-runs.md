@@ -40,7 +40,7 @@ test_files:
   - frontend/src/components/ElementForm.roof.test.tsx
   - frontend/src/garden/selection.test.ts
 data_flow: .mdd/audits/flow-which-way-the-ridge-runs-2026-09-18.md
-last_synced: 2026-09-18
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -197,7 +197,10 @@ Neigung 34°*.
 - On a garden as the map import leaves it — the neighbours and the street
   across 150 m — the light grid's time budget gives 5 m cells, a handful on a
   house's roof: the two faces differ (8.8 h and 10.7 h here), but coarsely.
-  That is the grid's budget (doc 64), not the roof.
+  That is the grid's budget (doc 64), not the roof. *Since 2026-09-21* the grid
+  covers the plot and 5 m rather than the neighbourhood, so such a garden gets
+  about 1 m cells — and a neighbour's roof outside that margin is no longer
+  painted at all, only its shadow. A house the gardener drew stays covered.
 
 - The shadow a house throws on the garden is still the `RISE_KEPT` prism, which
   does not depend on the ridge's direction. Casting it from the real planes is

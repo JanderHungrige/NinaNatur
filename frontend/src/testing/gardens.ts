@@ -47,7 +47,7 @@ export function shed(overrides: Partial<Obstacle> = {}): Obstacle {
     obstacle_id: 5, kind: 'shed', label: 'Gartenhaus', shape: 'polygon', x: 6, y: 0,
     points: [[-1, -1], [1, -1], [1, 1], [-1, 1]], width: null, constraint_hint: null,
     height: 2.4, height_source: 'user', roof: 'unknown', roof_source: 'user', eaves_m: null,
-    eaves_source: null, roof_fall_deg: null, roof_pitch_deg: null,
+    eaves_source: null, roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [],
     footprint: [[5, -1], [7, -1], [7, 1], [5, 1]],
     ...overrides,
   };
@@ -86,7 +86,7 @@ export const improvements = (): ImprovementsOut => ({ current_score: 0, addition
 
 export const suggestions = (): BedSuggestions => ({
   bed_id: 1, bed_name: 'Südbeet', site_axes: { ellenberg_l: 8 }, total: 1, woody: [],
-  woody_total: 0, filters: {},
+  woody_total: 0, filters: {}, light_state: 'current',
   items: [{
     taxon_id: 7, canonical_name: 'Sambucus nigra', family: 'Adoxaceae', height_max_m: 6,
     flowering_start_month: 6, flowering_end_month: 7, flower_colour: 'white',

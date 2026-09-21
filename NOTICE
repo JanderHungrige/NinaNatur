@@ -1,0 +1,43 @@
+NinaNatur
+=========
+
+Copyright (c) 2026 JanderHungrige. Licensed under the MIT License (see LICENSE).
+
+The MIT licence covers **this software**. It does not, and cannot, relicense
+the data the software fetches.
+
+
+The data is somebody else's, and carries its own terms
+------------------------------------------------------
+
+This project reads open geodata published by the German state surveying
+authorities, by the Bundesamt für Kartographie und Geodäsie, and by the
+Copernicus programme. Each of those datasets is licensed by whoever published
+it — mostly under `dl-de/by-2-0`, `dl-de/zero-2-0` or `CC BY 4.0` — and most of
+them **require a named credit wherever the data is shown**.
+
+A height displayed without its credit is a height used outside its licence.
+
+The required credit for every source is carried in the code beside the source
+itself, and is served to the page that shows the number, so that showing a
+value and showing its provenance are one act rather than two. See
+`.mdd/docs/106-which-source-said-so.md`.
+
+
+Not affiliated
+--------------
+
+This project is not affiliated with, endorsed by, or produced by any
+Landesvermessungsamt or Landesbetrieb, the Arbeitsgemeinschaft der
+Vermessungsverwaltungen der Länder der Bundesrepublik Deutschland (AdV), the
+Bundesamt für Kartographie und Geodäsie (BKG), the European Space Agency, or
+the Copernicus programme. Where the names or brands of those bodies appear, they
+appear because a licence requires them to be named as the source of the data —
+not to suggest any relationship.
+
+
+Third parties
+-------------
+
+The plan's "Draft Sketch" drawing style is Warren Davison's, used and adapted
+with his permission. See THIRD_PARTY.md.

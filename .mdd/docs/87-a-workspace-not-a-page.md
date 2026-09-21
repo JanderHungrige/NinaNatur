@@ -10,6 +10,9 @@ relates: [51-element-context-menu, 53-account-in-header, 65-the-shade-switch, 29
 source_files:
   - frontend/src/App.tsx
   - frontend/src/useStatus.ts
+  - frontend/src/useShownAfter.ts
+  - frontend/src/components/Working.tsx
+  - frontend/src/components/Skeleton.tsx
   - frontend/src/useAccount.ts
   - frontend/src/useRemembered.ts
   - frontend/src/garden/useGarden.ts
@@ -44,12 +47,15 @@ test_files:
   - frontend/src/components/Inspector.test.tsx
   - frontend/src/components/TimelineDock.test.tsx
   - frontend/src/useRemembered.test.ts
+  - frontend/src/useStatus.test.ts
+  - frontend/src/components/SiteHeader.test.tsx
+  - frontend/src/App.waiting.test.tsx
   - tests/test_workspace_layout.py
   - tests/test_stylesheet.py
   - tests/test_plan_stage.py
   - frontend/src/components/GardenCanvas.touch.test.tsx
 data_flow: mixed
-last_synced: 2026-09-18
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -59,7 +65,8 @@ integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
 known_issues:
-  - "Deferred to feature 6: the dock shows the bloom year's table rather than the compact month strip plan 05 drew, and the day slider and the sun map's legend stay in the player and the shade switch."
+  - "Deferred to feature 6: the dock shows the bloom year's table rather than the compact month strip plan 05 drew, and the sun map's legend stays in the shade switch. The day's player left the dock on 2026-09-21 for the shade switch, under the Tagesverlauf chip (doc 65); the dock plays the year only."
+  - "The waiting marks of 2026-09-21 — the header's note, the plan's sweep, the placeholders, the day's player and the front door's card — were checked by tests and the stylesheet's rules, not yet by eye in a browser or on a phone."
   - "Deferred to feature 5: below 66rem the workspace is a stacked page, and text inputs are 0.9rem — iOS zooms into anything under 16 px."
   - "Component and hook bodies longer than 50 lines remain, as everywhere in the frontend (GardenCanvas is the precedent); the callbacks inside them stay under 50."
   - "The Browser pane sends Enter with an empty key, so a native Enter on a rail tool was not exercised there; a real ArrowDown, click and Escape were (preview, V0.20.155)."
@@ -111,7 +118,7 @@ them, and the rail lies flat above it. The phone gets its sheet in feature 5.
 
 ### Where the state lives
 
-- **App** keeps what outlives one garden: status and busy (`useStatus`), the
+- **App** keeps what outlives one garden: status and what is running (`useStatus`), the
   account, the drawers and "my gardens" (`useAccount`), the version, the
   environment, the open garden, and the landing's ways to open or make one.
 - **GardenWorkspace is keyed by the garden's token** and owns everything about
@@ -236,7 +243,28 @@ None. The same client calls, from new places.
   failure says "Laden fehlgeschlagen" instead of reaching only the console.
   `refresh` re-reads them after an edit, as before.
 - **Status:** `useStatus` lives in App; `run` and `setStatus` are handed to the
-  workspace, and `StatusToast` renders the one status.
+  workspace, and `StatusToast` renders the one status. `busy` is derived from a
+  list of the requests under way, not kept as a flag: as a flag, the first of two
+  overlapping requests to finish cleared it while the other still ran (2026-09-21).
+  `working` is the newest running request's label, for the header.
+- **Saying that something is happening** (2026-09-21, owner's check item 8):
+  indeterminate marks only — a ring, or on the front door three rising motes
+  (`Working`), grey bars in a panel's box (`Skeleton`), and over the plan a
+  sweep of light while the shade is computed (doc 65). Nothing claims a share
+  of a wait, because no request reports one. The marks are `aria-hidden` and
+  their labels plain text; the toast stays the one live region, and says when
+  the long waits start (shade, a garden from the map, opening a garden) and
+  when they end. Every mark stands still under `prefers-reduced-motion`.
+  - **The header** shows `working` as a small note hung across its lower edge —
+    so nothing in its row moves, and on a phone too — once a request has run
+    300 ms (`useShownAfter`), and drops it the moment the last one ends.
+  - **Opening a garden:** `useDerived.loading` holds until the first answers are
+    in, and the details and the dock show placeholders where the first steps or
+    the soil line, the sun panel, the insect score and the bloom year will stand.
+  - **The front door:** opening a garden shows *Garten wird geöffnet…* over the
+    hero; the address search reads *Suche…*; *Garten anlegen* reads *Wird
+    angelegt…* with a line saying that buildings and streets are coming from
+    OpenStreetMap; and the catalogue's figures hold their room until they land.
 - **The header:** App renders `SiteHeader` on the front door; the workspace
   renders the same header with its own controls (undo depth, the shade switch,
   the ID fold).

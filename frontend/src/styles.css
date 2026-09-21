@@ -145,6 +145,7 @@ body {
 }
 
 .site-header {
+  position: relative;
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
 }
@@ -152,6 +153,26 @@ body {
 .badge {
   padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: 999px;
   color: var(--ink-muted); font-size: var(--text-xs);
+}
+/* Something the site asked for is still running (doc 87). Hung across the
+   header's lower edge rather than set in its row, so nothing in the row moves
+   when it comes and goes, and it is there on a phone, whose row keeps the rest
+   behind *Menü*. Beneath the header's own drop-downs, and never in the way. */
+.site-header__working {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 18;
+  transform: translate(-50%, -50%);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  pointer-events: none;
 }
 
 /* --- The workspace (Wave 23, doc 87) -------------------------------------- */
@@ -170,11 +191,67 @@ body {
   min-width: 0;
 }
 
+/* Under the controls at the drawing's top edge, not at the bottom: the bottom
+   belongs to the drawing's own furniture — a title block and a scale bar in the
+   theme's hand (doc 98) — and a hint laid over those covers them. */
 .plan-hint {
-  margin: 0.4rem 0 0;
+  position: absolute;
+  top: 3rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
   color: var(--ink-muted);
   font-size: var(--text-sm);
+  pointer-events: none;
 }
+
+/* While the shade is computed (doc 65): a band of sunlight sweeps across the
+   plan, and a note in its middle names the steps. Over the plan like the hint
+   above, and like it never in the way of a finger or a pointer. */
+.plan-working {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+.plan-working::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--wash-sun) 22%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: plan-sweep 2.8s ease-in-out infinite;
+}
+.plan-working__note {
+  position: relative;
+  max-width: 24rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 14%);
+}
+@keyframes plan-sweep {
+  to { transform: translateX(100%); }
+}
+/* A month's map on its way: the one showing is the last period's answer, so
+   it steps back until the new one lands. */
+.workspace__plan--waiting .sun-map { opacity: 0.4; transition: opacity 0.2s; }
 
 .inspector {
   display: grid;
@@ -198,13 +275,36 @@ body {
 }
 .inspector__subject {
   display: grid;
-  gap: 0.25rem;
+  gap: var(--space-2);
   justify-items: start;
 }
 .inspector__title { margin: 0; font-size: 1.3rem; }
 .inspector__detail { margin: 0; }
-.inspector__back,
 .inspector__action { margin: 0; justify-self: start; }
+/* The main route back to the garden (owner's check, 2026-09-21): a filled
+   button, first in the view, and held at the top of the details while they
+   scroll — the phone's sheet moves it under its handle. Held there, it stands
+   in a band of the page's own colour, the width of the details: what scrolls
+   under it goes out of sight instead of past its side. A shadow, so the band
+   is paint only — it adds nothing to the scrolled width. */
+.inspector__back {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-self: start;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-md);
+  box-shadow: 0 0 0 100vmax var(--bg);
+  clip-path: inset(calc(-1 * var(--space-3)) -100vmax calc(-1 * var(--space-2)));
+}
+/* Close above the subject it leaves: the view's own gap is for its panels. */
+.inspector__back + .inspector__subject { margin-top: calc(var(--space-2) - var(--space-6)); }
+/* Something the keyboard moves to is scrolled clear of the band, not under it. */
+.inspector:has(.inspector__back) { scroll-padding-top: 4rem; }
 
 /* A view's heading takes the focus from code when the view changes under the
    keyboard. The ring shows when the keyboard is what moved it. */
@@ -321,7 +421,9 @@ body {
     height: 100%;
   }
   .workspace .canvas-stage {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
+    height: auto;
   }
   .workspace .canvas-controls {
     position: absolute;
@@ -334,15 +436,10 @@ body {
     background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
   }
   .workspace .plan-hint {
-    position: absolute;
+    top: 4.25rem;
+    right: auto;
     left: 1rem;
-    bottom: 1rem;
-    z-index: 3;
     max-width: calc(100% - 2rem);
-    margin: 0;
-    padding: 0.2rem 0.5rem;
-    border-radius: var(--radius);
-    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
     pointer-events: none;
   }
   /* Positioned, so absolutely placed hidden text scrolls with the panel rather
@@ -425,6 +522,23 @@ input:not([type='checkbox']):not([type='radio']), select, textarea,
 .panel h3 { margin: var(--space-6) 0 var(--space-2); font-size: var(--text-md); color: var(--ink-muted); }
 .hint { margin: 0 0 var(--space-3); color: var(--ink-muted); font-size: var(--text-sm); }
 
+/* The place a panel will take while its answer is on the way (doc 87): grey
+   bars in the panel's own box, breathing slowly. */
+.skeleton { display: grid; gap: var(--space-3); }
+.skeleton__line {
+  display: block;
+  width: 88%;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  animation: skeleton-breathe 1.8s ease-in-out infinite;
+}
+.skeleton__line:nth-child(odd) { width: 70%; }
+.skeleton__line--title { width: 42%; height: 1rem; }
+@keyframes skeleton-breathe {
+  50% { opacity: 0.45; }
+}
+
 label { display: block; margin: 0.5rem 0 0.2rem; font-size: var(--text-xs); color: var(--ink-muted); }
 /* Everything you type in, at the panel's width — but not a tick box. A
    checkbox took `width: 100%` too and came out 908 pixels wide, pushing its own
@@ -458,7 +572,43 @@ button {
   border: 1px solid var(--leaf); border-radius: var(--radius-sm);
   background: var(--leaf); color: #fff; font: inherit; font-weight: 560; cursor: pointer;
 }
-button[disabled] { opacity: 0.55; cursor: progress; }
+/* The busy cursor only while something is actually under way. Every disabled
+   button wore it, and a control disabled for another reason — the header's
+   "Sonne & Schatten" before any map existed — looked like it was loading for
+   ever (the owner, 2026-09-21). */
+button[disabled] { opacity: 0.55; cursor: default; }
+.app[data-busy] button[disabled] { cursor: progress; }
+
+/* Something is under way (doc 87): a ring that turns, or on the front door
+   three motes that rise like the meadow's. Indeterminate, because nothing the
+   server sends says how far along it is. Sized by the text it sits in. */
+.working { display: inline-flex; align-items: center; gap: var(--space-2); }
+.working__spinner {
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: working-spin 0.9s linear infinite;
+}
+@keyframes working-spin {
+  to { transform: rotate(360deg); }
+}
+.working__motes { display: inline-flex; flex: none; align-items: flex-end; gap: 0.25em; height: 1em; }
+.working__motes > span {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: working-mote 1.5s ease-in-out infinite;
+}
+.working__motes > span:nth-child(2) { background: var(--wash-sun); animation-delay: 0.25s; }
+.working__motes > span:nth-child(3) { animation-delay: 0.5s; }
+@keyframes working-mote {
+  50% { opacity: 1; transform: translateY(-0.5em); }
+}
 
 .bed-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
 .bed-button {
@@ -478,15 +628,22 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 /* Wave 7 moved the plan's viewBox into garden metres, so every length in here
    is metres too. These were pixel values under the old 10-px-per-metre viewBox
    and became a 1 m grid line and a 2 m bed outline — the outline painted a
-   metre outside the bed on every side and swallowed most of the shape. */
+   metre outside the bed on every side and swallowed most of the shape.
+
+   Outlines are the exception since the owner's check (2026-09-21): a width in
+   metres grew with the zoom, to forty pixels at the closest view, which is no
+   way to draw anything in detail. They are screen pixels now, held there by
+   non-scaling-stroke. The grid's width comes from the component, which thins
+   it the same way (`CanvasScene`). */
 .grid-line { fill: none; stroke: var(--line); stroke-width: 0.03; }
 .compass { fill: var(--ink-muted); font-size: 1.6px; }
-.bed { fill: color-mix(in srgb, var(--leaf) 35%, transparent); stroke: var(--leaf); stroke-width: 0.08; cursor: pointer; }
-.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke-width: 0.16; }
+/* The --plan-* tokens are a theme's hooks (doc 97); unset, each is what it always was. */
+.bed { fill: var(--plan-bed-fill, color-mix(in srgb, var(--leaf) 35%, transparent)); stroke: var(--plan-bed-stroke, var(--leaf)); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
+.bed--selected { fill: color-mix(in srgb, var(--leaf) 60%, transparent); stroke: var(--leaf); stroke-width: 2; vector-effect: non-scaling-stroke; }
 /* No fill here. The fill is a `fill="url(#symbol-…)"` attribute per object, and
    a fill declared in CSS would win over it — every kind would be drawn as the
    same grey no matter which texture it asked for. */
-.obstacle { stroke: var(--outline); stroke-width: 0.08; }
+.obstacle { stroke: var(--plan-shape-stroke, var(--outline)); stroke-width: 1; vector-effect: non-scaling-stroke; }
 
 /* The ground the plan is drawn on: seen, never pointed at.
  *
@@ -494,13 +651,19 @@ button[disabled] { opacity: 0.55; cursor: progress; }
  * the one that matters for the pointer. Without it the shape still swallows
  * clicks meant for the canvas underneath — a drawing tool armed over the middle
  * of the garden would hit the ground and do nothing, which is exactly how the
- * whole-garden bed used to get in the way. */
+ * whole-garden bed used to get in the way.
+ *
+ * Its fill is a flat grass wash (owner's check, 2026-09-21): a 5 % tint left
+ * the plan nearly white where it opens, on the garden. Flat, not the lawn's
+ * blades, so a lawn drawn on it still reads as a lawn. Where the system asks
+ * for more contrast, `.obstacle` takes every fill away, this one included. */
 .obstacle--garden {
   pointer-events: none;
-  fill: color-mix(in srgb, var(--leaf) 5%, transparent);
-  stroke: var(--outline);
-  stroke-width: 0.12;
-  stroke-dasharray: 0.6 0.3;
+  fill: var(--plan-ground-fill, color-mix(in srgb, var(--wash-grass) 70%, transparent));
+  stroke: var(--plan-ground-stroke, var(--outline));
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 6 3;
 }
 
 /* What just happened, where it can be seen: over the page at the window's foot,
@@ -572,6 +735,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .suggestions__header .filter-bar__empty,
 .suggestions__header .filter-controls { margin: 0; }
 .suggestions__header > h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* „Schatten berechnen“ under a list ranked without the bed's light (owner
+   review #9): the sun panel's button, at its size, beside the words asking for it. */
+.suggestions__shade { justify-self: start; margin: 0; padding: 0.4rem 0.9rem; font-size: var(--text-md); }
 .filters-disclosure > summary { width: fit-content; cursor: pointer; font-size: var(--text-sm); color: var(--ink-muted); }
 .filters-disclosure > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .filters-disclosure[open] > summary { margin-bottom: 0.5rem; }
@@ -607,7 +773,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   min-width: 2.25rem; height: 1.6rem; margin: 0; padding: 0 0.6rem;
   font-size: var(--text-lg); line-height: 1;
 }
-.suggestion-row__plant[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
+.suggestion-row__plant[aria-disabled='true'],
+.suggestions__shade[aria-disabled='true'],
+.map-picker button[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
 .suggestion-row__traits,
 .suggestion-row__extra {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem; min-width: 0;
@@ -827,6 +995,20 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   height: clamp(16rem, 75vh, 75cqi);
 }
 
+/* Whose drawing style the plan is in (docs 97, 98): a caption beneath the plan,
+   in full, where it covers nothing of the drawing. */
+.plan-credit {
+  margin: 0.3rem 0 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+/* The map's credit under the style's (2026-09-21): one caption in two lines. */
+.plan-credit + .plan-credit { margin-top: 0; }
+/* A credit that links to its terms keeps the caption's ink, underlined. */
+.plan-credit a { color: inherit; }
+
 /* What the sun map says under the pointer. Offset up and right of the cursor so
    it never sits under the thing being pointed at, and `pointer-events: none` so
    it can never intercept the click that follows the look. */
@@ -867,6 +1049,12 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   padding-left: 0.6rem;
 }
 
+/* One message over the plan at a time. While the controls carry the drawing's
+   own instructions or a complaint, the tool's hint steps aside: the two lay on
+   top of each other, and "Der Strich ist zu kurz" could not be read (the
+   owner's check, 2026-09-21). */
+.canvas-wrap:has(.canvas-controls .hint) .plan-hint { display: none; }
+
 /* While drawing, a click means "place a vertex" — say so with the cursor. */
 .canvas--drawing {
   cursor: crosshair;
@@ -880,8 +1068,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .draft__line {
   fill: none;
   stroke: var(--leaf);
-  stroke-width: 0.12;
-  stroke-dasharray: 0.4 0.3;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 6 4;
 }
 
 .draft circle {
@@ -992,6 +1181,17 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   font-size: 1.6rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* A figure's room while the figures are on their way: the placeholder is a
+   figure, set in the figure's font and drawn as a blank, so the block is
+   exactly as tall as it will be. */
+.landing__stats .stat dd.stat__pending {
+  width: max-content;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: transparent;
+  animation: skeleton-breathe 1.8s ease-in-out infinite;
 }
 
 .landing__ways {
@@ -1124,6 +1324,7 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   gap: 0.6rem;
   margin-top: 0.75rem;
 }
+.map-picker__creating { margin: var(--space-2) 0 0; }
 
 .map-picker__aerial {
   display: block;
@@ -1287,7 +1488,12 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 /* The wobble goes on the group, not on each shape: a filter per object is a
    filter re-run per object. */
 /* The objects' filter is the theme's now (doc 96): an attribute, which the
-   two `filter: none` rules below still override. */
+   `filter: none` rules below still override. */
+
+/* While the plan moves, the filter pauses (the owner's check, 2026-09-21, #11).
+   It is worked out per pixel on every frame of a pan or a zoom, and it was most
+   of what a frame cost. It comes back once the plan stands still (`useMoving`). */
+.canvas--moving .canvas__objects { filter: none; }
 
 
 /* Texture is decoration. When the system asks for more contrast, or paints its
@@ -1295,8 +1501,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
    plan that only reads as a picture is not one that reads. */
 @media (prefers-contrast: more) {
   .canvas__objects { filter: none; }
-  /* 15 cm, not 2.5: this canvas measures in metres. */
-  .obstacle { fill: none !important; stroke-width: 0.15; }
+  /* Pixels, like every outline since the owner's check: twice the usual one. */
+  .obstacle { fill: none !important; stroke-width: 2; vector-effect: non-scaling-stroke; }
 }
 
 @media (forced-colors: active) {
@@ -1653,6 +1859,19 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
 }
 .shade-switch__month select { margin: 0; font-size: var(--text-md); }
+/* The Zeitraum, and beside it the note while a month's map is computed. */
+.shade-switch__period { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-3); }
+.shade-switch__period .shade-switch__month { flex: 1 1 12rem; }
+.shade-switch__period > .working { padding-bottom: var(--space-2); color: var(--ink-muted); font-size: var(--text-sm); }
+
+/* Playing the day, directly under the chip that chose it (doc 65): play or
+   pause, a scrubber for any moment by hand, and the clock time it shows. */
+.day-player { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.day-player button { margin: 0; padding: 0.3rem 0.85rem; cursor: pointer; }
+.day-player > .working { color: var(--ink-muted); font-size: var(--text-sm); }
+.day-player__scrubber { flex: 1 1 8rem; min-width: 0; margin: 0; accent-color: var(--leaf); }
+.day-player__time { min-width: 5ch; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.day-player__problem { margin: 0; }
 .shade-switch__modes .chip { margin: 0; padding: 0.3rem 0.85rem; cursor: pointer; }
 
 .shade-switch__legend {
@@ -1754,6 +1973,68 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   color: var(--ink-muted);
   font-size: var(--text-xs);
   font-weight: 500;
+}
+
+/* Where a garden's numbers come from (doc 106). Not a caption: the licences
+   these sources carry require the named credit, so it is small and it is
+   always there rather than behind a disclosure. */
+.source-credits__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-credits__item {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.source-credits__what {
+  color: var(--ink);
+  font-size: var(--text-xs);
+}
+
+.source-credits__credit {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.source-credits__credit a { color: inherit; }
+
+/* Which style the plan is drawn in (doc 100), in the menu beside the sun map.
+   A fieldset rather than a row of buttons: the two choices belong together and
+   a screen reader should hear them that way. */
+.theme-picker {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.theme-picker__legend {
+  float: left;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.theme-picker__choice {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.theme-picker__note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
 }
 
 .header-link:hover {
@@ -1884,6 +2165,26 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 
 .hero { position: relative; }
 .hero__content { position: relative; z-index: 1; }
+/* A garden on its way from a link (doc 30): a card over the hero, the meadow
+   still moving behind it. */
+.hero__opening {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.hero__opening-card {
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid rgb(233 238 227 / 26%);
+  border-radius: var(--radius);
+  background: rgb(6 20 14 / 72%);
+  color: #f4f8ef;
+  font-size: var(--text-base);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 30%);
+}
 .landing__title { color: #f4f8ef; }
 .landing__lede { color: #cfdcc6; }
 /* Lighter than the panels' own hint grey. These two sit on the film itself
@@ -2114,6 +2415,18 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   .status-toast { transition: none; }
   .timeline-dock__toggle::before { transition: none; }
   .cluster--fresh .cluster__reach { animation: none; }
+  /* The waiting marks stand still and stay: a ring with a gap, three motes,
+     grey bars and a faint wash still say "under way" without moving. */
+  .working__spinner,
+  .working__motes > span,
+  .skeleton__line,
+  .landing__stats .stat dd.stat__pending,
+  .plan-working::before {
+    animation: none;
+  }
+  .working__motes > span { opacity: 0.7; }
+  .plan-working::before { transform: none; background: color-mix(in srgb, var(--wash-sun) 10%, transparent); }
+  .workspace__plan--waiting .sun-map { transition: none; }
 }
 
 /* --- The gardens an account has claimed ---------------------------------- */
@@ -2437,9 +2750,13 @@ kbd {
     bottom: calc(var(--sheet-at) * 100%);
     min-height: 0;
     padding: 0.35rem;
+    /* With the sheet up the plan is a sliver, and what hangs in it — the scale,
+       the credits, a hint — climbed over the header (the owner's check,
+       2026-09-21). Clipped, not hidden: it comes back as the sheet comes down. */
+    overflow: clip;
   }
   .workspace .canvas-wrap { position: relative; height: 100%; }
-  .workspace .canvas-stage { height: 100%; }
+  .workspace .canvas-stage { flex: 1; min-height: 0; height: auto; }
   .workspace .canvas-controls {
     position: absolute;
     top: 0.35rem;
@@ -2451,17 +2768,8 @@ kbd {
     background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
   }
   .workspace .plan-hint {
-    position: absolute;
-    left: 0.6rem;
-    right: 0.6rem;
-    bottom: 0.6rem;
-    z-index: 3;
-    margin: 0;
     padding: 0.15rem 0.45rem;
-    border-radius: var(--radius);
-    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
     font-size: var(--text-xs);
-    pointer-events: none;
   }
 
   .inspector {
@@ -2497,6 +2805,9 @@ kbd {
   }
   .sheet-handle:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
   .sheet-handle__grip { width: 2.5rem; height: 0.3rem; border-radius: 999px; background: var(--outline); }
+  /* The way back stops under the handle, whose height this is. */
+  .inspector__back { top: 1.75rem; }
+  .inspector:has(.inspector__back) { scroll-padding-top: 5rem; }
 
   .tool-rail {
     position: fixed;

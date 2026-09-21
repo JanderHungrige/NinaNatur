@@ -2,6 +2,7 @@ import { type ReactNode, useLayoutEffect, useRef } from 'react';
 
 import type { BedSuggestions } from '../api/client';
 import { focusLost, holdsFocus } from '../suggestions/focus';
+import { hiddenByLight, lightHint, LightNote } from './SuggestionLight';
 import { SuggestionWindow } from './SuggestionWindow';
 
 interface Props {
@@ -16,6 +17,9 @@ interface Props {
   /** The filters — what is chosen, and the fields to choose with — in the
    *  list's header, above the rows (doc 90, rule 7). */
   filters?: ReactNode;
+  /** „Schatten berechnen“: the sun panel's rebuild, offered where the list was
+   *  ranked without the bed's light, or with an old one. */
+  onComputeShade?: () => void;
 }
 
 /** "1.234 passende Arten", or how many of them the list holds when it holds
@@ -31,7 +35,9 @@ function listed(shown: number, total: number): string {
  * filters, the rows as a window that scrolls in itself, and the woody plants
  * under their own heading in a window of their own (doc 25).
  */
-export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo, busy, filters }: Props) {
+export function SuggestionList({
+  suggestions, includeTrees, onPlant, onShowInfo, busy, filters, onComputeShade,
+}: Props) {
   const section = useRef<HTMLElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const hadFocus = holdsFocus(section.current);
@@ -56,6 +62,8 @@ export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo,
   const showsBirds = [...suggestions.items, ...suggestions.woody].some(
     (i) => (i.bird_partners ?? 0) > 0,
   );
+  const lightKnown = lightHint(suggestions.light_state) === null;
+  const hidden = hiddenByLight(suggestions.filters ?? {});
 
   return (
     <section ref={section} className="panel suggestions" aria-labelledby="suggestions-heading">
@@ -64,12 +72,14 @@ export function SuggestionList({ suggestions, includeTrees, onPlant, onShowInfo,
           Vorschläge für {suggestions.bed_name}
         </h2>
         <p className="hint">
-          {listed(suggestions.items.length, suggestions.total)}, gewertet nach den
-          Standortwerten dieses Beetes.{' '}
+          {listed(suggestions.items.length, suggestions.total)}
+          {lightKnown ? ', gewertet nach den Standortwerten dieses Beetes. ' : '. '}
+          {hidden !== null && `${hidden} `}
           {includeTrees
             ? 'Gehölze stehen weiter unten in einer eigenen Liste.'
             : 'Bäume und Sträucher sind ausgeblendet.'}
         </p>
+        <LightNote state={suggestions.light_state} busy={busy} onComputeShade={onComputeShade} />
         {filters}
         {showsBirds && (
           <p className="hint">

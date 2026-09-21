@@ -204,6 +204,67 @@ def _get(
     raise HttpError(f"GET {url} failed after {MAX_RETRIES} attempts: {last}") from last
 
 
+def size_of(url: str) -> int:
+    """How large the thing at this address is, without fetching it.
+
+    A zip keeps its index at the end, so reading one member out of a remote
+    archive starts by knowing where the end is (doc 103).
+    """
+    time.sleep(REQUEST_DELAY_S)
+    response = requests.head(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT,
+                             allow_redirects=True)
+    if response.status_code >= 400:
+        raise HttpError(f"HEAD {url} refused: {response.status_code}",
+                        status=response.status_code)
+    length = response.headers.get("Content-Length")
+    if length is None:
+        raise HttpError(f"{url} does not say how large it is")
+    return int(length)
+
+
+def presence(url: str) -> int | None:
+    """Whether this address answers at all, and how large it says it is.
+
+    A different question from `size_of`, and the difference is real: Bayern's
+    laser host answers a HEAD with 200 and no `Content-Length` at all, so a
+    check that treated silence as absence would report a healthy source gone.
+    Raises when nothing answers; returns None when something answers and will
+    not say how much.
+    """
+    time.sleep(REQUEST_DELAY_S)
+    response = requests.head(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT,
+                             allow_redirects=True)
+    if response.status_code >= 400:
+        raise HttpError(f"HEAD {url} refused: {response.status_code}",
+                        status=response.status_code)
+    length = response.headers.get("Content-Length")
+    return int(length) if length is not None else None
+
+
+def get_range(url: str, start: int, end: int) -> bytes:
+    """The bytes from `start` to `end` inclusive, as HTTP counts them.
+
+    A server that ignores the header and sends the whole file answers 200
+    rather than 206, and that is refused: silently reading a gigabyte where
+    five megabytes were asked for is the failure this exists to avoid.
+    """
+    wanted = end - start + 1
+    time.sleep(REQUEST_DELAY_S)
+    response = requests.get(url, headers={"User-Agent": USER_AGENT,
+                                          "Range": f"bytes={start}-{end}"},
+                            timeout=TIMEOUT, stream=True)
+    try:
+        if response.status_code == 200:
+            raise HttpError(f"{url} ignored the range and offered all of it", status=200)
+        if response.status_code >= 400:
+            raise HttpError(f"GET {url} bytes {start}-{end} refused: {response.status_code}",
+                            status=response.status_code)
+        _read_capped(response, url, wanted)
+        return response.content
+    finally:
+        response.close()
+
+
 def download(url: str, dest: Path) -> Path:
     """Download a binary file once; subsequent calls reuse the local copy."""
     if dest.exists() and dest.stat().st_size > 0:

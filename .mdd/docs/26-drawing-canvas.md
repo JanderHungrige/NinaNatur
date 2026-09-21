@@ -26,7 +26,7 @@ test_files:
   - frontend/src/components/GardenCanvas.test.tsx
   - frontend/src/components/GardenCanvas.drawing.test.tsx
 data_flow: reads-existing
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -88,10 +88,19 @@ the cursor — because zooming to the centre makes a user chase their own garden
 across the screen. It calls `preventDefault` so the page does not scroll, which
 means the listener has to be non-passive and bound to the element.
 
+*Since the owner's check (2026-09-21, doc 112):* a plain wheel zooms again, in
+proportion to how far it turned, and Safari's pinch is handled. The workspace no
+longer scrolls behind the plan, which was the reason for Ctrl/Cmd (see Bugs).
+
 ### Snapping
 
 Positions snap to the nearest grid intersection. Holding **Alt** places freely,
 and the UI says so rather than leaving it to be discovered.
+
+*Since the owner's check (2026-09-21, doc 112):* the snap is magnetic. A corner
+snaps only within 6 px of an intersection, and is otherwise kept where it was
+clicked, to the centimetre. Alt never snaps. Rounding every click to a grid of at
+least a metre put corners up to half a metre from the click.
 
 Snapping happens in **garden metres, after the transform**, not in screen
 pixels. Snapping pixels then converting gives a different answer at every zoom
@@ -159,6 +168,9 @@ its 1,000 m limit, centred somewhere the user never chose. This document says
 *"a page that cannot be scrolled is not accessible either"* — I wrote that and
 then built against it. Now Ctrl/Cmd + wheel zooms and a plain wheel scrolls,
 which is also the gesture browsers already use.
+*Reversed on 2026-09-21 (doc 112), at the owner's request:* the workspace became
+a full-height app in doc 86, so nothing scrolls behind the plan any more, and a
+plain wheel zooms as it does on any map.
 
 **The canvas never measured itself.** `size` was declared as an override with a
 `= DEFAULT_SIZE` default in the same destructuring, so it was never `undefined`

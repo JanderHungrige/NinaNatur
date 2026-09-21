@@ -9,7 +9,7 @@
  * Which pointer may pick up which element is the caller's to say (doc 87, B1).
  * A grab it refuses is left to the surface beneath, which pans.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type Point, type Viewport, toGarden } from './viewport';
 
@@ -26,25 +26,31 @@ export function useElementDrag(options: Options) {
   const [offset, setOffset] = useState<{ id: number; dx: number; dy: number } | null>(null);
   const held = useRef<{ id: number; from: Point; moved: boolean } | null>(null);
   const latest = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  // Read through a ref: `options` is a new object on every render, and as an
+  // effect dependency it tore the window listeners down and put them back on
+  // every pointer move of every drag (the owner's check, #11). It also keeps
+  // `grab` one function for the life of the plan, which the memoised scene needs.
+  const current = useRef(options);
+  current.current = options;
 
-  const metres = (event: { clientX: number; clientY: number }): Point => {
-    const rect = options.surface.current?.getBoundingClientRect();
+  const metres = useCallback((event: { clientX: number; clientY: number }): Point => {
+    const rect = current.current.surface.current?.getBoundingClientRect();
     return toGarden(
       { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) },
-      options.view,
+      current.current.view,
     );
-  };
+  }, []);
 
-  const grab = (id: number, event: React.PointerEvent) => {
+  const grab = useCallback((id: number, event: React.PointerEvent) => {
     // `touch` only: a pen is as exact as a mouse, and jsdom reports a pointer
     // whose type was never set as ''.
-    if (!options.movable(id, event.pointerType === 'touch')) return;
+    if (!current.current.movable(id, event.pointerType === 'touch')) return;
     // The surface below would otherwise read this as the start of a pan.
     event.stopPropagation();
     held.current = { id, from: metres(event), moved: false };
     latest.current = { dx: 0, dy: 0 };
     setOffset({ id, dx: 0, dy: 0 });
-  };
+  }, [metres]);
 
   /** Ended by a second finger (doc 91, B1): nothing moved, and nothing is saved. */
   const cancel = () => {
@@ -52,8 +58,9 @@ export function useElementDrag(options: Options) {
     setOffset(null);
   };
 
+  const holding = offset !== null;
   useEffect(() => {
-    if (offset === null) return undefined;
+    if (!holding) return undefined;
     const onMove = (event: PointerEvent) => {
       const active = held.current;
       if (active === null) return;
@@ -69,7 +76,7 @@ export function useElementDrag(options: Options) {
       // A click on a shape selects it. Saving a move of nothing still costs a
       // PATCH and a recomputation of every bed's light.
       if (active === null || !active.moved) return;
-      options.onFinish(active.id, {
+      current.current.onFinish(active.id, {
         x: Math.round(latest.current.dx * 100) / 100,
         y: Math.round(latest.current.dy * 100) / 100,
       });
@@ -80,7 +87,7 @@ export function useElementDrag(options: Options) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [offset, options]);
+  }, [holding, metres]);
 
   return { offset, grab, cancel };
 }

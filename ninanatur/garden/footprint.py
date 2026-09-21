@@ -55,8 +55,11 @@ def footprint_of(
 ) -> list[Point]:
     """The polygon this object covers, in garden metres."""
     if shape is Shape.LINE:
-        if points is None or len(points) < 2:
-            raise ValueError("a line footprint needs a centreline of two points or more")
+        # Different points, not merely two: a centreline of one point twice has
+        # no direction, and `band_of` would refuse it with a message about
+        # bands that nobody drawing a path can act on.
+        if points is None or len(_distinct(points)) < 2:
+            raise ValueError("a line needs a centreline of two different points")
         if width is None or width <= 0:
             raise ValueError(f"a line footprint needs a positive width, got {width}")
         return band_of(
@@ -86,6 +89,30 @@ def footprint_of(
     return [
         (x + rx, y + ry) for rx, ry in (_rotate(cx, cy, rotation) for cx, cy in corners)
     ]
+
+
+def require_buildable(
+    *, shape: str, width: float | None, points: list[list[float]] | None
+) -> None:
+    """Refuse geometry no footprint can be built from, before it is stored.
+
+    Checked on write, not only when read: a row that fails here but is stored
+    anyway breaks every later read of its garden. The whole plan then answers
+    422, whatever was asked, and nothing in the page can reach the row to
+    remove it (the owner's check, 2026-09-21). An outline also needs three
+    *different* corners here, which reading does not insist on — rows stored
+    before this check still have to open.
+    """
+    if shape == Shape.POLYGON and points is not None and len(_distinct(points)) < 3:
+        raise ValueError("an outline needs three different corners")
+    footprint_of(
+        shape=Shape(shape), x=0.0, y=0.0, width=width, depth=None, rotation=0.0,
+        points=points,
+    )
+
+
+def _distinct(points: list[list[float]]) -> set[Point]:
+    return {(float(p[0]), float(p[1])) for p in points}
 
 
 def covers(polygon: list[Point], point: Point) -> bool:

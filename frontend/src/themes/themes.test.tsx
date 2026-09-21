@@ -5,7 +5,7 @@ import type { Viewport } from '../canvas/viewport';
 import { CanvasScene } from '../components/CanvasScene';
 import { SHEET_GARDENS } from '../sheet/gardens';
 import { PlanThemeProvider } from './context';
-import { THEMES, themeById } from './index';
+import { ON_OFFER, THEMES, themeById } from './index';
 import { technisch } from './technisch';
 import type { LevelOfDetail, PlanTheme } from './types';
 
@@ -87,9 +87,60 @@ describe('the plan theme (doc 96)', () => {
     expect(new Set(asked)).toEqual(new Set(['near']));
   });
 
+  it('asks for each shape at the size that shape is drawn (doc 99)', () => {
+    // Every shape on one plan, at one scale, and a theme that answers by size:
+    // what the scene must pass is the shape's own width in metres.
+    const sizes: (number | undefined)[] = [];
+    const theme = probe({
+      lodAt: (_mpp, acrossM) => {
+        sizes.push(acrossM);
+        return acrossM !== undefined && acrossM < 2 ? 'far' : 'near';
+      },
+      fill: (symbol, lod) => `url(#probe-${symbol}-${lod})`,
+    });
+    const { container } = scene(theme);
+    expect(sizes.some((across) => across !== undefined)).toBe(true);
+    // A garden of one size everywhere would prove nothing: these differ.
+    const drawn = [...container.querySelectorAll('polygon.obstacle')]
+      .map((shape) => shape.getAttribute('fill') ?? '');
+    expect(drawn.some((fill) => fill.endsWith('-near)'))).toBe(true);
+    expect(drawn.some((fill) => fill.endsWith('-far)'))).toBe(true);
+  });
+
+  it('draws the sheet the theme says it is on, under the grid (doc 99)', () => {
+    const { container } = scene(probe({ paper: 'url(#probe-paper)' }));
+    const paper = container.querySelector('rect.canvas__paper')!;
+    expect(paper.getAttribute('fill')).toBe('url(#probe-paper)');
+    // Under the grid, because the grid is drawn on the paper — and under the
+    // shapes, which stand on it.
+    const grid = container.querySelector('rect[fill="url(#grid)"]')!;
+    expect(paper.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(paper.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('and draws no sheet at all for a theme that is drawn on the page itself', () => {
+    expect(scene(probe()).container.querySelector('rect.canvas__paper')).toBeNull();
+    expect(scene(technisch).container.querySelector('rect.canvas__paper')).toBeNull();
+  });
+
   it('is found by its id, and an id nobody knows is Technisch', () => {
     expect(themeById('technisch')).toBe(technisch);
     expect(themeById('verschollen')).toBe(technisch);
     expect(THEMES.map((t) => t.id)).toContain('technisch');
+  });
+});
+
+describe('what the picker may offer (doc 100)', () => {
+  it('names the lazy style exactly as the style names itself', async () => {
+    // Its label is repeated in ON_OFFER so the picker can name it without
+    // pulling its chunk into the main bundle. This is what keeps the two true.
+    const { draftSketch } = await import('./draft-sketch');
+    const offered = ON_OFFER.find((theme) => theme.id === draftSketch.id);
+    expect(offered?.label).toBe(draftSketch.label);
+  });
+
+  it('and lists every loaded theme too, the fallback first', () => {
+    expect(ON_OFFER[0]?.id).toBe(technisch.id);
+    expect(ON_OFFER.map((t) => t.id)).toEqual(expect.arrayContaining(THEMES.map((t) => t.id)));
   });
 });

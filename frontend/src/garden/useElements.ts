@@ -132,26 +132,28 @@ export function useElements(
   const drawTrace = useCallback(
     async (trace: { kind: 'area' | 'path'; points: number[][] }) => {
       setTool(null);
-      const centre = trace.points.reduce(
-        (acc, p) => ({
-          x: acc.x + p[0]! / trace.points.length,
-          y: acc.y + p[1]! / trace.points.length,
-        }),
-        { x: 0, y: 0 },
-      );
+      const cm = (v: number): number => Math.round(v * 100) / 100;
+      // The centre is rounded first, so the corners stored relative to it are
+      // exactly the ones drawn. Rounding twice around an unrounded centre could
+      // merge two corners a centimetre apart into one.
+      const x = cm(trace.points.reduce((sum, p) => sum + p[0]!, 0) / trace.points.length);
+      const y = cm(trace.points.reduce((sum, p) => sum + p[1]!, 0) / trace.points.length);
+      const points = trace.points.map((p) => [cm(p[0]! - x), cm(p[1]! - y)]);
+      const corners = new Set(points.map((p) => `${p[0]},${p[1]}`)).size;
+      if (corners < (trace.kind === 'path' ? 2 : 3)) {
+        setStatus('Der Strich ist zu kurz — zieh ihn etwas weiter.');
+        return;
+      }
       await addObstacle({
         kind: trace.kind === 'path' ? 'path' : 'other',
-        x: Math.round(centre.x * 100) / 100,
-        y: Math.round(centre.y * 100) / 100,
+        x,
+        y,
         shape: trace.kind === 'path' ? 'line' : 'polygon',
         ...(trace.kind === 'path' ? { width: 1 } : {}),
-        points: trace.points.map((p) => [
-          Math.round((p[0]! - centre.x) * 100) / 100,
-          Math.round((p[1]! - centre.y) * 100) / 100,
-        ]),
+        points,
       });
     },
-    [addObstacle],
+    [addObstacle, setStatus],
   );
 
   /** Remove one element, from wherever it was asked for. */

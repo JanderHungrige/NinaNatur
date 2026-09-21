@@ -19,18 +19,17 @@ function svg(node: React.ReactElement): SVGSVGElement {
 
 describe('ReliefMap', () => {
   it('draws nothing at all for level ground', () => {
-    // Not a grid of invisible rectangles: 40,000 of those is a real cost in a
-    // canvas that is redrawn on every pan.
+    // Not a path of invisible cells: nothing to paint is nothing drawn.
     const flat = svg(<ReliefMap terrain={terrain([0.5, 0.5, 0.5, 0.5])} />);
-    expect(flat.querySelectorAll('rect')).toHaveLength(0);
+    expect(flat.querySelectorAll('path')).toHaveLength(0);
   });
 
   it('draws the lit and the shadowed side in different inks', () => {
     const slope = svg(<ReliefMap terrain={terrain([0.1, 0.9, 0.5, 0.5])} />);
-    const rects = [...slope.querySelectorAll('rect')];
+    const paths = [...slope.querySelectorAll('path')];
 
-    expect(rects).toHaveLength(2);
-    expect(new Set(rects.map((r) => r.getAttribute('fill')))).toHaveProperty('size', 2);
+    expect(paths).toHaveLength(2);
+    expect(new Set(paths.map((r) => r.getAttribute('fill')))).toHaveProperty('size', 2);
   });
 
   it('puts a row where the garden puts it, not where the SVG counts', () => {
@@ -38,19 +37,21 @@ describe('ReliefMap', () => {
     // Getting this wrong mirrors the relief and puts every hillside on the
     // wrong side of the plan — and it would look entirely plausible.
     const two = svg(<ReliefMap terrain={terrain([0.1, 0.1, 0.9, 0.9])} />);
-    const rects = [...two.querySelectorAll('rect')];
-    const southern = rects.filter((r) => r.getAttribute('fill')?.includes('dark'));
-    const northern = rects.filter((r) => !r.getAttribute('fill')?.includes('dark'));
+    const paths = [...two.querySelectorAll('path')];
+    const top = (path: Element | undefined): number =>
+      Number(/^M[^,]*,([-\d.]+)/.exec(path?.getAttribute('d') ?? '')?.[1]);
+    const southern = paths.find((r) => r.getAttribute('fill')?.includes('dark'));
+    const northern = paths.find((r) => !r.getAttribute('fill')?.includes('dark'));
 
-    expect(Number(southern[0]?.getAttribute('y'))).toBeGreaterThan(
-      Number(northern[0]?.getAttribute('y')),
-    );
+    expect(top(southern)).toBeGreaterThan(top(northern));
   });
 
   it('is faint enough to place a bed over', () => {
     const steep = svg(<ReliefMap terrain={terrain([0.0, 1.0, 0.5, 0.5])} />);
-    for (const rect of steep.querySelectorAll('rect')) {
-      expect(Number(rect.getAttribute('opacity'))).toBeLessThanOrEqual(0.25);
+    const paths = [...steep.querySelectorAll('path')];
+    expect(paths.length).toBeGreaterThan(0);
+    for (const path of paths) {
+      expect(Number(path.getAttribute('opacity'))).toBeLessThanOrEqual(0.25);
     }
   });
 

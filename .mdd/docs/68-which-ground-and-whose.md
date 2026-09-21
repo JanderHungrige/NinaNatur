@@ -7,12 +7,10 @@ wave: ninanatur-wave-17
 wave_status: active
 depends_on: []
 relates: [63-neighbours-from-the-plot, 64-light-across-the-bed]
-source_files:
-  - ninanatur/geo/terrain_sources.py
+source_files: []
 routes: []
 models: []
-test_files:
-  - tests/test_terrain_sources.py
+test_files: []
 data_flow: greenfield
 last_synced: 2026-09-05
 status: complete

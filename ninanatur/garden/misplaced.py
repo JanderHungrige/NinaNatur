@@ -5,9 +5,12 @@ already chosen against the site. Nothing looked at what is **already there** —
 and until Wave 16 nothing could, because the light was one number per bed and a
 cluster had no position to compare it against.
 
-A warning, never a refusal. A gardener may know something the model does not: a
-cultivar bred for shade, a wall that throws light back, or simply that they want
-it there.
+For what is already planted: a warning, never a refusal. A gardener may know
+something the model does not: a cultivar bred for shade, a wall that throws
+light back, or simply that they want it there. What is *offered* is stricter:
+by the owner's decision of 2026-09-21 the suggestions leave out a species the
+bed is far too bright for, because scorch and drought usually kill it
+(`api.filters.light_verdict`). Too dark is still only ranked down there.
 """
 from __future__ import annotations
 

@@ -21,12 +21,14 @@ from ninanatur.api.search import (
     ScoredPlant,
     SearchFilters,
     is_woody,
+    light_mismatch,
     rank_plants,
     with_observed,
 )
 from ninanatur.data.interactions import bird_counts, german_partner_totals
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
+from ninanatur.garden.light_state import LightState, light_state
 from ninanatur.garden.models import Element
 from ninanatur.garden.observations import manual_colours
 
@@ -37,12 +39,25 @@ router = APIRouter(prefix="/api/v1/gardens", tags=["planning"])
 WOODY_LIMIT = 8
 
 
+def _light_suits(woody: list[ScoredPlant]) -> list[ScoredPlant]:
+    """The woody species whose light is not *unsuitable*, in either direction.
+
+    Stricter than the main list, which only ranks a too-dark species down: this
+    shortlist is ordered by animal value rather than fit, so ranking down means
+    nothing here, and a willow for full sun would lead a deep-shade bed's list
+    (owner review #9, 2026-09-21). A species or a bed with no L value stays.
+    """
+    return [s for s in woody if light_mismatch(s.fit) is None]
+
+
 def _by_value(conn: sqlite3.Connection, woody: list[ScoredPlant]) -> list[ScoredPlant]:
     """Order a woody shortlist by what it is worth to animals, not by site fit.
 
-    Site fit already decided which of these are candidates at all. Ordering the
-    survivors by fit again put mistletoe and Ruscus at the top of every list and
-    left Salix caprea — 1,055 German insect partners, the highest count in the
+    Called only on species the light suits (`_light_suits`). The fit score
+    removes nothing by itself, so this order alone once gave a full-sun bed, a
+    semi-shade bed and a bed with no light the same eight willows. Ordering by
+    fit instead put mistletoe and Ruscus at the top of every list and left
+    Salix caprea — 1,055 German insect partners, the highest count in the
     catalogue — below the cut, which is the invisibility this whole feature
     exists to end. A shrub is planted for what visits it.
 
@@ -76,38 +91,26 @@ def bed_suggestions(
     include_trees: bool = True,
     include_introduced: bool = False,
     exclude_planted: bool = True,
+    include_light_unsuitable: bool = False,
 ) -> BedSuggestions:
     """Species that suit this bed, ranked by fit against its own site vector.
 
-    The bed's derived axes are the query, so the user never types an Ellenberg
-    number. Trees and shrubs are excluded by default: a bed is a few square
-    metres, and a hemlock that fits the light perfectly is still a useless
-    suggestion. Introduced species are excluded for a different reason: the
-    product promises native plants, and a third of the catalogue is not.
+    Woody plants get a shortlist of their own. Introduced species are left out
+    (the product promises native plants), and so, unless asked for, are species
+    the bed is far too bright for (`filters.light_verdict`). `light_state` says
+    whether there was a light value to judge by.
     """
     garden = require_garden(conn, token)
     bed = require_bed(garden, bed_id)
-
-    axes = bed.site_axes
-    if not axes:
-        raise ValueError(
-            f"bed {bed_id} has no site conditions yet — set soil and moisture, "
-            "or recompute light, before asking for suggestions"
-        )
-
-    planted = (
-        frozenset(p.taxon_id for p in bed.plantings if p.taxon_id is not None)
-        if exclude_planted
-        else frozenset()
-    )
+    site = _site_of(bed)
+    planted = frozenset(p.taxon_id for p in bed.plantings if p.taxon_id is not None)
     area = polygon_area(bed.polygon)
     ranked = rank_plants(
-        # Which colours were entered by hand, so the list can say so. It no
-        # longer changes *which* colour is shown: a hand entry is a trait row
-        # now, and `load_candidates` already resolved it against every other
-        # source before the set was held.
+        # Which colours were entered by hand, so the list can say so. Not which
+        # colour is shown: `load_candidates` already resolved a hand entry — a
+        # trait row now — against every other source.
         with_observed(candidate_set(conn), manual_colours(conn)),
-        SiteVector(values=axes),
+        site,
         SearchFilters(
             height_min=height_min,
             height_max=height_max,
@@ -117,15 +120,30 @@ def bed_suggestions(
             include_unknown=include_unknown,
             exclude_woody=not include_trees,
             exclude_introduced=not include_introduced,
-            exclude_taxa=planted,
+            exclude_taxa=planted if exclude_planted else frozenset(),
+            exclude_light_unsuitable=not include_light_unsuitable,
         ),
         colour=colour,
     )
-    return _presented(conn, bed, ranked, limit=limit, area=area)
+    light = light_state(conn, garden, bed)
+    return _presented(conn, bed, ranked, limit=limit, area=area, light=light)
+
+
+def _site_of(bed: Element) -> SiteVector:
+    """The bed's derived axes as the query, so the user never types an Ellenberg
+    number — or a 422 while it has none at all."""
+    axes = bed.site_axes
+    if not axes:
+        raise ValueError(
+            f"bed {bed.bed_id} has no site conditions yet — set soil and moisture, "
+            "or recompute light, before asking for suggestions"
+        )
+    return SiteVector(values=axes)
 
 
 def _presented(
     conn: sqlite3.Connection, bed: Element, ranked: RankedResult, *, limit: int, area: float,
+    light: LightState,
 ) -> BedSuggestions:
     """The ranking as the list a gardener reads, herbaceous and woody apart.
 
@@ -135,8 +153,9 @@ def _presented(
     Salix caprea leads the whole database with 1,055 German partners.
     """
     herbaceous = [s for s in ranked.items if not is_woody(s.plant)]
-    woody_total = sum(1 for s in ranked.items if is_woody(s.plant))
-    woody = _by_value(conn, [s for s in ranked.items if is_woody(s.plant)])[:WOODY_LIMIT]
+    candidates = _light_suits([s for s in ranked.items if is_woody(s.plant)])
+    woody_total = len(candidates)
+    woody = _by_value(conn, candidates)[:WOODY_LIMIT]
     page = herbaceous[:limit] + woody
     birds = bird_counts(conn, [s.plant.taxon_id for s in page])
 
@@ -152,4 +171,5 @@ def _presented(
         woody=summarise(woody),
         woody_total=woody_total,
         filters={k: FilterCountsOut(**vars(v)) for k, v in ranked.report.items()},
+        light_state=light,
     )

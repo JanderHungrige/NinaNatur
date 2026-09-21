@@ -11,7 +11,9 @@ import {
   pixelToLatLon,
 } from '../map/tiles';
 import { useMapSurface } from '../map/useMapSurface';
+import { MapPickerActions } from './MapPickerActions';
 import { MapSurface } from './MapSurface';
+import { Working } from './Working';
 
 export interface Place {
   name: string;
@@ -26,7 +28,8 @@ export interface MapSelection {
 }
 
 interface Props {
-  onCreate: (selection: MapSelection) => void;
+  /** A promise, where there is one, keeps the button at "Wird angelegt…" until it settles. */
+  onCreate: (selection: MapSelection) => Promise<void> | void;
   busy: boolean;
   search: (query: string) => Promise<Place[]>;
   /** Which state's orthophotos may be shown here, if any. */
@@ -60,6 +63,9 @@ const START_ZOOM = 18;
 export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) {
   const [query, setQuery] = useState('');
   const [places, setPlaces] = useState<Place[] | null>(null);
+  /** Nominatim is a free service and answers when it can: say it is asked. */
+  const [searching, setSearching] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [centre, setCentre] = useState<Place | null>(null);
   /**
    * Where the map is looking, which is not the same as which address was found.
@@ -100,8 +106,14 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
     // Only when asked. A request per keystroke is how one gets blocked by a
     // free community service, deservedly.
     const q = query.trim();
-    if (q === '') return;
-    void search(q).then(setPlaces).catch(() => setPlaces([]));
+    if (q === '' || searching) return;
+    setSearching(true);
+    void search(q)
+      .catch((): Place[] => [])
+      .then((found) => {
+        setPlaces(found);
+        setSearching(false);
+      });
   };
 
   /** Look at a place that was found. */
@@ -144,7 +156,10 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
       setProblem('Ein Garten braucht mindestens drei Ecken.');
       return;
     }
-    onCreate({ name: centre?.name.split(',')[0] ?? 'Mein Garten', outline, neighbourhood });
+    setCreating(true);
+    void Promise.resolve(
+      onCreate({ name: centre?.name.split(',')[0] ?? 'Mein Garten', outline, neighbourhood }),
+    ).finally(() => setCreating(false));
   };
 
   return (
@@ -163,8 +178,10 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
           if (e.key === 'Enter') find();
         }}
       />
-      <button type="button" onClick={find} disabled={busy}>
-        Suchen
+      {/* aria-disabled while it searches, not disabled: a button disabled
+          under the keyboard throws its focus to the page (review). */}
+      <button type="button" onClick={find} disabled={busy} aria-disabled={searching || undefined}>
+        {searching ? <Working label="Suche…" /> : 'Suchen'}
       </button>
 
       {/* From the start, not only once the map appears: the address results are
@@ -265,27 +282,14 @@ export function MapPicker({ onCreate, busy, search, findImagery, size }: Props) 
             korrigieren.
           </p>
 
-          <div className="map-picker__actions">
-            <span className="hint">
-              {outline.length} {outline.length === 1 ? 'Punkt' : 'Punkte'}
-            </span>
-            <button
-              type="button"
-              aria-label="Rückgängig"
-              disabled={busy || outline.length === 0}
-              onClick={() => setOutline((c) => c.slice(0, -1))}
-            >
-              ↶
-            </button>
-            <button type="button" onClick={create} disabled={busy}>
-              Garten anlegen
-            </button>
-          </div>
-          {problem !== null && (
-            <p className="hint" role="alert">
-              {problem}
-            </p>
-          )}
+          <MapPickerActions
+            points={outline.length}
+            busy={busy}
+            creating={creating}
+            onUndo={() => setOutline((c) => c.slice(0, -1))}
+            onCreate={create}
+            problem={problem}
+          />
         </>
       )}
     </section>

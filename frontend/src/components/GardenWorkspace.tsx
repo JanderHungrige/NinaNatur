@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useGarden } from '../garden/useGarden';
 import { useRemembered } from '../useRemembered';
+import type { PlanChoice } from '../themes/usePageTheme';
 import type { Status } from '../useStatus';
 import type { Snap } from '../workspace/sheet';
 import { useShortcutHelp } from '../workspace/useShortcutHelp';
@@ -15,6 +16,8 @@ import { InspectorPanels } from './InspectorPanels';
 import { PlanArea } from './PlanArea';
 import { ShortcutHelp } from './ShortcutHelp';
 import { SiteHeader, type SiteProps } from './SiteHeader';
+import { Skeleton } from './Skeleton';
+import { ThemePicker } from './ThemePicker';
 import { TimelineDock } from './TimelineDock';
 import { ToolRail } from './ToolRail';
 
@@ -47,6 +50,8 @@ interface Props {
   status: Status;
   header: SiteProps;
   account: AccountInfo | null;
+  /** Which style the plan is drawn in, and the choice of it (doc 100). */
+  planStyle: PlanChoice;
   /** What to say once everything about the garden has arrived. */
   greeting: string;
 }
@@ -59,7 +64,8 @@ interface Props {
  * over. Nor does the sheet's height on a narrow window: every garden opens with
  * the details resting at a quarter (doc 91).
  */
-export function GardenWorkspace({ client, garden, setGarden, status, header, account, greeting }: Props) {
+export function GardenWorkspace({ client, garden, setGarden, status, header, account,
+  planStyle, greeting }: Props) {
   const controller = useGarden(client, garden, setGarden, status, greeting);
   const { derived, elements, light, suggestions } = controller;
   const [wide, setWide] = useRemembered('ninanatur.inspector.wide', false);
@@ -91,14 +97,19 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
       <SiteHeader
         {...header}
         busy={status.busy}
+        working={status.working}
         more={
           <>
+            <ThemePicker options={planStyle.options} chosen={planStyle.chosen}
+                         onChoose={planStyle.choose} overridden={planStyle.overridden} />
             <button
               type="button"
               className="header-link"
               aria-pressed={light.shadeOn}
-              disabled={derived.lightMap === null}
-              onClick={() => light.toggleShade(!light.shadeOn)}
+              disabled={light.rebuilding}
+              title={derived.lightMap === null
+                ? 'Berechnet Sonne und Schatten und legt sie über den Plan' : undefined}
+              onClick={() => light.toggleOrCompute(derived.lightMap !== null)}
             >
               {'Sonne & Schatten'}
             </button>
@@ -155,17 +166,9 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
       <TimelineDock
         open={columns ? dockOpen : dockOpenNarrow}
         onToggle={columns ? setDockOpen : setDockOpenNarrow}
-        player={
-          <BloomPlayer
-            month={month}
-            onSelectMonth={suggestions.selectMonth}
-            shadowDay={
-              light.shadeOn && light.day !== null
-                ? { frames: light.day.frames.length, frame: light.frame, onFrame: light.setFrame }
-                : undefined
-            }
-          />
-        }
+        // The year only. The day plays in the sun panel, under the chip that
+        // chose it (doc 65).
+        player={<BloomPlayer month={month} onSelectMonth={suggestions.selectMonth} />}
       >
         {derived.timeline !== null ? (
           <BloomTimeline
@@ -176,6 +179,8 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
             selectedMonth={month}
             onSelectMonth={suggestions.selectMonth}
           />
+        ) : derived.loading ? (
+          <Skeleton of="timeline" lines={4} />
         ) : null}
       </TimelineDock>
 

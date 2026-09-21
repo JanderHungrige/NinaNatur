@@ -19,10 +19,10 @@ from urllib.parse import urlparse
 
 import pytest
 from fastapi.testclient import TestClient
+from geokachel.orthophotos import ORTHOPHOTOS
 
 from ninanatur.api import geo
 from ninanatur.api.deps import get_connection
-from ninanatur.geo.orthophotos import ORTHOPHOTOS
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.http import HttpError
 from ninanatur.web.app import app

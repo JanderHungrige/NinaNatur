@@ -32,6 +32,7 @@ export type FeedbackSent = components['schemas']['FeedbackOut'];
 export type LightMap = components['schemas']['LightMap'];
 export type ShadowDay = components['schemas']['ShadowDay'];
 export type Terrain = components['schemas']['TerrainOut'];
+export type Credit = components['schemas']['CreditOut'];
 export type CanopySuggestion = components['schemas']['CanopyOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
@@ -61,6 +62,7 @@ export interface SuggestionFilters {
   growthForm?: string | undefined;
   includeUnknown?: boolean | undefined;
   includeTrees?: boolean | undefined;
+  includeLightUnsuitable?: boolean | undefined;
 }
 
 export interface PlantQuery {
@@ -294,6 +296,14 @@ export class NinaNaturClient {
     );
   }
 
+  /** Every survey this garden's numbers rest on, with the credit each licence
+   *  asks for (doc 106). Empty is an ordinary answer. */
+  async sources(token: string): Promise<Credit[]> {
+    return this.request<Credit[]>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/sources`,
+    );
+  }
+
   /** Where the shadows fall through one middling day of a month. */
   async shadowDay(token: string, month: number): Promise<ShadowDay> {
     return this.request<ShadowDay>(
@@ -360,7 +370,8 @@ export class NinaNaturClient {
       ['flowering_month', options.floweringMonth],
       ['growth_form', options.growthForm],
       ['include_unknown', options.includeUnknown === true ? true : undefined],
-      ['include_trees', options.includeTrees === true ? true : undefined],
+      ['include_trees', options.includeTrees === false ? false : undefined],
+      ['include_light_unsuitable', options.includeLightUnsuitable === true ? true : undefined],
     ];
     for (const [key, value] of chosen) {
       if (value !== undefined && value !== '') {

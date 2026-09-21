@@ -1,29 +1,29 @@
 {
   "cells": {
-    "light/small-12": "453a9f7307b01c358cffb1bc2cf88d7cd833445c8bf89c3ef51c5b9943e54b07",
-    "light/small-40": "9bbe2a501da907fe4bac5ef8cc521638ceb6a9673c7687eaa55d166d45a813e8",
-    "light/small-120": "161b446c718ab11e1d81c957a38df027149fba79aac59f0bbe2d58003a672b75",
-    "light/small-40-sonne": "9712d4f56ed58204f6231d6d0dd8239c023832fe76c8816549402565a392da4f",
-    "light/farmyard-12": "20cadca73e853351912c942287fb67f952d2d648c223fd2e9ef102c096b113ad",
-    "light/farmyard-40": "15446e04de215d46cac9efa21a8554577910b3685a2382ade01d7d86329fe759",
-    "light/farmyard-120": "a5346f52eeee78e5a15d44e21cd194712f079d4c182f434e00780b57f1493cc6",
-    "light/farmyard-40-sonne": "0434f1a7f2f6c0ae355efb02058c1f57578ac87168d0fb2ae40fbbc9fc3e29be",
-    "light/city-12": "7d4af7199902d5a80ba47d7b3a13e430b93be40a93a15481ad4584a97f90c4db",
-    "light/city-40": "233c5963632492e1cd528a83be52873b509c6d4c8ac8267b2f571fb9e0424ab6",
-    "light/city-120": "268a79d21ac90ed060a842b2df1be6c517b89ed3087bd9d1bc2a842b454ffc10",
-    "light/city-40-sonne": "243451103f9a97b3a1c7720816eb2c4510b151e58738622d3812cc6e74136734",
-    "dark/small-12": "84037d668de6755671cf3a493b30d166a739194bd1a9a9bf02d27e0f88ce35b6",
-    "dark/small-40": "dbcff9ba93ef2ab2dde8c50b7f8a70c6430e9370ec23e10a6f3a49a9ce88d1f5",
-    "dark/small-120": "712fbc0c43f75b88294b0fcca18f5c2195391c4d6526ba772dc30241f25a4512",
-    "dark/small-40-sonne": "7e71a0ee12d2d04a9698102a7272ce1c667594bc922ac22ffae4932a6f66eed5",
-    "dark/farmyard-12": "52c7dc51d7eb7db75fb95418241d5c60a099dea99ba7f3718191904bcbf6bb2b",
-    "dark/farmyard-40": "6c0fc1f62b8e4f23585ff86d98cae840e79591ca376f7d8c4d08934335b91557",
-    "dark/farmyard-120": "332c0ff47e9ded5ad9cb59ac2ece70e8897bf57bf45894057f6ff973afc98f9a",
-    "dark/farmyard-40-sonne": "7c861e83681f16192b346b21f6382683e46cdf378f8b08a920c45102d0ac6f78",
-    "dark/city-12": "6f9d7a7ccce280de53871516c204ac926dd157da2d8687615e2e57aa760f35a3",
-    "dark/city-40": "e91b34f9c5f494a1e6b87a80f03c43e594e9684d4cd2b2d6a43f61ec41d69408",
-    "dark/city-120": "6fd789153b081d3d428d271933f7d46eaee40a746053242b3ffb9a6607fa5843",
-    "dark/city-40-sonne": "3ee53f8efc966c63a9dd1b5615504b5c56670957339c49773b24542dc0526b32"
+    "light/small-12": "e6ad0108c8d2a3834a0a5bd5f8025fb81d5d7a1083bb5edff86f3c04c7be3bb6",
+    "light/small-40": "2113194dbc60bd97c9e98565f8ed914282f02c6086d9fbf7e862cbb25ba161f6",
+    "light/small-120": "28414199b5091fcd3480219319f48771ccb0a8c0d01f9ce5f7aa3762fb10367d",
+    "light/small-40-sonne": "918d1697330949b786538984946d5eeabadace5a301c27e2c895a61d41b6bcd0",
+    "light/farmyard-12": "93188227dbe589f617daad3f45a5b9023149b058ee282608512948aa1ad1a80d",
+    "light/farmyard-40": "1668f3176e4e0c9996ce8e36eee0957779a9dcdd8694dcc81a1c22155d485418",
+    "light/farmyard-120": "511a74c391f0f5c718ac5a45460ea67d18e001f1fdb27e15a05c4970725a2787",
+    "light/farmyard-40-sonne": "b241011a21dea38cecf2ed8d259906b72cada3c53cf8dea97d8ddc95ae3fd53b",
+    "light/city-12": "fd8d124352c69b4f366bc9758ea65816845c6ad4060f471b913a412bbf9b8c32",
+    "light/city-40": "03c61d1f42bb32ab64d23b85797c49f2632a31e1f4208a9d16a15e4e6c00c791",
+    "light/city-120": "d3b3483b35e31d5e5d7eb2d875d172eaacaf1362b09710dd816532a02b7620ba",
+    "light/city-40-sonne": "ea746e0b3dbef75be6e1b552a87d0ec3dc3a847b06d8a8ec9a85696c0b5a8d2c",
+    "dark/small-12": "24756fcbb53033c66fc511665de746f6ef5692e55a1b44a309d44e7be7bd07b3",
+    "dark/small-40": "408f778da581e885c3d16de9d1eea6784e657b4191e628170348371aff6706f0",
+    "dark/small-120": "21d67cf002160e1023f04cf01cc0234073b49bfe7bdc67c35d7763176857ff09",
+    "dark/small-40-sonne": "ffb37ff7f34ec7ba3901ed99ae915c6c0d86ab1fda20a94caf9dd55d046439a1",
+    "dark/farmyard-12": "b54b448b4b93fc9b109433a721fba8e8f793141bfef628ef0892cd5f0d3bed26",
+    "dark/farmyard-40": "3a0fc94ee4afd3c4e74fe67fa0c367e4774ecd473b02f0c2f260ed3f4c6a7142",
+    "dark/farmyard-120": "03adf751cf9f75be2be9e25e3da30e7d98b296cadac5faa776c4b2c6f85cb92b",
+    "dark/farmyard-40-sonne": "9df5a831deb290c757ab1c7c8a199453736d1cc240866530756d4338e4606a47",
+    "dark/city-12": "75788324c5526bf2ebb5ab19ab75313cf656eb0360f39b76334fbcb23d6b6d5f",
+    "dark/city-40": "5d6f374d84597e04bc6a6f6e1c21fadce7477e315349d5c762c12b85cac966db",
+    "dark/city-120": "0a1506429c103001eafdba62251be86595d4ad62002ea66c4e53ce501287758b",
+    "dark/city-40-sonne": "83bafb6ce9889e64aee5fe2327c894073c17c535894fb8f43b036def09ce3365"
   },
   "chromium": "153.0.8010.12",
   "timing": {
@@ -38,5 +38,21 @@
     ],
     "median_ms": 36,
     "machine": "darwin Apple M1"
+  },
+  "budgets": {
+    "draft-sketch": {
+      "cell": "city-40",
+      "cpu_slowdown": 4,
+      "runs": [
+        172,
+        73,
+        47,
+        73,
+        70
+      ],
+      "median_ms": 73,
+      "technisch_ms": 21,
+      "machine": "darwin Apple M1"
+    }
   }
 }

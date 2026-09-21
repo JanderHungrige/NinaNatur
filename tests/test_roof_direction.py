@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from geokachel.utm import to_latlon, to_utm
 
 from ninanatur.api.deps import get_connection
 from ninanatur.garden.elements import insert_element
@@ -25,7 +26,6 @@ from ninanatur.garden.roofshape import surface_of
 from ninanatur.garden.store import add_obstacle, create_garden, garden_by_token, load_garden
 from ninanatur.geo.lod2 import Lod2Building, buildings_from, in_garden_frame
 from ninanatur.geo.projection import LatLon, to_metres
-from ninanatur.geo.utm import to_latlon, to_utm
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.web.app import app
 

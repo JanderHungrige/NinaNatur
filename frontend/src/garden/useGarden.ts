@@ -4,6 +4,7 @@ import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useUndoShortcut, useUndoStack } from '../useUndoStack';
 import type { Status } from '../useStatus';
 import { useClipboard } from './useClipboard';
+import { useComputeShade } from './useComputeShade';
 import { useDerived } from './useDerived';
 import { useElements } from './useElements';
 import { useGeometry } from './useGeometry';
@@ -46,13 +47,13 @@ export function useGarden(
     selection,
   );
   const geometry = useGeometry(client, garden, setGarden, status, remember);
+  // The shade switch stands in the garden's details, which show while nothing
+  // is selected: selecting something hides the day's play button, and stops it.
   const light = useLight(
-    client,
-    garden.share_token,
-    status,
-    derived.setLightMap,
-    suggestions.filters.floweringMonth ?? null,
+    client, garden.share_token, status, derived.setLightMap, selection.kind === 'none', setGarden,
   );
+
+  const computeShade = useComputeShade(light.rebuilt, light.rebuild, suggestions.afterShade);
 
   const { run, setStatus } = status;
   const undoLast = useCallback(() => {
@@ -93,6 +94,7 @@ export function useGarden(
     askedFor: chosen.askedFor,
     focusTaken: chosen.focusTaken,
     speciesInfo,
+    computeShade,
     showFoundTrees,
     treesAsked,
     treesShown,

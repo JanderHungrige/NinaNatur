@@ -38,12 +38,26 @@ def _window() -> TerrainWindow:
     )
 
 
+def _tile_window() -> TerrainWindow:
+    """What a Bavarian garden gets from its state's own tiles."""
+    return TerrainWindow(
+        min_x=-5.0, min_y=-5.0, cell_m=1.0, cols=10, rows=10,
+        heights=[520.0] * 100, source="BY", licence="CC-BY-4.0",
+        attribution="Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de",
+        vertical_step_m=0.01,
+    )
+
+
 def _patch(monkeypatch: pytest.MonkeyPatch, **kwargs: object) -> None:
     """Replace the three things that would otherwise reach the network."""
     defaults = {
         "state_at": lambda *_: "Nordrhein-Westfalen",
         "fetch_window": lambda *_a, **_k: _window(),
         "horizon_ring": lambda *_a, **_k: [1.5] * 360,
+        # The tile tier under the services (doc 103) and the Copernicus ring
+        # under them both (doc 104); nothing here may reach a portal either.
+        "_from_tiles": lambda *_a, **_k: _tile_window(),
+        "far_ring": lambda *_a, **_k: [3.5] * 360,
     }
     for name, fallback in defaults.items():
         monkeypatch.setattr(terrain_sync, name, kwargs.get(name, fallback))
@@ -80,15 +94,56 @@ def test_the_second_garden_in_the_street_costs_nothing(
     assert calls["n"] == 1
 
 
-def test_a_state_with_no_service_leaves_the_garden_flat(
+def test_a_state_with_neither_a_service_nor_tiles_leaves_the_garden_flat(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Nine Bundesländer have none. Flat is what every garden was yesterday, and
-    it is not an error the gardener has to care about."""
-    _patch(monkeypatch, state_at=lambda *_: "Bayern")
+    """Flat is what every garden was yesterday, and it is not an error the
+    gardener has to care about.
+
+    No Bundesland is this case any more — see the test below — so the state
+    named here is one that does not exist. The behaviour still has to hold: a
+    garden somewhere this project has no source for keeps the flat world, and
+    says nothing about it."""
+    _patch(monkeypatch, state_at=lambda *_: "Vorarlberg")
 
     assert terrain_sync.ensure_terrain(conn, _garden(conn)) is False  # type: ignore[arg-type]
-    assert load_window(conn, cache_key(LatLon(lat=51.0, lon=6.0))) is None
+    assert load_window(conn, cache_key(LatLon(lat=51.2564, lon=7.1501))) is None
+
+
+def test_a_state_with_no_service_but_tiles_gets_its_ground_from_them(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Wave 25's point (doc 103): Bayern runs no coverage service anybody may
+    use and publishes every square kilometre as a file. A Munich garden stops
+    living on a flat world, and its page says whose ground it is standing on."""
+    _patch(monkeypatch, state_at=lambda *_: "Bayern")
+    garden = _garden(conn, lat=48.137, lon=11.575)
+
+    assert terrain_sync.ensure_terrain(conn, garden) is True  # type: ignore[arg-type]
+
+    key = cache_key(LatLon(lat=48.137, lon=11.575))
+    stored = load_window(conn, key)
+    assert stored is not None
+    assert stored.licence == "CC-BY-4.0"
+    assert "Bayerische Vermessungsverwaltung" in stored.attribution
+
+
+def test_a_state_with_no_service_still_gets_a_horizon(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Feature 2 (doc 104): nine Bundesländer have no coverage service and until
+    now had no ring at all — the sun set on the plot at the astronomical hour,
+    whatever the hill to the south-west was doing. Copernicus GLO-30 is 30 m
+    everywhere, which places a ridge and not a hedge, which is all a ring is."""
+    _patch(monkeypatch, state_at=lambda *_: "Bayern")
+    key = cache_key(LatLon(lat=48.137, lon=11.575))
+
+    terrain_sync.ensure_terrain(conn, _garden(conn, lat=48.137, lon=11.575))  # type: ignore[arg-type]
+
+    assert load_horizon(conn, key) == [3.5] * 360
+    whose = conn.execute("SELECT source FROM terrain_horizon WHERE place_key = ?",
+                         (key,)).fetchone()[0]
+    assert whose == "Copernicus GLO-30"
 
 
 def test_a_survey_that_fails_leaves_the_garden_flat_rather_than_broken(
@@ -157,3 +212,24 @@ def test_a_window_stored_under_the_old_rounding_is_not_served_either(
     assert terrain_sync.ground_for(conn, precise) is not None
     assert terrain_sync.ground_for(conn, legacy) is None
     assert terrain_sync.horizon_for(conn, legacy) is None
+
+
+def test_every_bundesland_now_has_ground() -> None:
+    """Wave 25's whole point, as an assertion rather than a claim.
+
+    Before it, nine of the sixteen states had no terrain at all and a garden
+    there was computed on a flat world. Each one arrived by a different route —
+    a coverage service, a computable tile, a name out of the state's own list,
+    or a member of a whole-region archive — and this does not care which, only
+    that every state has one.
+
+    If this ever fails, a state has withdrawn something and the health check
+    (doc 109) will have said so first.
+    """
+    from geokachel.terrain_sources import by_state as service
+    from geokachel.tile_sources import STATES, ground_tiles_for, name_of
+
+    without = [name_of(key) for key in STATES
+               if ground_tiles_for(key) is None and service(name_of(key)) is None]
+    assert without == [], f"no ground for {', '.join(without)}"
+    assert len(STATES) == 16

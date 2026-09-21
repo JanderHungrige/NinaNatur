@@ -23,10 +23,11 @@ models: []
 test_files:
   - tests/test_search_filters.py
   - tests/test_planning_api.py
+  - tests/test_light_suggestions.py
   - frontend/src/components/FilterBar.test.tsx
   - frontend/src/components/FilterControls.test.tsx
 data_flow: reads-existing
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -123,6 +124,12 @@ plant is, so a coverage-blind filter quietly favours the familiar.
   compare integers.
 - **Every active filter is visible and removable in the UI**, with its own
   result count. A filter the user cannot see is a filter they cannot distrust.
+- **Light is on by default on a bed, and reported as `light`** (owner review
+  #9, 2026-09-21; `13-bed-suggestions`). It excludes a species the bed is far
+  too bright for, and keeps one with no L value regardless of
+  `include_unknown` — its `unknown` count is species kept, not left out, so the
+  "ohne Angabe" note never reads it. `include_light_unsuitable` turns it off,
+  and shows as a chip while it does.
 
 ## Coverage, measured
 
@@ -149,6 +156,7 @@ well: a filter over a 6.6%-covered trait must not look like a filter over a
 | `flowering_month` | int 1–12 | Wrap-aware |
 | `growth_form` | string | `forb`, `graminoid`, `shrub`, `tree`, `subshrub`, `herb` |
 | `include_unknown` | bool, default `false` | Include species whose filtered trait is unrecorded |
+| `include_light_unsuitable` | bool, default `false` | Include species the bed is far too bright for (2026-09-21) |
 
 Response gains a `filters` block reporting, per active filter, how many species
 matched, how many were unknown, and how many were excluded.

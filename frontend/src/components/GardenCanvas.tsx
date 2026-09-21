@@ -1,3 +1,6 @@
+import { useRef } from 'react';
+
+import type { Cluster } from '../canvas/clusters';
 import { elementById } from '../canvas/elements';
 import { type Box, boxOf } from '../canvas/handles';
 import { useCanvasGestures } from '../canvas/useCanvasGestures';
@@ -5,7 +8,7 @@ import { useClusterDrag } from '../canvas/useClusterDrag';
 import { useDrawingModes } from '../canvas/useDrawingModes';
 import { useElementDrag } from '../canvas/useElementDrag';
 import { useHandleDrag } from '../canvas/useHandleDrag';
-import { useSunReadout } from '../canvas/useSunReadout';
+import { useStableHandlers } from '../canvas/useStableHandlers';
 import { useVertexDrag } from '../canvas/useVertexDrag';
 import { useViewport } from '../canvas/useViewport';
 import { type Point, gridSpacing, panBy, viewBox, zoomAt } from '../canvas/viewport';
@@ -15,7 +18,13 @@ import { usePinch } from '../usePinch';
 import { CanvasControls } from './CanvasControls';
 import { CanvasOverlays } from './CanvasOverlays';
 import { CanvasScene } from './CanvasScene';
+import { PlanCredit } from './PlanCredit';
+import { PlanFurniture } from './PlanFurniture';
+import { SunReadout, type SunReadoutHandle } from './SunReadout';
 import type { GardenCanvasProps } from './GardenCanvasProps';
+
+/** One empty list, not a new one per render: the scene is memoised on it. */
+const NO_CLUSTERS: Cluster[] = [];
 
 /**
  * The garden plan, and the surface it is drawn on.
@@ -31,6 +40,7 @@ import type { GardenCanvasProps } from './GardenCanvasProps';
  */
 export function GardenCanvas({
   garden,
+  hint,
   selectedBedId,
   onSelectBed,
   size,
@@ -60,9 +70,14 @@ export function GardenCanvas({
   onMoveObstacle,
   onReshapeObstacle,
 }: GardenCanvasProps) {
-  const { view, setView, surface, stage, zoom } = useViewport(size);
-
-  const sun = useSunReadout(sunMap?.map, view, surface);
+  // Set while two fingers pinch, so Safari's own gesture does not zoom as well.
+  const touchPinch = useRef(false);
+  const { view, setView, surface, stage, zoom, moving } = useViewport(size, touchPinch);
+  const readout = useRef<SunReadoutHandle>(null);
+  // The same functions from render to render, or the memoised scene redraws.
+  const handlers = useStableHandlers({
+    onSelectBed, onSelectObstacle, onSelectCluster, onShowClusterInfo, onAskWhatItIs,
+  });
 
   // Placing a viewpoint is the rail's Standpunkt (doc 89), not a mode of the plan's own.
   const placing = tool === 'viewpoint';
@@ -98,24 +113,12 @@ export function GardenCanvas({
   const clusterDrag = useClusterDrag({
     view,
     surface,
-    clusters: clusters ?? [],
+    clusters: clusters ?? NO_CLUSTERS,
     bedOf,
     // As with shapes: a finger moves only the patch that has been chosen.
     movable: (plantingId, byFinger) => !byFinger || plantingId === selectedPlantingId,
     onFinish: (plantingId, to) => onMoveCluster?.(plantingId, to),
   });
-  // While a patch is being dragged it is drawn where the pointer has it, not
-  // where the server last saw it — otherwise it snaps back on every frame.
-  const shown = (clusters ?? []).map((cluster) =>
-    clusterDrag.dragging?.id === cluster.plantingId
-      ? { ...cluster, centre: clusterDrag.dragging.at,
-          dots: cluster.dots.map((dot) => ({
-            ...dot,
-            x: dot.x + clusterDrag.dragging!.at.x - cluster.centre.x,
-            y: dot.y + clusterDrag.dragging!.at.y - cluster.centre.y,
-          })) }
-      : cluster,
-  );
   // Derived rather than stored: Wave 11 keeps points, and the box the handles
   // work in is read back off them. What stays put has no box, so no handles.
   const selectedBox: Box | null = selected === null || fixed ? null : boxOf(selected);
@@ -142,7 +145,6 @@ export function GardenCanvas({
   const { drawing, problem, freehandStroke, stroke, shapeBand, polygon, cancel } = useDrawingModes({
     tool,
     view,
-    spacing,
     onDrawBed,
     onDrawShape,
     onDrawTrace,
@@ -164,6 +166,7 @@ export function GardenCanvas({
     onPlaceViewpoint,
     // Placed once, the tool is put down, as the button used to switch itself off.
     onViewpointPlaced: () => onCancelTool?.(),
+    moving,
   });
   // Two fingers zoom the plan between them and move it with them (doc 91, B1).
   // Whatever one finger was doing ends when the second lands.
@@ -172,9 +175,15 @@ export function GardenCanvas({
       gestures.cancelPan();
       elementDrag.cancel();
       clusterDrag.cancel();
+      touchPinch.current = true;
+      moving.start();
     },
     onChange: ({ scale, at, moved }) =>
       setView((current) => panBy(zoomAt(current, at, 1 / scale), moved.x, moved.y)),
+    onEnd: () => {
+      touchPinch.current = false;
+      moving.stop();
+    },
   });
 
   return (
@@ -203,15 +212,7 @@ export function GardenCanvas({
           part of that measurement. And the box that is measured: its height
           comes from the page, never from the drawing inside it (doc 86). */}
       <div className="canvas-stage" ref={stage}>
-      {sun.readout !== null && (
-        <div
-          className="sun-readout"
-          data-testid="sun-readout"
-          style={{ left: sun.readout.left, top: sun.readout.top }}
-        >
-          {sun.readout.text}
-        </div>
-      )}
+      <SunReadout ref={readout} map={sunMap?.map} view={view} surface={surface} />
 
       <svg
         ref={surface}
@@ -229,12 +230,14 @@ export function GardenCanvas({
         {...pinch}
         onPointerMove={(event) => {
           gestures.onPointerMove(event);
-          sun.read(event);
+          // Nothing under a moving plan is worth reading out.
+          if (gestures.isPanning()) readout.current?.clear();
+          else readout.current?.read(event);
         }}
         onPointerUp={gestures.endDrag}
         onPointerLeave={() => {
           gestures.endDrag();
-          sun.clear();
+          readout.current?.clear();
         }}
       >
         <CanvasScene
@@ -245,20 +248,20 @@ export function GardenCanvas({
           draft={points}
           viewpoint={viewpoint}
           canopies={canopies}
-          onSelectBed={onSelectBed}
-          onSelectObstacle={onSelectObstacle}
-          clusters={shown}
+          onSelectBed={handlers.onSelectBed}
+          onSelectObstacle={handlers.onSelectObstacle}
+          clusters={clusterDrag.shown}
           selectedPlantingId={selectedPlantingId}
           freshPlantingId={freshPlantingId}
           selectedObstacleId={selectedObstacleId}
-          onSelectCluster={onSelectCluster}
+          onSelectCluster={handlers.onSelectCluster}
           onGrabCluster={clusterDrag.grab}
-          onShowClusterInfo={onShowClusterInfo}
+          onShowClusterInfo={handlers.onShowClusterInfo}
           sunMap={sunMap}
           terrain={terrain}
           shadows={shadows}
           armed={tool !== null}
-          onAskWhatItIs={onAskWhatItIs}
+          onAskWhatItIs={handlers.onAskWhatItIs}
           onGrabElement={onMoveObstacle === undefined ? undefined : elementDrag.grab}
           dragOffset={elementDrag.offset}
         />
@@ -284,7 +287,11 @@ export function GardenCanvas({
           onGrab={onResizeObstacle === undefined ? null : grabHandle}
         />
       </svg>
+      <PlanFurniture metresPerPixel={view.spanM / view.widthPx} title={garden.name}
+                     updatedAt={garden.updated_at} />
+      {hint !== undefined && <p className="plan-hint" aria-live="polite">{hint}</p>}
       </div>
+      <PlanCredit garden={garden} />
     </div>
   );
 }

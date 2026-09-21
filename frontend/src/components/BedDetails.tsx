@@ -109,6 +109,7 @@ export function BedDetails({ garden, bed, controller, busy }: Props) {
           onPlant={suggestions.plant}
           onShowInfo={suggestions.showInfo}
           busy={busy}
+          onComputeShade={controller.computeShade}
           filters={
             <>
               <FilterBar

@@ -7,7 +7,13 @@ depends_on: [64-light-across-the-bed]
 relates: [64-light-across-the-bed, 67-sun-plant-in-a-shade-spot]
 source_files:
   - frontend/src/components/ShadeSwitch.tsx
+  - frontend/src/components/DayPlayer.tsx
+  - frontend/src/components/PlanWorking.tsx
+  - frontend/src/components/PlanArea.tsx
+  - frontend/src/garden/useDay.ts
+  - frontend/src/garden/useLight.ts
   - frontend/src/components/SunMap.tsx
+  - ninanatur/api/schemas_light.py
   - frontend/src/components/CanvasScene.tsx
   - ninanatur/solar/day.py
   - ninanatur/api/light.py
@@ -17,9 +23,12 @@ routes:
 models: [light_grid]
 test_files:
   - frontend/src/components/ShadeSwitch.test.tsx
+  - frontend/src/components/ShadeSwitch.waits.test.tsx
+  - frontend/src/components/DayPlayer.test.tsx
+  - frontend/src/App.waiting.test.tsx
   - tests/test_light_api.py
 data_flow: reads-existing
-last_synced: 2026-09-07
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -28,7 +37,9 @@ path: Garden/Light
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Fixed 2026-09-21: `ShadowFrame.minute`'s comment (now in `api/schemas_light.py`) called it local solar time; the server counts it from 00:00 UTC (`solar/day.py`), which is what the player reads and shows on a Europe/Berlin clock."
+  - "The rebuild's words name its steps (Gelände, Gebäude, Laserdaten, Licht) without saying which one is running: the endpoint is one blocking request with no progress to report. Staged progress would need a job endpoint (decided against on 2026-09-21)."
 ---
 
 # The Shade Switch, and a Day Watched Through
@@ -137,6 +148,14 @@ A dropdown beside the modes. The season average — March to October — is the
 number a plant is placed by and the one the button computes and stores; a month
 is a question asked while looking, and answered fresh from the same inputs.
 
+While a month is computed, *Karte wird berechnet…* stands beside the dropdown —
+outside its label, which would otherwise become part of the select's name — and
+the map on the plan steps back to 40 % until the new one lands, because what it
+shows meanwhile is the last period's answer. The dimming is a class on the plan's
+cell in `PlanArea` (`workspace__plan--waiting .sun-map`), so the map itself knows
+nothing of it. Two switches in a second send two requests; only the newest may
+land or clear the note.
+
 Measured on a garden with a house on its south side:
 
 | | median | lowest cell |
@@ -182,9 +201,14 @@ over a building. A wash cannot be read to one decimal place, and *Halbschatten*
 is the word printed on the label the gardener is holding.
 
 An HTML readout over the plan, driven by the surface's own pointer handler —
-not a `<title>` on each cell. The map is six hundred rects with
-`pointer-events: none`, which is what lets a click reach the bed underneath;
-turning that on for a tooltip would make the wash swallow every selection.
+not a `<title>` on each cell. The map has `pointer-events: none`, which is what
+lets a click reach the bed underneath; turning that on for a tooltip would make
+the wash swallow every selection.
+
+*Since the owner's check (2026-09-21, doc 113)* the map is drawn as one path per
+wash rather than a rect per cell, the readout is its own component (a mouse move
+re-renders the label and nothing else), and it is not read while a pan holds the
+plan.
 
 The coordinate is checked for being finite before it is used. An SVG that has
 not been laid out measures zero and the viewport arithmetic returns NaN — and
@@ -216,18 +240,46 @@ drawn with light, not with more dark.
 ## The day
 
 `GET .../shadows?month=` returns the shadows of one middling day — the 15th, at
-every half hour the sun is above 5°. The play button walks the plan through it.
+every half hour the sun is above 5°. The day's player walks the plan through it.
+
+**The player stands in this panel, directly under the chips** (`DayPlayer`, since
+2026-09-21). It used to be the dock's play button changing its meaning from
+*Jahr abspielen* to *Tag abspielen* once the day had arrived — at the other end
+of the page from the chip that asked for it, with nothing at all while the day
+was computed, and silence when that failed. The owner asked for it beneath the
+Tagesverlauf chip. The dock's player plays the year and nothing else now.
+
+It has three parts: *▶ Tag abspielen* / *⏸ Anhalten*, a scrubber for any moment
+by hand, and the clock time of the frame showing. Twelve seconds sunrise to dusk,
+the pace the dock's button had. Under `prefers-reduced-motion` the scrubber is
+the only control: a day that runs by itself is exactly the motion that setting
+exists for, and the old button offered nothing at all there, so only dawn could
+ever be seen.
+
+The time is a **German clock's**: the server counts a frame's minutes from
+midnight UTC, so 11:00 there is noon in March and one o'clock from April on. The
+15th of the model's months never falls on a change of the clocks.
+
+**The month is the panel's Zeitraum**, June for the whole season. It used to
+follow the bloom filter, so playing the year in the dock refetched the day and
+threw its frame back to dawn every half second.
+
+While the day is computed the player says *Tagesverlauf wird berechnet…*; if it
+fails it says *Tagesverlauf konnte nicht berechnet werden.*, offers *Noch einmal
+versuchen*, and the toast says it too.
+
+The play state lives in `useDay`, not in the button, so whatever hides the panel
+can stop it. **Every change stops the playback and leaves it stopped**: leaving
+Tagesverlauf, switching the map off, a new month (a new question, whose shadows
+start from dawn), and selecting anything — which hides the garden's details and
+the button with them. A timer running behind a control nobody can reach is not
+playback, it is a leak.
 
 Fetched only in Tagesverlauf mode. It used to be fetched whenever the switch was
 on, which asked the server for a thing nobody had chosen to watch.
 
 Computed rather than stored: one day is a fraction of a season's work, and
 nobody watches the same day twice in a row.
-
-Leaving Tagesverlauf stops the playback rather than handing it over. The play
-button means two things depending on the mode, and one that silently starts
-animating the *year* because the map mode changed is a control that did
-something nobody asked for.
 
 The 15th rather than the 1st or the 31st because a month's edges differ by a
 fortnight of sun, and the middle is the one that represents the month.
@@ -243,6 +295,25 @@ It is there because nothing recomputes the light on a write any longer (see
 all. It is rendered even when there is no map yet — the old panel showed
 "nothing drawn yet" *instead of* the button, which was survivable while a write
 built the first map and would now be a dead end.
+
+### While it computes
+
+The rebuild is the longest wait in the garden — terrain, buildings, the laser
+points, then the light; 12.9 s measured for a garden of 87 elements — and the
+plan used to sit perfectly still through it. Now, for as long as it runs
+(`useLight`'s `rebuilding`):
+
+- the button reads *Wird berechnet…* with a turning ring, here and in the first
+  steps' *Schatten berechnen*;
+- a band of sunlight sweeps across the plan, with a note in its middle:
+  *Schatten wird berechnet — Gelände, Gebäude, Laserdaten, Licht…*
+  (`PlanWorking`, rendered by `PlanArea` around the canvas, taking no pointer);
+- the toast says *Schatten wird berechnet…* when it starts and *Schatten
+  berechnet.* when it is done.
+
+The words name the steps and never claim to know which one is running: the
+request reports nothing until it is done. Under `prefers-reduced-motion` the
+sweep is a still, faint wash and the ring stands still.
 
 ## A thing that had to be learned twice
 

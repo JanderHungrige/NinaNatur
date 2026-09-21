@@ -14,33 +14,39 @@ from __future__ import annotations
 import logging
 import sqlite3
 
+from geokachel.addressing import INSIDE, addressed
+from geokachel.surface_sources import by_state, measures_buildings
+from geokachel.tile_cache import cache_at
+from geokachel.tile_sources import TileProduct, lod2_tiles_for, sources_for
+from geokachel.tile_zip import unpack
+from geokachel.utm import to_utm
+
 from ninanatur.garden.canopies_found import remember
 from ninanatur.garden.measured import apply, measure
 from ninanatur.garden.models import Garden
-from ninanatur.garden.terrain_sync import ground_for, is_precise
+from ninanatur.garden.terrain_sync import TILE_CACHE_BYTES, ground_for, is_precise
 from ninanatur.geo.canopy import canopies_in
 from ninanatur.geo.lod2 import (
     MAX_TILE_BYTES,
     Lod2Building,
     buildings_from,
     in_garden_frame,
-    tile_name,
 )
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surface import SurfaceWindow, fetch_surface
-from ninanatur.geo.surface_sources import by_state, measures_buildings
-from ninanatur.geo.utm import to_utm
+from ninanatur.geo.terrain import TerrainWindow
+from ninanatur.geo.tiles import surface_window
+from ninanatur.ingest.db import database_path
 from ninanatur.ingest.http import get_bytes
 
 log = logging.getLogger(__name__)
 
-#: Where Nordrhein-Westfalen publishes its 3D building model.
-#:
-#: The only state whose LoD2 is addressable by coordinate — the tile name is
-#: computable, so there is no index to consult. Everywhere else the roof shape
-#: stays whatever it was.
-NRW_LOD2 = "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml"
+#: Which states publish a 3D building model as addressable tiles is a question
+#: for the registry now (doc 102), not a constant here: Nordrhein-Westfalen was
+#: the only one anybody had checked, and Bayern turned out to publish the same
+#: CityGML 1.0 with the same `bldg:` namespace (doc 105). Everywhere else the
+#: roof shape stays whatever it was.
 
 
 def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
@@ -73,14 +79,59 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
     return changed
 
 
-def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:
-    """The official 3D model for this square kilometre, on the garden's axes."""
-    if state != "Nordrhein-Westfalen":
+def _surface_from_tiles(anchor: LatLon, state: str,
+                        ground: TerrainWindow | None) -> SurfaceWindow | None:
+    """The state's surface tiles, where it publishes them and runs no service.
+
+    Without the ground there is nothing to subtract, and a surface model in
+    metres above sea level says nothing about what stands in a garden.
+    """
+    if ground is None:
         return None
-    east, north = to_utm(anchor.lat, anchor.lon, 32)
+    source = next((s for s in sources_for(state) if s.product is TileProduct.DOM), None)
+    if source is None:
+        return None
     try:
-        document = get_bytes(f"{NRW_LOD2}/{tile_name(east, north)}", max_bytes=MAX_TILE_BYTES)
-        return in_garden_frame(buildings_from(document), anchor, 32)
+        return surface_window(anchor, source, ground,
+                              cache=cache_at(database_path().parent, TILE_CACHE_BYTES))
+    except Exception:
+        log.warning("surface tiles failed for %s", state, exc_info=True)
+        return None
+
+
+def _surveyed(anchor: LatLon, state: str) -> list[Lod2Building] | None:
+    """The official 3D model for this square kilometre, on the garden's axes.
+
+    The tile is not cached. A square kilometre of Munich is 161 MB of CityGML
+    and what is kept of it is a few hundred bytes per building: fetched,
+    streamed, parsed, dropped (doc 103).
+
+    One tile, the garden's own. A neighbour across a kilometre line keeps
+    whatever height it had — at 20 to 161 MB a tile, fetching the other three
+    to measure a house fifty metres away is not a trade worth making.
+    """
+    source = lod2_tiles_for(state)
+    if source is None:
+        return None
+    zone = 32 if source.epsg == 25832 else 33
+    east, north = to_utm(anchor.lat, anchor.lon, zone)
+    tile_e, tile_n = source.corner_of(east, north)
+    try:
+        # Computed, looked up in the state's list, or read out of a whole-city
+        # archive over ranges — one shape for all three (doc 103). The document
+        # itself is still never cached: 161 MB per square kilometre is a disk.
+        cache = cache_at(database_path().parent, TILE_CACHE_BYTES)
+        found = addressed(source, [(tile_e, tile_n)], cache,
+                          lambda url: get_bytes(url, max_bytes=MAX_TILE_BYTES))
+        if not found:
+            return None
+        arrived = found[0][2]()
+        # Six states wrap the tile, and Baden-Württemberg puts four of its own
+        # kilometre tiles in one archive — all four are this garden's
+        # neighbourhood, so all four are read (doc 103).
+        documents = unpack(arrived, want=INSIDE[source.fmt]) if source.zipped else [arrived]
+        surveyed = [found for document in documents for found in buildings_from(document)]
+        return in_garden_frame(surveyed, anchor, zone)
     except Exception:
         log.warning("LoD2 tile failed for %s", state, exc_info=True)
         return None
@@ -101,4 +152,4 @@ def _surface(
         return None
 
 
-__all__ = ["NRW_LOD2", "measure_buildings"]
+__all__ = ["measure_buildings"]

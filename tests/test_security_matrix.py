@@ -78,6 +78,7 @@ BY_TOKEN: dict[tuple[str, str], Body] = {
     ("GET", f"{G}/shadows"): None,
     ("POST", f"{G}/sightlines"): {"x": 0.0, "y": 0.0},
     ("PATCH", f"{G}/soil"): {"soil_type": "loam", "moisture": "fresh"},
+    ("GET", f"{G}/sources"): None,
     ("GET", f"{G}/terrain"): None,
     ("GET", f"{G}/timeline"): None,
 }

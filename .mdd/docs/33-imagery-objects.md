@@ -8,7 +8,6 @@ wave_status: complete
 depends_on: [31-map-selection]
 relates: [32-object-heights]
 source_files:
-  - ninanatur/geo/orthophotos.py
   - ninanatur/api/geo.py
   - frontend/src/map/tiles.ts
   - frontend/src/components/MapPicker.tsx
@@ -33,7 +32,7 @@ integration_contracts:
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
-sister_projects:
+sister_projects: [https://github.com/JanderHungrige/geokachel]
   - DinoTraining
 ---
 

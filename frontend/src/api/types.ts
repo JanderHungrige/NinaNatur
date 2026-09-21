@@ -254,11 +254,10 @@ export interface paths {
          * Bed Suggestions
          * @description Species that suit this bed, ranked by fit against its own site vector.
          *
-         *     The bed's derived axes are the query, so the user never types an Ellenberg
-         *     number. Trees and shrubs are excluded by default: a bed is a few square
-         *     metres, and a hemlock that fits the light perfectly is still a useless
-         *     suggestion. Introduced species are excluded for a different reason: the
-         *     product promises native plants, and a third of the catalogue is not.
+         *     Woody plants get a shortlist of their own. Introduced species are left out
+         *     (the product promises native plants), and so, unless asked for, are species
+         *     the bed is far too bright for (`filters.light_verdict`). `light_state` says
+         *     whether there was a light value to judge by.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
         put?: never;
@@ -656,6 +655,31 @@ export interface paths {
         patch: operations["set_soil_api_v1_gardens__token__soil_patch"];
         trace?: never;
     };
+    "/api/v1/gardens/{token}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sources
+         * @description Every survey this garden's numbers actually rest on (doc 106).
+         *
+         *     Empty is an ordinary answer: a garden nobody has measured anything for owes
+         *     nobody anything. What is here is what was used, not what the state could in
+         *     principle offer — a credit for a source a garden never touched would be a
+         *     claim about where its numbers came from.
+         */
+        get: operations["sources_api_v1_gardens__token__sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/terrain": {
         parameters: {
             query?: never;
@@ -1010,6 +1034,11 @@ export interface components {
             };
             /** Items */
             items: components["schemas"]["PlantSummary"][];
+            /**
+             * Light State
+             * @enum {string}
+             */
+            light_state: "missing" | "stale" | "current";
             /** Site Axes */
             site_axes: {
                 [key: string]: number;
@@ -1102,6 +1131,26 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /**
+         * CreditOut
+         * @description One source a garden's numbers rest on (doc 106).
+         *
+         *     A credit is not a caption: CC-BY-4.0, dl-de/by-2-0 and the Copernicus terms
+         *     all require the named credit, and a height shown without it is a height
+         *     used outside its licence.
+         */
+        CreditOut: {
+            /** About */
+            about: string;
+            /** Attribution */
+            attribution: string;
+            /** Detail */
+            detail?: string | null;
+            /** Licence */
+            licence: string;
+            /** Name */
+            name: string;
         };
         /** FeedbackIn */
         FeedbackIn: {
@@ -1436,16 +1485,22 @@ export interface components {
             label: string | null;
             /** Obstacle Id */
             obstacle_id: number;
+            /** Outline Source */
+            outline_source?: string | null;
             /** Points */
             points: number[][] | null;
             /** Roof */
             roof: string;
             /** Roof Fall Deg */
             roof_fall_deg: number | null;
+            /** Roof Lines */
+            roof_lines: number[][][];
             /** Roof Pitch Deg */
             roof_pitch_deg: number | null;
             /** Roof Source */
             roof_source: string;
+            /** Shadow */
+            shadow?: number[] | null;
             /** Shape */
             shape: string;
             /** Width */
@@ -2332,6 +2387,7 @@ export interface operations {
                 include_trees?: boolean;
                 include_introduced?: boolean;
                 exclude_planted?: boolean;
+                include_light_unsuitable?: boolean;
             };
             header?: never;
             path: {
@@ -2971,6 +3027,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GardenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_api_v1_gardens__token__sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditOut"][];
                 };
             };
             /** @description Validation Error */

@@ -18,6 +18,20 @@ dependencies = [
     # does not run. The standard library accepts a DTD and expands what it
     # declares; this refuses both.
     "defusedxml>=0.7",
+    # Wave 25 (doc 110): the elevation registry, the readers and the tile
+    # fetch are their own package now, published from
+    # github.com/JanderHungrige/geokachel. Pinned exactly, because a registry
+    # that moved under a running deployment is the failure doc 109 exists to
+    # catch — a new state should arrive by somebody choosing it, not by a
+    # resolver.
+    "geokachel==0.1.0",
+    # Wave 25, feature 4 (doc 107): the states publish their laser scans as
+    # LAZ, which is LAS packed with an arithmetic coder — not something to
+    # reimplement. `laspy` reads the format and `lazrs` unpacks it; both are
+    # permissive (BSD-3 and Apache-2.0) and `lazrs` is the Rust backend, which
+    # is what makes a hundred-megabyte tile a few seconds rather than a minute.
+    "laspy>=2.5",
+    "lazrs>=0.6",
 ]
 
 # Explicit, not auto-discovered: setuptools' flat-layout discovery sees every
@@ -54,6 +68,9 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The repository's root, so `scripts` is importable however pytest is started:
+# `python -m pytest` puts it there by itself, a bare `pytest` (as in CI) does not.
+pythonpath = ["."]
 # No test reaches the network: every socket but a Unix one is refused
 # (`tests/test_no_network.py`). The light worker's forkserver and the event
 # loop talk over Unix sockets, so those stay.

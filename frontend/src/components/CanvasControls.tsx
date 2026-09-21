@@ -96,9 +96,9 @@ export function CanvasControls({
 
       {drawing && (
         <p className="hint">
-          Klicke die Ecken des Beetes. Punkte rasten auf dem Raster ein — halte
-          Alt gedrückt, um frei zu setzen. Escape bricht ab. Zoomen: Knöpfe oben
-          oder Strg/Cmd + Mausrad.
+          Klicke die Ecken des Beetes. Ganz nah an einem Rasterpunkt rastet die
+          Ecke ein — mit Alt nie. Escape bricht ab. Zoomen: Knöpfe oben oder
+          Mausrad.
         </p>
       )}
       {problem !== null && (

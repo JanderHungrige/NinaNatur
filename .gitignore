@@ -62,3 +62,13 @@ deploy/.state/
 
 # Build metadata: rewritten by every pip install -e ., never committed.
 *.egg-info/
+# Draft Sketch's style file (doc 97): pinned by assets/draft-sketch/source.json,
+# fetched by the converter, never committed.
+assets/draft-sketch/*.stylx
+
+# The Finder's, not the project's.
+.DS_Store
+**/.DS_Store
+
+# This machine's agent setup: launch configs with local paths.
+.claude/

@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import math
 
+from geokachel.utm import to_latlon
+
 from ninanatur.garden.roofs import Roof
 from ninanatur.geo.projection import LatLon, to_metres
-from ninanatur.geo.utm import to_latlon
 
 Point = tuple[float, float, float]
 

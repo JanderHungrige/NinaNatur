@@ -4,6 +4,7 @@ import type {
   LightMap,
   NinaNaturClient,
   ScoreOut,
+  Credit,
   Terrain,
   TimelineOut,
 } from './api/client';
@@ -16,12 +17,13 @@ export interface DerivedSetters {
   palette: (value: BloomPalette) => void;
   lightMap: (value: LightMap | null) => void;
   terrain: (value: Terrain | null) => void;
+  sources: (value: Credit[]) => void;
 }
 
 /** The part of the client they come from. */
 export type DerivedSource = Pick<
   NinaNaturClient,
-  'timeline' | 'score' | 'improvements' | 'bloom' | 'lightMap' | 'terrain'
+  'timeline' | 'score' | 'improvements' | 'bloom' | 'lightMap' | 'terrain' | 'sources'
 >;
 
 /**
@@ -58,5 +60,8 @@ export async function fetchDerived(
     // button, so this is nearly always the same answer. Read anyway: otherwise
     // the map is right and the relief a version behind.
     client.terrain(token).then(show.terrain),
+    // What the numbers above rest on, and the credit each licence asks for
+    // (doc 106). Cheap: it reads stored rows and reaches no network.
+    client.sources(token).then(show.sources),
   ]);
 }

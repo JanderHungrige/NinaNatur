@@ -24,7 +24,7 @@ test_files:
   - frontend/src/sheet/gardens.test.ts
   - frontend/src/sheet/SheetCell.test.tsx
 data_flow: greenfield
-last_synced: 2026-09-18
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -33,7 +33,7 @@ path: Canvas/Style
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
 ---
 
 # 95 — Look Before You Argue
@@ -118,6 +118,17 @@ and it is the budget stage 2 and 3 are held to. One filter chain per layer and
 no filter on anything interactive are rules for the themes that come next; this
 feature only measures.
 
+## What the record holds
+
+- `cells`: a SHA-256 per cell, Technisch's, in both modes — the pixels a change
+  must not move by accident.
+- `chromium`: which browser took them, because a new one may move them all.
+- `timing`: Technisch's paint for the city at 40 m, CPU ×4 — the guard.
+- `budgets`: what another style costs on the same cell, each measured in the
+  same run as Technisch so the pair can be compared (doc 99). Draft Sketch:
+  73 ms against Technisch's 21, accepted by the owner on 2026-09-20. A budget
+  is recorded, never asserted: a stopwatch on a shared machine is not a test.
+
 ## Business Rules
 
 1. The sheet renders the app's own components with the app's stylesheet —
@@ -151,6 +162,15 @@ the farmyard's close-up was nothing but gravel, so its centre moved to where the
 path, the beds and the paving meet; and the first sun map shaded only north of
 buildings, which here is mostly street, so trees, hedges and walls cast shade
 too and both of the layer's inks are on the sheet.
+
+## Retaken on 2026-09-21
+
+The owner's check changed every cell, on purpose, and the record was taken again
+with `--update` after all 24 were looked at in both themes: Technisch's garden
+ground is a flat grass wash instead of a 5 % leaf tint (#10), outlines are
+screen pixels, the grid is 3 cm or a pixel and the watercolour wobble is capped
+at 7 px (#1), and the sun map and relief are drawn as paths (#11). A `--check`
+just before the first of these found all 24 as recorded.
 
 ## Known Issues
 

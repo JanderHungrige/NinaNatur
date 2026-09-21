@@ -1,10 +1,12 @@
 import type React from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 import type { GardenOut } from '../api/client';
+import { acrossPairs } from '../canvas/across';
 import { svgPoints } from '../canvas/viewport';
 import { KINDS, PLANTING_KIND, isGround, labelOf } from '../kinds';
 import { bedName } from '../plural';
-import type { LevelOfDetail, PlanTheme } from '../themes';
+import type { PlanTheme } from '../themes';
 
 /*
  * The shapes on the plan — every bed and every element, in one ordered group
@@ -49,14 +51,24 @@ function coverage(item: Drawn): number {
  * thing there is, so it falls to the back on its own, and a small bed drawn on
  * a lawn stays visible without anybody special-casing either.
  */
-function surfacesFirst(items: Drawn[]): Drawn[] {
-  const standing = (item: Drawn): number => {
-    const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
-    return BY_KIND.get(kind)?.standing === false ? 0 : 1;
-  };
-  return [...items].sort(
-    (a, b) => standing(a) - standing(b) || coverage(b) - coverage(a),
-  );
+export function surfacesFirst(items: Drawn[]): Drawn[] {
+  return [...items].sort((a, b) => layer(a) - layer(b) || coverage(b) - coverage(a));
+}
+
+/**
+ * Which layer a shape is drawn in: the garden's own ground at the very bottom,
+ * then the surfaces, then everything that stands — and streets with those.
+ *
+ * A street is a surface by what it is, and sorted by size it fell behind the
+ * garden's ground wherever the plot drawn on the map reached over it: the
+ * garden was coloured across the street (the owner, 2026-09-21). Like a
+ * building, a street is somebody else's ground that the garden stops at.
+ */
+function layer(item: Drawn): number {
+  const kind = 'bed_id' in item ? PLANTING_KIND : item.kind;
+  if (kind === 'garden') return 0;
+  if (kind === 'street') return 2;
+  return BY_KIND.get(kind)?.standing === false ? 1 : 2;
 }
 
 function bedLabel(bed: Bed): string {
@@ -85,7 +97,10 @@ function asksWhatItIs(event: React.KeyboardEvent): boolean {
 export interface PlanObjectsProps {
   garden: GardenOut;
   theme: PlanTheme;
-  lod: LevelOfDetail;
+  /** The scale the plan is drawn at. Each shape asks the theme what detail its
+   *  own size can carry (doc 99); a level worked out once above would give a
+   *  shrub the same as a house. */
+  metresPerPixel: number;
   selectedBedId: number | null;
   selectedObstacleId: number | null;
   armed: boolean;
@@ -95,19 +110,21 @@ export interface PlanObjectsProps {
   onGrabElement?: ((id: number, event: React.PointerEvent) => void) | undefined;
   /** Shown where the pointer has it, saved where it is let go. */
   shift: (id: number) => string;
+  /** What a theme draws right beneath a shape — its shadow — by the shape's key. */
+  beneath?: ReadonlyMap<string, ReactNode> | undefined;
 }
 
-type ShapeProps<T> = Omit<PlanObjectsProps, 'garden'> & { item: T };
+type ShapeProps<T> = Omit<PlanObjectsProps, 'garden' | 'beneath'> & { item: T };
 
-function BedShape({ item, theme, lod, selectedBedId, armed, onSelectBed, onAskWhatItIs,
-  onGrabElement, shift }: ShapeProps<Bed>) {
+function BedShape({ item, theme, metresPerPixel, selectedBedId, armed, onSelectBed,
+  onAskWhatItIs, onGrabElement, shift }: ShapeProps<Bed>) {
   return (
     <polygon
       // The menu anchors to this: it has to follow the shape when the page
       // scrolls, and a click coordinate cannot.
       data-element-id={item.bed_id}
       className={item.bed_id === selectedBedId ? 'bed bed--selected' : 'bed'}
-      fill={theme.bedFill(lod)}
+      fill={theme.bedFill(theme.lodAt(metresPerPixel, acrossPairs(item.polygon)))}
       points={svgPoints(item.polygon.map((p) => ({ x: p[0] ?? 0, y: p[1] ?? 0 })))}
       tabIndex={armed ? undefined : 0}
       role={armed ? undefined : 'button'}
@@ -145,7 +162,7 @@ function BedShape({ item, theme, lod, selectedBedId, armed, onSelectBed, onAskWh
   );
 }
 
-function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectObstacle,
+function ObstacleShape({ item, theme, metresPerPixel, selectedObstacleId, armed, onSelectObstacle,
   onAskWhatItIs, onGrabElement, shift }: ShapeProps<Obstacle>) {
   // The ground is drawn and nothing else. It is where the plan is measured
   // from and what the server sums over; for the gardener it is the paper, not
@@ -158,7 +175,8 @@ function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectOb
     <polygon
       data-element-id={item.obstacle_id}
       className={`obstacle obstacle--${item.kind}`}
-      fill={theme.fill(symbolOf(item.kind), lod)}
+      fill={theme.fill(symbolOf(item.kind),
+                       theme.lodAt(metresPerPixel, acrossPairs(item.footprint)), item.kind)}
       /* The footprint the server computed. Re-deriving it here would be a
          third answer to "what ground does this cover", and the two that
          already existed agreed only by accident. */
@@ -208,16 +226,20 @@ function ObstacleShape({ item, theme, lod, selectedObstacleId, armed, onSelectOb
  * on top of a bed could not be clicked, because the click landed on the bed.
  * Since Wave 11 a bed *is* an element, so it belongs in the same ordered list.
  */
-export function PlanObjects({ garden, ...shared }: PlanObjectsProps) {
+export function PlanObjects({ garden, beneath, ...shared }: PlanObjectsProps) {
   return (
     <g className="canvas__objects" filter={shared.theme.objectsFilter ?? undefined}>
-      {surfacesFirst([...garden.obstacles, ...garden.beds]).map((item) =>
-        'bed_id' in item ? (
-          <BedShape key={`bed-${item.bed_id}`} item={item} {...shared} />
-        ) : (
-          <ObstacleShape key={`obstacle-${item.obstacle_id}`} item={item} {...shared} />
-        ),
-      )}
+      {surfacesFirst([...garden.obstacles, ...garden.beds]).map((item) => {
+        const key = 'bed_id' in item ? `bed-${item.bed_id}` : `obstacle-${item.obstacle_id}`;
+        return (
+          <Fragment key={key}>
+            {beneath?.get(key)}
+            {'bed_id' in item
+              ? <BedShape item={item} {...shared} />
+              : <ObstacleShape item={item} {...shared} />}
+          </Fragment>
+        );
+      })}
     </g>
   );
 }

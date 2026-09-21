@@ -22,21 +22,27 @@ function Wash({ id, className }: { id: string; className: string }) {
   );
 }
 
-export function TechnischSymbols() {
+/** How far the edge wanders, in metres, and never more than this many pixels. */
+const WOBBLE_M = 0.3;
+const WOBBLE_PX = 7;
+
+export function TechnischSymbols({ metresPerPixel }: { metresPerPixel: number }) {
+  // In metres it stayed proportionate to the garden, and at the closest zoom
+  // moved a finished bed sixty pixels off the corners it was drawn through
+  // (the owner's check, 2026-09-21). At ordinary zoom nothing changes.
+  const wobble = Math.min(WOBBLE_M, WOBBLE_PX * metresPerPixel);
   return (
     <>
       {/*
         The hand-drawn edge. Turbulence displaced by a fraction of a metre
-        gives an outline that wobbles like a pen rather than a plotter. The
-        scale is in metres like everything else, so it stays proportionate
-        when the user zooms.
+        gives an outline that wobbles like a pen rather than a plotter.
       */}
       <filter id="watercolour" x="-10%" y="-10%" width="120%" height="120%">
         {/* The frequency is per metre. At 0.6 the wobble was finer than a
             pixel at ordinary zoom and averaged back into a straight line; a
             wave every six metres or so is what reads as a drawn edge. */}
         <feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves={2} seed={7} result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale={0.3} xChannelSelector="R" yChannelSelector="G" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale={wobble} xChannelSelector="R" yChannelSelector="G" />
       </filter>
 
       {/* A roof, drawn as a roof. This was a flat wash on the grounds that a

@@ -15,7 +15,7 @@ models: []
 test_files:
   - frontend/src/canvas/usePolygonDraft.test.ts
 data_flow: reads-existing
-last_synced: 2026-08-31
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -60,11 +60,17 @@ one, and a near-duplicate first corner is a zero-length edge for everything
 downstream to trip over. The two drawing paths now close the same way, from the
 same function.
 
-### Within one grid square
+### Within twelve pixels (was: one grid square)
 
-The distance is the grid spacing, in metres, so "near enough" means the same on
-screen however far the user has zoomed — and it is the distance the corners were
-snapping to anyway.
+*Changed 2026-09-21 (doc 112).* The distance was the grid spacing, on the
+grounds that corners snapped to it anyway. With snapped corners that dropped a
+real one: a last corner exactly a square from the first counted as a closure, and
+a 3 × 1 m bed was saved as a triangle. Now it is twelve screen pixels in metres —
+the same reach freehand's closing uses — with a 5 cm floor where freehand keeps
+50 cm (`useFreehandStroke`): a clicked corner is placed exactly, and 50 cm would
+drop a small bed's real last corner when zoomed in, while a hand-drawn loop needs
+the looser floor to close at all. "Near enough" still means the same on screen
+at every zoom.
 
 ### Never below three corners
 

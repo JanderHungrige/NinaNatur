@@ -17,11 +17,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from geokachel.surface_sources import NORMALISED, SurfaceSource
+from geokachel.tiff import read_raster
+from geokachel.utm import to_utm
+
 from ninanatur.geo.projection import LatLon
-from ninanatur.geo.surface_sources import NORMALISED, SurfaceSource
 from ninanatur.geo.terrain import FETCH_M, Fetch, TerrainWindow, resample
-from ninanatur.geo.tiff import read_raster
-from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
 
@@ -89,7 +90,7 @@ def fetch_surface(
     )
 
     if source.kind != NORMALISED:
-        values = _above_ground(values, ground, min_xy, source.cell_m, side)
+        values = above_ground(values, ground, min_xy, source.cell_m, side)
     else:
         values = [v if math.isnan(v) else max(0.0, v) for v in values]
 
@@ -106,7 +107,7 @@ def fetch_surface(
     )
 
 
-def _above_ground(
+def above_ground(
     surface: list[float],
     ground: TerrainWindow | None,
     min_xy: float,
@@ -139,4 +140,4 @@ def _above_ground(
     return out
 
 
-__all__ = ["SurfaceWindow", "fetch_surface"]
+__all__ = ["SurfaceWindow", "above_ground", "fetch_surface"]

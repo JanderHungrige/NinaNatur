@@ -9,4 +9,47 @@ export function themeById(id: string | null | undefined): PlanTheme {
   return THEMES.find((theme) => theme.id === id) ?? technisch;
 }
 
-export type { LevelOfDetail, PlanTheme } from './types';
+/** Draft Sketch: a chunk of its own, so it is named here rather than held in
+ *  THEMES, which would pull it into every page (docs 97, 100). */
+const DRAFT_SKETCH = 'draft-sketch';
+
+/** A style the picker can name without loading it (doc 100). A chunk of its own
+ *  is the point of the lazy theme, so its label is repeated here — and
+ *  `themes.test.tsx` fails if the two ever disagree. */
+export interface ThemeOnOffer {
+  id: string;
+  label: string;
+}
+
+/** Every style that exists, whether or not this deployment serves it. */
+export const ON_OFFER: readonly ThemeOnOffer[] = [
+  ...THEMES.map((theme) => ({ id: theme.id, label: theme.label })),
+  { id: DRAFT_SKETCH, label: 'Draft Sketch' },
+];
+
+/** The theme with this id. Draft Sketch is a chunk of its own, fetched only
+ *  when it is drawn: a page that never shows it never downloads it. Every
+ *  style is on offer everywhere since 2026-09-20 (`choice.ts`, doc 100). */
+export async function loadTheme(id: string): Promise<PlanTheme> {
+  if (id === DRAFT_SKETCH) return (await import('./draft-sketch')).draftSketch;
+  return themeById(id);
+}
+
+/** The theme, once every image it draws with has arrived and been decoded. An
+ *  image that fails is drawn as missing, which is no reason to keep the plan. */
+export async function preloaded(theme: PlanTheme): Promise<PlanTheme> {
+  await Promise.all((theme.images ?? []).map(async (src) => {
+    const image = new Image();
+    image.src = src;
+    try {
+      await image.decode();
+    } catch {
+      // Drawn without it.
+    }
+  }));
+  return theme;
+}
+
+export type {
+  DecoratedShape, Decoration, FurnitureProps, LevelOfDetail, PlanProps, PlanTheme,
+} from './types';

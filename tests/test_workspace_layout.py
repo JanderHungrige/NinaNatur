@@ -80,9 +80,27 @@ def test_the_workspace_is_the_window_and_only_panels_scroll(css: str) -> None:
 
 def test_the_stage_fills_the_plan_cell_in_the_workspace(css: str) -> None:
     """The plan's height still comes from the page and never from the drawing
-    (doc 86) — in the workspace, from the grid row it is given."""
+    (doc 86) — in the workspace, from the grid row it is given, less whatever
+    caption sits under the drawing (a theme's credit, doc 98). `flex: 1` with
+    `min-height: 0` is that: the stage takes the room left in the cell, and the
+    drawing inside it cannot push it taller."""
     _, stage = _where(css, ".workspace .canvas-stage")
-    assert "height: 100%" in stage
+    assert "flex: 1" in stage and "min-height: 0" in stage
+    _, wrap = _where(css, ".workspace .canvas-wrap")
+    assert "height: 100%" in wrap, "the cell's height has to reach the stage"
+
+
+def test_the_hint_stays_off_the_drawings_own_furniture(css: str) -> None:
+    """The hint hangs under the controls at the drawing's top edge. The bottom
+    edge is the theme's — a title block and a scale bar in its hand (doc 98) —
+    and a hint laid over those covers them, which is how it was found."""
+    base = re.search(r"\n\.plan-hint \{([^}]*)\}", css)
+    assert base is not None
+    _, workspace = _where(css, ".workspace .plan-hint")
+    for rule in (base.group(1), workspace):
+        assert "top:" in rule, "the hint hangs from the top"
+        assert "bottom:" not in rule, "the bottom belongs to the drawing's furniture"
+    assert "position: absolute" in base.group(1)
 
 
 def test_the_dock_leaves_the_plan_its_share(css: str) -> None:

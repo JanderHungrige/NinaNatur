@@ -446,6 +446,15 @@
             "title": "Items",
             "type": "array"
           },
+          "light_state": {
+            "enum": [
+              "missing",
+              "stale",
+              "current"
+            ],
+            "title": "Light State",
+            "type": "string"
+          },
           "site_axes": {
             "additionalProperties": {
               "type": "number"
@@ -476,7 +485,8 @@
           "bed_name",
           "site_axes",
           "total",
-          "items"
+          "items",
+          "light_state"
         ],
         "title": "BedSuggestions",
         "type": "object"
@@ -714,6 +724,46 @@
           "password"
         ],
         "title": "Credentials",
+        "type": "object"
+      },
+      "CreditOut": {
+        "description": "One source a garden's numbers rest on (doc 106).\n\nA credit is not a caption: CC-BY-4.0, dl-de/by-2-0 and the Copernicus terms\nall require the named credit, and a height shown without it is a height\nused outside its licence.",
+        "properties": {
+          "about": {
+            "title": "About",
+            "type": "string"
+          },
+          "attribution": {
+            "title": "Attribution",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "licence": {
+            "title": "Licence",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "about",
+          "name",
+          "licence",
+          "attribution"
+        ],
+        "title": "CreditOut",
         "type": "object"
       },
       "FeedbackIn": {
@@ -1599,6 +1649,17 @@
             "title": "Obstacle Id",
             "type": "integer"
           },
+          "outline_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outline Source"
+          },
           "points": {
             "anyOf": [
               {
@@ -1631,6 +1692,19 @@
             ],
             "title": "Roof Fall Deg"
           },
+          "roof_lines": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Roof Lines",
+            "type": "array"
+          },
           "roof_pitch_deg": {
             "anyOf": [
               {
@@ -1645,6 +1719,20 @@
           "roof_source": {
             "title": "Roof Source",
             "type": "string"
+          },
+          "shadow": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shadow"
           },
           "shape": {
             "title": "Shape",
@@ -1679,6 +1767,7 @@
           "eaves_source",
           "roof_fall_deg",
           "roof_pitch_deg",
+          "roof_lines",
           "label",
           "height_source",
           "x",
@@ -3177,7 +3266,7 @@
   },
   "info": {
     "title": "NinaNatur",
-    "version": "V0.20.190"
+    "version": "contract"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -3666,7 +3755,7 @@
     },
     "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
       "get": {
-        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.",
+        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nWoody plants get a shortlist of their own. Introduced species are left out\n(the product promises native plants), and so, unless asked for, are species\nthe bed is far too bright for (`filters.light_verdict`). `light_state` says\nwhether there was a light value to judge by.",
         "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
         "parameters": [
           {
@@ -3820,6 +3909,16 @@
             "schema": {
               "default": true,
               "title": "Exclude Planted",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_light_unsuitable",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Light Unsuitable",
               "type": "boolean"
             }
           }
@@ -4823,6 +4922,53 @@
         "summary": "Set Soil",
         "tags": [
           "gardens"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/sources": {
+      "get": {
+        "description": "Every survey this garden's numbers actually rest on (doc 106).\n\nEmpty is an ordinary answer: a garden nobody has measured anything for owes\nnobody anything. What is here is what was used, not what the state could in\nprinciple offer \u2014 a credit for a source a garden never touched would be a\nclaim about where its numbers came from.",
+        "operationId": "sources_api_v1_gardens__token__sources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CreditOut"
+                  },
+                  "title": "Response Sources Api V1 Gardens  Token  Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sources",
+        "tags": [
+          "light"
         ]
       }
     },

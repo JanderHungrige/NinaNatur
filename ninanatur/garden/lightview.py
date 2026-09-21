@@ -99,6 +99,18 @@ def _planted_obstacles(
     return obstacles
 
 
+def shading_taxa(conn: sqlite3.Connection, garden: Garden) -> frozenset[int]:
+    """The species planted here that cast a shadow — the ones `_planted_obstacles`
+    turns into crowns. Only these belong in the map's signature: a perennial
+    planted from the list moves no shadow, and it used to mark the map and the
+    list stale all the same (owner's check #9, 2026-09-21)."""
+    heights = _woody_heights(
+        conn,
+        [p.taxon_id for bed in garden.beds for p in bed.plantings if p.taxon_id is not None],
+    )
+    return frozenset(tid for tid, canopy in heights.items() if shades(canopy))
+
+
 def _woody_heights(
     conn: sqlite3.Connection, taxon_ids: list[int]
 ) -> dict[int, Canopy | None]:

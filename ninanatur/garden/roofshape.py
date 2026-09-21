@@ -27,6 +27,9 @@ from dataclasses import dataclass
 
 from ninanatur.garden.roofs import DEFAULT_EAVES_FRACTION, Roof
 
+#: A straight line on the plan, as its two ends in garden metres.
+Line = tuple[tuple[float, float], tuple[float, float]]
+
 #: Below this a pitch is not worth distinguishing from a flat roof: it changes
 #: the sun by minutes, and the ridge direction it would be applied in is an
 #: assumption rather than a measurement.
@@ -106,8 +109,7 @@ def surface_of(
     if height_m is None or len(footprint) < 3:
         return None
     pitched = roof in (Roof.GABLE, Roof.HIP) or (roof is Roof.PENT and fall_deg is not None)
-    box = (_oriented_box(footprint) if fall_deg is None or not pitched
-           else _box_along(footprint, _unit(fall_deg + 90.0)))
+    box = _box_for(footprint, pitched, fall_deg)
     if box is None:
         return None
     centre, along, long_half, short_half = box
@@ -144,6 +146,37 @@ def surface_of(
     return flat if surface.pitch_deg < MIN_PITCH_DEG else surface
 
 
+def roof_lines(
+    footprint: list[tuple[float, float]],
+    roof: Roof,
+    height_m: float | None,
+    eaves_m: float | None = None,
+    fall_deg: float | None = None,
+) -> list[Line]:
+    """The lines that draw the roof the model knows, in garden metres (doc 98).
+
+    The ridge; a hip roof's hips besides, from each end of its ridge to the two
+    corners of its rectangle at that end; a pent roof's upper edge, which the
+    model keeps as its ridge. Nothing for a roof it treats as a plane — flat,
+    unidentified, unsurveyed, or too shallow to matter: the drawing says what
+    the model knows, and no more.
+    """
+    surface = surface_of(footprint, roof, height_m, eaves_m, fall_deg)
+    if surface is None or not surface.pitched:
+        return []
+    start, end = surface.ridge
+    lines: list[Line] = [] if math.dist(start, end) < 1e-9 else [surface.ridge]
+    box = _box_for(footprint, True, fall_deg)
+    if roof is Roof.HIP and box is not None:
+        (cx, cy), (ux, uy), long_half, short_half = box
+        for tip, way in ((start, -1.0), (end, 1.0)):
+            for side in (-1.0, 1.0):
+                corner = (cx + way * ux * long_half - side * uy * short_half,
+                          cy + way * uy * long_half + side * ux * short_half)
+                lines.append((tip, corner))
+    return lines
+
+
 def pitch_of(
     footprint: list[tuple[float, float]],
     roof: Roof,
@@ -155,6 +188,16 @@ def pitch_of(
     roof unpitched. What the page shows beside the ridge (doc 94)."""
     surface = surface_of(footprint, roof, height_m, eaves_m, fall_deg)
     return None if surface is None or not surface.pitched else round(surface.pitch_deg, 1)
+
+
+def _box_for(
+    footprint: list[tuple[float, float]], pitched: bool, fall_deg: float | None,
+) -> tuple[tuple[float, float], tuple[float, float], float, float] | None:
+    """The rectangle a roof is modelled over: along the surveyed ridge when
+    there is one, else the footprint's smallest enclosing rectangle."""
+    if fall_deg is None or not pitched:
+        return _oriented_box(footprint)
+    return _box_along(footprint, _unit(fall_deg + 90.0))
 
 
 def _unit(bearing: float) -> tuple[float, float]:

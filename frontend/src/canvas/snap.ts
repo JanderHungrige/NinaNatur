@@ -17,13 +17,20 @@ export function snap(value: number, spacing: number): number {
   return snapped === 0 ? 0 : snapped;
 }
 
-export function snapPoint(
-  point: Point,
-  spacing: number,
-  options: { free: boolean },
-): Point {
-  // Free placement is held, not toggled: a hedge does not run along grid lines
-  // just because the tool drew some.
-  if (options.free) return point;
-  return { x: snap(point.x, spacing), y: snap(point.y, spacing) };
+/** Centimetres: a corner set freely is still not a survey mark. */
+const toCentimetre = (v: number): number => Math.round(v * 100) / 100;
+
+/**
+ * The grid intersection when the point is within `within` metres of one, and
+ * otherwise the point itself, to the centimetre.
+ *
+ * Magnetic rather than always (the owner's check, 2026-09-21): rounding every
+ * click to a grid of at least a metre put corners up to half a metre from where
+ * they were clicked, which read as the tool missing. The grid is faint, so it
+ * pulls only from a few pixels away — the caller turns pixels into metres.
+ */
+export function snapNear(point: Point, spacing: number, within: number): Point {
+  const grid = { x: snap(point.x, spacing), y: snap(point.y, spacing) };
+  if (Math.hypot(grid.x - point.x, grid.y - point.y) <= within) return grid;
+  return { x: toCentimetre(point.x) || 0, y: toCentimetre(point.y) || 0 };
 }

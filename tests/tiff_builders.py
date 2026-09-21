@@ -13,6 +13,7 @@ assumption — once a stream is long enough to cross it.
 from __future__ import annotations
 
 import struct
+import zlib
 
 import numpy as np
 
@@ -153,8 +154,12 @@ def _apply_float_predictor(raw: bytes, end: str, width: int, bits: int) -> bytes
     return bytes(np.concatenate(out).tobytes())
 
 
-def _tiled(values: np.ndarray, tile: int = 128, big_endian: bool = False) -> bytes:
-    """A tiled TIFF, padded out to whole tiles the way the format requires."""
+def _tiled(values: np.ndarray, tile: int = 128, big_endian: bool = False,
+           compression: int = 1) -> bytes:
+    """A tiled TIFF, padded out to whole tiles the way the format requires.
+
+    `compression` 1 is none and 8 is deflate — what a cloud-optimised GeoTIFF
+    uses, and what Copernicus GLO-30 arrives in (doc 104)."""
     end = ">" if big_endian else "<"
     height, width = values.shape
     bits = values.dtype.itemsize * 8
@@ -170,11 +175,12 @@ def _tiled(values: np.ndarray, tile: int = 128, big_endian: bool = False) -> byt
             block[:rows, :cols] = values[
                 ty * tile : ty * tile + rows, tx * tile : tx * tile + cols
             ]
-            blocks.append(block.astype(end + values.dtype.str[1:]).tobytes())
+            packed = block.astype(end + values.dtype.str[1:]).tobytes()
+            blocks.append(zlib.compress(packed) if compression == 8 else packed)
 
     entries = [
         (256, 3, 1, width), (257, 3, 1, height), (258, 3, 1, bits),
-        (259, 3, 1, 1), (277, 3, 1, 1), (322, 3, 1, tile), (323, 3, 1, tile),
+        (259, 3, 1, compression), (277, 3, 1, 1), (322, 3, 1, tile), (323, 3, 1, tile),
         (339, 3, 1, 3 if values.dtype.kind == "f" else 1),
     ]
     header = 8

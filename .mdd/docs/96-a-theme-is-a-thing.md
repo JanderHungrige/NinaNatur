@@ -23,7 +23,7 @@ test_files:
   - frontend/src/themes/themes.test.tsx
   - tests/test_theme_provenance.py
 data_flow: reads-existing
-last_synced: 2026-09-18
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -123,6 +123,12 @@ filter computes to `url("#watercolour")`, and to `none` under both
 wins over the attribute. 877 vitest pass, among them six for the seam and the
 existing style tests unchanged; the provenance test holds `technisch/symbols.tsx`
 to its header.
+
+**Since 2026-09-21** Technisch is no longer pixel-identical to the plan before
+Wave 24, on purpose: the garden's own ground is a flat grass wash (#10), its
+outlines are screen pixels and its wobble is capped at 7 px (#1, doc 112), and
+the sun map is drawn as paths (#11, doc 113). Doc 95's record was retaken for
+all three. Rule 1 held for this feature.
 
 One thing the existing tests caught on the way: the first Technisch left
 `planting` unfilled to keep real beds as they were, and an element of kind

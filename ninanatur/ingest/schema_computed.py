@@ -56,6 +56,30 @@ CREATE TABLE IF NOT EXISTS light_grid (
 -- is about 25 KB. Provenance travels with them for the same reason it travels
 -- with every trait value: the page has to be able to say where a number came
 -- from and how good it is.
+-- What the laser saw around one place (Wave 25, doc 107). Three layers, each
+-- centimetres above the window's own base, deflated: the ground, the surface,
+-- and where a canopy starts in the cells that have one. About 66 kB for a
+-- three-hundred-metre window, measured on the verified NRW tile.
+CREATE TABLE IF NOT EXISTS cloud_window (
+    place_key       TEXT    PRIMARY KEY,
+    cell_m          REAL    NOT NULL,
+    cols            INTEGER NOT NULL,
+    rows            INTEGER NOT NULL,
+    base_m          REAL    NOT NULL,
+    ground_cm       BLOB    NOT NULL,
+    surface_cm      BLOB    NOT NULL,
+    -- Above the ground rather than above sea level: it is a property of the
+    -- tree, not of the hill it stands on.
+    crown_base_cm   BLOB    NOT NULL,
+    source          TEXT    NOT NULL,
+    licence         TEXT    NOT NULL,
+    attribution     TEXT    NOT NULL,
+    -- What the answer is worth: at four points a square metre a half-metre
+    -- cell is one measurement, and the window says which it had.
+    points_per_m2   REAL    NOT NULL,
+    fetched_at      TEXT    NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS terrain_window (
     place_key       TEXT    PRIMARY KEY,
     min_x           REAL    NOT NULL,

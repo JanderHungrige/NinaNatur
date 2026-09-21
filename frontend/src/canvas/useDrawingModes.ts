@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DrawnShape, Tool } from './shapes';
 import { useEscapeKey } from './useEscapeKey';
@@ -10,8 +10,6 @@ import type { Viewport } from './viewport';
 interface Options {
   tool: Tool | null;
   view: Viewport;
-  /** One grid square, in metres. */
-  spacing: number;
   onDrawBed?: ((polygon: number[][]) => void) | undefined;
   onDrawShape?: ((shape: DrawnShape) => void) | undefined;
   onDrawTrace?: ((trace: { kind: 'area' | 'path'; points: number[][] }) => void) | undefined;
@@ -30,7 +28,6 @@ interface Options {
 export function useDrawingModes({
   tool,
   view,
-  spacing,
   onDrawBed,
   onDrawShape,
   onDrawTrace,
@@ -71,9 +68,11 @@ export function useDrawingModes({
     onShape: (outline) => onDrawBed?.(outline),
     onProblem: setProblem,
     onDone: () => cancel(),
-    // A corner within one grid square of the first is a closure. In metres, so
-    // it means the same distance however far the user has zoomed.
-    closeWithin: spacing,
+    // A last corner within twelve pixels of the first is a closure. It used to
+    // be one grid square, which quietly dropped a real corner a square away:
+    // a 3 × 1 m bed was saved as a triangle. The 5 cm floor keeps a closure a
+    // closure when zoomed right in.
+    closeWithin: Math.max(0.05, (12 * view.spanM) / view.widthPx),
   });
   clearDraft.current = polygon.clear;
 
@@ -88,6 +87,16 @@ export function useDrawingModes({
     clearDraft.current();
     setProblem(null);
   }, [onClearSelection]);
+
+  // Another tool leaves nothing half-drawn behind: old corners used to wait on
+  // the plan and come back with the polygon tool, and a complaint about a
+  // stroke stayed under the next tool that had nothing to do with it.
+  useEffect(() => {
+    clearDraft.current();
+    cancelStroke.current();
+    cancelBand.current();
+    setProblem(null);
+  }, [tool]);
 
   // Always listening: Escape clears a selection too, and a selection can
   // outlive every drawing mode. Typed into a text field it is the field's (doc 88).

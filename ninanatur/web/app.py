@@ -220,7 +220,9 @@ async def healthz() -> JSONResponse:
 # Last, so /api/v1 and /healthz keep priority — see `serve_bundle`.
 if not serve_bundle(app, DIST_DIR):
 
-    @app.get("/")
+    # Out of the schema: it exists only where no bundle was built, and a schema
+    # that depends on that is one CI and a laptop generate differently.
+    @app.get("/", include_in_schema=False)
     def index() -> FileResponse:
         """Development fallback: the Wave 1 page, when no bundle has been built."""
         return FileResponse(STATIC_DIR / "index.html")

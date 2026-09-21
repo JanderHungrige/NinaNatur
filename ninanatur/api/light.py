@@ -1,8 +1,8 @@
 """The sun map, and the button that rebuilds it.
 
 Its own router rather than more of `planning.py`, which is well past the length
-limit already. The schemas live here for the same reason `feedback.py` keeps
-its own: they are used by nothing else.
+limit already. Its response shapes are in `schemas_light.py`, which this module
+outgrew the limit without.
 """
 from __future__ import annotations
 
@@ -10,125 +10,36 @@ import sqlite3
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
 
 from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
+from ninanatur.api.schemas_light import (
+    CreditOut,
+    LightMap,
+    MisplacedOut,
+    ShadowDay,
+    ShadowFrame,
+    TerrainOut,
+)
 from ninanatur.garden.building_sync import measure_buildings
+from ninanatur.garden.cloud_sync import ensure_cloud
+from ninanatur.garden.credits import credits_for
 from ninanatur.garden.elements import now
+from ninanatur.garden.light_state import current_signature
 from ninanatur.garden.light_worker import month_grid, recompute_light
-from ninanatur.garden.lightgrid import extent_of, signature_of
+from ninanatur.garden.lightgrid import extent_of
 from ninanatur.garden.lightgrid_store import load_grid
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
 from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
+from ninanatur.geo.cloud_store import cloud_source
 from ninanatur.geo.projection import LatLon
+from ninanatur.geo.terrain_store import cache_key, horizon_source
 from ninanatur.solar.day import MONTHS, shadow_day
 
 router = APIRouter(prefix="/api/v1/gardens", tags=["light"])
-
-
-class LightMap(BaseModel):
-    """Mean daily sun hours per cell, row-major from the south-west corner.
-
-    `stale` is the honest half. The map is expensive enough to store, so it can
-    be out of date — and a map that is quietly out of date is worse than one
-    that says so. It is computed by comparing a signature of the shading inputs,
-    not by remembering which actions ought to have invalidated it.
-    """
-
-    cell_m: float
-    min_x: float
-    min_y: float
-    cols: int
-    rows: int
-    #: Null only where nothing can be answered: a building whose height nobody
-    #: has recorded. A cell under a house is answered **on the roof** — at its
-    #: own height and its own pitch, which at 51°N makes a north face and a
-    #: south face very different places.
-    hours: list[float | None]
-    #: Which of those cells are a roof rather than ground, in step with `hours`.
-    #: Empty on a grid computed before roofs were.
-    roof: list[bool]
-    #: The most any cell of **ground** gets, so the drawing can scale without a
-    #: second pass. Roofs are left out of it: nothing is planted on one, and a
-    #: sunny roof would otherwise set the scale for the garden below it.
-    max_hours: float
-    computed_at: str
-    stale: bool
-    #: Of those hours, the ones before the sun crosses due south. Empty on a
-    #: grid computed before the split existed; the next rebuild fills it, and
-    #: nulls line up with `hours`.
-    morning: list[float | None]
-    #: Plantings standing in light they did not ask for.
-    misplaced: list[MisplacedOut]
-
-
-class MisplacedOut(BaseModel):
-    """A planting standing in light it did not ask for.
-
-    A warning, never a refusal: a gardener may know something the model does
-    not — a cultivar bred for shade, a wall that throws light back, or simply
-    that they want it there.
-    """
-
-    planting_id: int
-    bed_id: int
-    taxon_id: int
-    name: str
-    wants: float
-    gets: float
-    sun_hours: float
-    #: 'too_dark' | 'too_bright'. Both happen; the second is the forgotten one.
-    problem: str
-
-
-class TerrainOut(BaseModel):
-    """The ground under a garden, and how far it is to be trusted.
-
-    Every field after `relief` is there so the page can answer "says who, and
-    how good is it" without the reader having to know what a DGM1 is. A height
-    shown without its credit is a height used outside its licence, and a height
-    shown without its accuracy invites more confidence than it earns.
-    """
-
-    cell_m: float
-    min_x: float
-    min_y: float
-    cols: int
-    rows: int
-    #: Relief shading, 0 (in shadow) to 1 (lit), row-major from the south-west.
-    #: Sent already computed: it is one pass over the grid on a server that has
-    #: the heights anyway, against shipping 40,000 metre values to a browser
-    #: that would then do the same arithmetic.
-    relief: list[float]
-    #: Metres, lowest and highest, so the page can say what it is drawing.
-    lowest: float
-    highest: float
-    source: str
-    licence: str
-    attribution: str
-    #: 0.01 m for a DGM1. 1.0 for Baden-Württemberg's INSPIRE coverage, which
-    #: cannot see a 20 m garden's own fall at all.
-    vertical_step_m: float
-
-
-class ShadowFrame(BaseModel):
-    """Every shadow in the garden at one moment of one day."""
-
-    #: Minutes since midnight, local solar time as the model computes it.
-    minute: int
-    altitude: float
-    azimuth: float
-    polygons: list[list[list[float]]]
-
-
-class ShadowDay(BaseModel):
-    month: int
-    day: int
-    frames: list[ShadowFrame]
 
 
 @router.get("/{token}/light", response_model=LightMap | None)
@@ -183,6 +94,10 @@ def rebuild_light_map(
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
     measure_buildings(conn, load_garden(conn, garden.garden_id))
+    # And after the buildings, because the laser cannot tell a roof from a
+    # crown on its own and the building model is what decides (doc 107). Only
+    # where a state publishes a cloud, which is nine of them.
+    ensure_cloud(conn, load_garden(conn, garden.garden_id))
     recompute_light(conn, garden.garden_id)
     return _read(conn, garden.garden_id)
 
@@ -223,6 +138,29 @@ def terrain(
         attribution=shown.attribution,
         vertical_step_m=shown.vertical_step_m,
     )
+
+
+@router.get("/{token}/sources", response_model=list[CreditOut])
+def sources(
+    token: str,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> list[CreditOut]:
+    """Every survey this garden's numbers actually rest on (doc 106).
+
+    Empty is an ordinary answer: a garden nobody has measured anything for owes
+    nobody anything. What is here is what was used, not what the state could in
+    principle offer — a credit for a source a garden never touched would be a
+    claim about where its numbers came from.
+    """
+    garden = require_garden(conn, token)
+    anchor = LatLon(lat=garden.latitude, lon=garden.longitude)
+    found = credits_for(
+        load_garden(conn, garden.garden_id),
+        ground=ground_for(conn, anchor),
+        horizon_source=horizon_source(conn, cache_key(anchor)),
+        laser_source=cloud_source(conn, cache_key(anchor)),
+    )
+    return [CreditOut(**vars(credit)) for credit in found]
 
 
 @router.get("/{token}/shadows", response_model=ShadowDay)
@@ -270,10 +208,13 @@ def _read(
         return None
     grid, signature, computed_at = stored
     garden = load_garden(conn, garden_id)
+    # The one signature the list's `light_state` uses too, so the map and the
+    # list cannot disagree about what is out of date.
+    now_signature = current_signature(conn, garden)
     if month is not None:
         fresh = month_grid(conn, garden, month)
         if fresh is not None:
-            grid, computed_at, signature = fresh, now(), signature_of(garden)
+            grid, computed_at, signature = fresh, now(), now_signature
     return LightMap(
         cell_m=grid.cell_m,
         min_x=grid.min_x,
@@ -291,7 +232,7 @@ def _read(
             MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)
         ],
         computed_at=computed_at,
-        stale=signature != signature_of(garden),
+        stale=signature != now_signature,
     )
 
 

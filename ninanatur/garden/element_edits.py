@@ -11,6 +11,7 @@ import json
 import sqlite3
 
 from ninanatur.garden.elements import geometry_for, update_element
+from ninanatur.garden.footprint import require_buildable
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import drop_plantings
 from ninanatur.garden.soil import site_axes_from_soil
@@ -90,6 +91,11 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
             rotation=_number(geometry.get("rotation")) or 0.0,
             points=raw_points if isinstance(raw_points, list) else None,
         )
+        # A line's band and a circle's size are not what a vertex drag or a
+        # resize sends. Writing the None they arrive as cleared the width of
+        # every path somebody reshaped, and the garden stopped opening.
+        if width is None and shape in {"line", "circle"} and "width" not in geometry:
+            width = current["width"]
         # Never null out geometry nobody supplied. A caller sending a width for
         # a free polygon means "make it this big", not "throw the outline away"
         # — and doing the latter left the element with no footprint at all, so
@@ -110,6 +116,8 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
 
     if not changes:
         return
+    if geometry:
+        _require_buildable_after(conn, obstacle_id, changes)
     # An element that stops being a planting site takes its plants with it.
     # Decided with the user over refusing the change or keeping them hidden:
     # a dead end mid-drawing is worse, and invisible data is worse still. The
@@ -123,6 +131,29 @@ def update_obstacle(conn: sqlite3.Connection, obstacle_id: int, **fields: object
         changes.update(_axes_for(conn, obstacle_id, changes))
     update_element(conn, obstacle_id, **changes)
     conn.commit()
+
+
+def _require_buildable_after(
+    conn: sqlite3.Connection, element_id: int, changes: dict[str, object]
+) -> None:
+    """Refuse an edit whose result has no footprint, before it is written.
+
+    Judged on the element as it would be — a width-only change to a line sends
+    no points, and checking it against None would refuse a valid resize.
+    """
+    current = conn.execute(
+        "SELECT shape, width, points FROM element WHERE element_id = ?", (element_id,)
+    ).fetchone()
+    if current is None:
+        return
+    stored = None if current["points"] is None else json.loads(current["points"])
+    points = changes.get("points", stored)
+    width = changes.get("width", current["width"])
+    require_buildable(
+        shape=str(changes.get("shape") or current["shape"]),
+        width=_number(width),
+        points=points if isinstance(points, list) else None,
+    )
 
 
 def _inherited_soil(

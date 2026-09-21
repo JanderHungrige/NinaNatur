@@ -23,8 +23,6 @@ source_files:
   - ninanatur/garden/measured.py
   - ninanatur/ingest/http.py
   - ninanatur/geo/lod2.py
-  - ninanatur/geo/tiff.py
-  - ninanatur/geo/tiff_codec.py
   - deploy/compose.app.yml
   - deploy/auto-deploy.sh
   - deploy/backup.sh

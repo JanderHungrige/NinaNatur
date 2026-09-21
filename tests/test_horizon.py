@@ -18,7 +18,7 @@ from ninanatur.geo.projection import LatLon
 WEST = LatLon(lat=51.0, lon=6.0)
 SIZE = 502
 #: The north-west corner of a raster centred on WEST, in UTM.
-from ninanatur.geo.utm import to_utm  # noqa: E402
+from geokachel.utm import to_utm  # noqa: E402
 
 _E, _N = to_utm(WEST.lat, WEST.lon, 32)
 CORNER_E = _E - SIZE / 2 * RING_CELL_M

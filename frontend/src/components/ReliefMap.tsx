@@ -1,4 +1,7 @@
+import { memo, useMemo } from 'react';
+
 import type { Terrain } from '../api/client';
+import { cellPaths } from '../canvas/cellPaths';
 
 interface Props {
   terrain: Terrain;
@@ -21,34 +24,31 @@ interface Props {
 /** How dark the darkest slope gets. Higher than this and the plan swims. */
 const STRENGTH = 0.22;
 
-export function ReliefMap({ terrain }: Props) {
-  const { cell_m: cell, min_x: minX, min_y: minY, cols, relief } = terrain;
+/** Steps of slope, each way. A path per step rather than a rect per metre
+ *  (#11): eight are finer than a faint grey can show. */
+const STEPS = 8;
+
+function ReliefPaths({ terrain }: Props) {
+  const paths = useMemo(() => [...cellPaths(terrain, (index) => {
+    // Away from level in either direction: a slope facing the lamp is
+    // lighter, one facing away is darker, and level is neither.
+    const ink = (0.5 - (terrain.relief[index] ?? 0.5)) * 2;
+    if (Math.abs(ink) < 0.02) return null;
+    const step = Math.max(1, Math.round(Math.min(1, Math.abs(ink)) * STEPS));
+    return `${ink > 0 ? 'dark' : 'light'}|${step}`;
+  })], [terrain]);
 
   return (
     <g className="relief-map" aria-hidden="true">
-      {relief.map((lit, index) => {
-        const col = index % cols;
-        const row = Math.floor(index / cols);
-        // Away from level in either direction: a slope facing the lamp is
-        // lighter, one facing away is darker, and level is neither.
-        const ink = (0.5 - lit) * 2;
-        if (Math.abs(ink) < 0.02) return null;
+      {paths.map(([key, d]) => {
+        const [side, step] = key.split('|');
         return (
-          <rect
-            key={index}
-            x={minX + col * cell}
-            /* The canvas draws y downwards while the grid counts rows
-               northwards, so a row's top edge in SVG is its *northern* edge in
-               the garden. Getting this wrong mirrors the whole relief and puts
-               every hillside on the wrong side of the plan. */
-            y={-(minY + (row + 1) * cell)}
-            width={cell}
-            height={cell}
-            fill={ink > 0 ? 'var(--relief-dark)' : 'var(--relief-light)'}
-            opacity={Math.min(1, Math.abs(ink)) * STRENGTH}
-          />
+          <path key={key} d={d} fill={`var(--relief-${side})`}
+                opacity={(Number(step) / STEPS) * STRENGTH} />
         );
       })}
     </g>
   );
 }
+
+export const ReliefMap = memo(ReliefPaths);

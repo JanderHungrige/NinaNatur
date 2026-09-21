@@ -138,6 +138,19 @@ export function FilterControls({ filters, onChange, busy }: Props) {
         />
         Gehölze ausblenden
       </label>
+
+      {/* Owner review #9 (2026-09-21): a bed no longer offers what it is far
+          too bright for, because scorch and drought usually kill it. The
+          gardener may still want to see them, ranked last. */}
+      <label className="filter-controls__toggle">
+        <input
+          type="checkbox"
+          checked={filters.includeLightUnsuitable === true}
+          aria-disabled={busy || undefined}
+          onChange={(e) => set('includeLightUnsuitable', e.target.checked ? true : undefined)}
+        />
+        auch Arten zeigen, denen das Licht zu hell ist
+      </label>
     </div>
   );
 }

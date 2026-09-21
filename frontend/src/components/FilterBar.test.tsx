@@ -31,6 +31,20 @@ describe('FilterBar', () => {
     expect(onChange).toHaveBeenCalledWith({ colour: 'yellow' });
   });
 
+  it('keeps the light opt-out in sight, and never calls kept species missing', () => {
+    // Owner review #9. The report's `light` unknowns are species with no L
+    // value, and those stay in the list — no "nicht in der Liste" for them.
+    const onChange = setup(
+      { includeLightUnsuitable: true },
+      { light: { matched: 900, unknown: 41, excluded: 0 } },
+    );
+    expect(screen.queryByText(/nicht in der Liste/)).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Filter „auch Arten, denen es zu hell ist“ entfernen' }),
+    );
+    expect(onChange).toHaveBeenCalledWith({});
+  });
+
   it('reports how many species the filter could not judge', () => {
     // The number is the whole point: height is recorded for 44% of the
     // catalogue, and a filter that hides that looks identical to a broken one.

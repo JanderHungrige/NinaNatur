@@ -34,17 +34,20 @@ def provenance_of(text: str) -> str | None:
 
 
 def symbol_files() -> list[Path]:
+    """Every file of marks, at any depth in a theme — a generated one included:
+    his symbols and the rules adapted from them (doc 97) as much as our own."""
     return sorted(
-        path for path in THEMES.glob("*/*")
-        if path.name.startswith("symbols.") or path.suffix == ".svg"
+        path for path in THEMES.glob("**/*")
+        if path.name.startswith(("symbols.", "rules.")) or path.suffix == ".svg"
     )
 
 
 def test_every_theme_has_its_marks_in_a_symbol_file() -> None:
     themes = sorted(p.name for p in THEMES.iterdir() if p.is_dir())
-    assert "technisch" in themes
+    assert {"technisch", "draft-sketch"} <= set(themes)
     for theme in themes:
-        assert any(f.parent.name == theme for f in symbol_files()), f"{theme} has no symbols file"
+        assert any(f.relative_to(THEMES).parts[0] == theme and f.name.startswith("symbols.")
+                   for f in symbol_files()), f"{theme} has no symbols file"
 
 
 def test_every_symbol_file_says_whose_marks_it_holds() -> None:

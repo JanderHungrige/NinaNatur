@@ -46,6 +46,24 @@ describe('FilterControls', () => {
     expect(onChange).toHaveBeenCalledWith({ includeTrees: false });
   });
 
+  it('asks for the species the light is too bright for, and drops the ask again', () => {
+    // Owner review #9: hidden by default, so the removable state is `true`, and
+    // unchecking clears the field rather than sending the server's default.
+    const onChange = setup({ colour: 'yellow' });
+    const toggle = screen.getByRole('checkbox', { name: /denen das Licht zu hell ist/ });
+    expect((toggle as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(toggle);
+    expect(onChange).toHaveBeenLastCalledWith({ colour: 'yellow', includeLightUnsuitable: true });
+  });
+
+  it('clears the light toggle instead of sending false', () => {
+    const onChange = setup({ includeLightUnsuitable: true });
+    const toggle = screen.getByRole('checkbox', { name: /denen das Licht zu hell ist/ });
+    expect((toggle as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(toggle);
+    expect(onChange).toHaveBeenCalledWith({});
+  });
+
   it('shows the current filters as the selected options', () => {
     setup({ floweringMonth: 3, heightMax: 1, growthForm: 'shrub' });
     expect((screen.getByLabelText('Blühmonat') as HTMLSelectElement).value).toBe('3');

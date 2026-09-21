@@ -8,7 +8,12 @@ import {
   useState,
 } from 'react';
 
+import { useShownAfter } from '../useShownAfter';
 import { AccountBar } from './AccountBar';
+import { Working } from './Working';
+
+/** How long a request runs before the header says so: most answer sooner. */
+const WORKING_AFTER_MS = 300;
 
 /** What the site hands the header, on the front door and in a garden alike. */
 export interface SiteProps {
@@ -27,6 +32,8 @@ export interface SiteProps {
 
 interface Props extends SiteProps {
   busy: boolean;
+  /** What the newest running request is called, or null when none is. */
+  working?: string | null | undefined;
   /** The open garden's own controls, between the version and the feedback button. */
   children?: ReactNode;
   /** More of the garden's controls, which a narrow window keeps behind *Menü* (doc 91). */
@@ -44,8 +51,11 @@ interface Props extends SiteProps {
  * shows that button only there; everywhere else the menu's contents stand in
  * the row as they always did.
  */
-export function SiteHeader({ version, onHome, onFeedback, accountBar, busy, children, more }: Props) {
+export function SiteHeader({
+  version, onHome, onFeedback, accountBar, busy, working = null, children, more,
+}: Props) {
   const menuId = useId();
+  const shown = useShownAfter(working, WORKING_AFTER_MS);
   const [open, setOpen] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -119,6 +129,10 @@ export function SiteHeader({ version, onHome, onFeedback, accountBar, busy, chil
         </button>
         <AccountBar {...accountBar} busy={busy} />
       </div>
+      {/* Hung from the header's lower edge rather than set in its row, so it
+          moves nothing when it comes and goes — and there on a phone too,
+          where the row keeps everything else behind *Menü*. */}
+      {shown !== null ? <Working className="site-header__working" label={`${shown}…`} /> : null}
     </header>
   );
 }

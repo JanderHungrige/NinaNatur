@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-23
 demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
 created: 2026-09-07
-hash: 6854a27a
+hash: 5818d75a
 ---
 
 # Wave 24: A drawing of a garden
@@ -86,8 +86,8 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 |---|---------|-----|--------|------------|
 | 0 | a-theme-is-a-thing | docs/96-a-theme-is-a-thing.md | complete | 1 |
 | 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
-| 2 | draft-sketch-in-svg | — | planned | 1 |
-| 3 | what-the-style-has-not-drawn | — | planned | 2 |
+| 2 | draft-sketch-in-svg | docs/97-draft-sketch-in-svg.md | complete | 1 |
+| 3 | what-the-style-has-not-drawn | docs/98-what-the-style-has-not-drawn.md | complete | 2 |
 | 4 | paper-bleed-and-a-real-shadow | — | planned | 3 |
 | 5 | lettered-by-hand | — | planned | 2 |
 | 6 | the-switch-and-the-courtesy | — | planned | 0 |
@@ -111,6 +111,178 @@ from the `.stylx` alone — his source assets are not asked for.*
 - **Stage 2 — his style, on our plan:** 2, 3. The converter, then the garden's
   own vocabulary in his hand.
 - **Stage 3 — the finish:** 4, 5, 6.
+
+## Progress
+
+- **2026-09-18 — feature 1, look before you argue** (doc 95), built first.
+  `npm run plan:sheet` draws the app's own plan for three synthetic gardens at
+  12, 40 and 120 m and with the sun map, in Chromium, one page per cell, and
+  keeps a SHA-256 of every cell's pixels in `frontend/sheet/baseline.json`:
+  24 cells, light and dark, recorded before anything else in the wave touched
+  the plan. The paint budget: 36 ms median for the 102-element city block at
+  40 m with the CPU slowed four times.
+- **2026-09-18 — feature 0, a theme is a thing** (doc 96). The plan's look
+  behind one seam — defs, fills per symbol and level of detail, a bed's fill,
+  the one filter — with today's plan as Technisch. All 24 cells as recorded;
+  the filter still switches off under `prefers-contrast` and `forced-colors`.
+  `CanvasScene.tsx` went from 390 lines to 187.
+- **2026-09-18 — stage 1 in production** as **V0.23.200** (merge `9b17cbe`,
+  which also carried the close of Waves 21 and 23). Checked on the preview
+  first (V0.23.199): the plan drawn through `plan-theme--technisch`, the filter
+  in effect, twelve patterns, a fill per kind, no new console error; the smoke
+  test passed in both windows. Production serves `index-DXOCVJ1H.js` and
+  `index-QKIWPeuJ.css`, the preview's assets.
+- **2026-09-18 — stage 2 settled with the owner.** `Draft_Sketch.stylx`
+  (17,096,704 bytes, ArcGIS Online item 3215e720f62d42008d125ca1a3219b14, owner
+  WarrenDz, changed 2021-01-13) is downloaded once and pinned by its SHA-256,
+  not committed; only the generated theme is. `THIRD_PARTY.md`: permission of
+  2026-09-10, to use and adapt Draft Sketch in NinaNatur including this public
+  repository and commercial use; credit *Zeichenstil nach Draft Sketch von Warren
+  Davison, verwendet und angepasst mit seiner Erlaubnis*, with the assistance of
+  Louis Hill (@NKYmapLAB) that his item credits.
+- **2026-09-18 — feature 2, Draft Sketch in SVG** (doc 97). His style as a
+  theme, derived from the pinned file by `python -m scripts.stylx_to_theme`
+  and checked byte for byte: 13 of his symbols as patterns and overlays, his
+  8 images shipped once (344 KB) and tinted in SVG. Where CIM is silent his own
+  style sheet decided: a tint multiplies, a linear ramp starts where its angle
+  points, a circular ramp's first colour is its rim, buildings carry ticks.
+  Drawn only on the preview by `?theme=draft-sketch`, as a chunk of its own
+  that production never fetches and would not serve (`assets/draft-sketch/`);
+  his credit on the plan whenever it is his style; `THIRD_PARTY.md` written.
+  Paint budget: 69 ms for the city at 40 m against Technisch's 36 — first
+  221 ms, until a pattern held one rect and its marks were recorded once.
+  Technisch's 24 cells as recorded. Known issues are the review's agenda:
+  no bleed yet, no buffered rims, levels of detail at his print ranges.
+- **2026-09-18 — feature 3, what the style has not drawn** (doc 98). Roofs by
+  type from the server's own roof model (`roof_lines`: ridge, hips, a pent's
+  upper edge with a fall arrow), raised beds with a second edge and a shadow,
+  hedges hatched on the shaded side, shrubs as his Tree 2, fences and walls in
+  his Wood Fence and Brick Wall (a wall's fitted to its own faces), blooms as
+  dabs of his watercolour, the viewpoint in his ink, and a north arrow, a true
+  scale bar and a title block; his credit a caption beneath the plan. Each
+  shadow now falls beneath its own shape. Not drawn, named: conifers (no tree
+  carries its kind) and sightlines (no plan draws them). A fourth sheet garden
+  for other themes shows it all. Paint budget 85 ms against the 72 ms limit —
+  a stage-3 finding; 66 ms with production React against Technisch's 17.
+- **2026-09-18 — stage 2 on the preview for the owner's review** as
+  **V0.23.203** (merge `ef9b45f`; the first, `9c2ef89`, failed CI: a bare
+  `pytest` could not import `scripts`, fixed by pytest's `pythonpath`). Checked
+  there with a garden of every kind, made and deleted by a probe: drawn in
+  Draft Sketch only with `?theme=draft-sketch`, Technisch without; the theme's
+  chunk, stylesheet and twelve images all from `assets/draft-sketch/`, none
+  inline; the credit word for word beneath the plan; the server's `roof_lines`
+  live (a gable's ridge, a hip's five lines). No console error but the
+  anonymous `accounts/me` 401 every page gets. The smoke test passed in both
+  windows. The probe's first run failed before it held its garden's token and
+  left an empty "Draft-Sketch-Probe" garden on the preview, beyond reach
+  without the token; preview data is for testing and goes with the next reset.
+- **2026-09-20 — the owner's first review of stage 2**, three notes, all on the
+  phone. (1) *"so white"*: the garden's ground is now his lawn wash at half
+  opacity — pale green paper with a real lawn darker on it
+  (`--plan-ground-fill`); ours is unchanged. (2) *"zooming in removes all
+  buildings"*: reproduced on the preview with a garden imported from the map —
+  59 streets, 10 houses. Nothing vanishes; the houses stand outside the plot,
+  so a zoom into the middle of the garden lands on empty ground, which was a
+  blank white sheet and is now grass. Technisch does the same. No code changed
+  for it; if it still reads as a bug with the ground drawn, it belongs to the
+  view, not the theme. (3) *"the streets overlap and look funny, drawn as edges
+  and nodes"*: right — a street is one element per way, so an outline per band
+  crossed every junction. The seam grew a `Plan` member, drawn once for the
+  whole plan, and `ours/Roads.tsx` draws the network's outline masked by
+  itself: only the line outside the roads survives, nothing crosses a junction
+  (doc 98). Worked out once per garden and zoom step, not per drag frame.
+  Technisch's 24 cells as recorded, the converter's output byte for byte,
+  paint 83 ms. On the preview afterwards, with that imported city on a phone
+  and the CPU slowed four times, a zoom step costs 98 ms in his style against
+  Technisch's 66 — 1.5×, inside the wave's rule, where the sheet's synthetic
+  city at 40 m is over it. Looking at the result showed a fourth thing, from
+  feature 3 rather than from today: the tool's hint and his credit were drawn
+  over each other at the plan's bottom edge, in both layouts. The hint now
+  hangs inside the drawing, under the zoom controls at its top edge — the first
+  try put it on the title block instead, which is what the bottom corner is
+  for — and the caption has its line. Measured in both layouts: no two of the
+  controls, the hint, the title block and the credit touch. A pale wedge of
+  paper where two ways meet at a bend is left, and named in doc 98: it is the
+  bands' own fill, which Technisch is missing too.
+
+- **2026-09-20 — feature 4, paper, bleed and a real shadow** (doc 99). Three
+  things, each decided by a measurement rather than by taste. **Levels of
+  detail** are now asked per shape, in pixels across — 48 for his richest, 14
+  for the middle one — because the plan-wide answer has to take the detail off
+  the houses (89 pixels at 40 m) to save what the shrubs cost (13): the city
+  goes from 401 marks and 85 ms to 286 and 73. **The shadow** is the one the
+  sun casts: `solar/drawing` fixes the moment at mid-June, three hours after
+  solar noon at the garden's own longitude, and every obstacle carries the
+  offset its shadow has then, from the same `shading_height` the light model
+  uses; the drawing sweeps the outline rather than moving it, and does not
+  wobble it, which took the frame to 69 ms — cheaper than the style's pretend
+  shadows. **The paper** is his own texture in his own lightest tint, emitted
+  by the converter as a pattern of its own and drawn under the whole plan; how
+  much of it shows is ours. **The bleed was tried and dropped**: believable, it
+  is invisible; visible, it warps his textures, because his washes are
+  photographs of paper and a displacement map moves the grain with the edge.
+  Either way it cost 8–13 ms of the frame. Technisch's 24 cells as recorded.
+  The budget rule is still not met — Technisch measures 21 ms today, so twice
+  it is 42 against the plan's 69 — and doc 99 says so rather than tuning it
+  away.
+
+- **2026-09-20 — feature 6's switch, ahead of feature 5** (doc 100). The
+  gardener picks the style in the header's menu — a fieldset of radios, one per
+  style — and their browser remembers it (`ninanatur.plan-theme`). The address
+  still decides where it is given (`?theme=`), the deployment still decides what
+  is on offer (Draft Sketch only where its files are served), and
+  `prefers-contrast: more` or `forced-colors` takes the choice away and says so:
+  a style made of washes and pencil is the wrong answer to "make this clearer",
+  where doc 98 used to answer it by hiding the ink and leaving a drawing with
+  none of its marks. Checked on the local app: Technisch at first, his style
+  after choosing, still his after a reload. What is left of the feature is the
+  courtesy — showing Davison the result — which is the owner's to do.
+- **2026-09-20 — feature 5 is waiting on one decision.** His file has no
+  lettering at all: 97 symbols, 48 polygons, 35 lines, 14 points, and not one
+  font name or text symbol in any of them. So there is no hand of his to match,
+  and the plan's lettering is a choice of ours: an OFL hand — *Patrick Hand*
+  reads upright like a draughtsman's, *Caveat* is more of a note — bundled with
+  the app, since the policy allows no CDN (`font-src 'self'`). That is a
+  third-party file in a public repository, so it waits for the owner. What
+  could be done without it is done (doc 101): the plan's lettering measures
+  15.3:1 in the title block, 12.2:1 over the darkest part of his paper grain,
+  5.5 and 7.6 for his credit on a light and a dark page — every one of them
+  past 4.5:1, to be measured again once a thin hand replaces the system sans.
+
+- **2026-09-20 — the owner settled three things, and they are built.**
+  (1) **Feature 5, lettered by hand** (doc 101): *Patrick Hand* over *Caveat* —
+  OFL 1.1, © Patrick Wagesreiter, a 14 KB Latin-1 woff2 bundled with its licence
+  and named in `THIRD_PARTY.md`, because `font-src 'self'` allows no CDN. It
+  letters the drawing and its title block; the interface keeps its own type.
+  (2) **The preview-only gate is lifted**: his files are served wherever the app
+  runs, the test that proved they were withheld now proves they arrive, and the
+  choice no longer depends on the deployment. (3) **The paint budget is
+  accepted and recorded** (docs 95, 99): Technisch's timing stays the guard,
+  `budgets['draft-sketch']` holds 73 ms measured against Technisch's 21 in the
+  same run, and the timing run prints the pair — a fact about a drawn style
+  rather than a threshold. What is left of the wave is the courtesy: showing
+  Warren Davison the result.
+
+- **2026-09-20 — stage 3 checked on the preview.** A garden of every kind, made
+  and deleted by a probe: the plan opens in Technisch, the picker draws his
+  style, the title block computes to Patrick Hand and the file arrives 200 from
+  this origin (no font host in the bundle at all), the sheet is `ds-paper`, the
+  roof draws the server's own lines and the shadows fall where the sun puts
+  them. The choice survives in `localStorage`. Asked for more contrast — and
+  again with forced colours — the plan came back Technisch although his style
+  was the remembered choice, with the picker disabled and saying why. Wave 23's
+  smoke test passes in both windows. The only console line is the anonymous
+  `accounts/me` 401 every page gets.
+
+- **2026-09-20 — the corner a road turns** (doc 98). The wedge left open at a
+  bend turned out to be a notch a metre wide at a sharp angle, once the sheet's
+  Musterblatt got a bend to show it. Each way now carries a disc of its own
+  width at each end of its centreline, in its own wash, beneath the band — and
+  the same disc goes into the network's outline, so the ink rounds the corner
+  the grey does. The discs are their own path in the mask: in one path with the
+  bands, a disc winding the other way cancels against its band and opens a hole
+  that lets the ink through inside the road, which is what the first attempt
+  drew. Paint 70 ms, Technisch 21 in the same run.
 
 ## What each one is
 

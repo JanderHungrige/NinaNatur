@@ -1,0 +1,102 @@
+import { wobble, wobbleLine } from '../../canvas/sketch';
+import type { Point } from '../../canvas/viewport';
+import type { Wave } from './overlays';
+
+/*
+ * SVG path data for his marks (docs 97, 98): garden metres in, the plan's own
+ * coordinates out (y flipped), to the millimetre.
+ */
+
+/** To the millimetre: a plan needs no finer, and a long street's path stays short. */
+export const mm = (value: number): string => String(Math.round(value * 1000) / 1000);
+
+const at = (p: Point): string => `${mm(p.x)},${mm(-p.y)}`;
+
+export function ring(points: Point[]): string {
+  return points.length === 0 ? '' : `M${points.map(at).join('L')}Z`;
+}
+
+export function polyline(points: Point[]): string {
+  return points.length === 0 ? '' : `M${points.map(at).join('L')}`;
+}
+
+const middle = (a: Point, b: Point): Point => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+/** A wavering line as a pen draws it: curves through the midpoints, no corners. */
+function smoothRing(points: Point[]): string {
+  const last = points[points.length - 1]!;
+  const curves = points.map((p, i) => `Q${at(p)} ${at(middle(p, points[(i + 1) % points.length]!))}`);
+  return `M${at(middle(last, points[0]!))}${curves.join('')}Z`;
+}
+
+function smoothLine(points: Point[]): string {
+  const curves = points.slice(1, -1).map((p, i) => `Q${at(p)} ${at(middle(p, points[i + 2]!))}`);
+  return `M${at(points[0]!)}${curves.join('')}L${at(points[points.length - 1]!)}`;
+}
+
+/** A wave that would not move the line by a pixel is not drawn: it could not
+ *  be seen, and a curve every few centimetres round a hundred shapes is most of
+ *  what the plan costs to draw. Nor is one sampled more finely than every
+ *  few pixels, for the same reason. */
+const SAMPLE_PX = 3;
+const visible = (wave: Wave | null, metresPerPixel: number): wave is Wave =>
+  wave !== null && wave.amplitude >= metresPerPixel;
+
+/**
+ * His scale, 1:250 at 96 dpi, as metres per pixel: what his widths and waves
+ * were drawn to be seen at.
+ */
+export const REFERENCE_MPP = (0.0254 / 96) * 250;
+
+/**
+ * A length of his, never larger on screen than it was at his own scale.
+ *
+ * His data is in metres, so zooming in past 1:250 grew every line and every
+ * wave with it: forty pixels of ink and a wobble that moved a whole bed off
+ * its corners at the closest view (the owner's check, 2026-09-21, #1 and #2).
+ * Capped here, at run time, and his generated numbers stay his.
+ */
+export const onScreen = (metres: number, metresPerPixel: number): number =>
+  Math.min(metres, (metres / REFERENCE_MPP) * metresPerPixel);
+
+const drawnAt = (wave: Wave | null, metresPerPixel: number): Wave | null =>
+  wave === null ? null : { ...wave, amplitude: onScreen(wave.amplitude, metresPerPixel) };
+
+/** An outline as his wave draws it. */
+export function outline(points: Point[], his: Wave | null, metresPerPixel: number): string {
+  const wave = drawnAt(his, metresPerPixel);
+  if (!visible(wave, metresPerPixel) || points.length < 3) return ring(points);
+  return smoothRing(wobble(points, wave.amplitude, wave.period, wave.seed,
+    SAMPLE_PX * metresPerPixel));
+}
+
+/** An open line as his wave draws it. */
+export function stroke(points: Point[], his: Wave | null, metresPerPixel: number): string {
+  const wave = drawnAt(his, metresPerPixel);
+  if (!visible(wave, metresPerPixel) || points.length < 2) return polyline(points);
+  const drawn = wobbleLine(points, wave.amplitude, wave.period, wave.seed,
+    SAMPLE_PX * metresPerPixel);
+  return drawn.length < 3 ? polyline(drawn) : smoothLine(drawn);
+}
+
+/**
+ * A filled circle, as two half arcs — the way SVG draws one in a path.
+ *
+ * It is the corner a road turns (doc 98): a way is a rectangle, so two of them
+ * meeting at an angle leave the outside of the bend open. The band's wash and
+ * the network's ink both round it with this, from the same numbers, or the grey
+ * would reach past the line drawn round it.
+ */
+export function disc(centre: Point, radius: number): string {
+  const [x, y, r] = [centre.x, -centre.y, mm(radius)];
+  return `M${mm(x - radius)},${mm(y)}a${r},${r} 0 1,0 ${mm(radius * 2)},0`
+    + `a${r},${r} 0 1,0 ${mm(-radius * 2)},0`;
+}
+
+/** His line at 1:250 is a hair at 1:2,000; it never gets thinner than a pixel,
+ *  and zoomed in past his scale it never gets fatter than it was at it. */
+export const inkWidth = (metres: number, metresPerPixel: number): number =>
+  Math.max(onScreen(metres, metresPerPixel), metresPerPixel);
+
+export const width = (metres: number, metresPerPixel: number): string =>
+  mm(inkWidth(metres, metresPerPixel));

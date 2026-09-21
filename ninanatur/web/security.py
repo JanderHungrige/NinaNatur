@@ -21,10 +21,10 @@ import requests
 from fastapi import FastAPI, Request
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import JSONResponse, Response
+from geokachel.orthophotos import ORTHOPHOTOS
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from ninanatur.geo.orthophotos import ORTHOPHOTOS
 from ninanatur.ingest.http import HttpError
 from ninanatur.web.environment import is_production
 from ninanatur.web.logs import mask

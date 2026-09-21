@@ -1,0 +1,173 @@
+/*
+ * Draft Sketch's hooks into the stylesheet (doc 97). His ink draws every
+ * outline, so the shapes' own strokes step aside; a bed is his brown wash; the
+ * garden's ground is paper, marked only by his dashed line. Hover, focus and a
+ * selected bed keep the strokes they always had.
+ */
+.plan-theme--draft-sketch {
+  --plan-shape-stroke: transparent;
+  --plan-bed-fill: url(#ds-brown);
+  --plan-bed-stroke: transparent;
+  /* The ground is his grass, thinned over the paper: a garden reads as a garden
+     when the plan is zoomed into a corner of it with nothing built there, where
+     bare paper read as an empty page. A lawn drawn on it is the full wash, so
+     the two still tell apart. */
+  --plan-ground-fill: url(#ds-grass);
+  --plan-ground-stroke: transparent;
+}
+
+.plan-theme--draft-sketch .obstacle--garden {
+  fill-opacity: 0.5;
+}
+
+/* The sheet the drawing is on: his paper texture, in his own lightest tint
+   (doc 99). How much of it shows is ours — full strength reads as a stain,
+   and none of it is the blank page the review complained about. */
+.plan-theme--draft-sketch .canvas__paper {
+  opacity: 0.55;
+}
+
+/* The plan's furniture (doc 98) says north; the "N ↑" in the drawing goes. */
+.plan-theme--draft-sketch .compass {
+  display: none;
+}
+
+/* Blooms as dabs of his watercolour, each dot through one of his splotches:
+   painted, not plotted — and grey out of season, as they always were. */
+.plan-theme--draft-sketch .bloom-dot {
+  mask: url(#ds-f08c1e65-mask);
+  stroke: none;
+  /* His splotch fills little of its picture: the dab is drawn larger than the
+     dot it replaces, about its own middle, to cover what the dot covered. */
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.8);
+}
+
+/* While the plan moves (#11), his paper and his splotches pause: they are the
+   costliest paint on every frame of a pan. Plain dots stand in for the dabs
+   until it stops (`useMoving`). */
+.canvas--moving .plan-theme--draft-sketch .canvas__paper {
+  display: none;
+}
+
+.canvas--moving .plan-theme--draft-sketch .bloom-dot {
+  mask: none;
+  transform: none;
+}
+
+/* The viewpoint in his ink: a black dot with the paper round it. */
+.plan-theme--draft-sketch .viewpoint circle {
+  fill: #000000;
+  stroke: #fbfaf6;
+}
+
+/* North, scale and title, on a sheet of his paper in the plan's corner, in his
+   ink whatever the page's colours: the plan is paper in both (below). */
+/* The plan's own lettering, written the way the plan is drawn (doc 101).
+   Patrick Hand, SIL Open Font Licence 1.1, © Patrick Wagesreiter — bundled
+   beside the app because the policy allows no CDN (`font-src 'self'`), and
+   named in THIRD_PARTY.md. His own file has no lettering in it at all: 97
+   symbols and not one text symbol, so this hand is ours and not a copy of his.
+
+   Latin-1 is the range the file carries, which is what German needs; a name
+   with a character outside it falls back to the interface's own type rather
+   than to a box. */
+@font-face {
+  font-family: 'Patrick Hand';
+  src: url('../../assets/fonts/PatrickHand-Regular-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+/* The drawing and what belongs to it: text inside the plan, and the title block
+   beside it, which is drawn as HTML rather than in the SVG (doc 98) and so
+   carries the theme's own class. Everything else on the page is a control panel
+   and keeps the interface's type. */
+.plan-theme--draft-sketch text,
+.plan-furniture--draft-sketch {
+  font-family: 'Patrick Hand', system-ui, sans-serif;
+}
+
+.plan-furniture {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.4rem;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, auto);
+  align-items: end;
+  gap: 0.2rem 0.7rem;
+  max-width: min(26rem, calc(100% - 1rem));
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: 1.5px solid #000000;
+  border-radius: 2px;
+  background: color-mix(in srgb, #fbfaf6 90%, transparent);
+  color: #1c2419;
+  font-size: var(--text-xs);
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.plan-furniture__north,
+.plan-furniture__scale svg {
+  display: block;
+  overflow: visible;
+}
+
+.plan-furniture__title {
+  display: grid;
+  min-width: 0;
+}
+
+.plan-furniture__title strong {
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* His style is black ink on white paper, and in dark mode the plan stays paper:
+   a sheet on a dark desk, with the light palette's marks on it. His ink turned
+   white would be another style, not his (doc 97). Feature 4 gives the paper
+   its grain. These are the light values from styles.css, repeated because CSS
+   cannot ask for them by name once the dark ones are in force. */
+@media (prefers-color-scheme: dark) {
+  .canvas:has(> .plan-theme--draft-sketch) {
+    --bg: #fbfaf6;
+    --bg-raised: #ffffff;
+    --ink: #1c2419;
+    --ink-muted: #5c6b56;
+    --leaf: #3f7d47;
+    --leaf-alt: #78a55b;
+    --line: #e2e4da;
+    --focus: #1f5fbf;
+    --warn: #a4432b;
+    --outline: #6f7a67;
+    --wash-shade: #2b2f28;
+    --wash-sun: #e8c33a;
+    --relief-dark: #6b5f4c;
+    --relief-light: #fffdf6;
+    background: var(--bg);
+  }
+}
+
+/* More contrast, or the system's own colours: the drawing goes and the outlines
+   come back, as they do for Technisch's washes (doc 96). */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .plan-theme--draft-sketch {
+    --plan-shape-stroke: var(--outline);
+    --plan-bed-stroke: var(--leaf);
+    --plan-ground-stroke: var(--outline);
+  }
+
+  /* His paper goes with his ink: a texture under everything is the opposite of
+     what somebody asking for more contrast wants. */
+  .plan-theme--draft-sketch .canvas__paper,
+  .plan-theme--draft-sketch .canvas__shadow,
+  .plan-theme--draft-sketch .canvas__ink {
+    display: none;
+  }
+}

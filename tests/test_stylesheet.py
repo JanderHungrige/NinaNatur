@@ -12,6 +12,9 @@ from pathlib import Path
 import pytest
 
 STYLESHEET = Path("frontend/src/styles.css")
+# A theme's own sheet (doc 97) declares the plan's hooks — `--plan-*`, used in
+# the main sheet with Technisch's look as the fallback — and uses the palette.
+THEME_SHEETS = sorted(Path("frontend/src/themes").glob("**/*.css"))
 
 # Custom properties set from TypeScript rather than declared in the sheet.
 # `--sheet-drag` is a finger's height while it drags the sheet (doc 91): declared
@@ -56,8 +59,16 @@ def test_every_variable_used_is_declared(css: str) -> None:
     near-white text on it. Nothing errors and nothing logs; it is visible only
     by looking, and only in one theme. Four invented names shipped this way.
     """
-    unknown = sorted(_used(css) - _declared(css) - SET_INLINE)
+    themes = [sheet.read_text(encoding="utf-8") for sheet in THEME_SHEETS]
+    hooks = {name for sheet in themes for name in _declared(sheet) if name.startswith("--plan-")}
+    used = _used(css).union(*(_used(sheet) for sheet in themes))
+    unknown = sorted(used - _declared(css) - SET_INLINE - hooks)
     assert unknown == [], f"used but never declared: {unknown}"
+
+
+def test_a_theme_sheet_is_found(css: str) -> None:
+    """Guards the hooks above: with no theme sheet read, every hook would fail."""
+    assert any(sheet.parent.name == "draft-sketch" for sheet in THEME_SHEETS)
 
 
 def test_every_colour_has_a_dark_mode_value(css: str) -> None:
@@ -231,3 +242,33 @@ def test_the_map_takes_the_finger_rather_than_the_page(css: str) -> None:
     assert rule is not None, "no .map-picker__surface rule"
     assert "touch-action: none" in rule.group(1), "a finger on the map scrolls the page"
     assert "width: 100%" in rule.group(1), "the surface's width is not the layout's to give"
+
+
+def test_the_plans_hand_is_bundled_and_not_fetched() -> None:
+    """Patrick Hand ships beside the app (doc 101). The policy is
+    `font-src 'self'` (Wave 20), so a CDN would simply not load — and a plan
+    lettered in the fallback is a plan in two hands."""
+    sheets = [sheet.read_text(encoding="utf-8") for sheet in THEME_SHEETS]
+    faces = [sheet for sheet in sheets if "@font-face" in sheet]
+    assert faces, "no theme declares a font of its own"
+    for sheet in faces:
+        for url in re.findall(r"src:\s*url\(([^)]+)\)", sheet):
+            assert not url.strip("'\"").startswith(("http://", "https://", "//")), url
+            local = (Path("frontend/src/themes/draft-sketch") / url.strip("'\"")).resolve()
+            assert local.is_file(), f"{local} is declared and not there"
+            assert (local.parent / "OFL.txt").is_file(), "a bundled font ships its licence"
+
+
+def test_the_hand_letters_the_drawing_and_nothing_else() -> None:
+    """The plan's own text and its title block; never the interface, which is a
+    control panel rather than a drawing (doc 101)."""
+    sheet = Path("frontend/src/themes/draft-sketch/theme.css").read_text(encoding="utf-8")
+    # Every rule that sets the hand, less the @font-face that declares it: the
+    # selectors are what stands between the comment above and the brace.
+    rules = [match.group(1) for match
+             in re.finditer(r"([^{}/]*)\{\s*font-family:\s*'Patrick Hand'", sheet)
+             if "@font-face" not in match.group(1)]
+    assert len(rules) == 1, rules
+    selectors = {part.strip() for part in rules[0].split(",") if part.strip()}
+    assert selectors == {".plan-theme--draft-sketch text", ".plan-furniture--draft-sketch"}
+    assert "'Patrick Hand'" not in STYLESHEET.read_text(encoding="utf-8")

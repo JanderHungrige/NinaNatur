@@ -125,6 +125,16 @@ def save_horizon(
     conn.commit()
 
 
+def horizon_source(conn: sqlite3.Connection, key: str) -> str | None:
+    """Who measured the ring here: a state's service, or Copernicus (doc 104).
+    Stored since Wave 17 and never read until a garden could carry a ring from
+    somewhere other than its own state."""
+    row = conn.execute(
+        "SELECT source FROM terrain_horizon WHERE place_key = ?", (key,)
+    ).fetchone()
+    return None if row is None else str(row["source"])
+
+
 def load_horizon(conn: sqlite3.Connection, key: str) -> list[float] | None:
     """The stored ring, or None where the far field was never asked about.
 
@@ -142,6 +152,7 @@ __all__ = [
     "KEY_GRID_M",
     "NO_HEIGHT",
     "cache_key",
+    "horizon_source",
     "load_horizon",
     "load_window",
     "save_horizon",

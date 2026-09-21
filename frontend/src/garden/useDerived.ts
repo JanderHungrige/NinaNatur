@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   BloomPalette,
   CanopySuggestion,
+  Credit,
   GardenOut,
   ImprovementsOut,
   LightMap,
@@ -36,8 +37,12 @@ export function useDerived(
    *  whether there is anything to show. */
   const [lightMap, setLightMap] = useState<LightMap | null>(null);
   const [terrain, setTerrain] = useState<Terrain | null>(null);
+  /** Which survey said so, and the credit its licence asks for (doc 106). */
+  const [sources, setSources] = useState<Credit[]>([]);
   const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
   const [forage, setForage] = useState(true);
+  /** Until the first answers are in: the details hold their places meanwhile. */
+  const [loading, setLoading] = useState(true);
 
   /** Where each derived answer lands: the same six on opening and after every change. */
   const show = useMemo<DerivedSetters>(
@@ -48,6 +53,7 @@ export function useDerived(
       palette: setPalette,
       lightMap: setLightMap,
       terrain: setTerrain,
+      sources: setSources,
     }),
     [],
   );
@@ -60,10 +66,16 @@ export function useDerived(
     let current = true;
     Promise.all([fetchDerived(client, token, true, show), client.canopies(token).then(setCanopies)])
       .then(() => {
-        if (current) setStatus(greeting);
+        if (!current) return;
+        // With the greeting, not a tick after it: whatever reads "geladen"
+        // finds the details in their places.
+        setLoading(false);
+        setStatus(greeting);
       })
       .catch((error: unknown) => {
-        if (current) setStatus(`Laden fehlgeschlagen: ${(error as Error).message}`, 'problem');
+        if (!current) return;
+        setLoading(false);
+        setStatus(`Laden fehlgeschlagen: ${(error as Error).message}`, 'problem');
       });
     return () => {
       current = false;
@@ -97,7 +109,7 @@ export function useDerived(
 
   const acceptCanopy = useCallback(
     (id: number) =>
-      void run('Baum eingetragen', async () => {
+      void run('Baum eintragen', async () => {
         setGarden(await client.acceptCanopy(token, id));
         setCanopies(await client.canopies(token));
       }),
@@ -106,7 +118,7 @@ export function useDerived(
 
   const dismissCanopy = useCallback(
     (id: number) =>
-      void run('Vorschlag verworfen', async () => {
+      void run('Vorschlag verwerfen', async () => {
         await client.dismissCanopy(token, id);
         setCanopies(await client.canopies(token));
       }),
@@ -131,6 +143,7 @@ export function useDerived(
   }, [palette]);
 
   return {
+    loading,
     timeline,
     score,
     improvements,
@@ -139,6 +152,7 @@ export function useDerived(
     lightMap,
     setLightMap,
     terrain,
+    sources,
     canopies,
     forage,
     toggleForage,

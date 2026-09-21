@@ -15,12 +15,13 @@ import math
 from dataclasses import dataclass
 from typing import Protocol
 
+from geokachel.terrain_sources import TerrainSource, by_state
+from geokachel.tiff import Raster, read_raster
+from geokachel.utm import to_utm
+
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.projection import LatLon, Metres
 from ninanatur.geo.projection import to_latlon as to_latlon_local
-from ninanatur.geo.terrain_sources import TerrainSource, by_state
-from ninanatur.geo.tiff import Raster, read_raster
-from ninanatur.geo.utm import to_utm
 from ninanatur.ingest.http import get_bytes
 
 #: Half-width of the fetched window, in metres.
@@ -128,6 +129,7 @@ def resample(
     north: float,
     zone: int,
     reach_m: float = FETCH_M,
+    corner: tuple[float, float] | None = None,
 ) -> tuple[float, int, list[float]]:
     """Resample a UTM raster onto the garden's own axes.
 
@@ -146,7 +148,10 @@ def resample(
     points rather than computed per cell.
     """
     half = int(WINDOW_M / cell_m)
-    corner_e, corner_n = east - reach_m, north + reach_m
+    # A service answers with the window itself, so its north-west corner is the
+    # centre less the reach. A tile is a fixed square of the country and says
+    # where its own corner is (doc 103).
+    corner_e, corner_n = corner if corner is not None else (east - reach_m, north + reach_m)
     origin, per_x, per_y = frame_map(anchor, zone)
     side = 2 * half
 

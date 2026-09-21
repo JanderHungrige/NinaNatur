@@ -4,7 +4,7 @@ Feature 0 of Wave 8 asked the licence question before anything was built on
 imagery. The answer was that it clears — per Bundesland, each with its own
 service, licence and required credit — and that there is no federal source.
 """
-from ninanatur.geo.orthophotos import ORTHOPHOTOS, by_state
+from geokachel.orthophotos import ORTHOPHOTOS, by_state
 
 
 def test_every_service_names_a_licence_and_a_credit() -> None:

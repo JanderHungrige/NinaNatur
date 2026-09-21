@@ -16,6 +16,8 @@ import { PreviewBand } from './components/PreviewBand';
 import { SiteHeader, type SiteProps } from './components/SiteHeader';
 import { StatusToast } from './components/StatusToast';
 import { objects } from './plural';
+import { PlanThemeProvider } from './themes/context';
+import { usePageTheme } from './themes/usePageTheme';
 import { useAccount } from './useAccount';
 import { useStatus } from './useStatus';
 
@@ -57,14 +59,17 @@ function mapSummary(heights: { measured: number; estimated: number; assumed: num
  */
 export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
   const status = useStatus();
-  const { setStatus, busy, run } = status;
+  const { setStatus, busy, working, run } = status;
   const [garden, setGarden] = useState<GardenOut | null>(null);
+  /** A garden is being fetched to open: the front door says so over its hero. */
+  const [opening, setOpening] = useState(false);
   const [openProblem, setOpenProblem] = useState<string | undefined>(undefined);
   /** What the workspace says once the garden is ready; null means "<name> geladen." */
   const [greeting, setGreeting] = useState<string | null>(null);
   const [version, setVersion] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<string | null>(null);
   const account = useAccount(client, status, garden === null);
+  const planStyle = usePageTheme();
 
   /** Stable identities: an inline arrow would refire the landing page's effect
    *  on every render, which is the loop the species panel already cost us. */
@@ -92,10 +97,25 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
     [client, setStatus],
   );
 
+  /** Opening, said when it starts as well as when it ends: from a link the
+   *  front door is all there is to look at while the garden comes. */
+  const opened = useCallback(
+    async (token: string) => {
+      setOpening(true);
+      setStatus('Garten wird geöffnet…');
+      try {
+        await load(token);
+      } finally {
+        setOpening(false);
+      }
+    },
+    [load, setStatus],
+  );
+
   useEffect(() => {
     const token = tokenFromHash();
     if (token !== null) {
-      load(token).catch((error: unknown) =>
+      opened(token).catch((error: unknown) =>
         setStatus(`Laden fehlgeschlagen: ${(error as Error).message}`, 'problem'),
       );
     }
@@ -104,7 +124,7 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
     // Nor a failed environment lookup. Null shows no band, which is right: the
     // live site is the one that must never be labelled by accident.
     void client.environment().then(setEnvironment).catch(() => setEnvironment(null));
-  }, [client, load, setStatus]);
+  }, [client, opened, setStatus]);
 
   /** Open one by its token — into the fragment, not a query parameter: the token
    *  is a credential, and a query would put it in the access log and any referrer. */
@@ -112,9 +132,9 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
     (token: string) => {
       window.location.hash = token;
       setGreeting(null);
-      void run('Öffnen', () => load(token));
+      void run('Öffnen', () => opened(token));
     },
-    [load, run],
+    [opened, run],
   );
 
   const createGarden = useCallback(
@@ -129,16 +149,19 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
     [client, load, run],
   );
 
+  /** Returned, so the map's button can say "Wird angelegt…" for exactly as long. */
   const createFromMap = useCallback(
-    (selection: MapSelection) => {
-      void run('Anlegen', async () => {
+    async (selection: MapSelection) => {
+      // Buildings and streets come from OpenStreetMap first: seconds, not a blink.
+      setStatus('Garten wird angelegt…');
+      await run('Anlegen', async () => {
         const result = await client.gardenFromMap(selection);
         window.location.hash = result.garden.share_token;
         setGreeting(mapSummary(result.heights));
         await load(result.garden.share_token);
       });
     },
-    [client, load, run],
+    [client, load, run, setStatus],
   );
 
   /** The logo goes home. Leaving a garden must not lose it — which is exactly why
@@ -164,13 +187,14 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
 
   return (
     // The front door is dark all the way out to the edges; a garden is not.
-    <div className={garden === null ? 'app app--front-door' : 'app app--workspace'}>
+    <div className={garden === null ? 'app app--front-door' : 'app app--workspace'}
+         data-busy={status.busy ? '' : undefined}>
       <a className="skip-link" href="#main">
         Zum Inhalt springen
       </a>
       {garden === null && <LivingBackground videoSrc={meadow} />}
       <PreviewBand environment={environment} />
-      {garden === null && <SiteHeader {...header} busy={busy} />}
+      {garden === null && <SiteHeader {...header} busy={busy} working={working} />}
 
       {account.feedbackOpen && (
         <div className="account-drawer">
@@ -229,21 +253,25 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
             }
             onOpen={openGarden}
             busy={busy}
+            opening={opening}
             loadStats={loadStats}
             problem={openProblem}
           />
         </main>
       ) : (
-        <GardenWorkspace
-          key={garden.share_token}
-          client={client}
-          garden={garden}
-          setGarden={setGarden}
-          status={status}
-          header={header}
-          account={account.account}
-          greeting={greeting ?? `${garden.name} geladen.`}
-        />
+        <PlanThemeProvider theme={planStyle.theme}>
+          <GardenWorkspace
+            key={garden.share_token}
+            client={client}
+            garden={garden}
+            setGarden={setGarden}
+            status={status}
+            header={header}
+            account={account.account}
+            planStyle={planStyle}
+            greeting={greeting ?? `${garden.name} geladen.`}
+          />
+        </PlanThemeProvider>
       )}
 
       {/* Status is announced, not only shown — a colour change is invisible to a

@@ -1,12 +1,17 @@
+import { useMemo } from 'react';
+
 import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
 import { usePlanTheme } from '../themes/context';
-import { CanopyMarks } from './CanopyMarks';
-import { ClusterLayer } from './ClusterLayer';
-import { PlanObjects } from './PlanObjects';
+import { planScale } from './PlanDecorations';
 import { ReliefMap } from './ReliefMap';
-import { type MapMode, SunMap } from './SunMap';
+import { SceneWorld } from './SceneWorld';
+import type { MapMode } from './SunMap';
+
+/** One empty list for every render: a fresh `[]` default is a new prop each time,
+ *  and the memoised world would be rebuilt for it. */
+const NONE: never[] = [];
 
 interface Props {
   garden: GardenOut;
@@ -73,7 +78,7 @@ export function CanvasScene({
   onSelectBed,
   onSelectObstacle,
   selectedObstacleId = null,
-  clusters = [],
+  clusters = NONE,
   selectedPlantingId = null,
   freshPlantingId = null,
   onSelectCluster,
@@ -82,33 +87,42 @@ export function CanvasScene({
   sunMap,
   terrain,
   shadows,
-  canopies = [],
+  canopies = NONE,
   armed = false,
   onAskWhatItIs,
   onGrabElement,
   dragOffset = null,
 }: Props) {
   const theme = usePlanTheme();
-  const lod = theme.lodAt(view.spanM / view.widthPx);
-  /** Shown where the pointer has it, saved where it is let go. */
-  const shift = (id: number): string =>
-    dragOffset !== null && dragOffset.id === id
-      ? `translate(${dragOffset.dx} ${-dragOffset.dy})`
-      : '';
+  const metresPerPixel = view.spanM / view.widthPx;
+  const scale = planScale(metresPerPixel);
+  // The same element while the theme and the scale are: Draft Sketch's defs are
+  // seventy-odd patterns, and React skips an element it has already drawn.
+  const defs = useMemo(() => <theme.Defs metresPerPixel={scale} />, [theme, scale]);
 
   return (
     <g className={`plan-theme plan-theme--${theme.id}`}>
         <defs>
-        <theme.Defs />
+          {defs}
           <pattern
             id="grid"
             width={spacing}
             height={spacing}
             patternUnits="userSpaceOnUse"
           >
-            <path d={`M ${spacing} 0 L 0 0 0 ${spacing}`} className="grid-line" />
+            {/* 3 cm, or a pixel once 3 cm is more: in metres alone it was a
+                13-pixel bar at the closest zoom (the owner's check, #1). */}
+            <path d={`M ${spacing} 0 L 0 0 0 ${spacing}`} className="grid-line"
+                  style={{ strokeWidth: Math.min(0.03, scale) }} />
           </pattern>
         </defs>
+        {/* The sheet the plan is drawn on, where the theme brings one: under
+            the grid, because the grid is drawn on the paper (doc 99). */}
+        {theme.paper !== undefined && (
+          <rect className="canvas__paper" aria-hidden="true"
+                x={view.centreX - view.spanM} y={-view.centreY - view.spanM}
+                width={view.spanM * 2} height={view.spanM * 2} fill={theme.paper} />
+        )}
         <rect
           x={view.centreX - view.spanM}
           y={-view.centreY - view.spanM}
@@ -132,53 +146,24 @@ export function CanvasScene({
           N ↑
         </text>
 
-        <PlanObjects garden={garden} theme={theme} lod={lod} selectedBedId={selectedBedId}
-                     selectedObstacleId={selectedObstacleId} armed={armed}
-                     onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle}
-                     onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift} />
-
-        {sunMap !== undefined && (
-          <SunMap map={sunMap.map} mode={sunMap.mode} />
-        )}
-
-        {/* Found trees where they stand (doc 89): a mark over the plan, never a target. */}
-        <CanopyMarks trees={canopies} />
-
-        {/* One moment of one day, over everything: while it plays, where the
-            shadow is *now* is the only question being asked. */}
-        {shadows !== undefined && (
-          <g className="day-shadows" aria-hidden="true" pointerEvents="none">
-            {shadows.map((polygon, i) => (
-              <polygon
-                key={i}
-                points={polygon.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-              />
-            ))}
-          </g>
-        )}
-
-        <ClusterLayer
-          clusters={clusters}
-          selectedPlantingId={selectedPlantingId}
-          freshPlantingId={freshPlantingId}
-          onSelectCluster={onSelectCluster}
-          onGrabCluster={onGrabCluster}
-          spacing={spacing}
-          onShowInfo={onShowClusterInfo}
+        {/* Everything that does not move with the view, memoised (#11): a pan
+            redraws what is above and below this, never what is in it. */}
+        <SceneWorld
+          garden={garden} scale={scale} spacing={spacing} selectedBedId={selectedBedId}
+          selectedObstacleId={selectedObstacleId} viewpoint={viewpoint}
+          onSelectBed={onSelectBed} onSelectObstacle={onSelectObstacle} armed={armed}
+          onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} dragOffset={dragOffset}
+          clusters={clusters} selectedPlantingId={selectedPlantingId}
+          freshPlantingId={freshPlantingId} onSelectCluster={onSelectCluster}
+          onGrabCluster={onGrabCluster} onShowClusterInfo={onShowClusterInfo}
+          sunMap={sunMap?.map} mapMode={sunMap?.mode} shadows={shadows} canopies={canopies}
         />
-
-        {viewpoint !== null && (
-        <g className="viewpoint" data-testid="viewpoint">
-          <circle cx={viewpoint.x} cy={-viewpoint.y} r={0.35} />
-          <title>Standpunkt</title>
-        </g>
-      )}
 
       {draft.length > 0 && (
           <g data-testid="draft" className="draft">
             <polyline points={svgPoints(draft)} className="draft__line" />
             {draft.map((p) => (
-              <circle key={`${p.x},${p.y}`} cx={p.x} cy={-p.y} r={spacing * 0.12} />
+              <circle key={`${p.x},${p.y}`} cx={p.x} cy={-p.y} r={3.5 * metresPerPixel} />
             ))}
           </g>
         )}

@@ -88,12 +88,26 @@ class ObstacleOut(BaseModel):
     #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'; null when nobody
     #: did — or, for a value stored before Wave 21, until the next recompute.
     eaves_source: str | None
+    #: 'osm' when OpenStreetMap drew the outline (a garden made from the map),
+    #: null when the gardener did. Decides the map's credit under the plan.
+    outline_source: str | None = None
     #: The bearing the roof falls towards, as the survey read it (doc 94); null
     #: when it has not, and the ridge is assumed to run along the long side.
     roof_fall_deg: float | None
     #: The pitch the model uses, from eaves, ridge and the span across the
     #: ridge; null where it models the roof unpitched.
     roof_pitch_deg: float | None
+    #: The lines that draw the roof the model knows (doc 98): its ridge, a hip
+    #: roof's hips, a pent roof's upper edge — each as two [x, y] ends in garden
+    #: metres. Empty where the model has a plane. Sent so no drawing works out
+    #: a second answer to where the ridge runs.
+    roof_lines: list[list[list[float]]]
+    #: How far and which way this throws its shadow in the drawing (doc 99), as
+    #: [dx, dy] in garden metres at one reference moment — mid-June, three hours
+    #: after solar noon. Null where the model says it casts none: nothing
+    #: measured, a kind that does not stand up, or a sun too low. A drawing has
+    #: one light, and this is where it comes from.
+    shadow: list[float] | None = None
     label: str | None
     # Where the height came from. Shown, because a sightline resting on a
     # guessed building height must not look surveyed.

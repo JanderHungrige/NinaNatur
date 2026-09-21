@@ -42,7 +42,6 @@ REVALIDATE = "no-cache"
 #: Where Vite puts what it hashes.
 HASHED = "assets/"
 
-
 def compress(app: FastAPI) -> None:
     """Compress answers for every browser that asks for it."""
     app.add_middleware(GZipMiddleware, minimum_size=MIN_BYTES, compresslevel=LEVEL)

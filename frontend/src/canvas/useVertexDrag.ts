@@ -22,6 +22,9 @@ export function useVertexDrag(options: Options) {
   const [preview, setPreview] = useState<number[][] | null>(null);
   const grabbed = useRef<{ index: number; moved: boolean } | null>(null);
   const latest = useRef<number[][] | null>(null);
+  // Through a ref: listeners once per drag, not once per move (the owner's check, #11).
+  const current = useRef(options);
+  current.current = options;
 
   const grab = (index: number, event: React.PointerEvent) => {
     // The surface below would otherwise read this as a click on the plan and
@@ -33,20 +36,22 @@ export function useVertexDrag(options: Options) {
     setPreview(options.points);
   };
 
+  const holding = preview !== null;
   useEffect(() => {
-    if (preview === null) return undefined;
+    if (!holding) return undefined;
     const onMove = (event: PointerEvent) => {
       const active = grabbed.current;
       if (active === null) return;
       active.moved = true;
-      const rect = options.surface.current?.getBoundingClientRect();
+      const { surface, view, origin } = current.current;
+      const rect = surface.current?.getBoundingClientRect();
       const at: Point = toGarden(
         { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) },
-        options.view,
+        view,
       );
       latest.current = moveVertex(latest.current ?? [], active.index, [
-        at.x - options.origin.x,
-        at.y - options.origin.y,
+        at.x - origin.x,
+        at.y - origin.y,
       ]);
       setPreview(latest.current);
     };
@@ -58,7 +63,7 @@ export function useVertexDrag(options: Options) {
       // A click on a corner is not an edit, and saving one still costs a
       // recomputation of every bed's light.
       if (active === null || !active.moved || moved === null) return;
-      options.onFinish(moved);
+      current.current.onFinish(moved);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -66,7 +71,7 @@ export function useVertexDrag(options: Options) {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
-  }, [preview, options]);
+  }, [holding]);
 
   return { preview, grab };
 }

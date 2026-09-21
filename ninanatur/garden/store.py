@@ -19,6 +19,7 @@ from ninanatur.garden.elements import (
 from ninanatur.garden.elements import (
     polygon_centroid as _polygon_centroid,
 )
+from ninanatur.garden.footprint import require_buildable
 from ninanatur.garden.models import (
     PLANTING_KIND,
     BedInput,
@@ -50,6 +51,10 @@ def _validate_polygon(polygon: Polygon) -> Polygon:
     for point in polygon:
         if len(point) != 2 or not all(isinstance(c, int | float) for c in point):
             raise PolygonError(f"polygon points must be [x, y] numbers, got {point!r}")
+    # Different corners, as every other write asks (`require_buildable`): three
+    # points two of which coincide cover no ground.
+    if len({(float(x), float(y)) for x, y in polygon}) < MIN_POLYGON_POINTS:
+        raise PolygonError(f"a bed needs {MIN_POLYGON_POINTS} different corners")
     return polygon
 
 
@@ -93,13 +98,12 @@ def create_garden(
 
 
 def add_bed(conn: sqlite3.Connection, garden_id: int, bed: BedInput) -> int:
-    """Add a bed, deriving its soil axes and computing its light.
+    """Add a bed, deriving its soil axes. Its light is not computed here.
 
-    The light computation lives here rather than in the API so the invariant
-    holds whatever the entry point. It used to be the route's job, which meant a
-    bed created through the store had no light value — and everything downstream
-    then scored it on soil alone, silently, because a missing axis is skipped
-    rather than flagged.
+    The light waits for the button (`lighting.recompute_light`), so a new bed
+    has no light value until somebody presses it. Everything downstream then
+    scores it on soil alone — no longer silently: the suggestions say so
+    through `light_state`, and offer the button (owner review #9).
     """
     _validate_polygon(bed.polygon)
     axes: dict[str, float] = {}
@@ -135,12 +139,16 @@ def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInp
         shape=obstacle.shape, width=obstacle.width, depth=obstacle.depth,
         rotation=obstacle.rotation, points=obstacle.points,
     )
+    # Before the insert: a row written first and refused afterwards stays
+    # committed, and breaks every later read of the garden.
+    require_buildable(shape=shape, width=width, points=points)
     element_id = insert_element(
         conn, garden_id, kind=obstacle.kind, shape=shape, x=obstacle.x,
         y=obstacle.y, width=width, constraint_hint=hint, height=obstacle.height,
         label=obstacle.label, height_source=obstacle.height_source, points=points,
         roof=obstacle.roof, roof_source=obstacle.roof_source,
         eaves_m=obstacle.eaves_m, eaves_source=obstacle.eaves_source,
+        outline_source=obstacle.outline_source,
     )
     _touch(conn, garden_id)
     return element_id

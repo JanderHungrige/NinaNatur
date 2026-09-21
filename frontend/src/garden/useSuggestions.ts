@@ -119,6 +119,17 @@ export function useSuggestions(
     [client, token, bedId, run],
   );
 
+  /** Re-read the list once the shade has been computed: its `light_state` and
+   *  the bed's light value both change. The garden itself is re-read by the
+   *  rebuild, whichever button asked for it (`useLight`). */
+  const afterShade = useCallback(() => {
+    if (bedId === null) return;
+    const target = bedId;
+    void run('Vorschläge laden', async () => {
+      setSuggestions(await client.bedSuggestions(token, target, filtersNow.current));
+    });
+  }, [client, token, bedId, run]);
+
   /** One selected month, two ways in (doc 24): the player steps to one, the
    *  timeline toggles one, and null clears it. */
   const selectMonth = useCallback(
@@ -241,6 +252,7 @@ export function useSuggestions(
     failedFor,
     filters,
     changeFilters,
+    afterShade,
     selectMonth,
     plant,
     applyChange,

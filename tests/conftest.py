@@ -21,9 +21,17 @@ it is applied later.
 from __future__ import annotations
 
 import os
+import tempfile
 from collections.abc import Iterator
 
 import pytest
+
+# Never the developer's own HTTP cache. `data/cache` holds real answers from
+# real services, so a test that reached the network by accident passed on any
+# machine that had once fetched the same thing — and failed in CI, which has no
+# cache. That hid a Nominatim call on the light-map path for a whole wave
+# (2026-09-21). An empty cache makes a local run fail exactly where CI would.
+os.environ["NINANATUR_CACHE_DIR"] = tempfile.mkdtemp(prefix="ninanatur-test-cache-")
 
 # The names the app answers to, plus `testserver` — the Host every TestClient
 # sends. Set here, before any test module imports the app, because the list is
@@ -35,10 +43,19 @@ os.environ.setdefault(
 )
 
 
+#: Every sync that asks which state a garden is in before it fetches anything.
+#: Each one reverse-geocodes against Nominatim, so each one is switched off here
+#: — and `test_no_network.py` fails if a module starts calling `state_at` without
+#: being added, because that is how the point-cloud sync slipped past this list
+#: when Wave 25 wrote it: two names here, three callers in the code.
+SURVEYING = ("terrain_sync", "building_sync", "cloud_sync")
+
+
 @pytest.fixture(autouse=True)
 def _no_state_surveys(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    from ninanatur.garden import building_sync, terrain_sync
+    import importlib
 
-    monkeypatch.setattr(terrain_sync, "state_at", lambda *_a, **_k: None)
-    monkeypatch.setattr(building_sync, "state_at", lambda *_a, **_k: None)
+    for name in SURVEYING:
+        module = importlib.import_module(f"ninanatur.garden.{name}")
+        monkeypatch.setattr(module, "state_at", lambda *_a, **_k: None)
     yield

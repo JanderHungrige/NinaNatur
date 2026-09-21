@@ -8,7 +8,8 @@
  */
 import { useRef } from 'react';
 
-import { snapPoint } from './snap';
+import { snapNear } from './snap';
+import type { Moving } from './useMoving';
 import { type Point, type Viewport, panBy, toGarden } from './viewport';
 
 /** Two decimals: a viewpoint is a place someone stands, not a survey mark. */
@@ -16,6 +17,9 @@ const round = (v: number): number => Math.round(v * 100) / 100;
 
 /** Further than this, and a press has become a pan: its click is not a choice. */
 const MOVED_PX = 4;
+
+/** How near a grid intersection a corner has to land to be pulled onto it. */
+const SNAP_PX = 6;
 
 interface Gesture {
   active: boolean;
@@ -37,6 +41,8 @@ interface Options {
   placing: boolean;
   onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
   onViewpointPlaced: () => void;
+  /** Told when a pan starts and stops, so the costly paint can pause. */
+  moving?: Moving | undefined;
 }
 
 export function useCanvasGestures(options: Options) {
@@ -65,12 +71,11 @@ export function useCanvasGestures(options: Options) {
     if (options.drawing) return;
     // A drawing gesture is never also a pan: one drag cannot both make a shape
     // and slide the ground out from under it.
-    if (options.band.armed) {
-      options.band.begin(metres(event));
-      return;
-    }
-    if (options.stroke.armed) {
-      options.stroke.begin(metres(event));
+    if (options.band.armed || options.stroke.armed) {
+      // Held, so a stroke that crosses the controls over the plan keeps going.
+      // Optional: jsdom has no pointer capture.
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      (options.band.armed ? options.band : options.stroke).begin(metres(event));
       return;
     }
     pan.current = { x: event.clientX, y: event.clientY };
@@ -90,6 +95,7 @@ export function useCanvasGestures(options: Options) {
     if (from === null) return;
     const start = began.current;
     if (start !== null && Math.hypot(event.clientX - start.x, event.clientY - start.y) > MOVED_PX) {
+      if (!panned.current) options.moving?.start();
       panned.current = true;
     }
     pan.current = { x: event.clientX, y: event.clientY };
@@ -108,12 +114,16 @@ export function useCanvasGestures(options: Options) {
       return;
     }
     pan.current = null;
+    options.moving?.stop();
   };
 
   /** A second finger landed (doc 91, B1): whatever the first was panning stops. */
   const cancelPan = () => {
     pan.current = null;
   };
+
+  /** Whether a pan holds the plan: nothing under the pointer is worth reading then. */
+  const isPanning = () => pan.current !== null && panned.current;
 
   /** Swallows the click that ends a pan, before any shape under it hears it. */
   const onClickCapture = (event: React.MouseEvent<SVGSVGElement>) => {
@@ -132,9 +142,12 @@ export function useCanvasGestures(options: Options) {
     }
     if (!options.drawing) return;
     // Snapped in metres, after the transform: snapping pixels first would store
-    // a different coordinate at every zoom level.
-    options.addVertex(snapPoint(metres(event), options.spacing, { free: event.altKey }));
+    // a different coordinate at every zoom level. Only the reach is in pixels,
+    // because "near" is something the eye judges. Alt never snaps.
+    const at = metres(event);
+    const reach = event.altKey ? 0 : SNAP_PX * (options.view.spanM / options.view.widthPx);
+    options.addVertex(snapNear(at, options.spacing, reach));
   };
 
-  return { onPointerDown, onPointerMove, endDrag, cancelPan, onClickCapture, onClick };
+  return { onPointerDown, onPointerMove, endDrag, cancelPan, isPanning, onClickCapture, onClick };
 }
