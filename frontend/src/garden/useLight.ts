@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
-import type { LightMap, NinaNaturClient, SightlinesOut } from '../api/client';
+import type { GardenOut, LightMap, NinaNaturClient, SightlinesOut } from '../api/client';
 import type { MapMode } from '../components/SunMap';
 import type { Status } from '../useStatus';
 import { useDay } from './useDay';
@@ -19,11 +19,13 @@ export function useLight(
   setLightMap: (map: LightMap | null) => void,
   /** Whether the garden's own details — the shade switch among them — are showing. */
   inView: boolean,
+  /** The garden as the server now has it: a rebuild writes every bed's light. */
+  setGarden: (garden: GardenOut) => void,
 ) {
   const { run, setStatus } = status;
   const [shadeOn, setShadeOn] = useState(false);
   const [mapMode, setMapMode] = useState<MapMode>('hours');
-  const sunMap = useSunMap(client, token, status, setLightMap);
+  const sunMap = useSunMap(client, token, status, setLightMap, setGarden);
   const [sightlines, setSightlines] = useState<SightlinesOut | null>(null);
   const [viewpoint, setViewpoint] = useState<{ x: number; y: number } | null>(null);
 
@@ -88,6 +90,7 @@ function useSunMap(
   token: string,
   status: Status,
   setLightMap: (map: LightMap | null) => void,
+  setGarden: (garden: GardenOut) => void,
 ) {
   const { run, setStatus } = status;
   // Null is the whole season, which is the number a plant is placed by.
@@ -130,12 +133,17 @@ function useSunMap(
         // view afterwards would show a figure the button did not produce.
         setMapMonth(null);
         setLightMap(await client.rebuildLightMap(token));
+        // The rebuild wrote every bed's light too. Without reading the garden
+        // again, a bed went on saying "noch nicht berechnet" beside a map that
+        // had just been computed (the owner's check, 2026-09-21).
+        const fresh = await client.getGarden(token);
+        if (fresh !== null) setGarden(fresh);
         setStatus('Schatten berechnet.');
       } finally {
         setRebuilding(false);
       }
     });
-  }, [client, token, run, setLightMap, setStatus]);
+  }, [client, token, run, setLightMap, setGarden, setStatus]);
 
   return { mapMonth, changeMonth, monthLoading, rebuild, rebuilding };
 }

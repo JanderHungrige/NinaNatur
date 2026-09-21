@@ -118,6 +118,25 @@ describe('App — saying that something is happening', () => {
     expect(screen.queryByTestId('plan-working')).toBeNull();
   });
 
+  it('reads the garden again once the shade is computed, so no bed says it has none', async () => {
+    // A rebuild writes every bed's light. The panel's button stored the map
+    // and left the garden as it was: a bed went on saying "noch nicht
+    // berechnet" beside a map that had just been computed.
+    let computed = false;
+    const client = fakeClient({
+      lightMap: vi.fn(async () => lightMap()),
+      rebuildLightMap: vi.fn(async () => {
+        computed = true;
+        return lightMap();
+      }),
+      getGarden: vi.fn(async () => garden('tok', computed ? 'Nach dem Schatten' : 'Testgarten')),
+    });
+    await openWorkspace(client);
+    fireEvent.click(await within(details()).findByRole('button', { name: 'Schatten neu berechnen' }));
+    expect(await screen.findByText('Schatten berechnet.')).toBeDefined();
+    expect(await within(details()).findByRole('heading', { name: /Nach dem Schatten/ })).toBeDefined();
+  });
+
   it('says a garden is being opened while it comes from its link', async () => {
     let found: (value: GardenOut) => void = () => undefined;
     const client = fakeClient({

@@ -49,7 +49,9 @@ export function useGarden(
   const geometry = useGeometry(client, garden, setGarden, status, remember);
   // The shade switch stands in the garden's details, which show while nothing
   // is selected: selecting something hides the day's play button, and stops it.
-  const light = useLight(client, garden.share_token, status, derived.setLightMap, selection.kind === 'none');
+  const light = useLight(
+    client, garden.share_token, status, derived.setLightMap, selection.kind === 'none', setGarden,
+  );
 
   const computeShade = useComputeShade(derived.lightMap, light.rebuild, suggestions.afterShade);
 

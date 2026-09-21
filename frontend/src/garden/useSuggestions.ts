@@ -119,21 +119,16 @@ export function useSuggestions(
     [client, token, bedId, run],
   );
 
-  /** Re-read the list, and the garden it was ranked from, once the shade has
-   *  been computed: the bed's light value and `light_state` both change, and
-   *  the bed's own line would otherwise go on saying "noch nicht berechnet". */
+  /** Re-read the list once the shade has been computed: its `light_state` and
+   *  the bed's light value both change. The garden itself is re-read by the
+   *  rebuild, whichever button asked for it (`useLight`). */
   const afterShade = useCallback(() => {
     if (bedId === null) return;
     const target = bedId;
     void run('Vorschläge laden', async () => {
-      const [found, updated] = await Promise.all([
-        client.bedSuggestions(token, target, filtersNow.current),
-        client.getGarden(token),
-      ]);
-      setSuggestions(found);
-      if (updated !== null) setGarden(updated);
+      setSuggestions(await client.bedSuggestions(token, target, filtersNow.current));
     });
-  }, [client, token, bedId, run, setGarden]);
+  }, [client, token, bedId, run]);
 
   /** One selected month, two ways in (doc 24): the player steps to one, the
    *  timeline toggles one, and null clears it. */

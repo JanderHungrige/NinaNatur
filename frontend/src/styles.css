@@ -1043,6 +1043,12 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   padding-left: 0.6rem;
 }
 
+/* One message over the plan at a time. While the controls carry the drawing's
+   own instructions or a complaint, the tool's hint steps aside: the two lay on
+   top of each other, and "Der Strich ist zu kurz" could not be read (the
+   owner's check, 2026-09-21). */
+.canvas-wrap:has(.canvas-controls .hint) .plan-hint { display: none; }
+
 /* While drawing, a click means "place a vertex" — say so with the cursor. */
 .canvas--drawing {
   cursor: crosshair;
@@ -2738,6 +2744,10 @@ kbd {
     bottom: calc(var(--sheet-at) * 100%);
     min-height: 0;
     padding: 0.35rem;
+    /* With the sheet up the plan is a sliver, and what hangs in it — the scale,
+       the credits, a hint — climbed over the header (the owner's check,
+       2026-09-21). Clipped, not hidden: it comes back as the sheet comes down. */
+    overflow: clip;
   }
   .workspace .canvas-wrap { position: relative; height: 100%; }
   .workspace .canvas-stage { flex: 1; min-height: 0; height: auto; }

@@ -31,6 +31,13 @@ def test_plan_outlines_are_screen_pixels_at_every_zoom() -> None:
         assert "vector-effect: non-scaling-stroke" in body, f"{selector} scales with the zoom"
 
 
+def test_never_two_messages_over_the_plan() -> None:
+    """The drawing's instructions and the tool's hint lay on top of each other,
+    and so did the complaint about a short stroke (#3)."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    assert "display: none" in _rule(css, ".canvas-wrap:has(.canvas-controls .hint) .plan-hint")
+
+
 def test_the_costly_paint_pauses_while_the_plan_moves() -> None:
     """#11: the watercolour filter, his paper and his splotches are what a pan
     frame cost. `useMoving` sets the class; these rules are what it switches."""
