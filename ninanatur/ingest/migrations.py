@@ -64,6 +64,9 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("element", "eaves_source", "TEXT"),
     # Wave 21. Null on every existing row: the next recompute measures it.
     ("element", "roof_fall_deg", "REAL"),
+    # The owner's check, 2026-09-21. Null on every existing row until the
+    # one-time backfill in `outline_provenance` marks what the import left.
+    ("element", "outline_source", "TEXT"),
 )
 
 

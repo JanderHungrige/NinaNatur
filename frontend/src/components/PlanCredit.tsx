@@ -1,19 +1,17 @@
 import type { GardenOut } from '../api/client';
 import { ATTRIBUTION, ATTRIBUTION_URL } from '../map/tiles';
-import { ROOFED } from '../roofs';
 import { usePlanTheme } from '../themes/context';
 
 /**
- * Whether the plan draws anything of OpenStreetMap's: a street, or a building
- * whose height, roof or eaves were not the gardener's. The server asks the same
- * question of the same fields for the garden's credits
- * (`ninanatur/garden/credits.py`, `from_the_map`), because nothing records
- * where an outline came from — a house drawn by hand is the gardener's in all
- * three, and a survey replaces a map house's height and roof, never its outline.
+ * Whether the plan draws anything of OpenStreetMap's: a street, or an outline
+ * the map import brought (`outline_source`, which only the server writes and
+ * nothing changes). The server asks the same question for the garden's credits
+ * (`ninanatur/garden/credits.py`, `from_the_map`). It used to be read off a
+ * house's height, roof and eaves, and a map house the gardener had corrected
+ * lost its credit while the plan still drew OpenStreetMap's outline.
  */
 export function drawsOpenStreetMap(garden: Pick<GardenOut, 'obstacles'>): boolean {
-  return garden.obstacles.some((o) => o.kind === 'street' || (ROOFED.has(o.kind) && (
-    o.height_source !== 'user' || o.roof_source === 'osm' || o.eaves_source === 'osm_levels')));
+  return garden.obstacles.some((o) => o.kind === 'street' || o.outline_source === 'osm');
 }
 
 interface Props {

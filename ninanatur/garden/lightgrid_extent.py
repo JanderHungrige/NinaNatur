@@ -169,11 +169,15 @@ def grid_extent_of(garden: Garden) -> tuple[float, float, float, float] | None:
     no margin is added: those are mostly gardens drawn by hand, whose outermost
     house or hedge already is the edge, and 5 m more on every side would have
     doubled a small garden's cells and pushed a crowded one off the 0.5 m rung.
+    And where it holds nothing that stands up either — a lawn, a path, paving —
+    those surfaces are the garden, and they are what is covered. Only a garden
+    of streets alone has no grid.
     """
     plots = [e for e in garden.obstacles if e.kind == ObjectKind.GARDEN]
     standing = [e for e in garden.obstacles if _stands_up(e)]
     if not plots:
-        return _bounds(garden.beds + standing, 0.0)
+        return _bounds(garden.beds + standing, 0.0) or _bounds(
+            [e for e in garden.obstacles if e.kind != ObjectKind.STREET], 0.0)
     drawn = [e for e in standing if _drawn_by_hand(e)]
     return _bounds(plots + garden.beds + drawn, GRID_MARGIN_M)
 

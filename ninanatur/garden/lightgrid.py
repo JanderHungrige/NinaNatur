@@ -143,7 +143,8 @@ def compute_grid(
     horizon: list[float] | None = None,
     month: int | None = None,
 ) -> LightGrid | None:
-    """Sun hours for every cell of the garden. None when nothing is drawn yet.
+    """Sun hours for every cell of the garden. None when there is nothing to
+    cover: nothing drawn, or only streets.
 
     The garden: its plot, its beds and what the gardener drew, with a margin —
     `grid_extent_of`. The neighbours' houses are in `obstacles` and cast their

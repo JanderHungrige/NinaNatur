@@ -89,6 +89,10 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     if grid is not None:
         save_grid(conn, garden_id, grid, signature_of(
             garden, ground, horizon, shading_taxa=shading_taxa(conn, garden)))
+    else:
+        # Nothing left to cover: a map stored earlier describes a garden that
+        # is gone, and kept, it said "stale" after every press of the button.
+        conn.execute("DELETE FROM light_grid WHERE garden_id = ?", (garden_id,))
 
     updated = 0
     for bed in garden.beds:

@@ -82,6 +82,11 @@ CREATE TABLE IF NOT EXISTS element (
     -- nobody did — or, for a value stored before Wave 21 whose origin the
     -- history cannot tell, until the next recompute says (doc 93).
     eaves_source  TEXT,
+    -- Whose outline this is: 'osm' for the streets and houses a garden made from
+    -- the map brought with it; null for what the gardener drew. Written by the
+    -- server only, and never changed: a reshaped OSM outline is still derived
+    -- from OSM, and ODbL asks for the credit wherever it is shown (2026-09-21).
+    outline_source TEXT,
     -- The bearing the roof falls towards, from the survey's faces (doc 94): in
     -- [0, 180) for a gable or hip, whose ridge runs at right angles to it, and
     -- in [0, 360) for a pent. Null: not surveyed, and the ridge is assumed to

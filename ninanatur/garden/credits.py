@@ -33,7 +33,7 @@ from geokachel.tile_sources import (
 )
 
 from ninanatur.garden.models import Element, Garden
-from ninanatur.garden.objects import ROOFED, ObjectKind
+from ninanatur.garden.objects import ObjectKind
 from ninanatur.geo.far_horizon import GLO30_SOURCE
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surroundings import HeightSource
@@ -48,7 +48,6 @@ SURVEYED = HeightSource.SURVEYED.value
 OSM_LICENCE = "ODbL-1.0"
 OSM_ATTRIBUTION = "© OpenStreetMap-Mitwirkende"
 
-_BUILDINGS = frozenset(kind.value for kind in ROOFED)
 
 
 @dataclass(frozen=True)
@@ -108,24 +107,17 @@ def _laser_credit(whose: str | None) -> Credit | None:
 
 
 def from_the_map(element: Element) -> bool:
-    """Whether this element's shape is OpenStreetMap's (what `garden_from_map` imports).
+    """Whether this element's outline is OpenStreetMap's.
 
-    Nothing records where an outline came from, so this reads what the import
-    leaves behind: a street, or a building whose height, roof or eaves were not
-    the gardener's. A house drawn by hand starts as the gardener's in all three
-    and no survey measures it (`measured` skips those), so any other source
-    means the map brought it — and a later survey replaces its height and roof,
-    never its outline. A street drawn by hand is credited too: the one mistake
-    this can make is thanking OpenStreetMap once too often. The page asks the
-    same question of the same fields (`PlanCredit.tsx`).
+    Read from `outline_source`, which only the map import writes and nothing
+    changes (2026-09-21). It used to be inferred from what the import left
+    behind — a height, roof or eaves that were not the gardener's — and a map
+    house whose height and roof the gardener had both corrected then read as
+    drawn by hand, while the plan still showed OSM's outline. A street is
+    credited whoever drew it: thanking OpenStreetMap once too often is the only
+    mistake left. The page asks the same question (`PlanCredit.tsx`).
     """
-    if element.kind == ObjectKind.STREET.value:
-        return True
-    if element.kind not in _BUILDINGS:
-        return False
-    return (element.height_source != HeightSource.USER.value
-            or element.roof_source == "osm"
-            or element.eaves_source == "osm_levels")
+    return element.kind == ObjectKind.STREET.value or element.outline_source == "osm"
 
 
 def _osm_credit(garden: Garden) -> Credit | None:

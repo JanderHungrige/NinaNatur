@@ -23,7 +23,8 @@ WORKFLOW = Path(".github/workflows/deploy.yml")
 def test_the_committed_schema_is_what_the_backend_generates() -> None:
     """Stale types are caught here, before a push, as well as in CI."""
     assert OUTPUT.read_text(encoding="utf-8") == render(), (
-        "frontend/openapi.json is stale — run `npm run generate:api` in frontend/"
+        "frontend/openapi.json is stale — run `npm run generate:api` in frontend/,"
+        " with the project's virtualenv active"
     )
 
 

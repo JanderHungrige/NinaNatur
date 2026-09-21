@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "plan:sheet": "node scripts/plan-sheet.mjs",
-    "generate:api": "python -m scripts.generate_openapi && openapi-typescript openapi.json -o src/api/types.ts"
+    "generate:api": "cd .. && python scripts/generate_openapi.py && cd frontend && openapi-typescript openapi.json -o src/api/types.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

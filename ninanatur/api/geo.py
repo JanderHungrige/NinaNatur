@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import sqlite3
+from dataclasses import replace
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -28,6 +29,7 @@ from ninanatur.api.schemas_map import (
     PlaceSearchOut,
 )
 from ninanatur.auth.sessions import Account
+from ninanatur.garden.footprint import require_buildable
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import (
     add_obstacle,
@@ -37,7 +39,12 @@ from ninanatur.garden.store import (
 from ninanatur.geo.osm import buildings_in, search_address, state_at
 from ninanatur.geo.osm_streets import OsmStreet, streets_in
 from ninanatur.geo.projection import LatLon, Metres, bounding_box_of, centroid, to_metres
-from ninanatur.geo.surroundings import MARGIN_M, NeighbourhoodKind, surroundings_from
+from ninanatur.geo.surroundings import (
+    MARGIN_M,
+    NeighbourhoodKind,
+    Surrounding,
+    surroundings_from,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +118,12 @@ def garden_from_map(
         outline=outline,
     )
 
+    polygon = [[round(m.x, 2), round(m.y, 2)] for m in (to_metres(p, anchor) for p in outline)]
+    # Before anything is stored: an outline whose corners merge once rounded
+    # would be refused after the garden and its streets were committed, and the
+    # import would answer 422 with a garden nobody can reach.
+    require_buildable(shape="polygon", width=None, points=polygon)
+
     # Theirs from the moment it exists, like the plain create. This is the way
     # most people start, so it is the one that mattered most.
     garden_id = create_garden(
@@ -122,7 +135,6 @@ def garden_from_map(
     )
     _add_streets(conn, garden_id, anchor, south, west, north, east)
 
-    polygon = [[round(m.x, 2), round(m.y, 2)] for m in (to_metres(p, anchor) for p in outline)]
     # The ground, not a bed. It used to arrive as one large flower bed, which
     # made the whole plot a planting site — the beds are what the gardener draws
     # inside it, and a garden that arrives with none is the honest starting
@@ -140,50 +152,7 @@ def garden_from_map(
         ),
     )
     for obj in around.objects:
-        # OpenStreetMap's shape, and the storeys' eaves where it counted them
-        # (doc 93). The page names both, and a later survey may replace either.
-        eaves_source = None if obj.eaves_m is None else "osm_levels"
-        # The shape OSM drew, when it drew one. The square this replaces was
-        # sized from half the bounding box's diagonal and came out 2.1 to 2.8
-        # times the real footprint on live data — every one axis-aligned, so a
-        # farmyard arrived as a pile of overlapping boxes at the wrong angles.
-        #
-        # A square is still the answer when Overpass sent no geometry, and then
-        # it is sized from the equal-area radius rather than the diagonal.
-        if len(obj.outline) >= 3:
-            drawn = ObstacleInput(
-                kind="house",
-                x=obj.x,
-                y=obj.y,
-                shape="polygon",
-                points=[[corner[0], corner[1]] for corner in obj.outline],
-                height=obj.height_m,
-                roof=obj.roof,
-                roof_source="osm",
-                eaves_m=obj.eaves_m,
-                eaves_source=eaves_source,
-                label=obj.label,
-                height_source=obj.height_source.value,
-            )
-        else:
-            side = obj.radius_m * 1.77
-            drawn = ObstacleInput(
-                kind="house",
-                x=obj.x,
-                y=obj.y,
-                shape="rect",
-                width=side,
-                depth=side,
-                rotation=0.0,
-                height=obj.height_m,
-                roof=obj.roof,
-                roof_source="osm",
-                eaves_m=obj.eaves_m,
-                eaves_source=eaves_source,
-                label=obj.label,
-                height_source=obj.height_source.value,
-            )
-        add_obstacle(conn, garden_id, drawn)
+        _add_house(conn, garden_id, obj)
     # Deliberately not computed here. A garden arrives from the map with two
     # dozen buildings and no beds; the light is the slowest thing this app does
     # and the first thing somebody does next is draw, not read a shade map.
@@ -194,6 +163,48 @@ def garden_from_map(
             measured=around.measured, estimated=around.estimated, assumed=around.assumed
         ),
     )
+
+
+def _add_house(conn: sqlite3.Connection, garden_id: int, obj: Surrounding) -> None:
+    """One neighbour's house, as OpenStreetMap drew it.
+
+    A building that cannot be drawn is logged and left out rather than failing
+    an import whose garden is already stored: one lost house, never a half-made
+    garden, as with the streets.
+    """
+    try:
+        add_obstacle(conn, garden_id, _house_from(obj))
+    except ValueError as unbuildable:
+        logger.warning("house %r left out: %s", obj.label, unbuildable)
+
+
+def _house_from(obj: Surrounding) -> ObstacleInput:
+    """OpenStreetMap's shape, and the storeys' eaves where it counted them
+    (doc 93). The page names both, and a later survey may replace either.
+
+    The shape OSM drew, when it drew one. The square this replaces was sized
+    from half the bounding box's diagonal and came out 2.1 to 2.8 times the real
+    footprint on live data — every one axis-aligned, so a farmyard arrived as a
+    pile of overlapping boxes at the wrong angles.
+
+    A square is still the answer when Overpass sent no geometry, or an outline
+    of fewer than three different corners once rounded, which covers no ground.
+    It is sized from the equal-area radius — the size the reach filter judged
+    the building by — rather than the diagonal.
+    """
+    side = obj.radius_m * 1.77
+    square = ObstacleInput(
+        kind="house", x=obj.x, y=obj.y, shape="rect", width=side, depth=side,
+        rotation=0.0, height=obj.height_m, roof=obj.roof, roof_source="osm",
+        eaves_m=obj.eaves_m,
+        eaves_source=None if obj.eaves_m is None else "osm_levels",
+        label=obj.label, height_source=obj.height_source.value,
+        outline_source="osm",
+    )
+    if len({(corner[0], corner[1]) for corner in obj.outline}) < 3:
+        return square
+    return replace(square, shape="polygon",
+                   points=[[corner[0], corner[1]] for corner in obj.outline])
 
 
 def _add_streets(
@@ -257,5 +268,6 @@ def _add_street(
             # reaches the light model as an obstacle.
             height=None,
             label=street.name,
+            outline_source="osm",
         ),
     )

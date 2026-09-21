@@ -16,17 +16,21 @@ import { drawsOpenStreetMap, PlanCredit } from './PlanCredit';
  */
 
 const street = shed({ obstacle_id: 7, kind: 'street', label: 'Hauptstraße', height: null });
-const mapHouse = shed({ obstacle_id: 8, kind: 'house', height_source: 'osm_levels', roof_source: 'osm' });
+const mapHouse = shed({
+  obstacle_id: 8, kind: 'house', height_source: 'osm_levels', roof_source: 'osm', outline_source: 'osm',
+});
 const CREDIT = 'Karte: © OpenStreetMap-Mitwirkende';
 
 describe('what of the plan is OpenStreetMap\'s', () => {
-  it('is a street, or a building whose height, roof or eaves the gardener did not give', () => {
+  it('is a street, or an outline the map import brought', () => {
     expect(drawsOpenStreetMap({ obstacles: [street] })).toBe(true);
     expect(drawsOpenStreetMap({ obstacles: [mapHouse] })).toBe(true);
-    // A survey replaces a map house's height and roof, never its outline.
-    const surveyed = shed({ kind: 'house', height_source: 'surveyed', roof_source: 'surveyed' });
-    expect(drawsOpenStreetMap({ obstacles: [surveyed] })).toBe(true);
-    expect(drawsOpenStreetMap({ obstacles: [shed({ eaves_source: 'osm_levels' })] })).toBe(true);
+  });
+
+  it('stays the map\'s when the gardener corrects its height and roof', () => {
+    // The outline the plan draws is still OpenStreetMap's (review, 2026-09-21).
+    const corrected = { ...mapHouse, height_source: 'user', roof_source: 'user', eaves_source: null };
+    expect(drawsOpenStreetMap({ obstacles: [corrected] })).toBe(true);
   });
 
   it('is nothing the gardener drew', () => {
@@ -35,6 +39,9 @@ describe('what of the plan is OpenStreetMap\'s', () => {
     // A tree found in the laser and accepted is measured, and no building.
     const tree = shed({ kind: 'tree', height_source: 'measured', roof_source: 'user' });
     expect(drawsOpenStreetMap({ obstacles: [tree] })).toBe(false);
+    // A house drawn by hand is the gardener's whatever a survey later measured.
+    const surveyed = shed({ kind: 'house', height_source: 'surveyed', roof_source: 'surveyed' });
+    expect(drawsOpenStreetMap({ obstacles: [surveyed] })).toBe(false);
   });
 });
 

@@ -88,6 +88,9 @@ class ObstacleOut(BaseModel):
     #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'; null when nobody
     #: did — or, for a value stored before Wave 21, until the next recompute.
     eaves_source: str | None
+    #: 'osm' when OpenStreetMap drew the outline (a garden made from the map),
+    #: null when the gardener did. Decides the map's credit under the plan.
+    outline_source: str | None = None
     #: The bearing the roof falls towards, as the survey read it (doc 94); null
     #: when it has not, and the ridge is assumed to run along the long side.
     roof_fall_deg: float | None

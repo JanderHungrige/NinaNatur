@@ -116,7 +116,8 @@ class CreditOut(BaseModel):
 class ShadowFrame(BaseModel):
     """Every shadow in the garden at one moment of one day."""
 
-    #: Minutes since midnight, local solar time as the model computes it.
+    #: Minutes since 00:00 UTC on the frame's day (the 15th of the month;
+    #: `solar/day.py`). The page shows them on a Europe/Berlin clock.
     minute: int
     altitude: float
     azimuth: float

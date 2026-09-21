@@ -46,6 +46,8 @@ class ObstacleInput:
     eaves_m: float | None = None
     #: 'user' | 'surveyed' | 'osm_levels', or None: nobody has said (doc 93).
     eaves_source: str | None = None
+    #: 'osm' for an outline the map import brought; None for a drawn one.
+    outline_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -115,6 +117,8 @@ class Element:
     #: Who gave the eaves: 'user' | 'surveyed' | 'osm_levels'. None is nobody,
     #: and then the model puts them at three quarters of the ridge.
     eaves_source: str | None = None
+    #: 'osm' when OpenStreetMap drew this outline, None when the gardener did.
+    outline_source: str | None = None
     #: The bearing the roof falls towards, from the survey (doc 94). None: the
     #: ridge is assumed to run along the long side, and a pent is left flat.
     roof_fall_deg: float | None = None

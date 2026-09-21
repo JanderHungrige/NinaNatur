@@ -18,7 +18,7 @@ models: []
 test_files:
   - frontend/src/api/client.test.ts
 data_flow: reads-existing
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -54,9 +54,14 @@ FastAPI app  ->  scripts/generate_openapi.py  ->  frontend/openapi.json
                                     openapi-typescript  ->  src/api/types.ts
 ```
 
-Regenerating is `npm run generate:api`. CI runs it and fails if the result
+Regenerating is `npm run generate:api` in `frontend/`, with the project's
+virtualenv active. CI runs the same two steps directly and fails if the result
 differs from what is committed, so a backend change that was not propagated
-cannot merge.
+cannot merge — and `tests/test_api_contract.py` compares the schema before a
+push. *Until 2026-09-21 the CI check compared nothing: it ran `git diff` from
+inside `frontend/`, where its paths match no file. The committed schema's
+version is pinned to "contract" since then, because the app's own version
+changes with every merge.*
 
 ## The client
 

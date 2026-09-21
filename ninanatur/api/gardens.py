@@ -113,7 +113,8 @@ def _obstacle_out(o: Element, sun: SunPosition) -> ObstacleOut:
     return ObstacleOut(
         obstacle_id=o.obstacle_id, kind=o.kind, roof=o.roof,
         roof_source=o.roof_source, eaves_m=o.eaves_m,
-        eaves_source=o.eaves_source, roof_fall_deg=o.roof_fall_deg,
+        eaves_source=o.eaves_source, outline_source=o.outline_source,
+        roof_fall_deg=o.roof_fall_deg,
         roof_pitch_deg=pitch_of(o.footprint, Roof(o.roof), o.height,
                                 o.eaves_m, o.roof_fall_deg),
         roof_lines=[

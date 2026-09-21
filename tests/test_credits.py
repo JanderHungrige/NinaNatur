@@ -14,12 +14,14 @@ from ninanatur.garden.models import Element, Garden
 from ninanatur.geo.terrain import TerrainWindow
 
 
-def _garden(height_source: str = "user", *extra: Element) -> Garden:
-    """One house — drawn by hand unless its height came from somewhere else."""
+def _garden(height_source: str = "user", *extra: Element,
+            outline_source: str | None = None) -> Garden:
+    """One house — drawn by hand unless the map import brought its outline."""
     house = Element(
         element_id=1, kind="house", shape="polygon", x=0.0, y=0.0,
         points=[[-4.5, -3.0], [4.5, -3.0], [4.5, 3.0], [-4.5, 3.0]],
         height=9.0, height_source=height_source, roof="gable", eaves_m=6.0,
+        outline_source=outline_source,
     )
     return Garden(
         garden_id=1, share_token="t", owner_id=None, name="G",
@@ -68,7 +70,7 @@ def test_the_building_model_is_credited_only_where_it_measured_something() -> No
                                 horizon_source=None)
     assert ground_only.about == "ground"
     # A surveyed house came from the map: its outline is still OpenStreetMap's.
-    both = credits_for(_garden(height_source="surveyed"), ground=_ground(),
+    both = credits_for(_garden("surveyed", outline_source="osm"), ground=_ground(),
                        horizon_source=None)
     assert [c.about for c in both] == ["ground, buildings", "map"]
 
@@ -109,7 +111,7 @@ def test_every_state_with_a_building_model_also_publishes_its_ground() -> None:
 def test_a_state_that_gave_two_things_is_thanked_once_for_both() -> None:
     """Bayern's ground and its roofs are one licence and one attribution. Two
     identical paragraphs under a plan is not more correct, only longer."""
-    found = credits_for(_garden(height_source="surveyed"), ground=_ground(),
+    found = credits_for(_garden("surveyed", outline_source="osm"), ground=_ground(),
                         horizon_source=None)
     assert [c.about for c in found] == ["ground, buildings", "map"]
 
@@ -192,18 +194,30 @@ def test_openstreetmap_is_credited_where_its_streets_are_drawn() -> None:
     "osm_height", "osm_levels", "neighbourhood",
     # A survey or the laser replaces the height and the roof, never the outline.
     "surveyed", "measured",
+    # Nor does the gardener typing a height: the outline is still OpenStreetMap's.
+    "user",
 ])
 def test_a_house_from_the_map_is_credited_whatever_later_measured_it(height_source: str) -> None:
-    found = credits_for(_garden(height_source), ground=None, horizon_source=None)
+    found = credits_for(_garden(height_source, outline_source="osm"), ground=None,
+                        horizon_source=None)
     assert [c.about for c in found] == ["map"]
 
 
-def test_a_house_the_gardener_corrected_keeps_the_credit_its_roof_or_eaves_carry() -> None:
-    roof = Element(element_id=3, kind="house", shape="polygon", x=0.0, y=0.0,
-                   points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]], roof_source="osm")
-    eaves = Element(element_id=4, kind="shed", shape="polygon", x=0.0, y=0.0,
-                    points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]], eaves_source="osm_levels")
-    assert from_the_map(roof) and from_the_map(eaves)
+def test_a_map_house_whose_height_and_roof_were_both_corrected_keeps_its_credit() -> None:
+    """The inferred rule lost it: nothing but the outline was OpenStreetMap's
+    any more, and the outline was what the plan still drew (review, 2026-09-21)."""
+    corrected = Element(element_id=3, kind="house", shape="polygon", x=0.0, y=0.0,
+                        points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]], height=7.0,
+                        height_source="user", roof="gable", roof_source="user",
+                        outline_source="osm")
+    assert from_the_map(corrected)
+
+
+def test_a_house_drawn_by_hand_is_not_the_maps_whatever_its_height_says() -> None:
+    surveyed = Element(element_id=4, kind="house", shape="polygon", x=0.0, y=0.0,
+                       points=[[0.0, 0.0], [5.0, 0.0], [5.0, 5.0]], height=7.0,
+                       height_source="surveyed", roof_source="surveyed")
+    assert not from_the_map(surveyed)
 
 
 def test_a_garden_drawn_by_hand_owes_openstreetmap_nothing() -> None:

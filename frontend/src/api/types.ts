@@ -1485,6 +1485,8 @@ export interface components {
             label: string | null;
             /** Obstacle Id */
             obstacle_id: number;
+            /** Outline Source */
+            outline_source?: string | null;
             /** Points */
             points: number[][] | null;
             /** Roof */

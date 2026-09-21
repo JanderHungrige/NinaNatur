@@ -109,6 +109,34 @@ def test_a_garden_without_a_plot_falls_back_to_what_stands_on_it(
     assert _box(conn, garden_id) == (2.0, 0.0, 30.0, 8.0)
 
 
+def test_a_garden_of_surfaces_alone_is_covered_by_its_surfaces(
+    conn: sqlite3.Connection,
+) -> None:
+    """No plot, no bed, nothing standing: a lawn and a path are the garden. It
+    got no grid at all, and an old map then read stale for ever (review)."""
+    garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
+    add(conn, garden_id, "lawn", rect(0.0, 0.0, 10.0, 6.0), None)
+    add(conn, garden_id, "street", [[-300.0, -20.0], [300.0, -20.0]], None)
+
+    assert _box(conn, garden_id) == (0.0, 0.0, 10.0, 6.0)
+
+
+def test_a_map_that_can_no_longer_be_computed_is_removed_not_left_stale(
+    conn: sqlite3.Connection,
+) -> None:
+    from ninanatur.garden.lightgrid_store import load_grid
+    from ninanatur.garden.lighting import recompute_light
+
+    garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
+    lawn = add(conn, garden_id, "lawn", rect(0.0, 0.0, 10.0, 6.0), None)
+    recompute_light(conn, garden_id)
+    assert load_grid(conn, garden_id) is not None
+    conn.execute("DELETE FROM element WHERE element_id = ?", (lawn,))
+    add(conn, garden_id, "street", [[-300.0, -20.0], [300.0, -20.0]], None)
+    recompute_light(conn, garden_id)
+    assert load_grid(conn, garden_id) is None
+
+
 def test_a_garden_of_streets_alone_has_no_grid(conn: sqlite3.Connection) -> None:
     garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
     add(conn, garden_id, "street", [[-300.0, -20.0], [300.0, -20.0]], None)

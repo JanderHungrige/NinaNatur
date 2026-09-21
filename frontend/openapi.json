@@ -1649,6 +1649,17 @@
             "title": "Obstacle Id",
             "type": "integer"
           },
+          "outline_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outline Source"
+          },
           "points": {
             "anyOf": [
               {

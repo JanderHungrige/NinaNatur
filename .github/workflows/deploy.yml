@@ -101,7 +101,7 @@ jobs:
           # frontend/frontend/…, found nothing, and passed — for every change.
           (cd frontend && npx openapi-typescript openapi.json -o src/api/types.ts)
           git diff --exit-code -- frontend/openapi.json frontend/src/api/types.ts \
-            || { echo "::error::Generated API types are stale — run npm run generate:api"; exit 1; }
+            || { echo "::error::Generated API types are stale — run npm run generate:api in frontend/ with the venv active"; exit 1; }
 
   build-and-push:
     needs: test

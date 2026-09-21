@@ -23,6 +23,7 @@ from ninanatur.ingest.one_time import (
     wave_10_reset,
     wave_11_reset,
 )
+from ninanatur.ingest.outline_provenance import mark_map_outlines
 from ninanatur.ingest.repairs import mend_unbuildable_elements
 from ninanatur.ingest.schema import SCHEMA
 
@@ -130,5 +131,8 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     mended = mend_unbuildable_elements(conn)
     if mended is not None:
         applied.append(mended)
+    outlines = mark_map_outlines(conn)
+    if outlines is not None:
+        applied.append(outlines)
     conn.commit()
     return applied
