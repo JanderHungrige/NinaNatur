@@ -179,15 +179,18 @@ def test_filters_combine(client: TestClient) -> None:
     assert _names(client, height_max=1.0, flowering_month=7) == ["Zwergkraut"]
 
 
-def test_no_user_filter_reports_only_the_always_on_room_check(client: TestClient) -> None:
+def test_no_user_filter_reports_only_the_always_on_checks(client: TestClient) -> None:
     """A bed always knows its own area, so the room assessment is always running.
 
     It is reported like any other, and like colour it ranks rather than excludes:
-    a plant too large for the bed is shown with what it would take.
+    a plant too large for the bed is shown with what it would take. The light cut
+    runs on every bed with a light value (owner review #9); every plant here
+    wants the sun this bed has, so it removes nothing.
     """
     report = _ask(client)["filters"]
-    assert set(report) == {"space"}
+    assert set(report) == {"space", "light"}
     assert report["space"]["excluded"] == 0
+    assert report["light"]["excluded"] == 0
 
 
 def test_a_tree_too_large_for_the_bed_is_priced_not_hidden(client: TestClient) -> None:

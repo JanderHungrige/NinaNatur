@@ -75,6 +75,15 @@ function chipsFor(filters: SuggestionFilters): Chip[] {
   if (filters.includeTrees === false) {
     chips.push({ key: 'trees', label: 'ohne Gehölze', clears: ['includeTrees'] });
   }
+  // Not the report's `light` key: that one's unknowns are species with no L
+  // value, which are kept, and the coverage note would say they are not.
+  if (filters.includeLightUnsuitable === true) {
+    chips.push({
+      key: 'light_asked',
+      label: 'auch Arten, denen es zu hell ist',
+      clears: ['includeLightUnsuitable'],
+    });
+  }
   return chips;
 }
 

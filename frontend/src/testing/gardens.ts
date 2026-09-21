@@ -86,7 +86,7 @@ export const improvements = (): ImprovementsOut => ({ current_score: 0, addition
 
 export const suggestions = (): BedSuggestions => ({
   bed_id: 1, bed_name: 'Südbeet', site_axes: { ellenberg_l: 8 }, total: 1, woody: [],
-  woody_total: 0, filters: {},
+  woody_total: 0, filters: {}, light_state: 'current',
   items: [{
     taxon_id: 7, canonical_name: 'Sambucus nigra', family: 'Adoxaceae', height_max_m: 6,
     flowering_start_month: 6, flowering_end_month: 7, flower_colour: 'white',

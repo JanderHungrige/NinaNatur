@@ -10,7 +10,7 @@ import {
   stubMatchMedia,
   viewHeading,
 } from './testing/appFixtures';
-import { bed, planting, richGarden, shed } from './testing/gardens';
+import { bed, lightMap, planting, richGarden, shed, suggestions } from './testing/gardens';
 
 /* Doc 88: what each view of the details shows, and where the focus goes. */
 
@@ -161,5 +161,35 @@ describe('App — changing things from the details', () => {
     );
     expect(onPlan('[data-planting-id="11"]').classList.contains('cluster--fresh')).toBe(false);
     expect(viewHeading()?.textContent).toBe('Südbeet');
+  });
+
+  it('computes the shade from a list ranked without it, then re-reads the list and the bed', async () => {
+    // Owner review #9: the list said "gewertet nach den Standortwerten" for a
+    // bed whose light had never been computed. Its button is the sun panel's.
+    let computed = false;
+    const client = await open({
+      bedSuggestions: vi.fn(async () => ({
+        ...suggestions(), light_state: computed ? 'current' : 'missing',
+      })),
+      rebuildLightMap: vi.fn(async () => {
+        computed = true;
+        return lightMap();
+      }),
+    });
+    fireEvent.click(bedOnPlan());
+    const shade = await within(details()).findByRole('button', { name: 'Schatten berechnen' });
+    const gardensRead = client.getGarden.mock.calls.length;
+    shade.focus();
+    fireEvent.click(shade);
+
+    await within(details()).findByText(/gewertet nach den Standortwerten/);
+    expect(client.rebuildLightMap).toHaveBeenCalledTimes(1);
+    expect(client.getGarden.mock.calls.length).toBe(gardensRead + 1);
+    expect(within(details()).queryByRole('button', { name: 'Schatten berechnen' })).toBeNull();
+    // The button went with the hint, and took the focus with it: the list's
+    // heading catches it (doc 90).
+    expect(document.activeElement).toBe(
+      within(details()).getByRole('heading', { name: /Vorschläge für/ }),
+    );
   });
 });

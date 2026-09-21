@@ -122,8 +122,10 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
         axes = bed.site_axes
         if not axes:
             continue
-        # Same fit and nativeness filters as a suggestion: a change that raises
-        # the score and kills the plant is not an improvement.
+        # Same fit, light and nativeness filters as a suggestion: a change that
+        # raises the score and kills the plant is not an improvement — and a
+        # shade plant in a bed far too bright for it is the likeliest way to
+        # kill one (owner review #9, 2026-09-21).
         fitting = rank_plants(
             candidates,
             SiteVector(values=axes),
@@ -131,6 +133,7 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
                 exclude_woody=True,
                 exclude_introduced=True,
                 exclude_taxa=frozenset(t for t in planted if t is not None),
+                exclude_light_unsuitable=True,
             ),
         )
 

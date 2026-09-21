@@ -617,6 +617,9 @@ button[disabled] { opacity: 0.55; cursor: progress; }
 .suggestions__header .filter-bar__empty,
 .suggestions__header .filter-controls { margin: 0; }
 .suggestions__header > h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* „Schatten berechnen“ under a list ranked without the bed's light (owner
+   review #9): the sun panel's button, at its size, beside the words asking for it. */
+.suggestions__shade { justify-self: start; margin: 0; padding: 0.4rem 0.9rem; font-size: var(--text-md); }
 .filters-disclosure > summary { width: fit-content; cursor: pointer; font-size: var(--text-sm); color: var(--ink-muted); }
 .filters-disclosure > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .filters-disclosure[open] > summary { margin-bottom: 0.5rem; }
@@ -652,7 +655,8 @@ button[disabled] { opacity: 0.55; cursor: progress; }
   min-width: 2.25rem; height: 1.6rem; margin: 0; padding: 0 0.6rem;
   font-size: var(--text-lg); line-height: 1;
 }
-.suggestion-row__plant[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
+.suggestion-row__plant[aria-disabled='true'],
+.suggestions__shade[aria-disabled='true'] { opacity: 0.55; cursor: progress; }
 .suggestion-row__traits,
 .suggestion-row__extra {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem; min-width: 0;

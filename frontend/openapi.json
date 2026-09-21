@@ -446,6 +446,15 @@
             "title": "Items",
             "type": "array"
           },
+          "light_state": {
+            "enum": [
+              "missing",
+              "stale",
+              "current"
+            ],
+            "title": "Light State",
+            "type": "string"
+          },
           "site_axes": {
             "additionalProperties": {
               "type": "number"
@@ -476,7 +485,8 @@
           "bed_name",
           "site_axes",
           "total",
-          "items"
+          "items",
+          "light_state"
         ],
         "title": "BedSuggestions",
         "type": "object"
@@ -3734,7 +3744,7 @@
     },
     "/api/v1/gardens/{token}/beds/{bed_id}/suggestions": {
       "get": {
-        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nThe bed's derived axes are the query, so the user never types an Ellenberg\nnumber. Trees and shrubs are excluded by default: a bed is a few square\nmetres, and a hemlock that fits the light perfectly is still a useless\nsuggestion. Introduced species are excluded for a different reason: the\nproduct promises native plants, and a third of the catalogue is not.",
+        "description": "Species that suit this bed, ranked by fit against its own site vector.\n\nWoody plants get a shortlist of their own. Introduced species are left out\n(the product promises native plants), and so, unless asked for, are species\nthe bed is far too bright for (`filters.light_verdict`). `light_state` says\nwhether there was a light value to judge by.",
         "operationId": "bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get",
         "parameters": [
           {
@@ -3888,6 +3898,16 @@
             "schema": {
               "default": true,
               "title": "Exclude Planted",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_light_unsuitable",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Light Unsuitable",
               "type": "boolean"
             }
           }

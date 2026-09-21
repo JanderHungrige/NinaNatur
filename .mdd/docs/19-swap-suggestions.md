@@ -18,7 +18,7 @@ models: []
 test_files:
   - tests/test_improvements.py
 data_flow: reads-existing
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -90,7 +90,9 @@ The sentence names the reason the score moved, not the amount it moved by.
 
 - **Only species that fit the bed are proposed.** A swap that raises the score and
   kills the plant is not an improvement — candidates come through the same fit
-  and nativeness filters as `13-bed-suggestions`.
+  and nativeness filters as `13-bed-suggestions`, and since 2026-09-21 its
+  light cut: a species the bed is far too bright for is never proposed, even
+  when its overall fit clears `MIN_FIT`.
 - **A swap must beat leaving things alone.** Suggestions with a gain of zero or
   less are not shown; padding the list would train users to ignore it.
 - **Species already planted are never proposed for the same bed.**

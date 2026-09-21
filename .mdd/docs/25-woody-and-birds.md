@@ -25,8 +25,9 @@ test_files:
   - tests/test_birds_de.py
   - tests/test_canopy.py
   - tests/test_planted_shade.py
+  - tests/test_light_suggestions.py
 data_flow: mixed
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -166,6 +167,13 @@ So the answer is a second *list*, not a second model: `woody` beside `items`,
 ordered by German animal partners rather than by site fit. Ordering it by fit
 again put mistletoe and Ruscus at the top of every bed and left *Salix caprea*
 below the cut. A shrub is planted for what visits it.
+
+**Only among what the light suits** (owner review #9, 2026-09-21). Fit removed
+nothing by itself, so the order alone gave a full-sun bed, a semi-shade bed and
+a bed with no light the same eight willows. The shortlist now leaves out any
+woody species whose light band is *unsuitable* in either direction before it
+orders by partners: the main list prices a too-dark species by ranking it
+down, and a list ordered by partners cannot. `woody_total` counts what is left.
 
 ## Catalogue size
 
