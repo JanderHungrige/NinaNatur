@@ -1,5 +1,8 @@
+import type { ReactNode } from 'react';
+
 import type { LightMap, Terrain } from '../api/client';
 import { LEVELS, type MapMode, bandFor } from './SunMap';
+import { Working } from './Working';
 
 interface Props {
   /** The ground under the garden, or null where nobody publishes it. */
@@ -14,6 +17,12 @@ interface Props {
   onMonth: (month: number | null) => void;
   onRebuild: () => void;
   busy: boolean;
+  /** The shade is being computed: the button says so while it waits. */
+  rebuilding?: boolean | undefined;
+  /** A month's map is on its way. */
+  monthWorking?: boolean | undefined;
+  /** Playing the day, under the chips that chose it — built by the workspace. */
+  dayPlayer?: ReactNode;
   /** False in the workspace, whose header is the switch (doc 87): two controls
    *  for one state disagree the moment one of them is disabled. */
   showToggle?: boolean | undefined;
@@ -68,6 +77,7 @@ function whenText(iso: string): string {
  */
 export function ShadeSwitch({
   map, terrain, on, mode, month, onToggle, onMode, onMonth, onRebuild, busy, showToggle = true,
+  rebuilding = false, monthWorking = false, dayPlayer,
 }: Props) {
   return (
     <section className="panel shade-switch" aria-labelledby="shade-heading">
@@ -78,7 +88,7 @@ export function ShadeSwitch({
           old panel hid it behind "nothing drawn yet". */}
       <div className="shade-switch__rebuild">
         <button type="button" disabled={busy} onClick={onRebuild}>
-          Schatten neu berechnen
+          {rebuilding ? <Working label="Wird berechnet…" /> : 'Schatten neu berechnen'}
         </button>
         <p className="hint">
           Nach dem Anlegen neuer Objekte den Schatten einmal neu berechnen — das
@@ -136,32 +146,41 @@ export function ShadeSwitch({
               much sun does this corner get all summer"; the moving shadows
               answer "where is the shade at four o'clock". Painting both
               together made each harder to read than either alone. */}
+          {/* The day's controls directly under the chip that chose it (doc 65),
+              not in the dock at the other end of the page. */}
           {mode === 'day' && (
-            <p className="hint">
-              Zeigt die wandernden Objektschatten über der Sonnenkarte — gelb
-              ist viel Sonne. Abspielen unten beim Zeitstrahl.
-            </p>
+            <>
+              {dayPlayer}
+              <p className="hint">
+                Zeigt die wandernden Objektschatten über der Sonnenkarte — gelb
+                ist viel Sonne. Gezeigt wird der 15. des Monats im Zeitraum, für
+                die ganze Saison der 15. Juni.
+              </p>
+            </>
           )}
 
           {/* A garden with a house to its south is a different garden in April
               and in July, and the season average describes neither. Computed
               on the spot rather than stored: it is a question somebody asks
               while looking, not the number a plant is placed by. */}
-          <label className="shade-switch__month">
-            Zeitraum
-            <select
-              value={month ?? 'season'}
-              disabled={!on}
-              onChange={(e) =>
-                onMonth(e.target.value === 'season' ? null : Number(e.target.value))
-              }
-            >
-              <option value="season">Ganze Saison (März–Oktober)</option>
-              {MONTHS.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
+          <div className="shade-switch__period">
+            <label className="shade-switch__month">
+              Zeitraum
+              <select
+                value={month ?? 'season'}
+                disabled={!on}
+                onChange={(e) =>
+                  onMonth(e.target.value === 'season' ? null : Number(e.target.value))
+                }
+              >
+                <option value="season">Ganze Saison (März–Oktober)</option>
+                {MONTHS.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </label>
+            {monthWorking && <Working label="Karte wird berechnet…" />}
+          </div>
 
           {/* One row per step the map actually draws, so "more yellow" has
               somewhere to be read off. The gardening names sit on the step

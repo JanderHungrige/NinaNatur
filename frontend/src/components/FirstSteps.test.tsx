@@ -76,6 +76,13 @@ describe('FirstSteps', () => {
     fireEvent.click(compute);
     expect(onComputeShade).not.toHaveBeenCalled();
   });
+
+  it('says the shade is being computed while it is', () => {
+    // The longest wait in the garden; a button that just greys out says nothing.
+    steps({ busy: true, computing: true });
+    const compute = within(step(2)).getByRole('button', { name: 'Wird berechnet…' });
+    expect(compute.querySelector('.working__spinner')?.getAttribute('aria-hidden')).toBe('true');
+  });
 });
 
 describe('stepsDone — read from the garden, not from anything stored', () => {

@@ -167,3 +167,50 @@ describe('Landing — one way in', () => {
     expect(container.querySelectorAll('.landing__way')).toHaveLength(2);
   });
 });
+
+describe('Landing — while it waits', () => {
+  it('holds the figures’ place while they are on their way, hidden from a screen reader', () => {
+    // The forms under the hero must not jump down when the numbers land.
+    const { container } = render(
+      <Landing createForm={null} onOpen={vi.fn()} busy={false}
+               loadStats={() => new Promise<StatsOut | null>(() => undefined)} />,
+    );
+    const pending = container.querySelector('.landing__stats');
+    expect(pending).not.toBeNull();
+    expect(pending?.getAttribute('aria-hidden')).toBe('true');
+    expect(pending?.querySelectorAll('.stat')).toHaveLength(3);
+  });
+
+  it('puts the figures where the blanks were', async () => {
+    const { container } = render(
+      <Landing createForm={null} onOpen={vi.fn()} busy={false} loadStats={async () => STATS} />,
+    );
+    await waitFor(() => expect(screen.getByText('8.939')).toBeDefined());
+    expect(container.querySelector('.landing__stats')?.getAttribute('aria-hidden')).toBeNull();
+    expect(container.querySelector('.stat__pending')).toBeNull();
+  });
+
+  it('gives up the space when the catalogue does not answer', async () => {
+    const { container } = render(
+      <Landing createForm={null} onOpen={vi.fn()} busy={false} loadStats={async () => null} />,
+    );
+    await waitFor(() => expect(container.querySelector('.landing__stats')).toBeNull());
+  });
+
+  it('says a garden is being opened, over the hero', () => {
+    const { container } = render(
+      <Landing createForm={null} onOpen={vi.fn()} busy={false} opening
+               loadStats={async () => STATS} />,
+    );
+    const card = screen.getByText('Garten wird geöffnet…');
+    expect(container.querySelector('.hero')?.contains(card)).toBe(true);
+    // The meadow's motes, not a ring — and hidden from assistive technology.
+    expect(card.closest('.working')?.querySelector('.working__motes')?.getAttribute('aria-hidden'))
+      .toBe('true');
+  });
+
+  it('says nothing of the kind otherwise', () => {
+    show();
+    expect(screen.queryByText('Garten wird geöffnet…')).toBeNull();
+  });
+});

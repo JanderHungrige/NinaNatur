@@ -16,6 +16,7 @@ import { InspectorPanels } from './InspectorPanels';
 import { PlanArea } from './PlanArea';
 import { ShortcutHelp } from './ShortcutHelp';
 import { SiteHeader, type SiteProps } from './SiteHeader';
+import { Skeleton } from './Skeleton';
 import { ThemePicker } from './ThemePicker';
 import { TimelineDock } from './TimelineDock';
 import { ToolRail } from './ToolRail';
@@ -96,6 +97,7 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
       <SiteHeader
         {...header}
         busy={status.busy}
+        working={status.working}
         more={
           <>
             <ThemePicker options={planStyle.options} chosen={planStyle.chosen}
@@ -162,17 +164,9 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
       <TimelineDock
         open={columns ? dockOpen : dockOpenNarrow}
         onToggle={columns ? setDockOpen : setDockOpenNarrow}
-        player={
-          <BloomPlayer
-            month={month}
-            onSelectMonth={suggestions.selectMonth}
-            shadowDay={
-              light.shadeOn && light.day !== null
-                ? { frames: light.day.frames.length, frame: light.frame, onFrame: light.setFrame }
-                : undefined
-            }
-          />
-        }
+        // The year only. The day plays in the sun panel, under the chip that
+        // chose it (doc 65).
+        player={<BloomPlayer month={month} onSelectMonth={suggestions.selectMonth} />}
       >
         {derived.timeline !== null ? (
           <BloomTimeline
@@ -183,6 +177,8 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
             selectedMonth={month}
             onSelectMonth={suggestions.selectMonth}
           />
+        ) : derived.loading ? (
+          <Skeleton of="timeline" lines={4} />
         ) : null}
       </TimelineDock>
 

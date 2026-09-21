@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SiteHeader } from './SiteHeader';
 
@@ -89,5 +89,49 @@ describe('SiteHeader', () => {
     expect(menu().getAttribute('aria-expanded')).toBe('true');
     fireEvent.pointerDown(document.body);
     expect(menu().getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
+describe('SiteHeader — something is under way', () => {
+  const props = {
+    version: null,
+    onHome: vi.fn(),
+    onFeedback: vi.fn(),
+    accountBar: { username: null, onSignIn: vi.fn(), onSignUp: vi.fn(), onSignOut: vi.fn(), inviting: false },
+    busy: true,
+  };
+  afterEach(() => vi.useRealTimers());
+
+  it('says so once a request has run for a moment, and not before', () => {
+    // Most answers come in well under a third of a second; a spinner for each
+    // of them would be a flicker.
+    vi.useFakeTimers();
+    render(<SiteHeader {...props} working="Speichern" />);
+    expect(screen.queryByText('Speichern…')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.getByText('Speichern…')).toBeDefined();
+  });
+
+  it('is gone at once when the request is done', () => {
+    vi.useFakeTimers();
+    const view = render(<SiteHeader {...props} working="Speichern" />);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    view.rerender(<SiteHeader {...props} busy={false} working={null} />);
+    expect(screen.queryByText('Speichern…')).toBeNull();
+  });
+
+  it('is shown, not announced: the mark is hidden and no second live region appears', () => {
+    vi.useFakeTimers();
+    render(<SiteHeader {...props} working="Speichern" />);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    const shown = screen.getByText('Speichern…').closest('.working');
+    expect(shown?.querySelector('.working__spinner')?.getAttribute('aria-hidden')).toBe('true');
+    expect(shown?.closest('[aria-live], [role="status"]')).toBeNull();
   });
 });

@@ -1,6 +1,8 @@
 import { type ReactNode, useEffect, useState } from 'react';
 
 import type { StatsOut } from '../api/client';
+import { LandingStats } from './LandingStats';
+import { Working } from './Working';
 
 interface Props {
   /**
@@ -17,12 +19,10 @@ interface Props {
   myGardens?: ReactNode;
   onOpen: (token: string) => void;
   busy: boolean;
+  /** A garden is on its way to being opened — from a link, an id or the list. */
+  opening?: boolean | undefined;
   loadStats: () => Promise<StatsOut | null>;
   problem?: string | undefined;
-}
-
-function de(n: number): string {
-  return n.toLocaleString('de-DE');
 }
 
 /**
@@ -32,9 +32,7 @@ function de(n: number): string {
  * React app took the root route. It comes back as the place where someone
  * chooses *which* garden they are working on — new, or one they already have.
  *
- * The figures come from the API. Wave 1 wrote "3.087 Arten" into its HTML by
- * hand, and it was wrong the first time the catalogue was rebuilt: a page that
- * states a number is making a claim.
+ * The figures come from the API; see `LandingStats`.
  */
 export function Landing({
   createForm,
@@ -42,10 +40,12 @@ export function Landing({
   myGardens,
   onOpen,
   busy,
+  opening = false,
   loadStats,
   problem,
 }: Props) {
-  const [stats, setStats] = useState<StatsOut | null>(null);
+  /** Undefined while the figures are on their way, null if they never come. */
+  const [stats, setStats] = useState<StatsOut | null | undefined>(undefined);
   const [id, setId] = useState('');
 
   useEffect(() => {
@@ -55,7 +55,9 @@ export function Landing({
       .then((s) => {
         if (!cancelled) setStats(s);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) setStats(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -80,23 +82,15 @@ export function Landing({
         über das Jahr durchblühend, und messbar wertvoll für Insekten und Vögel.
       </p>
 
-      {stats !== null && (
-        <dl className="landing__stats">
-          <div className="stat">
-            <dt>Arten im Katalog</dt>
-            <dd>{de(stats.species)}</dd>
-          </div>
-          <div className="stat">
-            <dt>davon mit vollem Standortprofil</dt>
-            <dd>{de(stats.species_with_full_site_profile)}</dd>
-          </div>
-          <div className="stat">
-            <dt>erfasste Beziehungen zu heimischen Tieren</dt>
-            <dd>{de(stats.animal_partnerships)}</dd>
-          </div>
-        </dl>
-      )}
+      <LandingStats stats={stats} />
         </div>
+        {/* Over the hero while a garden comes, with the meadow still moving
+            behind it: a link opened cold shows the front door first. */}
+        {opening && (
+          <div className="hero__opening">
+            <Working motes className="hero__opening-card" label="Garten wird geöffnet…" />
+          </div>
+        )}
       </div>
 
       {/* Somebody signed in has already made gardens; offering to make
@@ -157,7 +151,7 @@ export function Landing({
           the foot of the page is the least it is owed. */}
       <p className="landing__credit">Video: David Roberts</p>
 
-      {stats !== null && (
+      {stats !== null && stats !== undefined && (
         <footer className="landing__sources">
           <p className="hint">Alle Daten aus offen lizenzierten Quellen:</p>
           <ul>
