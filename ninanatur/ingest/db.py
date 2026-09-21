@@ -23,6 +23,7 @@ from ninanatur.ingest.one_time import (
     wave_10_reset,
     wave_11_reset,
 )
+from ninanatur.ingest.repairs import mend_unbuildable_elements
 from ninanatur.ingest.schema import SCHEMA
 
 DEFAULT_DB_PATH = Path("data/ninanatur.sqlite")
@@ -126,5 +127,8 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     marked = roof_provenance(conn)
     if marked is not None:
         applied.append(marked)
+    mended = mend_unbuildable_elements(conn)
+    if mended is not None:
+        applied.append(mended)
     conn.commit()
     return applied

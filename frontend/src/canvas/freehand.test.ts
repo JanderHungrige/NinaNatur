@@ -214,4 +214,19 @@ describe('traceFrom', () => {
   it('refuses a stroke too short to be either', () => {
     expect(traceFrom([{ x: 0, y: 0 }], { tolerance: 0.2, closeWithin: 1 })).toBeNull();
   });
+
+  it('refuses a press whose points all fall in one centimetre', () => {
+    // It became a line of one point twice, which the server stored and then
+    // could not draw: every later request on the garden failed (owner's check #3).
+    const p = { x: 1.2, y: 3.4 };
+    const options = { tolerance: 0.1, closeWithin: 0.5 };
+    expect(traceFrom([p, p, p], options)).toBeNull();
+    expect(traceFrom([p, { x: 1.203, y: 3.401 }], options)).toBeNull();
+  });
+
+  it('refuses a path shorter than a dragged shape may be', () => {
+    const options = { tolerance: 0.1, closeWithin: 0.05 };
+    expect(traceFrom([{ x: 0, y: 0 }, { x: 0.2, y: 0 }], options)).toBeNull();
+    expect(traceFrom([{ x: 0, y: 0 }, { x: 0.3, y: 0 }], options)?.kind).toBe('path');
+  });
 });

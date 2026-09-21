@@ -8,6 +8,7 @@
  * extra steps.
  */
 import { type Point, area, selfIntersects } from './geometry';
+import { MIN_DRAG_M } from './shapes';
 
 /** Perpendicular distance from `p` to the line through `a` and `b`. */
 function distanceToLine(p: Point, a: Point, b: Point): number {
@@ -196,5 +197,21 @@ export function traceFrom(
     // began, not an area — so it falls through rather than being refused.
     if (closed !== null) return { kind: 'area', points: closed };
   }
-  return { kind: 'path', points: thinned.map((p) => ({ x: round(p.x), y: round(p.y) })) };
+  // Rounded before it is judged, because rounding is what collapses a jitter
+  // into one point twice. That line reached the server, which stored it and
+  // then could not draw the garden again (the owner's check, 2026-09-21).
+  const path = withoutRepeats(thinned.map((p) => ({ x: round(p.x), y: round(p.y) })));
+  if (path.length < 2 || lengthOf(path) < MIN_DRAG_M) return null;
+  return { kind: 'path', points: path };
+}
+
+function withoutRepeats(points: Point[]): Point[] {
+  return points.filter((p, i) => i === 0 || p.x !== points[i - 1]?.x || p.y !== points[i - 1]?.y);
+}
+
+function lengthOf(points: Point[]): number {
+  return points.reduce((sum, p, i) => {
+    const before = points[i - 1];
+    return before === undefined ? sum : sum + Math.hypot(p.x - before.x, p.y - before.y);
+  }, 0);
 }

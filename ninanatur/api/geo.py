@@ -35,8 +35,8 @@ from ninanatur.garden.store import (
     load_garden,
 )
 from ninanatur.geo.osm import buildings_in, search_address, state_at
-from ninanatur.geo.osm_streets import streets_in
-from ninanatur.geo.projection import LatLon, bounding_box_of, centroid, to_metres
+from ninanatur.geo.osm_streets import OsmStreet, streets_in
+from ninanatur.geo.projection import LatLon, Metres, bounding_box_of, centroid, to_metres
 from ninanatur.geo.surroundings import MARGIN_M, NeighbourhoodKind, surroundings_from
 
 logger = logging.getLogger(__name__)
@@ -228,22 +228,34 @@ def _add_streets(
         # Around its own first point, so moving it later is one update rather
         # than a rewrite of every corner.
         origin = metres[0]
-        add_obstacle(
-            conn,
-            garden_id,
-            ObstacleInput(
-                kind="street",
-                x=round(origin.x, 2),
-                y=round(origin.y, 2),
-                shape="line",
-                width=street.width_m,
-                points=[
-                    [round(m.x - origin.x, 2), round(m.y - origin.y, 2)] for m in metres
-                ],
-                # None, not zero: a street has no height, and Wave 8's rule is
-                # that an unrecorded one is never a zero. With none it never
-                # reaches the light model as an obstacle.
-                height=None,
-                label=street.name,
-            ),
-        )
+        try:
+            _add_street(conn, garden_id, street, metres, origin)
+        except ValueError as unbuildable:
+            # A way whose nodes sit inside one centimetre is no line once
+            # rounded. One lost street, never a half-made garden.
+            logger.warning("street %r left out: %s", street.name, unbuildable)
+
+
+def _add_street(
+    conn: sqlite3.Connection, garden_id: int, street: OsmStreet,
+    metres: list[Metres], origin: Metres,
+) -> None:
+    add_obstacle(
+        conn,
+        garden_id,
+        ObstacleInput(
+            kind="street",
+            x=round(origin.x, 2),
+            y=round(origin.y, 2),
+            shape="line",
+            width=street.width_m,
+            points=[
+                [round(m.x - origin.x, 2), round(m.y - origin.y, 2)] for m in metres
+            ],
+            # None, not zero: a street has no height, and Wave 8's rule is
+            # that an unrecorded one is never a zero. With none it never
+            # reaches the light model as an obstacle.
+            height=None,
+            label=street.name,
+        ),
+    )

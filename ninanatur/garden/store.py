@@ -19,6 +19,7 @@ from ninanatur.garden.elements import (
 from ninanatur.garden.elements import (
     polygon_centroid as _polygon_centroid,
 )
+from ninanatur.garden.footprint import require_buildable
 from ninanatur.garden.models import (
     PLANTING_KIND,
     BedInput,
@@ -135,6 +136,9 @@ def add_obstacle(conn: sqlite3.Connection, garden_id: int, obstacle: ObstacleInp
         shape=obstacle.shape, width=obstacle.width, depth=obstacle.depth,
         rotation=obstacle.rotation, points=obstacle.points,
     )
+    # Before the insert: a row written first and refused afterwards stays
+    # committed, and breaks every later read of the garden.
+    require_buildable(shape=shape, width=width, points=points)
     element_id = insert_element(
         conn, garden_id, kind=obstacle.kind, shape=shape, x=obstacle.x,
         y=obstacle.y, width=width, constraint_hint=hint, height=obstacle.height,
