@@ -12,6 +12,7 @@ every one of them.
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass, field
 
 from ninanatur.garden.ground import lowest_ground, standing_on
@@ -101,15 +102,36 @@ class LightGrid:
         from ninanatur.garden.footprint import covers
 
         ring = [(float(p[0]), float(p[1])) for p in polygon]
+        if len(ring) < 3:
+            return None  # `covers` holds nothing inside fewer than three corners
+        cols, rows = self._cells_near(ring)
         inside = [
             hours
-            for row in range(self.rows)
-            for col in range(self.cols)
+            for row in rows
+            for col in cols
             if covers(ring, self.centre_of(col, row))
             and not self.is_roof(row * self.cols + col)
             and (hours := self.hours[row * self.cols + col]) is not None
         ]
         return sum(inside) / len(inside) if inside else None
+
+    def _cells_near(self, ring: list[tuple[float, float]]) -> tuple[range, range]:
+        """The columns and rows whose centres could fall inside this outline.
+
+        Its bounding box, widened by a cell each way so a centre lying on the
+        edge is still asked; `covers` decides, exactly as before. It only stops
+        every cell of the garden being tested for every bed, which at 0.5 m over
+        a whole plot is thousands of point-in-polygon tests per bed.
+        """
+        xs = [x for x, _ in ring]
+        ys = [y for _, y in ring]
+        if not all(math.isfinite(v) for v in xs + ys):
+            return range(self.cols), range(self.rows)
+        first_col = max(0, int((min(xs) - self.min_x) // self.cell_m) - 1)
+        last_col = min(self.cols - 1, int((max(xs) - self.min_x) // self.cell_m) + 1)
+        first_row = max(0, int((min(ys) - self.min_y) // self.cell_m) - 1)
+        last_row = min(self.rows - 1, int((max(ys) - self.min_y) // self.cell_m) + 1)
+        return range(first_col, last_col + 1), range(first_row, last_row + 1)
 
 
 def compute_grid(

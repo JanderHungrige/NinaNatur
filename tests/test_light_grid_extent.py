@@ -7,13 +7,15 @@ tests/test_light_grid_stale.py.
 """
 from __future__ import annotations
 
+import random
 import sqlite3
 from collections.abc import Iterator
 
 import pytest
 from extent_builders import PLOT, PLOT_BOX, M, add, garden_with, neighbour, rect
 
-from ninanatur.garden.lightgrid import compute_grid
+from ninanatur.garden.footprint import covers
+from ninanatur.garden.lightgrid import LightGrid, compute_grid
 from ninanatur.garden.lightgrid_extent import GardenTooLarge, grid_extent_of
 from ninanatur.garden.lightview import shading_obstacles
 from ninanatur.garden.store import create_garden, load_garden
@@ -157,3 +159,52 @@ def test_something_drawn_far_out_is_still_refused(conn: sqlite3.Connection) -> N
 
     with pytest.raises(GardenTooLarge):
         compute_grid(load_garden(conn, garden_id), [])
+
+
+# --- a bed's mean reads only the cells near it --------------------------------
+
+def _mean_over_every_cell(grid: LightGrid, polygon: list[list[float]]) -> float | None:
+    """`mean_over` as it was: every cell of the grid asked about every bed."""
+    ring = [(float(p[0]), float(p[1])) for p in polygon]
+    inside = [
+        hours
+        for row in range(grid.rows)
+        for col in range(grid.cols)
+        if covers(ring, grid.centre_of(col, row))
+        and not grid.is_roof(row * grid.cols + col)
+        and (hours := grid.hours[row * grid.cols + col]) is not None
+    ]
+    return sum(inside) / len(inside) if inside else None
+
+
+def _random_bed(rng: random.Random, grid: LightGrid) -> list[list[float]]:
+    """Three to six corners anywhere near the grid, off it included. Half the
+    time they sit on cell centres, where `covers` counts the edge as inside."""
+    snap = rng.random() < 0.5
+    corners = []
+    for _ in range(rng.randint(3, 6)):
+        x = grid.min_x + rng.uniform(-5.0, grid.cols * grid.cell_m + 5.0)
+        y = grid.min_y + rng.uniform(-5.0, grid.rows * grid.cell_m + 5.0)
+        if snap:
+            x = grid.min_x + (round((x - grid.min_x) / grid.cell_m - 0.5) + 0.5) * grid.cell_m
+            y = grid.min_y + (round((y - grid.min_y) / grid.cell_m - 0.5) + 0.5) * grid.cell_m
+        corners.append([x, y])
+    return corners
+
+
+def test_a_bed_mean_is_what_it_was_when_every_cell_was_asked() -> None:
+    """Limited to the cells around the bed for speed; the answer must not move,
+    to the last bit — edges, roofs, gaps and beds hanging off the grid included."""
+    rng = random.Random(21)
+    for _ in range(400):
+        cols, rows = rng.randint(1, 30), rng.randint(1, 30)
+        n = cols * rows
+        grid = LightGrid(
+            min_x=rng.uniform(-5, 5), min_y=rng.uniform(-5, 5),
+            cell_m=rng.choice((0.5, 1.0, 2.0)), cols=cols, rows=rows,
+            hours=[None if rng.random() < 0.1 else rng.uniform(0, 12) for _ in range(n)],
+            roof=[rng.random() < 0.1 for _ in range(n)] if rng.random() < 0.5 else [],
+        )
+        bed = _random_bed(rng, grid)
+
+        assert grid.mean_over(bed) == _mean_over_every_cell(grid, bed)
