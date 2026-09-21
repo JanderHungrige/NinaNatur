@@ -133,7 +133,13 @@ the roof the model knows, in garden metres.
 - **hip** — the shortened ridge, and a hip from each of its ends towards the
   two corners of the roof's rectangle at that end — ending on the house's own
   corner nearest to each.
-- **pent** (surveyed) — the upper edge, where the one plane is highest.
+- **pent** (surveyed) — the upper edge, where the one plane is highest: the
+  house's own walls that face uphill, in its upper half (`uphill_walls`). The
+  model's edge is its rectangle's, across the surveyed fall; a surveyed fall is
+  a mean over roof faces and never exactly square to a wall, so that edge
+  touches a real house at one corner, and cut to the outline nothing was left
+  of it — nor of its arrow (review, 2026-09-21). The arrow is drawn from the
+  longest wall, so a notch in the upper wall keeps it too.
 - **flat, mixed, other, unknown, an unsurveyed pent, a pitch under 5°** — no
   lines: the model treats them as a plane at one height, and so does the
   drawing.
@@ -147,8 +153,8 @@ that is not one — a trapezoid on a street corner, an oblique end wall, an L �
 the rectangle's corners lie outside the walls: the hips ran out across the
 garden and a gable's ridge past the shorter wall. `garden/roof_lines.py` sends
 each hip to the house's own corner nearest the rectangle's and cuts every line
-to the outline, keeping what lies on a wall (a pent's upper edge does). On a
-rectangle neither changes anything; the roof's light is still the model's.
+to the outline, keeping what lies on a wall. On a rectangle neither changes
+anything; the roof's light is still the model's.
 
 ## What the plan draws, and where it stands
 
@@ -226,7 +232,8 @@ running through it (the owner, 2026-09-21, both screenshots). What is built
 (`kinds.isBuilt`: a house, a shed, a wall) is painted into the mask too, each
 outline turned the same way round so two that overlap add up rather than
 cancel. What grows or lies on a road keeps the line: a crown over a street
-does not end it.
+does not end it. A house being dragged takes its cut with it (`PlanProps.moving`:
+the one ring worked out per drag frame; the network's own paths are not).
 
 The mask's box holds the discs as well. It was sized to the bands, so a road's
 rounded end lay outside it and had no line.

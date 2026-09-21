@@ -104,6 +104,7 @@ def bed_suggestions(
             exclude_introduced=not include_introduced,
             exclude_taxa=planted if exclude_planted else frozenset(),
             exclude_light_unsuitable=not include_light_unsuitable,
+            light_misfits_last=include_light_unsuitable,
         ),
         colour=colour,
     )

@@ -226,6 +226,16 @@ def test_the_opt_out_puts_every_light_misfit_below_what_the_light_suits(
     assert _names(answer).index("Nasser Fuß") < first_misfit
 
 
+def test_the_catalogue_search_keeps_its_one_order(client: TestClient) -> None:
+    """GET /plants asked for no light cut and no opt-out, so the tier is not
+    its: a woodland sedge that grows far better than a sun plant with wet feet
+    stays above it, light misfit or not (review, 2026-09-21)."""
+    names = [i["canonical_name"] for i in client.get("/api/v1/plants", params={
+        "light": FULL_SUN, "moisture": 5.0, "nutrients": 5.5, "reaction": 6.5,
+        "limit": 100}).json()["items"]]
+    assert names.index("Carex sylvatica") < names.index("Nasser Fuß")
+
+
 # --- whether there was a light to judge by ---------------------------------
 
 def test_a_bed_whose_light_was_never_computed_says_so(client: TestClient) -> None:

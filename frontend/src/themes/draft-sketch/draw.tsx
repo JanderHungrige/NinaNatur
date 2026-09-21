@@ -138,10 +138,16 @@ function fall(edge: [Point, Point], points: Point[]): string {
   return segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]]);
 }
 
+/** The longest of a roof's lines: a pent's upper edge can be two walls, and
+ *  its arrow belongs to the main one. */
+const longest = (lines: [Point, Point][]): [Point, Point] =>
+  lines.reduce((best, line) => (span(line) > span(best) ? line : best));
+const span = ([a, b]: [Point, Point]): number => Math.hypot(b.x - a.x, b.y - a.y);
+
 function roof(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
   const lines = shape.roofLines;
   if (lines.length === 0) return null;
-  const arrow = shape.roof === 'pent' && lines.length === 1 ? fall(lines[0]!, shape.points) : '';
+  const arrow = shape.roof === 'pent' ? fall(longest(lines), shape.points) : '';
   const d = lines.map((line) => stroke(line, o.wave, mpp)).join('') + arrow;
   return <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
                strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;

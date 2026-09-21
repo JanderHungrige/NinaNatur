@@ -13,9 +13,13 @@ whose light is unsuitable either way (`api.filters.light_verdict`) — the best
 fit for the shade as much as for the sun.
 
 Both ask the same question, so both use one rule (`fit.light_fit`): the
-species' own niche width, *unsuitable* past 1.5 half-widths. A species the list
-offers for a spot is never one the map then says stands in the wrong light.
-Until 2026-09-21 this warning used a fixed distance of two rungs instead.
+species' own niche width, *unsuitable* past 1.5 half-widths. Until 2026-09-21
+this warning used a fixed distance of two rungs instead, and warned about
+plants the list had just offered. What still differs is only *where* the light
+is read: the list ranks by the bed's average, the warning by the cell a cluster
+stands in — a corner darker than its bed is what this is for. A raised bed has
+no cells of its own (its light is sampled at its height), so it is judged by
+the same value the list ranks it by.
 """
 from __future__ import annotations
 
@@ -25,7 +29,7 @@ from dataclasses import dataclass
 from ninanatur.data.traits import resolve_trait
 from ninanatur.fit.light_fit import light_mismatch_at
 from ninanatur.garden.lightgrid import LightGrid
-from ninanatur.garden.models import Garden
+from ninanatur.garden.models import Element, Garden
 from ninanatur.solar.light import ellenberg_from_sun_hours
 
 
@@ -65,7 +69,7 @@ def misplaced_plantings(
             if planting.taxon_id is None:
                 continue
             wanted = _wanted_light(conn, planting.taxon_id)
-            hours = None if wanted is None else grid.at(*_where(bed, planting))
+            hours = None if wanted is None else _hours_at(grid, bed, planting)
             if wanted is None or hours is None:
                 continue
             wants, width = wanted
@@ -101,6 +105,15 @@ def _wanted_light(conn: sqlite3.Connection, taxon_id: int) -> tuple[float, float
         return None
     width = resolve_trait(conn, taxon_id, "ellenberg_l_nw")
     return float(trait.value_num), None if width is None else width.value_num
+
+
+def _hours_at(grid: LightGrid, bed: Element, planting: object) -> float | None:
+    """The sun a cluster gets. The grid is at the ground; a raised bed's light
+    was sampled at its own height (`lighting.recompute_light`), and its stored
+    hours are what the list ranks it by."""
+    if bed.height_above_ground > 0:
+        return bed.sun_hours
+    return grid.at(*_where(bed, planting))
 
 
 def _where(bed: object, planting: object) -> tuple[float, float]:

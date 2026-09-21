@@ -4,9 +4,9 @@ What the suggestions leave out (`api.filters.light_verdict`) and what the sun
 map warns about once it is planted (`garden.misplaced`) are the same question
 asked at two moments. Until 2026-09-21 they had two answers: the list judged by
 the species' niche width, the warning by a fixed distance. With full sun at 9.0
-on EIVE's scale, the list offered *Quercus robur* (L 6.2, a wide niche) for an
-open bed and the map then said it stood too bright. One rule, here, and the two
-can no longer disagree.
+on EIVE's scale, the list offered wide-niche shrubs for an open bed and the
+map then said they stood too bright. One rule, here: the two differ now only in
+where they read the light (a bed's average, a cluster's cell).
 
 *Unsuitable* is more than 1.5 niche half-widths away (`03-niche-fit`);
 borderline is not a mismatch.

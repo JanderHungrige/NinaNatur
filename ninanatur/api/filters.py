@@ -110,6 +110,9 @@ class SearchFilters:
     # False here, so the catalogue search is untouched; the bed routes turn it
     # on (see `light_verdict`).
     exclude_light_unsuitable: bool = False
+    # Shown on request instead (the bed routes' opt-out), they come after every
+    # species the light suits. Not for the catalogue search, which asked neither.
+    light_misfits_last: bool = False
 
 
 def excluded_outright(plant: PlantRow, filters: SearchFilters) -> bool:

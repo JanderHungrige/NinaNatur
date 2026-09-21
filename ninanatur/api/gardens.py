@@ -176,7 +176,7 @@ def read(
 def recompute(
     token: str,
     request: Request,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> GardenOut:
     ratelimit.check(conn, request, "recompute")

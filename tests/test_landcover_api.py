@@ -106,16 +106,26 @@ def test_a_garden_from_the_map_arrives_with_its_surroundings(
 def test_a_refusal_costs_the_colours_not_the_garden(
     conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    calls = {"n": 0}
+
     def refuse(*_a: Any, **_k: Any) -> list[OsmArea]:
+        calls["n"] += 1
         raise RuntimeError("Overpass sagt nein")
 
     monkeypatch.setattr(landcover_sync, "landcover_in", refuse)
+    # After the answer, on a connection of its own: here, the test's. Without
+    # it the refusal was never asked for, and this test passed on anything.
+    monkeypatch.setattr(landcover_sync, "background_connection", lambda: nullcontext(conn))
     client = TestClient(app)
     token = _from_map(client)
+    assert calls["n"] == 1, "the import asked, after its answer"
     assert client.get(f"/api/v1/gardens/{token}").status_code == 200
     assert client.get(f"/api/v1/gardens/{token}/landcover").json()["areas"] == []
-    # Nothing is kept, so the next rebuild asks again.
+    # Nothing is kept; the garden is left alone for a while before it is asked
+    # for again, and the rebuild within that pause does not ask.
     assert conn.execute("SELECT count(*) FROM garden_landcover").fetchone()[0] == 0
+    client.post(f"/api/v1/gardens/{token}/light")
+    assert calls["n"] == 1
 
 
 def test_reading_them_reaches_no_network(conn: sqlite3.Connection,

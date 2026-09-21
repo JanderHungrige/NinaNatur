@@ -37,6 +37,50 @@ describe('PlanHint', () => {
     expect(hint(container).classList.contains('plan-hint--faded')).toBe(true);
   });
 
+  it('shows a hint that comes back, however soon — seven seconds each time', () => {
+    // Drawing a shape puts the tool down within a second or two, and the select
+    // hint says what to do next: it must not return already faded (review,
+    // 2026-09-21).
+    const { container, rerender } = render(<PlanHint text="Wähle eine Form" />);
+    act(() => vi.advanceTimersByTime(HINT_VISIBLE_MS));
+    rerender(<PlanHint text="Aufziehen." />);
+    act(() => vi.advanceTimersByTime(2_000));
+
+    rerender(<PlanHint text="Wähle eine Form" />);
+    expect(hint(container).classList.contains('plan-hint--faded')).toBe(false);
+    act(() => vi.advanceTimersByTime(HINT_VISIBLE_MS - 1));
+    expect(hint(container).classList.contains('plan-hint--faded')).toBe(false);
+    act(() => vi.advanceTimersByTime(1));
+    expect(hint(container).classList.contains('plan-hint--faded')).toBe(true);
+  });
+
+  it('counts its seven seconds only while it can be seen', () => {
+    // The phone's raised sheet hides it with display: none; a hint that ran out
+    // there was never read.
+    const observers: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+        observers.push(callback);
+      }
+      observe() {}
+      disconnect() {}
+    });
+    try {
+      const { container } = render(<PlanHint text="Ecke für Ecke klicken" />);
+      act(() => observers.forEach((notify) => notify([{ isIntersecting: false }])));
+      act(() => vi.advanceTimersByTime(HINT_VISIBLE_MS * 3));
+      expect(hint(container).classList.contains('plan-hint--faded')).toBe(false);
+
+      act(() => observers.forEach((notify) => notify([{ isIntersecting: true }])));
+      act(() => vi.advanceTimersByTime(HINT_VISIBLE_MS - 1));
+      expect(hint(container).classList.contains('plan-hint--faded')).toBe(false);
+      act(() => vi.advanceTimersByTime(1));
+      expect(hint(container).classList.contains('plan-hint--faded')).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps one live region, so each new hint is read out', () => {
     const { container, rerender } = render(<PlanHint text="Wähle eine Form" />);
     const first = hint(container);

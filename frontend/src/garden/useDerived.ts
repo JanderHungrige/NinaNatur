@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
   BloomPalette,
@@ -6,7 +6,6 @@ import type {
   Credit,
   GardenOut,
   ImprovementsOut,
-  Landcover,
   LightMap,
   NinaNaturClient,
   ScoreOut,
@@ -15,10 +14,9 @@ import type {
 } from '../api/client';
 import { type DerivedSetters, fetchDerived } from '../derived';
 import type { Status } from '../useStatus';
+import { useLandcover } from './useLandcover';
 
 
-/** When an empty landcover is asked for again (doc 114). */
-const LANDCOVER_RETRY_MS = [5_000, 20_000, 60_000];
 /**
  * Everything the server derives from one garden, and the trees it found beside
  * it (doc 87). Fetched when the garden's workspace opens, re-read after edits.
@@ -44,8 +42,6 @@ export function useDerived(
   /** Which survey said so, and the credit its licence asks for (doc 106). */
   const [sources, setSources] = useState<Credit[]>([]);
   const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
-  /** The land around the garden (doc 114): decoration, so it has a fetch of its own. */
-  const [landcover, setLandcover] = useState<Landcover | null>(null);
   const [forage, setForage] = useState(true);
   /** Until the first answers are in: the details hold their places meanwhile. */
   const [loading, setLoading] = useState(true);
@@ -91,39 +87,7 @@ export function useDerived(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, token]);
 
-  /**
-   * The land around the garden, outside the Promise.all above: it is
-   * decoration, so a slow answer must not hold up "geladen" and a failed one
-   * must not say "Laden fehlgeschlagen" about a garden that loaded. Asked again
-   * after a shade rebuild, which is where an older garden first gets it.
-   */
-  const [landcoverAsked, setLandcoverAsked] = useState(0);
-  // The server fetches it after answering (a new garden, a rebuild), so an
-  // empty answer is asked again a few times, further apart each time.
-  const landcoverTries = useRef({ token, tries: 0 });
-  const reloadLandcover = useCallback(() => {
-    landcoverTries.current.tries = 0;
-    setLandcoverAsked((n) => n + 1);
-  }, []);
-  useEffect(() => {
-    let current = true;
-    let again: ReturnType<typeof setTimeout> | undefined;
-    if (landcoverTries.current.token !== token) landcoverTries.current = { token, tries: 0 };
-    client.landcover(token)
-      .then((found) => {
-        if (!current) return;
-        setLandcover(found);
-        const wait = LANDCOVER_RETRY_MS[landcoverTries.current.tries];
-        if ((found?.areas.length ?? 0) > 0 || wait === undefined) return;
-        landcoverTries.current.tries += 1;
-        again = setTimeout(() => setLandcoverAsked((n) => n + 1), wait);
-      })
-      .catch((error: unknown) => console.warn('Umgebung der Karte nicht geladen', error));
-    return () => {
-      current = false;
-      if (again !== undefined) clearTimeout(again);
-    };
-  }, [client, token, landcoverAsked]);
+  const { landcover, reloadLandcover } = useLandcover(client, token);
 
   /** Everything the server derives, re-read together after any change. */
   const refresh = useCallback(

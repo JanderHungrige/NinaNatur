@@ -44,6 +44,7 @@ from ninanatur.geo.surroundings import (
     MARGIN_M,
     NeighbourhoodKind,
     Surrounding,
+    Surroundings,
     surroundings_from,
 )
 
@@ -94,7 +95,7 @@ def garden_from_map(
     payload: MapSelection,
     request: Request,
     background: BackgroundTasks,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     account: Annotated[Account | None, Depends(current_account)] = None,
 ) -> MapGardenOut:
@@ -139,25 +140,7 @@ def garden_from_map(
     # What the ground around it is (doc 114), from the same exact anchor —
     # after the answer: creation already waits on Overpass twice.
     background.add_task(landcover_sync.add_later, garden_id, anchor, polygon)
-
-    # The ground, not a bed. It used to arrive as one large flower bed, which
-    # made the whole plot a planting site — the beds are what the gardener draws
-    # inside it, and a garden that arrives with none is the honest starting
-    # state.
-    add_obstacle(
-        conn,
-        garden_id,
-        ObstacleInput(
-            kind="garden",
-            x=0.0,
-            y=0.0,
-            shape="polygon",
-            points=polygon,
-            label=payload.name,
-        ),
-    )
-    for obj in around.objects:
-        _add_house(conn, garden_id, obj)
+    _add_ground_and_houses(conn, garden_id, polygon, payload.name, around)
     # Deliberately not computed here. A garden arrives from the map with two
     # dozen buildings and no beds; the light is the slowest thing this app does
     # and the first thing somebody does next is draw, not read a shade map.
@@ -168,6 +151,25 @@ def garden_from_map(
             measured=around.measured, estimated=around.estimated, assumed=around.assumed
         ),
     )
+
+
+def _add_ground_and_houses(
+    conn: sqlite3.Connection, garden_id: int, polygon: list[list[float]], name: str,
+    around: Surroundings,
+) -> None:
+    """The plot as the garden's ground, and the houses that shade it.
+
+    The ground, not a bed. It used to arrive as one large flower bed, which made
+    the whole plot a planting site — the beds are what the gardener draws inside
+    it, and a garden that arrives with none is the honest starting state.
+    """
+    add_obstacle(
+        conn,
+        garden_id,
+        ObstacleInput(kind="garden", x=0.0, y=0.0, shape="polygon", points=polygon, label=name),
+    )
+    for obj in around.objects:
+        _add_house(conn, garden_id, obj)
 
 
 def _add_house(conn: sqlite3.Connection, garden_id: int, obj: Surrounding) -> None:

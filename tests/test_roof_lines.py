@@ -6,6 +6,8 @@ would be a second answer, so the model says which lines to draw.
 """
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from ninanatur.garden.roof_lines import inside_parts, roof_lines
@@ -138,3 +140,42 @@ def test_a_line_on_a_wall_is_kept() -> None:
 
 def test_a_line_wholly_outside_is_not_drawn() -> None:
     assert inside_parts(((6.0, 0.0), (9.0, 0.0)), BOX) == []
+
+
+# --- a surveyed pent over a real house (review, 2026-09-21) --------------------
+#
+# A surveyed fall is a mean over roof faces, never exactly square to a wall. The
+# model's upper edge then touches the house at one corner, and cut to the outline
+# nothing was left of it — nor of the arrow drawn from it.
+
+def _rotated(points: list[tuple[float, float]], degrees: float) -> list[tuple[float, float]]:
+    c, s = math.cos(math.radians(degrees)), math.sin(math.radians(degrees))
+    return [(x * c - y * s, x * s + y * c) for x, y in points]
+
+
+def test_a_pent_whose_fall_is_not_quite_square_keeps_its_upper_wall() -> None:
+    lines = roof_lines(BOX, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=180.5)
+    assert _rounded(lines) == {frozenset({(-5.0, 3.0), (5.0, 3.0)})}
+
+
+def test_a_pent_on_a_turned_house_is_the_wall_it_rises_to() -> None:
+    """Turned 30° anticlockwise, the north wall faces a bearing of 330°; falling
+    away from it, a little off."""
+    house = _rotated(BOX, 30.0)
+    lines = roof_lines(house, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=150.7)
+    assert _rounded(lines) == {frozenset({_round(house[2]), _round(house[3])})}
+
+
+def test_a_pent_on_a_corner_house_is_its_short_upper_wall() -> None:
+    lines = roof_lines(TRAPEZOID, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=181.3)
+    assert _rounded(lines) == {frozenset({(3.0, 3.0), (-3.0, 3.0)})}
+
+
+def test_a_pent_is_the_same_whichever_way_round_the_outline_runs() -> None:
+    forward = roof_lines(BOX, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=179.0)
+    backward = roof_lines(BOX[::-1], Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=179.0)
+    assert _rounded(forward) == _rounded(backward) == {frozenset({(-5.0, 3.0), (5.0, 3.0)})}
+
+
+def _round(point: tuple[float, float]) -> tuple[float, float]:
+    return (round(point[0], 3) + 0.0, round(point[1], 3) + 0.0)

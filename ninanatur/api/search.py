@@ -83,7 +83,7 @@ def _light_misfit(
     if light is not None:
         report.setdefault(LIGHT, FilterCounts()).record(light, excludes=True)
         return None if light is Verdict.MISMATCH else False
-    return lit and light_mismatch(fit) is not None
+    return filters.light_misfits_last and lit and light_mismatch(fit) is not None
 
 
 def _passes(verdicts: dict[str, Verdict], filters: SearchFilters) -> bool:

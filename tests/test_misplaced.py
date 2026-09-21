@@ -10,6 +10,8 @@ from ninanatur.fit.light_fit import light_mismatch_at
 from ninanatur.fit.score import MEDIAN_WIDTH
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.lightgrid import compute_grid
+from ninanatur.garden.lightgrid_store import load_grid
+from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import add_planting, place_planting
@@ -129,12 +131,13 @@ def test_a_wide_niche_the_list_offers_for_full_sun_is_not_called_too_bright(
     conn: sqlite3.Connection,
 ) -> None:
     """The review of 2026-09-21: an open bed's shortlist offered *Quercus
-    robur* (L 6.24, width 3.7), and once planted the map said it stood too
-    bright — two rules for one question. It is judged by its width now."""
+    robur* (EIVE L 6.24, a niche 6.88 wide), and once planted the map said it
+    stood too bright — two rules for one question. It is judged by its width
+    now: 0.8 half-widths off in full sun, merely suitable."""
     garden_id, bed_id = _garden(conn)
     spot = _spot_value(conn, garden_id, 5.0, 7.5)
-    _species(conn, 5, 6.24, 3.7)
-    assert light_mismatch_at(spot, 6.24, 3.7) is None, "the list keeps it"
+    _species(conn, 5, 6.24, 6.88)
+    assert light_mismatch_at(spot, 6.24, 6.88) is None, "the list keeps it"
     planting_id = add_planting(conn, bed_id, taxon_id=5, quantity=1)
     place_planting(conn, planting_id, 5.0, 7.5)
 
@@ -154,6 +157,36 @@ def test_a_narrow_niche_at_the_same_distance_is_called_too_bright(
     [found] = _found(conn, garden_id)
     assert found.problem == "too_bright"  # type: ignore[attr-defined]
     assert light_mismatch_at(spot, 6.24, 1.5) == "too_bright", "and the list leaves it out"
+
+
+def test_a_raised_bed_is_judged_by_the_light_the_list_ranks_it_by(
+    conn: sqlite3.Connection,
+) -> None:
+    """Its light is sampled at its own height, over a wall that darkens the
+    ground grid under it: judged by that grid, a sun plant the list had just
+    offered was "too dark" at the very point the bed was measured (review,
+    2026-09-21)."""
+    garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    bed_id = insert_element(
+        conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0, name="Hochbeet",
+        points=[[0, 0], [3, 0], [3, 1.5], [0, 1.5]], soil_type="loam", moisture="fresh",
+        height_above_ground=1.0)
+    insert_element(conn, garden_id, kind="wall", shape="polygon", x=0, y=0,
+                   points=[[-2, -0.6], [5, -0.6], [5, -0.4], [-2, -0.4]], height=2.5)
+    conn.commit()
+    recompute_light(conn, garden_id)
+    stored = load_grid(conn, garden_id)
+    assert stored is not None
+    bed = load_garden(conn, garden_id).beds[0]
+    assert bed.sun_hours is not None
+    ground = stored[0].at(1.5, 0.75)
+    assert ground is not None and ground < bed.sun_hours - 2, "the ground is darker"
+    offered = ellenberg_from_sun_hours(bed.sun_hours) - 0.5
+    _species(conn, 7, offered, 2.0)
+    assert light_mismatch_at(ellenberg_from_sun_hours(bed.sun_hours), offered, 2.0) is None
+    add_planting(conn, bed_id, taxon_id=7, quantity=1)
+
+    assert misplaced_plantings(conn, load_garden(conn, garden_id), stored[0]) == []
 
 
 def test_a_species_with_no_indicator_value_is_left_alone(

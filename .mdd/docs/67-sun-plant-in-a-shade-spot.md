@@ -54,8 +54,17 @@ on is a warning people learn to scroll past.
 
 Until 2026-09-21 the warning used a fixed distance of two classic rungs instead
 (2.0, then 2.5 on EIVE's scale). With an open spot at 9.0 the list offered
-*Quercus robur* (L 6.2, a niche 3.7 wide) for full sun and the map then called
-it too bright — two rules for one question (review, 2026-09-21).
+*Quercus robur* (L 6.2, a niche 6.9 wide: 0.8 half-widths from full sun,
+merely *suitable*) for full sun and the map then called it too bright — two
+rules for one question (review, 2026-09-21).
+
+**Where the light is read** is the one difference left. The list ranks a bed by
+its average; the warning reads the cell a cluster stands in, because a corner
+darker than its bed is what it is for. A raised bed has no cells of its own —
+its light is sampled at its height, over whatever darkens the ground beside
+it — so it is judged by the value the list ranks it by. And the warning stays
+on the season's grid when a month is shown (`api/light._read`): a month's grid
+had quietly taken its place, and warnings came and went with the months.
 
 Both directions are named. `too_bright` is as real as `too_dark` — a fern in the
 open is as misplaced as a sedum under a hedge — and only one of the two ever

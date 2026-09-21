@@ -200,11 +200,15 @@ None. The same client calls, from new places.
 7. **The armed tool says what to do,** in a polite live region over the plan's
    corner — the hints `ShapeTools` carried — **for seven seconds** (`PlanHint`).
    Always there, "Wähle eine Form und …" covered the top of the plan for good
-   (the owner, 2026-09-21: "vielleicht nach 7 Sekunden ausblenden"). Picking
-   another tool shows its hint for seven seconds of its own; the paragraph stays
-   mounted so the live region reads each one, and faded it is `visibility:
-   hidden`, gone from the accessibility tree as from the eye. No fade under
-   reduced motion, only the hiding.
+   (the owner, 2026-09-21: "vielleicht nach 7 Sekunden ausblenden"). Every
+   change of hint shows it for seven seconds of its own, a hint that comes back
+   included: drawing a shape puts the tool down, and the select hint then says
+   the next step. The seven seconds count only while the hint can be seen
+   (an `IntersectionObserver`): the phone's raised sheet and the plan's own
+   message hide it with `display: none`, and a hint that ran out behind them
+   was never read. The paragraph stays mounted so the live region reads each
+   one, and faded it is `visibility: hidden`, gone from the accessibility tree
+   as from the eye. No fade under reduced motion, only the hiding.
 8. **One undo.** The header's ↶ — named *Letzte Änderung rückgängig*, so it is not
    mistaken for the polygon draft's own *Rückgängig* — runs the same undo as
    Ctrl/Cmd+Z and is disabled when there is nothing to take back. There is no redo stack; the polygon

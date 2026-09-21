@@ -24,6 +24,8 @@ source_files:
   - frontend/src/components/GardenCanvas.tsx
   - frontend/src/components/PlanCredit.tsx
   - frontend/src/garden/useDerived.ts
+  - frontend/src/garden/useLandcover.ts
+  - ninanatur/api/ratelimit.py
   - frontend/src/garden/useGarden.ts
   - frontend/src/api/client.ts
   - frontend/src/styles.css
@@ -65,7 +67,7 @@ known_issues:
   - "OpenStreetMap maps private plots as 'residential' almost everywhere (measured: the Kleinmachnow plot lies in one landuse=residential polygon). The plot is cut out and keeps its own ground; the neighbours' gardens stay the palest neutral."
   - "Relation assembly is tested on canned answers only. The one live request used `out tags geom`, which leaves relations' members out; the query now says `out geom`, not re-measured live (one request, as agreed)."
   - "The buildings query in `geo/osm.py` still says `out tags geom`, so its multipolygon buildings arrive without members and are skipped — the same finding, outside this feature."
-  - "The shade rebuild of a garden that has no surroundings yet costs one Overpass request, two where the garden has OSM streets (the offset), once per garden; a failure is retried on the next rebuild."
+  - "The shade rebuild of a garden that has no surroundings yet costs one Overpass request after its answer, two where the garden has OSM streets (the offset), once per garden. A failure is left alone for six hours; the pause is kept in memory, so a restart forgets it and costs one more attempt."
   - "`frontend/src/api/client.ts` was 602 lines before this feature and is 609 after; the length hook asks for a split of the client, which is not this feature's to make."
 sister_projects: []
 ---
@@ -145,11 +147,20 @@ every meadow would appear in the element list and the plan's count. A row of
 
 ## When it is fetched (`garden/landcover_sync.py`)
 
+Both fetches run **after the answer has gone out**, as background tasks
+(`add_later`, `fetch_later`) on a connection of their own, with **one attempt**
+and no back-off. They were inside the requests at first, and the review found
+"Sonne & Schatten" — the button the owner had just called endless — waiting on
+up to two Overpass requests with retries, again on every press while Overpass
+failed. The routes' heavy slot is let go when their own work ends
+(`scope="function"`), so the waiting holds none. A failure is remembered for six
+hours by the garden's share token (an id is reused after a delete, a token
+never); a street fetch that fails still keeps the land, placed from the anchor.
+
 - **At creation from the map**, after the streets, from the **exact** centre of
   the outline — the anchor the streets and houses were placed by. A refusal
   costs the colours, not the garden (`placed_by = 'map'`).
-- **On the shade rebuild** (`POST /light`, next to `ensure_terrain`), for a
-  garden that has none yet — made before this feature, or whose first fetch
+- **After the shade rebuild** (`POST /light`), for a garden that has none yet — made before this feature, or whose first fetch
   failed — under the terrain's `is_precise` guard. The stored anchor is rounded
   to four places, so a fetch from it sits up to about 6 m off the imported
   streets and houses. Where the garden holds OpenStreetMap's streets, the same
@@ -184,11 +195,13 @@ on Draft Sketch's paper.
   the view, so a pan never draws it again (doc 113). `GardenCanvas.memo.test`
   counts it through a pan and a wheel.
 
-The page asks for it once on opening, in its own promise outside the
-`Promise.all` of `useDerived`: it is decoration, so a slow answer does not hold
-up "geladen" and a failed one does not say "Laden fehlgeschlagen" — it is
-logged. It is asked again once a shade rebuild lands, which is where an older
-garden first gets it. It is drawn whether the shade is on or not.
+The page asks for it on opening in a hook of its own (`useLandcover`), outside
+the `Promise.all` of `useDerived`: it is decoration, so a slow answer does not
+hold up "geladen" and a failed one does not say "Laden fehlgeschlagen" — it is
+logged. The server fetches it after answering, so an empty answer is asked
+again after 5, 20 and 60 s, and the count starts over once a shade rebuild
+lands, which is where an older garden first gets it. It is drawn whether the
+shade is on or not.
 
 ## The credit
 
@@ -203,7 +216,8 @@ gets both on its first rebuild (doc 106).
 1. The surroundings are OpenStreetMap's, credited wherever they are drawn.
 2. They are never elements, and never reach the light model.
 3. An area that cannot be closed is not drawn.
-4. Nothing is fetched on a page load; creation and the shade rebuild fetch.
+4. Nothing is fetched on a page load; creation and the shade rebuild fetch,
+   after their answers.
 5. A failure costs the colours, never the garden or its light.
 6. The plot keeps its own ground: no class tints it.
 7. A pan never redraws the layer.
@@ -213,5 +227,6 @@ gets both on its first rebuild (doc 106).
 The endpoint takes the token and nothing else, answers 404 for a token that
 names no garden (`test_security_matrix`), and reads one row. The query is built
 from the table and a box of floats; nothing a visitor sends reaches it. Tests
-never reach Overpass: conftest switches `landcover_sync`'s two fetches off, and
+never reach Overpass: conftest switches `landcover_sync`'s two fetches off and
+gives the background task no connection unless a test hands it its own, and
 `test_no_network` fails if a second module starts asking for the land.

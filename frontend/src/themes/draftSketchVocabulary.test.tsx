@@ -47,6 +47,20 @@ describe('roofs', () => {
     expect(d.match(/M/g)).toHaveLength(4);
   });
 
+  it('keeps the arrow when the upper edge is two walls, and draws it from the longer', () => {
+    // A notch in the upper wall: the server sends both pieces (review, 2026-09-21).
+    const pent = shape('house', 'building', box(0, 0, 8, 4), {
+      roof: 'pent',
+      roofLines: [[{ x: -4, y: 2 }, { x: 2, y: 2 }], [{ x: 3, y: 2 }, { x: 4, y: 2 }]],
+    });
+    const d = drawn(pent).marks('roof')[0]!.getAttribute('d')!;
+    // Two edges, then the shaft and its barbs.
+    expect(d.match(/M/g)).toHaveLength(5);
+    // The shaft starts a quarter of the way from the longer edge's middle (-1, 2)
+    // to the house's centre (0, 0): at (-0.75, 1.5), y flipped in the drawing.
+    expect(d).toContain('M-0.75,-1.5L');
+  });
+
   it('and not at all where the model has a plane', () => {
     expect(drawn({ ...gable, roofLines: [] }).marks('roof')).toHaveLength(0);
   });
@@ -161,6 +175,15 @@ describe('streets, which arrive as ways and meet at junctions', () => {
     // The house's outline, as it is drawn: from -4..4 across, -2..4 up.
     expect(cut.getAttribute('d')).toContain('-4,2');
     expect(cut.getAttribute('d')).toContain('4,-4');
+  });
+
+  it('follows a house while it is dragged, not where it stood', () => {
+    // Dragged 20 m east, off the road: the cut goes with it (review, 2026-09-21).
+    const { container } = render(<svg><Plan shapes={[across, houseOnRoad]} metresPerPixel={0.05}
+      moving={{ key: houseOnRoad.key, dx: 20, dy: 0 }} /></svg>);
+    const d = container.querySelector('mask [data-mark="built"]')!.getAttribute('d') ?? '';
+    expect(d).toContain('16,2');
+    expect(d).not.toContain('-4,2');
   });
 
   it('but not out of what grows or lies there', () => {

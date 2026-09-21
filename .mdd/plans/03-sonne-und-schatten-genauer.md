@@ -27,7 +27,7 @@
 | Gelände | Zelle auf eigener Höhe, Hindernis auf dem Grund unter seinem Grundriss, Hangring pro Zelle, Horizontring 5 km / 20 m | `ground.py`, `slopes.py`, `geo/horizon.py` |
 | Gitter | 0,5–5 m nach Zeitbudget 5 s; Beet = **Mittel** seiner Zellen | `lightgrid.py` |
 | Ergebnis | Sonnenstunden/Tag → Ellenberg L über Geraden zwischen Stützstellen auf EIVEs 0–10-Skala (`SUN_HOUR_ANCHORS`, seit 2026-09-21; davor die Stufentabelle `SUN_HOUR_BANDS`), „a convention, not a measurement" | `solar/light.py` |
-| Warnung | Pflanze vs. Standort, Toleranz 2 L-Stufen | `garden/misplaced.py` |
+| Warnung | Pflanze vs. Standort: unpassend ab 1,5 Nischen-Halbbreiten der Art, dieselbe Regel wie die Vorschlagsliste (seit 2026-09-21; davor Toleranz 2 L-Stufen) | `garden/misplaced.py`, `fit/light_fit.py` |
 
 **Was bestätigt ist und bleibt:** die Sonnenstand-Konventionen sind getestet
 (Äquinoktium, Solstitien, Ost→Süd→West), die Projektion stimmt mit einem

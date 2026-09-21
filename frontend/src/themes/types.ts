@@ -44,6 +44,9 @@ export interface DecoratedShape {
 export interface PlanProps {
   shapes: readonly DecoratedShape[];
   metresPerPixel: number;
+  /** The shape being dragged and how far, in plan metres: what is drawn for the
+   *  whole plan follows it, as its own marks do. */
+  moving?: { key: string; dx: number; dy: number } | null;
 }
 
 /** What the plan's furniture — north, scale, title — is drawn from (doc 98). */

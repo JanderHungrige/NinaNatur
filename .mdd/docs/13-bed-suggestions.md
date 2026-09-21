@@ -105,9 +105,11 @@ best passendste Pflanze" — that made the cut symmetric and the order new (see
   denen das Licht hier nicht passt, sind ausgeblendet".
   `include_light_unsuitable=true` — the name kept, the meaning widened to both
   directions — shows them, ranked last: after every species the light suits,
-  however badly its soil fits, in the woody shortlist too (`search._order_key`;
-  until the review of 2026-09-21 they were ordered by growing conditions alone
-  and came back among the poor soil fits). FilterControls offers it as "auch Arten
+  however badly its soil fits, in the woody shortlist too (`search._order_key`,
+  `SearchFilters.light_misfits_last`; until the review of 2026-09-21 they were
+  ordered by growing conditions alone and came back among the poor soil fits).
+  Only there: the catalogue search asked for neither the cut nor the opt-out,
+  and keeps its one order. FilterControls offers it as "auch Arten
   zeigen, denen das Licht hier nicht passt". The planting improvements
   (`19-swap-suggestions`) apply the same cut; the catalogue search, `GET
   /plants`, does not.

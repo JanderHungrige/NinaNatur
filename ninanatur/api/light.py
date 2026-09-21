@@ -75,7 +75,7 @@ def rebuild_light_map(
     token: str,
     request: Request,
     background: BackgroundTasks,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> LightMap | None:
     """Recompute the whole map, now, because somebody asked.
@@ -215,6 +215,7 @@ def _read(
     if stored is None:
         return None
     grid, signature, computed_at = stored
+    season = grid
     garden = load_garden(conn, garden_id)
     # The one signature the list's `light_state` uses too, so the map and the
     # list cannot disagree about what is out of date.
@@ -237,7 +238,7 @@ def _read(
         ]) else 0.0,
         morning=grid.morning,
         misplaced=[
-            MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)
+            MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, season)
         ],
         computed_at=computed_at,
         stale=signature != now_signature,

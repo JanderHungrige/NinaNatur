@@ -49,7 +49,10 @@ MIN_AGREEING = 3
 #: How long a garden whose fetch failed is left alone. In memory: a restart
 #: forgets it, which costs one more attempt and no more.
 FAILURE_PAUSE_S = 6 * 3600
-_failed_at: dict[int, float] = {}
+#: By share token: SQLite gives a deleted garden's id to the next one, and a new
+#: garden inherited its predecessor's pause (review, 2026-09-21). A token is
+#: never given out twice.
+_failed_at: dict[str, float] = {}
 
 
 @contextmanager
@@ -91,9 +94,25 @@ def _ensure_by_id(conn: sqlite3.Connection, garden_id: int) -> None:
     ensure_landcover(conn, load_garden(conn, garden_id))
 
 
-def _paused(garden_id: int) -> bool:
-    failed = _failed_at.get(garden_id)
+def _paused(token: str) -> bool:
+    failed = _failed_at.get(token)
     return failed is not None and time.monotonic() - failed < FAILURE_PAUSE_S
+
+
+def _failed(token: str | None) -> None:
+    """Remember a failure, and forget the ones whose pause is over."""
+    now = time.monotonic()
+    for over in [key for key, at in _failed_at.items() if now - at >= FAILURE_PAUSE_S]:
+        del _failed_at[over]
+    if token is not None:
+        _failed_at[token] = now
+
+
+def _token_of(conn: sqlite3.Connection, garden_id: int) -> str | None:
+    row = conn.execute(
+        "SELECT share_token FROM garden WHERE garden_id = ?", (garden_id,)
+    ).fetchone()
+    return None if row is None else str(row[0])
 
 
 def add_landcover(conn: sqlite3.Connection, garden_id: int, anchor: LatLon,
@@ -110,7 +129,7 @@ def add_landcover(conn: sqlite3.Connection, garden_id: int, anchor: LatLon,
     except Exception:  # noqa: BLE001 — the garden matters more
         log.warning("landcover unavailable, garden %s made without it", garden_id,
                     exc_info=True)
-        _failed_at[garden_id] = time.monotonic()
+        _failed(_token_of(conn, garden_id))
         return
     save_landcover(conn, garden_id, areas, "map")
 
@@ -129,7 +148,7 @@ def ensure_landcover(conn: sqlite3.Connection, garden: Garden) -> bool:
         return False
     if fetched(conn, garden.garden_id):
         return True
-    if _paused(garden.garden_id):
+    if _paused(garden.share_token):
         return False
     box = box_around(_plot_of(garden))
     try:
@@ -138,7 +157,7 @@ def ensure_landcover(conn: sqlite3.Connection, garden: Garden) -> bool:
         # Logged with its context and swallowed on purpose: the light is what
         # was asked for, and a rebuild without colours is yesterday's plan.
         log.warning("landcover failed for garden %s", garden.garden_id, exc_info=True)
-        _failed_at[garden.garden_id] = time.monotonic()
+        _failed(garden.share_token)
         return False
     shift, placed_by = _alignment(garden, anchor, box)
     save_landcover(conn, garden.garden_id, in_garden(found, anchor, box, shift), placed_by)

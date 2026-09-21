@@ -17,6 +17,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ninanatur.api import geo as geo_routes
+from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
 from ninanatur.garden import landcover_sync
 from ninanatur.garden.landcover_sync import street_offset
@@ -116,6 +117,41 @@ def test_a_failed_fetch_leaves_the_light_alone_and_waits_before_asking_again(
     monkeypatch.setattr(landcover_sync, "FAILURE_PAUSE_S", 0)
     client.post(f"/api/v1/gardens/{token}/light")
     assert calls["n"] == 2, "and is asked again once the pause is over"
+
+
+def test_a_new_garden_does_not_inherit_a_deleted_ones_pause(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SQLite gives a deleted garden's id to the next one; the pause is the old
+    garden's, not the id's (review, 2026-09-21)."""
+    monkeypatch.setattr(landcover_sync, "landcover_in", _refuse)
+    client = TestClient(app)
+    first = _drawn(client, 52.5171, 13.3889)
+    client.post(f"/api/v1/gardens/{first}/light")
+    assert client.delete(f"/api/v1/gardens/{first}").status_code == 204
+    asked = _asking(monkeypatch, [])
+    second = _drawn(client, 52.5171, 13.3889)
+    assert conn.execute("SELECT garden_id FROM garden").fetchone()[0] == 1, "the same id"
+    client.post(f"/api/v1/gardens/{second}/light")
+    assert len(asked) == 1
+
+
+def test_the_fetch_after_the_answer_holds_no_heavy_slot(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The slots are for computing. A request-scoped slot lived until the
+    background task had finished waiting on Overpass (review, 2026-09-21)."""
+    free: list[int] = []
+
+    def landcover(*_box: float, **_k: Any) -> list[OsmArea]:
+        free.append(ratelimit.HEAVY._value)  # type: ignore[attr-defined]
+        return []
+
+    monkeypatch.setattr(landcover_sync, "landcover_in", landcover)
+    client = TestClient(app)
+    token = _drawn(client, 52.5171, 13.3889)
+    assert client.post(f"/api/v1/gardens/{token}/light").status_code == 200
+    assert free == [ratelimit.HEAVY_SLOTS]
 
 
 def test_the_light_does_not_wait_for_the_land(
