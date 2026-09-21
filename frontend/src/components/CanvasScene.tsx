@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 
-import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
+import type { CanopySuggestion, GardenOut, Landcover, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
 import { usePlanTheme } from '../themes/context';
+import { LandcoverLayer } from './LandcoverLayer';
 import { planScale } from './PlanDecorations';
 import { ReliefMap } from './ReliefMap';
 import { SceneWorld } from './SceneWorld';
@@ -55,6 +56,8 @@ interface Props {
   sunMap?: { map: LightMap; mode: MapMode } | undefined;
   /** The ground itself, when it has been fetched. Drawn beneath the plan. */
   terrain?: Terrain | null | undefined;
+  /** The land around the garden (doc 114), under everything drawn on it. */
+  landcover?: Landcover | null | undefined;
   /** One frame of a day's shadows, while the day is being played. */
   shadows?: number[][][] | undefined;
   /** Trees the surface model found, marked where they stand (doc 89). */
@@ -86,6 +89,7 @@ export function CanvasScene({
   onShowClusterInfo,
   sunMap,
   terrain,
+  landcover,
   shadows,
   canopies = NONE,
   armed = false,
@@ -130,6 +134,12 @@ export function CanvasScene({
           height={view.spanM * 2}
           fill="url(#grid)"
         />
+        {/* The neighbourhood, over the paper and under the ground's relief
+            and every element — memoised, never given the view (doc 114). */}
+        {landcover !== undefined && landcover !== null && (
+          <LandcoverLayer landcover={landcover} obstacles={garden.obstacles} theme={theme}
+                          scale={scale} />
+        )}
 
         {/* Under everything, because it is what everything stands on. Faint
             enough to be invisible while somebody places a bed, and there when

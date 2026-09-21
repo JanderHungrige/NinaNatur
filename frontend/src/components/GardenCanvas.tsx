@@ -53,7 +53,7 @@ export function GardenCanvas({
   onMoveCluster,
   onShowClusterInfo,
   sunMap,
-  terrain,
+  terrain, landcover,
   shadows,
   viewpoint = null,
   onPlaceViewpoint,
@@ -258,7 +258,7 @@ export function GardenCanvas({
           onGrabCluster={clusterDrag.grab}
           onShowClusterInfo={handlers.onShowClusterInfo}
           sunMap={sunMap}
-          terrain={terrain}
+          terrain={terrain} landcover={landcover}
           shadows={shadows}
           armed={tool !== null}
           onAskWhatItIs={handlers.onAskWhatItIs}
@@ -291,7 +291,7 @@ export function GardenCanvas({
                      updatedAt={garden.updated_at} />
       {hint !== undefined && <p className="plan-hint" aria-live="polite">{hint}</p>}
       </div>
-      <PlanCredit garden={garden} />
+      <PlanCredit garden={garden} landcover={(landcover?.areas.length ?? 0) > 0} />
     </div>
   );
 }

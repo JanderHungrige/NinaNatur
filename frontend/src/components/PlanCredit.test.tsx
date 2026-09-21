@@ -71,6 +71,29 @@ describe('the map\'s credit beneath the plan', () => {
     expect(caption(technisch, [shed()]).container.textContent).toBe('');
   });
 
+  it('names OpenStreetMap under a garden drawn by hand once its land is drawn (doc 114)', () => {
+    expect(drawsOpenStreetMap({ obstacles: [shed()] }, true)).toBe(true);
+    const { container } = render(
+      <PlanThemeProvider theme={technisch}>
+        <PlanCredit garden={{ obstacles: [shed()] }} landcover />
+      </PlanThemeProvider>,
+    );
+    expect(container.textContent).toBe(CREDIT);
+  });
+
+  it('is asked by the plan whether it draws any land', () => {
+    const plan = (areas: number) => render(
+      <PlanThemeProvider theme={technisch}>
+        <GardenCanvas garden={garden('tok', 'Handgarten', { obstacles: [shed()] })}
+                      selectedBedId={null} onSelectBed={() => {}}
+                      landcover={{ attribution: '', licence: '', areas: Array.from(
+                        { length: areas }, () => ({ kind: 'field' as const, rings: [[[0, 0], [9, 0], [9, 9]]] })) }} />
+      </PlanThemeProvider>,
+    ).container.querySelector('.plan-credit')?.textContent;
+    expect(plan(0)).toBeUndefined();
+    expect(plan(1)).toBe(CREDIT);
+  });
+
   it('is given by the plan itself, beneath the drawing', () => {
     const { container } = render(
       <PlanThemeProvider theme={technisch}>

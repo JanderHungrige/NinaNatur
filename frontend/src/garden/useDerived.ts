@@ -6,6 +6,7 @@ import type {
   Credit,
   GardenOut,
   ImprovementsOut,
+  Landcover,
   LightMap,
   NinaNaturClient,
   ScoreOut,
@@ -40,6 +41,8 @@ export function useDerived(
   /** Which survey said so, and the credit its licence asks for (doc 106). */
   const [sources, setSources] = useState<Credit[]>([]);
   const [canopies, setCanopies] = useState<CanopySuggestion[]>([]);
+  /** The land around the garden (doc 114): decoration, so it has a fetch of its own. */
+  const [landcover, setLandcover] = useState<Landcover | null>(null);
   const [forage, setForage] = useState(true);
   /** Until the first answers are in: the details hold their places meanwhile. */
   const [loading, setLoading] = useState(true);
@@ -84,6 +87,24 @@ export function useDerived(
     // new mount; a renamed one must not fetch everything again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, token]);
+
+  /**
+   * The land around the garden, outside the Promise.all above: it is
+   * decoration, so a slow answer must not hold up "geladen" and a failed one
+   * must not say "Laden fehlgeschlagen" about a garden that loaded. Asked again
+   * after a shade rebuild, which is where an older garden first gets it.
+   */
+  const [landcoverAsked, setLandcoverAsked] = useState(0);
+  const reloadLandcover = useCallback(() => setLandcoverAsked((n) => n + 1), []);
+  useEffect(() => {
+    let current = true;
+    client.landcover(token)
+      .then((found) => { if (current) setLandcover(found); })
+      .catch((error: unknown) => console.warn('Umgebung der Karte nicht geladen', error));
+    return () => {
+      current = false;
+    };
+  }, [client, token, landcoverAsked]);
 
   /** Everything the server derives, re-read together after any change. */
   const refresh = useCallback(
@@ -154,6 +175,8 @@ export function useDerived(
     terrain,
     sources,
     canopies,
+    landcover,
+    reloadLandcover,
     forage,
     toggleForage,
     refresh,
