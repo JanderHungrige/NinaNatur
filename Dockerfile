@@ -7,7 +7,7 @@
 # the build should be the same build tomorrow. Dependabot proposes new digests.
 
 # --- frontend -----------------------------------------------------------------
-FROM node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS frontend
+FROM node:22-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 AS frontend
 
 WORKDIR /build
 # Manifests first, so a source-only change reuses the install layer.
