@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { GardenOut, NinaNaturClient } from '../api/client';
 import { useUndoShortcut, useUndoStack } from '../useUndoStack';
@@ -54,6 +54,11 @@ export function useGarden(
   );
 
   const computeShade = useComputeShade(light.rebuilt, light.rebuild, suggestions.afterShade);
+  // A rebuild is where a garden made before doc 114 first gets its surroundings.
+  const { reloadLandcover } = derived;
+  useEffect(() => {
+    if (light.rebuilt > 0) reloadLandcover();
+  }, [light.rebuilt, reloadLandcover]);
 
   const { run, setStatus } = status;
   const undoLast = useCallback(() => {

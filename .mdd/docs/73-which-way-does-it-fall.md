@@ -22,7 +22,7 @@ test_files:
   - frontend/src/slopes.test.ts
   - frontend/src/components/BedPanel.test.tsx
 data_flow: writes-existing
-last_synced: 2026-09-05
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -37,7 +37,7 @@ known_issues:
 
 # Which Way Does It Fall
 
-Feature 5 of Wave 17. *"6.4 h/Tag · L 8 · Südhang, 16 %"*.
+Feature 5 of Wave 17. *"6.4 h/Tag · L 7.8 · Südhang, 16 %"*.
 
 ## Named, never scored
 
@@ -55,7 +55,7 @@ slope into the light score would move a number that should barely move, in the
 wrong direction, for the wrong reason.
 
 Instead it is said, in front of the figure it qualifies, so a gardener reads
-*"5.2 h/Tag · L 6 · Nordhang, 30 %"* and knows both things. Nobody should read
+*"5.2 h/Tag · L 7.0 · Nordhang, 30 %"* and knows both things. Nobody should read
 "12.5 h" on a north bank as "as good as flat", and the number alone would let
 them.
 

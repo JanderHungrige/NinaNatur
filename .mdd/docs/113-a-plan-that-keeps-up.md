@@ -90,7 +90,9 @@ The cost was elsewhere, and it came from four places at once:
 
   `GardenCanvas.memo.test.tsx` counts how often the shapes are drawn across a
   pan, a wheel and a hover over the sun map. It is zero each time. That test
-  found a fresh `[]` the first time it ran.
+  found a fresh `[]` the first time it ran. The land around the garden (doc 114)
+  is a second memoised layer beside `SceneWorld`, under it, held to the same
+  rule and counted by the same test.
 - **The sun map and the relief are a few paths** (`canvas/cellPaths`). There is
   one path per wash (at most twenty) and one per slope step (eight each way). A
   run of equal cells along a row is one rectangle. The relief's opacity is

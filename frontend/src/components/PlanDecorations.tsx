@@ -41,7 +41,7 @@ function obstacleShape(o: Obstacle): DecoratedShape {
     : null;
   return { key: `obstacle-${o.obstacle_id}`, symbol: SYMBOL.get(o.kind) ?? 'plain',
            ground: isGround(o.kind), kind: o.kind, points: toPoints(o.footprint), line,
-           raised: 0, roof: o.roof,
+           raised: 0, roof: o.roof, roofFall: o.roof_fall_deg,
            bandWidth: o.shape === 'line' ? o.width : null,
            shadow: o.shadow === null || o.shadow === undefined
              ? null : { x: o.shadow[0] ?? 0, y: o.shadow[1] ?? 0 },
@@ -102,20 +102,28 @@ export function beneathOf(drawn: Decorated[], shift: (id: number) => string,
  * shape being dragged gets a group, to move them with it: a group per shape
  * was a third of everything the browser had to build for the city.
  */
-export function InkLayer({ drawn, theme, metresPerPixel, shift }: {
+export function InkLayer({ drawn, theme, metresPerPixel, shift, dragOffset = null }: {
   drawn: Decorated[];
   theme: PlanTheme;
   metresPerPixel: number;
   shift: (id: number) => string;
+  /** The element being dragged, for what the theme draws over the whole plan. */
+  dragOffset?: { id: number; dx: number; dy: number } | null;
 }) {
   // Stable while the garden and the scale are: what the theme draws for the
   // plan as a whole is not worked out again on every drag frame.
   const shapes = useMemo(() => drawn.map((d) => d.shape), [drawn]);
+  const moving = useMemo(() => {
+    const dragged = dragOffset === null ? undefined : drawn.find((d) => d.id === dragOffset.id);
+    return dragged === undefined || dragOffset === null
+      ? null : { key: dragged.shape.key, dx: dragOffset.dx, dy: dragOffset.dy };
+  }, [drawn, dragOffset]);
   return (
     <g className="canvas__ink" pointerEvents="none" aria-hidden="true">
       {/* What belongs to no single shape — a street network's outline — under
           the shapes' own marks. */}
-      {theme.Plan !== undefined && <theme.Plan shapes={shapes} metresPerPixel={metresPerPixel} />}
+      {theme.Plan !== undefined
+        && <theme.Plan shapes={shapes} metresPerPixel={metresPerPixel} moving={moving} />}
       {drawn.filter(({ decoration }) => !isEmpty(decoration.over)).map(({ id, shape, decoration }) => {
         const moved = shift(id);
         if (moved === '') return decoration.over;

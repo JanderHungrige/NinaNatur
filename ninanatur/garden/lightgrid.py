@@ -17,9 +17,6 @@ from dataclasses import dataclass, field
 
 from ninanatur.garden.ground import lowest_ground, standing_on
 from ninanatur.garden.lightcells import answer_at, roofs_of
-
-# The box and the cell size live in `lightgrid_extent` since 2026-09-21. The
-# names are re-exported because this is where every caller has imported them.
 from ninanatur.garden.lightgrid_extent import CELL_COST_MS as CELL_COST_MS
 from ninanatur.garden.lightgrid_extent import CELL_LADDER_M as CELL_LADDER_M
 from ninanatur.garden.lightgrid_extent import GRID_BUDGET_S as GRID_BUDGET_S
@@ -33,6 +30,10 @@ from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
 from ninanatur.solar.position import Location
+
+# The box and the cell size live in `lightgrid_extent` since 2026-09-21. The
+# names are re-exported because this is where every caller has imported them.
+from ninanatur.solar.reach import is_convex
 from ninanatur.solar.shading import Obstacle
 
 
@@ -79,7 +80,18 @@ class LightGrid:
         row = int((y - self.min_y) // self.cell_m)
         if not (0 <= col < self.cols and 0 <= row < self.rows):
             return None
-        return self.hours[row * self.cols + col]
+        index = row * self.cols + col
+        # As the docstring always said, and the code did not: a plant beside a
+        # house was judged by the sun on its roof (review, 2026-09-21).
+        return None if self.is_roof(index) else self.hours[index]
+
+    def centre_at(self, x: float, y: float) -> tuple[float, float] | None:
+        """The centre of the cell containing this point; None outside the grid."""
+        col = int((x - self.min_x) // self.cell_m)
+        row = int((y - self.min_y) // self.cell_m)
+        if not (0 <= col < self.cols and 0 <= row < self.rows):
+            return None
+        return self.centre_of(col, row)
 
     def is_roof(self, index: int) -> bool:
         """Whether this cell is a roof. False on a grid computed before roofs."""
@@ -206,6 +218,16 @@ def compute_grid(
     )
 
 
+def _exact(element: object) -> str:
+    """A mark on what casts a shadow from a concave outline. Its hull shaded the
+    inner corner of every L-shaped house at every hour until 2026-09-22
+    (`solar.reach`); marked, a map drawn before reads stale once, and only in a
+    garden that has such a thing."""
+    footprint = getattr(element, "footprint", [])
+    casts = getattr(element, "height", None) is not None
+    return "|exact" if casts and len(footprint) > 3 and not is_convex(footprint) else ""
+
+
 def signature_of(
     garden: Garden, ground: object = None, horizon: object = None,
     *, shading_taxa: frozenset[int] | None = None,
@@ -252,7 +274,7 @@ def signature_of(
     for element in sorted(
         list(garden.beds) + list(garden.obstacles), key=lambda e: e.element_id
     ):
-        outline = ";".join(f"{x:.2f},{y:.2f}" for x, y in element.footprint)
+        outline = ";".join(f"{x:.2f},{y:.2f}" for x, y in element.footprint) + _exact(element)
         parts.append(
             f"{element.element_id}|{element.kind}|{element.height}"
             f"|{element.roof}|{element.eaves_m}|{element.roof_fall_deg}"
@@ -263,6 +285,6 @@ def signature_of(
                 continue
             parts.append(
                 f"p{planting.planting_id}|{planting.taxon_id}|{planting.quantity}"
-                f"|{planting.x}|{planting.y}"
+                f"|{planting.x}|{planting.y}{'' if planting.x is None else '|at'}"
             )
     return hashlib.sha256("\n".join(parts).encode()).hexdigest()[:16]

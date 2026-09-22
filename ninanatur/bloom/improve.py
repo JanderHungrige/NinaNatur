@@ -28,7 +28,11 @@ MONTH_NAMES = {
     8: "August", 9: "September", 10: "Oktober",
 }
 MAX_SUGGESTIONS = 8
-# How many of the best-fitting candidates to consider per bed. A cap, not a filter.
+# How many of the best candidates to consider per bed. A cap, not a filter.
+# "Best" is the suggestion list's own order since 2026-09-21 — growing
+# conditions, then insect value (`fit.rank`) — so what is weighed for a gap is
+# what grows best here and feeds most; `MIN_FIT` became a filter rather than a
+# place to stop, the order no longer being the fit's.
 CANDIDATE_POOL = 60
 # A candidate must actually suit the bed, not merely be among the least bad.
 # 0.3 is roughly the "borderline" band from 03-niche-fit; below it the species is
@@ -123,9 +127,9 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
         if not axes:
             continue
         # Same fit, light and nativeness filters as a suggestion: a change that
-        # raises the score and kills the plant is not an improvement — and a
-        # shade plant in a bed far too bright for it is the likeliest way to
-        # kill one (owner review #9, 2026-09-21).
+        # raises the score and kills the plant is not an improvement — and the
+        # wrong light, either way, is the likeliest way to kill one (owner
+        # review #9, 2026-09-21).
         fitting = rank_plants(
             candidates,
             SiteVector(values=axes),
@@ -137,10 +141,8 @@ def garden_improvements(conn: sqlite3.Connection, garden: Garden) -> Improvement
             ),
         )
 
-        for scored in fitting.items[:CANDIDATE_POOL]:
-            if scored.score < MIN_FIT:
-                # Ranked candidates are sorted, so everything after this is worse.
-                break
+        # In the list's order (`fit.rank`), not the fit's: the floor filters.
+        for scored in [s for s in fitting.items if s.score >= MIN_FIT][:CANDIDATE_POOL]:
             plant = scored.plant
             origin = plant.text("native_de") or "unknown"
             forage, partners = _candidate_forage(conn, plant.taxon_id, origin)

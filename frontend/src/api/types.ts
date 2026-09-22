@@ -252,12 +252,11 @@ export interface paths {
         };
         /**
          * Bed Suggestions
-         * @description Species that suit this bed, ranked by fit against its own site vector.
+         * @description Species that suit this bed, in the order `fit.rank` describes (doc 13).
          *
-         *     Woody plants get a shortlist of their own. Introduced species are left out
-         *     (the product promises native plants), and so, unless asked for, are species
-         *     the bed is far too bright for (`filters.light_verdict`). `light_state` says
-         *     whether there was a light value to judge by.
+         *     Woody plants get a shortlist of their own. Introduced species are left out,
+         *     and unless asked for so are those the light does not suit (`light_verdict`).
+         *     `light_state` says whether there was a light value to judge by.
          */
         get: operations["bed_suggestions_api_v1_gardens__token__beds__bed_id__suggestions_get"];
         put?: never;
@@ -411,6 +410,26 @@ export interface paths {
          *     is already saturated. See the known issue in 19-swap-suggestions.
          */
         get: operations["improvements_api_v1_gardens__token__improvements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/landcover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Landcover
+         * @description The garden's surroundings, from the stored row; never a request of its own.
+         */
+        get: operations["landcover_api_v1_gardens__token__landcover_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -781,7 +800,7 @@ export interface paths {
         };
         /**
          * Search Plants
-         * @description Species ranked by how well they fit the given site conditions.
+         * @description Species at the given site conditions, in the bed lists' order (`fit.rank`).
          */
         get: operations["search_plants_api_v1_plants_get"];
         put?: never;
@@ -1335,6 +1354,34 @@ export interface components {
             /** Swaps */
             swaps: components["schemas"]["ChangeOut"][];
         };
+        /**
+         * LandAreaOut
+         * @description One mapped area: what it is, and its rings in garden metres, y north.
+         *
+         *     Outer rings run anticlockwise and holes clockwise, for the nonzero rule.
+         */
+        LandAreaOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "allotments" | "built" | "field" | "grass" | "paved" | "residential" | "water" | "wood";
+            /** Rings */
+            rings: number[][][];
+        };
+        /**
+         * LandcoverOut
+         * @description What the ground around the garden is. Empty where nothing is mapped or
+         *     nothing has been fetched yet; the credit is OpenStreetMap's either way.
+         */
+        LandcoverOut: {
+            /** Areas */
+            areas: components["schemas"]["LandAreaOut"][];
+            /** Attribution */
+            attribution: string;
+            /** Licence */
+            licence: string;
+        };
         /** LatLonIn */
         LatLonIn: {
             /** Lat */
@@ -1646,6 +1693,8 @@ export interface components {
             flowering_start_month: number | null;
             /** Height Max M */
             height_max_m: number | null;
+            /** Insect Partners */
+            insect_partners?: number | null;
             /** Observed Colour */
             observed_colour?: string | null;
             /** Space M2 */
@@ -2627,6 +2676,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImprovementsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    landcover_api_v1_gardens__token__landcover_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandcoverOut"];
                 };
             };
             /** @description Validation Error */

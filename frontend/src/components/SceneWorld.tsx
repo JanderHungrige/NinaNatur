@@ -61,10 +61,8 @@ function World({
     dragOffset !== null && dragOffset.id === id
       ? `translate(${dragOffset.dx} ${-dragOffset.dy})`
       : '', [dragOffset]);
-  const beneath = useMemo(
-    () => (decorations === null ? undefined : beneathOf(decorations, shift)),
-    [decorations, shift],
-  );
+  const beneath = useMemo(() => (decorations === null ? undefined : beneathOf(decorations, shift)),
+    [decorations, shift]);
 
   return (
     <>
@@ -74,7 +72,8 @@ function World({
                    onAskWhatItIs={onAskWhatItIs} onGrabElement={onGrabElement} shift={shift}
                    beneath={beneath} />
       {decorations !== null
-        && <InkLayer drawn={decorations} theme={theme} shift={shift} metresPerPixel={scale} />}
+        && <InkLayer drawn={decorations} theme={theme} shift={shift} metresPerPixel={scale}
+                     dragOffset={dragOffset} />}
 
       {sunMap !== undefined && <SunMap map={sunMap} mode={mapMode} />}
 

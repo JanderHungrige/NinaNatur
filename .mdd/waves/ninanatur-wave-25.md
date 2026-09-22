@@ -582,6 +582,73 @@ Three stages:
   generate:api` could not run; and seven doc passages said what was no longer
   so.
 
+- **2026-09-21 — released to production as V0.23.217** (merge `50a617b` from
+  `dev-deployment`, at the owner's word "push und merge into main"). The
+  release runbook's gate failed first: on the phone the smoke test's new patch
+  lay hidden under the chosen bed's handles, because an unplaced patch's seeded
+  spot can land on a corner; default spots now keep off the bed's rim, and the
+  gate passed in both windows on the preview. Production serves the preview's
+  assets exactly (`index-DFDjOJu1.js`, `index-COJrsAG7.css`). Its migrations,
+  after the automatic pre-migration copy: `element.outline_source` added, four
+  reshaped paths given their width back, two undrawable elements of garden 3
+  removed (an outline with no points, a zero-length freehand line — that garden
+  could not be read before), and 394 map outlines marked as OpenStreetMap's.
+  Found on the way: the header's "Sonne & Schatten" looked as if it loaded for
+  ever on dev and on main — it was disabled until a map existed, and every
+  disabled button wore the busy cursor; the host's logs showed no rebuild was
+  ever asked for. Fixed in this release.
+
+- **2026-09-21 — the owner's second round, after V0.23.217** (branch
+  `feat/ninanatur-owner-check`, not yet on the preview). Built as two parallel
+  builders and reviewed like the first round.
+  - *Suggestions by growing conditions and insect value* (doc 13, `fit/rank.py`):
+    rank = growing × (1 + weight × insect), the weight derived per number of
+    axes so a borderline plant never outranks an all-optimal one. The light cut
+    works both ways — the best fit for the shade as for the sun — and
+    parasites (Lathraea, Orobanche, Cuscuta, Viscum …) are never suggested.
+  - *Sun hours on EIVE's scale* (doc 07): straight lines between anchors instead
+    of a staircase of classic rungs; stored beds moved across once from their
+    stored hours (`ingest/light_scale.py`), so no garden rebuilds for it.
+  - *The map's warning and the list agree* (doc 67, `fit/light_fit.py`): one rule,
+    the species' niche width, for what is offered and what is called misplaced.
+  - *The ground around the garden* from OpenStreetMap landcover (doc 114),
+    fetched after the answer, never while somebody waits, with a six-hour pause
+    after a failure.
+  - *A street is drawn like a building*: the garden's ground is not coloured
+    across it.
+- **2026-09-21 — the owner's look at V0.23.217 itself**: the tool hint fades
+  after seven seconds (doc 87); roof lines stay inside a house that is not a
+  rectangle, hips ending on its own corners (doc 98, `garden/roof_lines.py`);
+  Draft Sketch's street line no longer runs through a house standing on the
+  road, and a road's rounded end has its line again (doc 98).
+  Both rounds were reviewed together (five reviewers, three skeptics per
+  finding, 59 agents): 18 findings, 17 upheld, 14 distinct, all fixed in
+  `4a273f4`. The worst: clipping the roof lines had taken the line and the fall
+  arrow off every real surveyed pent roof (its edge now sits on the house's
+  uphill walls); the fading hint came back already faded when a tool was put
+  down within seven seconds, and ran out while the phone's sheet hid it; a
+  raised bed was warned about from the ground grid while the list ranked it by
+  its own sampled light; and the landcover fetch run after the answer still
+  held one of the two heavy slots until Overpass replied.
+  Then the fixes themselves were checked, five times, each round a checker per
+  fix and skeptics per finding, until the findings ran out of substance:
+  `e8f0e02`, `f3d23ce`, `03b7a4b`, `6baadf2`, `5183f65`. What they found beyond the first
+  review: a narrow border's cell is centred outside it, often in the hedge it
+  borders (a cell is a cluster's own only where it is its bed's); a plant
+  planted from the list has no position and was judged at the bed's middle; a
+  pent's upper wall split by an OSM node, and an arrow that leaned, ran off an
+  L, shrank to a dot or measured a recess (now `ours/pentArrow`, clipped to the
+  house); rebuild fetches of the landcover unbounded once the slot was let go,
+  and a creation fetch skipped for want of room. And an older bug in the light
+  model itself: a concave house was shaded by its convex hull, so the inner
+  corner of every L-shaped house and every courtyard read 0 h all day, on the
+  map and in a bed's sample — exact now, checked against a 3D ray march over
+  half a million samples (doc 38). And one in how positions are read: the plan
+  keeps a dragged cluster in garden metres, the server read the same numbers as
+  an offset from the bed's centre, so every placed cluster in a bed away from
+  the garden's origin was judged — and a placed tree cast its shade — somewhere
+  else (doc 67).
+
 ## What each one is
 
 ### 0. which-tiles-and-whose

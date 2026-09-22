@@ -52,6 +52,10 @@ class PlantSummary(BaseModel):
     # German bird species recorded as partners, or None when GloBI holds no
     # relations at all. Zero and "never recorded" are different facts.
     bird_partners: int | None
+    # German insect species recorded as partners — what the list's order
+    # weighs beside the growing conditions (`fit.rank`), shown on the row so the
+    # order can be argued with. None when GloBI holds no relations at all.
+    insect_partners: int | None = None
     # Estimated mature footprint in m², derived from height — the catalogue
     # records no crown width. None when the height was never recorded.
     space_m2: float | None

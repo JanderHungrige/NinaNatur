@@ -203,3 +203,25 @@ def test_a_half_shade_species_is_not_proposed_for_a_full_sun_bed(
     names = [c.canonical_name for c in garden_improvements(conn, load_garden(conn, gid)).additions]
     assert "Sonnenkraut" in names
     assert "Halbschattenkraut" not in names
+
+
+def test_a_sun_species_is_not_proposed_for_a_deep_shade_bed(
+    conn: sqlite3.Connection,
+) -> None:
+    """And the other way round, since the owner's second word the same day: the
+    best fit for the shade as much as for the sun.
+
+    L 4.9 in a bed of 2.5 is 1.6 half-widths away, *unsuitable* on light, yet
+    it scores about 0.6 overall — above `MIN_FIT`, so only the light cut keeps
+    it out. The bed's light is set rather than built from walls; the shadow
+    model has its own tests."""
+    _species(conn, 1, "Schattenkraut", 6, 6, partners=100, light=2.5)
+    _species(conn, 2, "Sonnenkraut", 4, 4, partners=900, light=4.9)
+    gid = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    bed = add_bed(conn, gid, BedInput(name="Beet", polygon=SQUARE,
+                                      soil_type="loam", moisture="fresh"))
+    conn.execute("UPDATE element SET ellenberg_l = 2.5 WHERE element_id = ?", (bed,))
+    conn.commit()
+    names = [c.canonical_name for c in garden_improvements(conn, load_garden(conn, gid)).additions]
+    assert "Schattenkraut" in names
+    assert "Sonnenkraut" not in names

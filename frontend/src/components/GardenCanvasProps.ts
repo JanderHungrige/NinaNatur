@@ -1,6 +1,4 @@
-import type { ReactNode } from 'react';
-
-import type { CanopySuggestion, GardenOut, LightMap, Terrain } from '../api/client';
+import type { CanopySuggestion, GardenOut, Landcover, LightMap, Terrain } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Box } from '../canvas/handles';
 import type { DrawnShape, Tool } from '../canvas/shapes';
@@ -33,6 +31,9 @@ export interface GardenCanvasProps {
   sunMap?: { map: LightMap; mode: MapMode } | undefined;
   /** The ground the garden stands on, drawn beneath the plan. */
   terrain?: Terrain | null | undefined;
+  /** The land around the garden, from OpenStreetMap (doc 114): decoration,
+   *  drawn whether the shade is on or not, and credited under the plan. */
+  landcover?: Landcover | null | undefined;
   shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
@@ -46,8 +47,9 @@ export interface GardenCanvasProps {
   tool?: Tool | null;
   /** What the armed tool expects, floated in the drawing's own corner. It hangs
    *  inside the stage, not under it, so a caption beneath the drawing — whose
-   *  hand it is in (doc 98) — has a line of its own. */
-  hint?: ReactNode;
+   *  hand it is in (doc 98) — has a line of its own. Seven seconds each
+   *  (`PlanHint`). */
+  hint?: string;
   onDrawShape?: ((shape: DrawnShape) => void) | undefined;
   /** A freehand stroke: an outline the hand closed, or a path. */
   onDrawTrace?:

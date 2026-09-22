@@ -69,7 +69,7 @@ def _planted_obstacles(
             # Where the gardener put the cluster, or the middle of the bed for
             # one nobody has moved.
             at = (
-                (bed.x + planting.x, bed.y + planting.y)
+                (planting.x, planting.y)
                 if planting.x is not None and planting.y is not None
                 else centroid
             )

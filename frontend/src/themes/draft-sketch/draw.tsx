@@ -7,6 +7,7 @@ import type { DecoratedShape, Decoration } from '../types';
 import type {
   Band, Centre, Inner, Ink, Joins, Overlay, Overshoot, RoofLines, Shadow, Ticks, Wave,
 } from './overlays';
+import { pentArrow } from './ours/pentArrow';
 import { disc, mm, outline, ring, stroke, width } from './paths';
 
 /*
@@ -122,29 +123,37 @@ function tickMarks(o: Ticks, points: Point[], mpp: number, key: string): ReactNo
                strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;
 }
 
-/** A pent roof's one line is its upper edge, on the wall's own line where it
- *  cannot be seen; an arrow from its middle into the roof says which way it
- *  falls — drawn from the server's line and the outline, nothing else. */
-function fall(edge: [Point, Point], points: Point[]): string {
-  const [a, b] = edge;
-  const from = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  const c = centreOf(points);
-  const tail = { x: from.x + (c.x - from.x) * 0.25, y: from.y + (c.y - from.y) * 0.25 };
-  const tip = { x: from.x + (c.x - from.x) * 1.1, y: from.y + (c.y - from.y) * 1.1 };
+/** A pent roof's upper edge lies on the walls it rises to, where it cannot be
+ *  seen; an arrow from it into the roof says which way it falls
+ *  (`ours/pentArrow`). The arrow is a mark of its own, clipped to the house: a
+ *  roof mark over the garden is what the owner's check of 2026-09-21 was about. */
+function fallArrow(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
+  const shaft = pentArrow(shape.roofLines, shape.points, shape.roofFall);
+  if (shaft === null) return null;
+  const [tail, tip] = shaft;
   const back = Math.hypot(tip.x - tail.x, tip.y - tail.y) * 0.3;
   const heading = Math.atan2(tip.y - tail.y, tip.x - tail.x);
   const barb = (turn: number) => ({ x: tip.x - back * Math.cos(heading + turn),
                                     y: tip.y - back * Math.sin(heading + turn) });
-  return segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]]);
+  const clip = `ds-fall-${key}`;
+  return (
+    <g key={`${key}-fall`}>
+      <clipPath id={clip}><path d={ring(shape.points)} /></clipPath>
+      <path data-mark="fall" d={segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]])}
+            fill="none" stroke={o.colour} strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)}
+            strokeLinecap="round" clipPath={`url(#${clip})`} />
+    </g>
+  );
 }
 
 function roof(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
   const lines = shape.roofLines;
   if (lines.length === 0) return null;
-  const arrow = shape.roof === 'pent' && lines.length === 1 ? fall(lines[0]!, shape.points) : '';
-  const d = lines.map((line) => stroke(line, o.wave, mpp)).join('') + arrow;
-  return <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
-               strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;
+  const d = lines.map((line) => stroke(line, o.wave, mpp)).join('');
+  const drawnLines = <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
+                           strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)}
+                           strokeLinecap="round" />;
+  return shape.roof === 'pent' ? [drawnLines, fallArrow(o, shape, mpp, key)] : drawnLines;
 }
 
 function inner(o: Inner, points: Point[], mpp: number, key: string): ReactNode {

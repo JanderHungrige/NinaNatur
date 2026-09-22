@@ -62,7 +62,9 @@ class Planting:
     quantity: int
     added_at: str
     raw_name: str | None = None
-    #: Where the gardener put this cluster, in metres from the bed's origin.
+    #: Where the gardener put this cluster, in garden metres — where the plan
+    #: draws it, not an offset from the bed (the docstrings said so until
+    #: 2026-09-22; the plan never did, and the server read it as one).
     #: None until somebody moves it — the plan then derives a position from the
     #: id, which is stable across renders without pretending to be a decision.
     x: float | None = None

@@ -12,7 +12,7 @@ import sqlite3
 from dataclasses import replace
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, status
 from geokachel.orthophotos import by_state
 
 from ninanatur.api import ratelimit
@@ -29,6 +29,7 @@ from ninanatur.api.schemas_map import (
     PlaceSearchOut,
 )
 from ninanatur.auth.sessions import Account
+from ninanatur.garden import landcover_sync
 from ninanatur.garden.footprint import require_buildable
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import (
@@ -43,6 +44,7 @@ from ninanatur.geo.surroundings import (
     MARGIN_M,
     NeighbourhoodKind,
     Surrounding,
+    Surroundings,
     surroundings_from,
 )
 
@@ -92,7 +94,8 @@ def imagery_at(
 def garden_from_map(
     payload: MapSelection,
     request: Request,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
+    background: BackgroundTasks,
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     account: Annotated[Account | None, Depends(current_account)] = None,
 ) -> MapGardenOut:
@@ -134,35 +137,39 @@ def garden_from_map(
         owner_id=None if account is None else str(account.account_id),
     )
     _add_streets(conn, garden_id, anchor, south, west, north, east)
-
-    # The ground, not a bed. It used to arrive as one large flower bed, which
-    # made the whole plot a planting site — the beds are what the gardener draws
-    # inside it, and a garden that arrives with none is the honest starting
-    # state.
-    add_obstacle(
-        conn,
-        garden_id,
-        ObstacleInput(
-            kind="garden",
-            x=0.0,
-            y=0.0,
-            shape="polygon",
-            points=polygon,
-            label=payload.name,
-        ),
-    )
-    for obj in around.objects:
-        _add_house(conn, garden_id, obj)
+    _add_ground_and_houses(conn, garden_id, polygon, payload.name, around)
     # Deliberately not computed here. A garden arrives from the map with two
     # dozen buildings and no beds; the light is the slowest thing this app does
     # and the first thing somebody does next is draw, not read a shade map.
+    made = load_garden(conn, garden_id)
+    # The ground around it (doc 114), from the exact anchor, after the answer.
+    background.add_task(landcover_sync.add_later, made.share_token, anchor, polygon)
 
     return MapGardenOut(
-        garden=to_out(load_garden(conn, garden_id)),
+        garden=to_out(made),
         heights=HeightReport(
             measured=around.measured, estimated=around.estimated, assumed=around.assumed
         ),
     )
+
+
+def _add_ground_and_houses(
+    conn: sqlite3.Connection, garden_id: int, polygon: list[list[float]], name: str,
+    around: Surroundings,
+) -> None:
+    """The plot as the garden's ground, and the houses that shade it.
+
+    The ground, not a bed. It used to arrive as one large flower bed, which made
+    the whole plot a planting site — the beds are what the gardener draws inside
+    it, and a garden that arrives with none is the honest starting state.
+    """
+    add_obstacle(
+        conn,
+        garden_id,
+        ObstacleInput(kind="garden", x=0.0, y=0.0, shape="polygon", points=polygon, label=name),
+    )
+    for obj in around.objects:
+        _add_house(conn, garden_id, obj)
 
 
 def _add_house(conn: sqlite3.Connection, garden_id: int, obj: Surrounding) -> None:

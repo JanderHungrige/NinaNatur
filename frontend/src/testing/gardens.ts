@@ -24,7 +24,7 @@ export function bed(overrides: Partial<Bed> = {}): Bed {
   return {
     bed_id: 1, kind: 'bed', shape: 'polygon', x: 0, y: 0, points: null, width: null,
     constraint_hint: null, name: 'Südbeet', polygon: [[0, 0], [3, 0], [3, 2], [0, 2]],
-    soil_type: 'loam', moisture: 'fresh', ellenberg_l: 8, ellenberg_m: 5, ellenberg_n: 5.5,
+    soil_type: 'loam', moisture: 'fresh', ellenberg_l: 7.8, ellenberg_m: 5, ellenberg_n: 5.5,
     ellenberg_r: 6.5, sun_hours: 6.4, slope_deg: null, aspect_deg: null,
     light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null,
     plantings: [],
@@ -85,7 +85,7 @@ export const score = (): ScoreOut => ({
 export const improvements = (): ImprovementsOut => ({ current_score: 0, additions: [], swaps: [] });
 
 export const suggestions = (): BedSuggestions => ({
-  bed_id: 1, bed_name: 'Südbeet', site_axes: { ellenberg_l: 8 }, total: 1, woody: [],
+  bed_id: 1, bed_name: 'Südbeet', site_axes: { ellenberg_l: 7.8 }, total: 1, woody: [],
   woody_total: 0, filters: {}, light_state: 'current',
   items: [{
     taxon_id: 7, canonical_name: 'Sambucus nigra', family: 'Adoxaceae', height_max_m: 6,

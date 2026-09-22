@@ -6,14 +6,19 @@ from collections.abc import Iterator
 
 import pytest
 
+from ninanatur.fit.light_fit import light_mismatch_at
+from ninanatur.fit.score import MEDIAN_WIDTH
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.lightgrid import compute_grid
-from ninanatur.garden.misplaced import TOLERANCE, misplaced_plantings
+from ninanatur.garden.lightgrid_store import load_grid
+from ninanatur.garden.lighting import recompute_light
+from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.models import PLANTING_KIND
 from ninanatur.garden.plantings import add_planting, place_planting
 from ninanatur.garden.store import create_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
+from ninanatur.solar.light import ellenberg_from_sun_hours
 from ninanatur.solar.shading import Obstacle
 
 EIVE = {"source": "EIVE-1.0", "license": "CC-BY-4.0"}
@@ -28,7 +33,10 @@ WALL = Obstacle(footprint=[(0.0, -1.0), (10.0, -1.0), (10.0, -0.4), (0.0, -0.4)]
 def conn() -> Iterator[sqlite3.Connection]:
     c: sqlite3.Connection = connect(":memory:", same_thread=False)
     init_schema(c)
-    for tid, name, light in ((1, "Sonnenkraut", 8.0), (2, "Schattenkraut", 3.0),
+    # EIVE values: a plant of full sun (9.0, what an open spot gets) and one of
+    # deep shade. The sun plant was 8.0 while an open spot read 8 on the old
+    # staircase (until 2026-09-21).
+    for tid, name, light in ((1, "Sonnenkraut", 9.0), (2, "Schattenkraut", 3.0),
                              (3, "Namenlos", None)):
         c.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (?, ?)", (tid, name))
         if light is not None:
@@ -88,18 +96,97 @@ def test_a_shade_plant_in_full_sun_is_flagged_too(conn: sqlite3.Connection) -> N
     assert found[0].problem == "too_bright"  # type: ignore[attr-defined]
 
 
-def test_a_small_difference_is_not_worth_saying(conn: sqlite3.Connection) -> None:
-    """One rung is inside the noise of a model whose building heights are mostly
-    assumed, and a warning nobody can act on is one people learn to scroll
-    past."""
-    garden_id, bed_id = _garden(conn)
-    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (4, 'Fast')")
-    upsert_trait(conn, 4, "ellenberg_l", value_num=8.0 - (TOLERANCE - 0.5), **EIVE)
+def _spot_value(conn: sqlite3.Connection, garden_id: int, x: float, y: float) -> float:
+    """What the spot itself gets, whatever the hours->L convention of the day
+    makes of its sun."""
+    grid = compute_grid(load_garden(conn, garden_id), [WALL])
+    hours = None if grid is None else grid.at(x, y)
+    assert hours is not None
+    return ellenberg_from_sun_hours(hours)
+
+
+def _species(conn: sqlite3.Connection, tid: int, light: float, width: float | None) -> None:
+    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (?, ?)", (tid, f"Art {tid}"))
+    upsert_trait(conn, tid, "ellenberg_l", value_num=light, **EIVE)
+    if width is not None:
+        upsert_trait(conn, tid, "ellenberg_l_nw", value_num=width, **EIVE)
     conn.commit()
+
+
+def test_a_borderline_difference_is_not_worth_saying(conn: sqlite3.Connection) -> None:
+    """Inside the noise of a model whose building heights are mostly assumed,
+    and a warning nobody can act on is one people learn to scroll past. The
+    list keeps a borderline species; so does the map."""
+    garden_id, bed_id = _garden(conn)
+    spot = _spot_value(conn, garden_id, 5.0, 7.5)
+    # 1.4 half-widths below, on EIVE's median width: borderline, not unsuitable.
+    _species(conn, 4, spot - 1.4 * MEDIAN_WIDTH["ellenberg_l"] / 2, None)
     planting_id = add_planting(conn, bed_id, taxon_id=4, quantity=1)
     place_planting(conn, planting_id, 5.0, 7.5)
 
     assert _found(conn, garden_id) == []
+
+
+def test_a_wide_niche_the_list_offers_for_full_sun_is_not_called_too_bright(
+    conn: sqlite3.Connection,
+) -> None:
+    """The review of 2026-09-21: an open bed's shortlist offered *Quercus
+    robur* (EIVE L 6.24, a niche 6.88 wide), and once planted the map said it
+    stood too bright — two rules for one question. It is judged by its width
+    now: 0.8 half-widths off in full sun, merely suitable."""
+    garden_id, bed_id = _garden(conn)
+    spot = _spot_value(conn, garden_id, 5.0, 7.5)
+    _species(conn, 5, 6.24, 6.88)
+    assert light_mismatch_at(spot, 6.24, 6.88) is None, "the list keeps it"
+    planting_id = add_planting(conn, bed_id, taxon_id=5, quantity=1)
+    place_planting(conn, planting_id, 5.0, 7.5)
+
+    assert _found(conn, garden_id) == []
+
+
+def test_a_narrow_niche_at_the_same_distance_is_called_too_bright(
+    conn: sqlite3.Connection,
+) -> None:
+    """The same distance means something else for a specialist."""
+    garden_id, bed_id = _garden(conn)
+    spot = _spot_value(conn, garden_id, 5.0, 7.5)
+    _species(conn, 6, 6.24, 1.5)
+    planting_id = add_planting(conn, bed_id, taxon_id=6, quantity=1)
+    place_planting(conn, planting_id, 5.0, 7.5)
+
+    [found] = _found(conn, garden_id)
+    assert found.problem == "too_bright"  # type: ignore[attr-defined]
+    assert light_mismatch_at(spot, 6.24, 1.5) == "too_bright", "and the list leaves it out"
+
+
+def test_a_raised_bed_is_judged_by_the_light_the_list_ranks_it_by(
+    conn: sqlite3.Connection,
+) -> None:
+    """Its light is sampled at its own height, over a wall that darkens the
+    ground grid under it: judged by that grid, a sun plant the list had just
+    offered was "too dark" at the very point the bed was measured (review,
+    2026-09-21)."""
+    garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    bed_id = insert_element(
+        conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0, name="Hochbeet",
+        points=[[0, 0], [3, 0], [3, 1.5], [0, 1.5]], soil_type="loam", moisture="fresh",
+        height_above_ground=1.0)
+    insert_element(conn, garden_id, kind="wall", shape="polygon", x=0, y=0,
+                   points=[[-2, -0.6], [5, -0.6], [5, -0.4], [-2, -0.4]], height=2.5)
+    conn.commit()
+    recompute_light(conn, garden_id)
+    stored = load_grid(conn, garden_id)
+    assert stored is not None
+    bed = load_garden(conn, garden_id).beds[0]
+    assert bed.sun_hours is not None
+    ground = stored[0].at(1.5, 0.75)
+    assert ground is not None and ground < bed.sun_hours - 2, "the ground is darker"
+    offered = ellenberg_from_sun_hours(bed.sun_hours) - 0.5
+    _species(conn, 7, offered, 2.0)
+    assert light_mismatch_at(ellenberg_from_sun_hours(bed.sun_hours), offered, 2.0) is None
+    add_planting(conn, bed_id, taxon_id=7, quantity=1)
+
+    assert misplaced_plantings(conn, load_garden(conn, garden_id), stored[0]) == []
 
 
 def test_a_species_with_no_indicator_value_is_left_alone(

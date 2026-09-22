@@ -14,6 +14,8 @@ import type {
 } from '../api/client';
 import { type DerivedSetters, fetchDerived } from '../derived';
 import type { Status } from '../useStatus';
+import { useLandcover } from './useLandcover';
+
 
 /**
  * Everything the server derives from one garden, and the trees it found beside
@@ -85,6 +87,8 @@ export function useDerived(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, token]);
 
+  const { landcover, reloadLandcover } = useLandcover(client, token);
+
   /** Everything the server derives, re-read together after any change. */
   const refresh = useCallback(
     () => fetchDerived(client, token, forage, show),
@@ -154,6 +158,8 @@ export function useDerived(
     terrain,
     sources,
     canopies,
+    landcover,
+    reloadLandcover,
     forage,
     toggleForage,
     refresh,

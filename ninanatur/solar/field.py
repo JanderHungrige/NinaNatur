@@ -24,7 +24,7 @@ from datetime import timedelta
 from ninanatur.garden.footprint import covers
 from ninanatur.solar.light import MINUTE_STEP, _season_days
 from ninanatur.solar.position import Location, SunPosition, sun_position
-from ninanatur.solar.reach import near_edge
+from ninanatur.solar.reach import is_convex, near_edge
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_polygon
 
 
@@ -66,6 +66,8 @@ class ShadowAt:
     morning: bool = True
     #: The element this shadow belongs to. See `Obstacle.owner`.
     owner: int | None = None
+    #: Whether the footprint is convex, so its swept hull is its shadow exactly.
+    convex: bool = True
 
     def covers_point(self, x: float, y: float, z: float = 0.0) -> bool:
         """Is this point in this shadow, standing at this height?
@@ -86,8 +88,9 @@ class ShadowAt:
             # back shaded, because the distance it needed the shadow to travel
             # was negative and so was the reach.
             return False
-        if z <= self.floor or not self.aligned:
+        if not self.aligned or (z <= self.floor and self.convex):
             return True
+        # A concave outline's hull is generous: its inner corner is open ground.
         return self._reaches(x, y, z)
 
     def _reaches(self, x: float, y: float, z: float) -> bool:
@@ -302,9 +305,5 @@ def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:
         cos_azimuth=cos_a,
         min_x=min(xs), min_y=min(ys), max_x=max(xs), max_y=max(ys), polygon=polygon,
         transmission=obstacle.transmission_in(month),
-        owner=obstacle.owner,
+        owner=obstacle.owner, convex=is_convex(obstacle.footprint),
     )
-
-
-
-

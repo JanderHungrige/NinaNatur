@@ -11,8 +11,7 @@ type LightState = BedSuggestions['light_state'];
 const HINTS: Partial<Record<LightState, string>> = {
   missing: 'Licht noch nicht berechnet — die Liste berücksichtigt nur den Boden.',
   stale:
-    'Der Schatten wurde seit der letzten Änderung im Garten nicht neu berechnet — ' +
-    'die Liste rechnet noch mit dem alten Licht.',
+    'Der Schatten ist nicht mehr aktuell — die Liste rechnet noch mit dem alten Licht.',
 };
 
 /** What the list could not rank by, in words. Null when the light is current
@@ -21,14 +20,14 @@ export function lightHint(state: LightState): string | null {
   return HINTS[state] ?? null;
 }
 
-/** "4 Arten, denen es hier zu hell ist, sind ausgeblendet." — or nothing. */
+/** "4 Arten, denen das Licht hier nicht passt, sind ausgeblendet." — or nothing. */
 export function hiddenByLight(counts: BedSuggestions['filters']): string | null {
   const hidden = counts.light?.excluded ?? 0;
   if (hidden === 0) return null;
   const n = hidden.toLocaleString('de-DE');
   return hidden === 1
-    ? `${n} Art, der es hier zu hell ist, ist ausgeblendet.`
-    : `${n} Arten, denen es hier zu hell ist, sind ausgeblendet.`;
+    ? `${n} Art, der das Licht hier nicht passt, ist ausgeblendet.`
+    : `${n} Arten, denen das Licht hier nicht passt, sind ausgeblendet.`;
 }
 
 interface Props {
