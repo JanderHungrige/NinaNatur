@@ -171,14 +171,15 @@ def test_the_corner_of_an_l_gets_its_four_hours() -> None:
     """The case the wave's plan measured on 2026-09-07 (plan 03, E1): a 10 × 10 m
     house, 9 m high, with its north-east quarter open, in Wuppertal. A bed in
     the open quarter read 0.00 h under the hull; it gets about four — by the
-    bed's own sample and by the grid alike."""
+    bed's own sample and by the grid alike. 3.98 h at the old sampling, 4.35 h
+    since the sun counts from 3° (doc 117)."""
     wuppertal = Location(51.25, 7.15)
     ell = [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 5.0), (5.0, 10.0), (0.0, 10.0)]
     hull = [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0), (5.0, 10.0), (0.0, 10.0)]
     corner = Point(7.5, 7.5)
     house = [Obstacle(footprint=ell, height=9.0)]
     exact = bed_light_value(wuppertal, corner, house).sun_hours
-    assert 3.8 < exact < 4.3
+    assert 4.25 < exact < 4.45
     grid = shadow_field(wuppertal, house).sun_hours_at(corner.x, corner.y)
     assert grid == pytest.approx(exact, abs=0.01)
     assert bed_light_value(wuppertal, corner, [Obstacle(footprint=hull, height=9.0)]).sun_hours == 0

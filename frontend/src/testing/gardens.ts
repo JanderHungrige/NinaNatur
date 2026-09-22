@@ -98,5 +98,5 @@ export const suggestions = (): BedSuggestions => ({
 export const lightMap = (): LightMap => ({
   cell_m: 1, min_x: 0, min_y: 0, cols: 2, rows: 2, hours: [1, 1, 7, 7],
   roof: [false, false, false, false], max_hours: 7, computed_at: '2026-09-04T10:00:00+00:00',
-  stale: false, morning: [0.5, 0.5, 3.5, 3.5], misplaced: [],
+  stale: false, morning: [0.5, 0.5, 3.5, 3.5], misplaced: [], model: '',
 } as LightMap);

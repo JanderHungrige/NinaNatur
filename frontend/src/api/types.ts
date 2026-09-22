@@ -1419,6 +1419,11 @@ export interface components {
             min_y: number;
             /** Misplaced */
             misplaced: components["schemas"]["MisplacedOut"][];
+            /**
+             * Model
+             * @default
+             */
+            model: string;
             /** Morning */
             morning: (number | null)[];
             /** Roof */

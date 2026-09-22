@@ -250,6 +250,7 @@ def _read(
         ],
         computed_at=computed_at,
         stale=signature != now_signature,
+        model=grid.model,
     )
 
 

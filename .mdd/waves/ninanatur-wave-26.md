@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-25
 demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
 created: 2026-09-07
-hash: a1c372ff
+hash: 1ab22d01
 ---
 
 # Wave 26: Light, not hours
@@ -70,7 +70,7 @@ term the number becomes a derivation from the definition.
 |---|---------|-----|--------|------------|
 | 0 | the-measuring-instrument | 115 | built | — |
 | 1 | no-hull | 116 | built | 0 |
-| 2 | room-to-compute | — | planned | 0 |
+| 2 | room-to-compute | 117 | built | 0 |
 | 3 | the-sky-counts | — | planned | 2 |
 | 4 | energy-not-hours | — | planned | 3 |
 | 5 | a-roof-casts-as-a-roof | — | planned | 1 |

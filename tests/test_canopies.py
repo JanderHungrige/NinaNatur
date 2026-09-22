@@ -80,6 +80,11 @@ def test_an_obstacle_changes_with_the_season() -> None:
 
     assert oak.transmission_in(7) == TRANSMISSION_IN_LEAF
     assert oak.transmission_in(3) == TRANSMISSION_BARE
+    # The whole calendar, edges included: in leaf from May to October. The
+    # grid and a bed's own sample ask this one rule (doc 117), so a month
+    # moved here moves in all three — and the field they are tested against.
+    leafy = [m for m in range(1, 13) if oak.transmission_in(m) == TRANSMISSION_IN_LEAF]
+    assert leafy == [5, 6, 7, 8, 9, 10]
 
 
 def test_a_wall_never_changes() -> None:

@@ -19,7 +19,12 @@ from ninanatur.solar.sweep import convex_hull, shadow_shape
 # Below this the sun is weak and in practice blocked by whatever surrounds the
 # garden. It also bounds the shadow: 1/tan(altitude) grows without limit as the
 # sun approaches the horizon, and a 4 m wall would otherwise shade half a village.
-MIN_ALTITUDE = 5.0
+#
+# 3° since Wave 26, 5° before: 0.71 h a day of the open season's sun lies between
+# 2° and 5° (plan 03, E6), and the horizon ring (Wave 17) now says where hills
+# really block it. Below about 3°, refraction and haze make direct sun
+# irrelevant to a plant, and shadows run twenty times a thing's height.
+MIN_ALTITUDE = 3.0
 
 
 @dataclass(frozen=True)
@@ -68,12 +73,7 @@ class Obstacle:
         largest error the old model made: the light season starts on 1 March,
         and a leafless oak was shading a garden exactly as hard as a wall.
         """
-        from ninanatur.garden.canopies import FIRST_LEAF_MONTH, LAST_LEAF_MONTH
-
-        if self.bare_transmission is None:
-            return self.transmission
-        in_leaf = FIRST_LEAF_MONTH <= month <= LAST_LEAF_MONTH
-        return self.transmission if in_leaf else self.bare_transmission
+        return passes(self.transmission, self.bare_transmission, month)
 
     @property
     def top(self) -> float:
@@ -87,6 +87,18 @@ class Obstacle:
             sum(p[0] for p in self.footprint) / n,
             sum(p[1] for p in self.footprint) / n,
         )
+
+
+def passes(transmission: float, bare: float | None, month: int) -> float:
+    """What passes through something that casts, in this month: a crown in
+    leaf from May to October passes `transmission`, bare outside it `bare`;
+    anything without a season — built, or evergreen — the same all year. The
+    one rule for it; the raster asks it too (doc 117)."""
+    from ninanatur.garden.canopies import FIRST_LEAF_MONTH, LAST_LEAF_MONTH
+
+    if bare is None or FIRST_LEAF_MONTH <= month <= LAST_LEAF_MONTH:
+        return transmission
+    return bare
 
 
 def shadow_length(height: float, altitude: float) -> float:

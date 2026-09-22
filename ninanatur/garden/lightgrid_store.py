@@ -20,16 +20,16 @@ def save_grid(
 
     conn.execute(
         "INSERT INTO light_grid (garden_id, cell_m, min_x, min_y, cols, rows,"
-        " hours, morning, roof, signature, computed_at)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        " hours, morning, roof, model, signature, computed_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         " ON CONFLICT (garden_id) DO UPDATE SET cell_m = excluded.cell_m,"
         " min_x = excluded.min_x, min_y = excluded.min_y, cols = excluded.cols,"
         " rows = excluded.rows, hours = excluded.hours,"
-        " morning = excluded.morning, roof = excluded.roof,"
+        " morning = excluded.morning, roof = excluded.roof, model = excluded.model,"
         " signature = excluded.signature, computed_at = excluded.computed_at",
         (garden_id, grid.cell_m, grid.min_x, grid.min_y, grid.cols, grid.rows,
          json.dumps(grid.hours), json.dumps(grid.morning),
-         json.dumps(grid.roof), signature, now()),
+         json.dumps(grid.roof), grid.model, signature, now()),
     )
     conn.commit()
 
@@ -39,7 +39,7 @@ def load_grid(
 ) -> tuple[LightGrid, str, str] | None:
     """The stored grid, its signature and when it was computed."""
     row = conn.execute(
-        "SELECT cell_m, min_x, min_y, cols, rows, hours, morning, roof,"
+        "SELECT cell_m, min_x, min_y, cols, rows, hours, morning, roof, model,"
         " signature, computed_at"
         " FROM light_grid WHERE garden_id = ?",
         (garden_id,),
@@ -60,5 +60,6 @@ def load_grid(
         # Empty on a grid computed before roofs existed. Every cell is then
         # ground, which is exactly what it was.
         roof=[bool(v) for v in json.loads(row["roof"] or "[]")],
+        model=str(row["model"] or ""),
     )
     return grid, str(row["signature"]), str(row["computed_at"])

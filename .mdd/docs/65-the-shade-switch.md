@@ -243,7 +243,8 @@ drawn with light, not with more dark.
 ## The day
 
 `GET .../shadows?month=` returns the shadows of one middling day — the 15th, at
-every half hour the sun is above 5°. The day's player walks the plan through it.
+every half hour the sun is above 3° (5° until Wave 26). The day's player walks
+the plan through it.
 Each frame is every shadow at that moment as rings — outlines anticlockwise,
 holes clockwise — drawn as one path under the non-zero rule (Wave 26, doc 116).
 Until then it was one convex hull per obstacle, drawn one by one: an L-shaped

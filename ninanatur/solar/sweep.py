@@ -25,6 +25,7 @@ from shapely.errors import GEOSException
 from shapely.geometry import Polygon
 from shapely.geometry.base import BaseGeometry
 
+from ninanatur.solar.convex_parts import solid_of
 from ninanatur.solar.reach import is_convex
 
 log = logging.getLogger(__name__)
@@ -87,13 +88,9 @@ def _parts(ring: tuple[tuple[float, float], ...]) -> tuple[Polygon, ...] | None:
     """The shapes the outline encloses, each outline anticlockwise and each
     hole clockwise — or None for a convex, simple outline, whose hull is its
     shadow. The same for every frame of a day, so worked out once."""
-    if len(ring) < 3:
+    if len(ring) >= 3 and Polygon(ring).is_valid and is_convex(list(ring)):
         return None
-    drawn = Polygon(ring)
-    if drawn.is_valid and is_convex(list(ring)):
-        return None
-    shape: BaseGeometry = drawn if drawn.is_valid else shapely.make_valid(drawn)
-    return tuple(shapely.orient_polygons(p) for p in _polygons(shape))
+    return tuple(shapely.orient_polygons(p) for p in solid_of(list(ring)))
 
 
 def _bands(part: Polygon, dx: float, dy: float) -> list[BaseGeometry]:

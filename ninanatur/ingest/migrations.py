@@ -59,6 +59,9 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # existing grid, which the reader treats as "computed before roofs were" —
     # every cell is then ground, exactly as it was, until the next rebuild.
     ("light_grid", "roof", "TEXT NOT NULL DEFAULT '[]'"),
+    # Wave 26 (doc 117): the light model that computed the map. A stored map
+    # was computed by the model before versions, which the empty default says.
+    ("light_grid", "model", "TEXT NOT NULL DEFAULT ''"),
     # Wave 21. Null on every existing row until the one-time backfill in
     # `one_time.roof_provenance` marks what the history makes certain.
     ("element", "eaves_source", "TEXT"),

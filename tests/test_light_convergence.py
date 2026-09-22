@@ -8,35 +8,29 @@ below shows it. The difference is what the sampling costs.
 
 Measured when this was written (Wuppertal): the season up to 0.22 h low beside
 a house (0.13 h in the open), a month up to 0.46 h (April, beside the house).
-Most of it is the days skipped, not the half-hour steps. The bars are 0.1 h
+Most of it was the days skipped, not the half-hour steps. The bars are 0.1 h
 for the season and 0.2 h for a month.
 
-The two tests over the model's own sampling fail today, on purpose and
-strictly, each naming what makes it pass: feature 2's season sampling (10 min,
-every 5th day) measured 0.04 h; a month needs every 2nd day at 10 min (0.10 h;
-every 5th day, which a month already has, leaves 0.34 h). A strict expected
-failure turns red the day it starts passing, so its mark comes off with the
-change that earns it. Until then the last test pins every number both of them
-compute, so neither can go on failing for some other reason.
+Both tests over the model's own sampling failed then, marked as strict expected
+failures that named what would make them pass. Wave 26's feature 2 (doc 117)
+did: the season every 10 minutes on every fifth day, a month every second day,
+on the raster that pays for it. The marks came off with it, and so did the
+test that pinned the old errors.
 """
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from functools import cache
 
-import pytest
-
-from ninanatur.solar.field import shadow_field
 from ninanatur.solar.light import bed_light_value
 from ninanatur.solar.position import Location, SunPosition, sun_position
+from ninanatur.solar.raster import moments_for, parts_of, point_hours
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, Point, is_shaded
 
 WUPPERTAL = Location(51.25, 7.15)
 SEASON_BAR_H = 0.1
 MONTH_BAR_H = 0.2
 MONTHS = (4, 6)
-SEASON_NEEDS = "Wave 26 feature 2: the season sampled every 10 min, every 5th day (doc 115)"
-MONTH_NEEDS = "Wave 26 feature 2: a month sampled every 10 min, every 2nd day (doc 115)"
 
 HOUSE_SOUTH = [Obstacle(footprint=[(-5, -13), (5, -13), (5, -8), (-5, -8)], height=9.0)]
 ELL = [Obstacle(footprint=[(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)], height=9.0)]
@@ -51,16 +45,6 @@ SCENES: list[tuple[str, list[Obstacle], tuple[float, float]]] = [
     ("corner of an L", ELL, (7.5, 7.5)),
     ("hedge east", HEDGE_EAST, (0.0, 0.0)),
 ]
-
-#: What today's sampling misses by, in hours (model minus converged): the
-#: season, April and June, measured 2026-09-22.
-MEASURED: dict[str, tuple[float, float, float]] = {
-    "open": (-0.131, -0.172, -0.142),
-    "house south, clear": (-0.219, -0.458, -0.142),
-    "house south, behind": (-0.217, -0.339, -0.278),
-    "corner of an L": (-0.137, -0.169, -0.269),
-    "hedge east": (-0.021, -0.114, 0.150),
-}
 
 
 @cache
@@ -100,8 +84,10 @@ def _season_off() -> dict[str, float]:
 
 @cache
 def _month_off() -> dict[tuple[int, str], float]:
-    return {(month, name): shadow_field(WUPPERTAL, obstacles, month=month).sun_hours_at(*at)
-            - _converged(obstacles, at, month)
+    """A month as the model computes one: the raster, at a month's sampling."""
+    def model(obstacles: list[Obstacle], at: tuple[float, float], month: int) -> float:
+        return sum(point_hours(parts_of(obstacles), moments_for(WUPPERTAL, month=month), *at))
+    return {(month, name): model(obstacles, at, month) - _converged(obstacles, at, month)
             for month in MONTHS for name, obstacles, at in SCENES}
 
 
@@ -111,25 +97,11 @@ def test_the_ruler_has_stopped_moving() -> None:
     assert abs(_converged(obstacles, at) - _converged(obstacles, at, minutes=2)) < 0.02
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason=SEASON_NEEDS)
 def test_the_season_is_sampled_within_a_tenth_of_an_hour() -> None:
     off = _season_off()
     assert max(abs(v) for v in off.values()) < SEASON_BAR_H, off
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason=MONTH_NEEDS)
 def test_a_month_is_sampled_within_a_fifth_of_an_hour() -> None:
     off = _month_off()
     assert max(abs(v) for v in off.values()) < MONTH_BAR_H, off
-
-
-def test_the_errors_are_the_ones_measured() -> None:
-    """Every number the two expected failures compute, pinned, so a change
-    that made them fail for another reason — a concave corner read wrong in
-    June, say — cannot pass for the known one. Each value goes when its mark
-    goes."""
-    season, month = _season_off(), _month_off()
-    for name, (whole, april, june) in MEASURED.items():
-        assert season[name] == pytest.approx(whole, abs=0.03), (name, "season")
-        assert month[(4, name)] == pytest.approx(april, abs=0.03), (name, "April")
-        assert month[(6, name)] == pytest.approx(june, abs=0.03), (name, "June")

@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 
 from ninanatur.garden.footprint import covers
-from ninanatur.solar.light import MINUTE_STEP, _season_days
+from ninanatur.solar.light import MINUTE_STEP, season_days
 from ninanatur.solar.position import Location, SunPosition, sun_position
 from ninanatur.solar.reach import is_convex, near_edge
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_hull
@@ -243,7 +243,7 @@ def shadow_field(
     and only a point standing higher pays for the exact check. On flat ground
     the floor is zero, every point is at zero, and nothing ever does.
     """
-    days = _season_days(year, month)
+    days = season_days(year, month)
     step = timedelta(minutes=MINUTE_STEP)
     receiver = ground_floor + height_above_ground
     lifted = [

@@ -168,6 +168,11 @@ when its mark goes.
 
 The suite costs about 4 s and runs with every change, as the plan asked.
 
+**Lifted, 2026-09-22.** Feature 2 (doc 117) moved the sampling; both marked
+tests turned red as passing on the day, as they were meant to, and the marks and
+the pin came off. At the new sampling: the season within 0.044 h, a month within
+0.103 h. The month test now asks the raster, the path the model uses.
+
 ## Business rules
 
 1. Nothing in this wave counts as more accurate unless one of these

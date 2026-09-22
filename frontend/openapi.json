@@ -1327,6 +1327,11 @@
             "title": "Misplaced",
             "type": "array"
           },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
           "morning": {
             "items": {
               "anyOf": [

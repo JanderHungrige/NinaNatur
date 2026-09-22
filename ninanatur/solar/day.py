@@ -15,7 +15,6 @@ from datetime import UTC, datetime, timedelta
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.roofs import Roof, shading_height
-from ninanatur.solar.light import MINUTE_STEP
 from ninanatur.solar.position import Location, sun_position
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_rings
 
@@ -26,6 +25,11 @@ MONTHS: tuple[int, ...] = tuple(range(3, 11))
 #: The 15th. A month's first and last day differ by a fortnight of sun, and the
 #: middle is the one that represents the month rather than either edge.
 MID_MONTH_DAY = 15
+
+#: A frame every half hour. The light model's own sampling has been every ten
+#: minutes since Wave 26 (doc 117); a day watched through does not need three
+#: times the frames, and each frame is the shadows of the whole garden.
+FRAME_MINUTES = 30
 
 
 @dataclass(frozen=True)
@@ -59,7 +63,7 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
     obstacles = _casting(garden)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
     start = datetime(year, month, MID_MONTH_DAY, tzinfo=UTC)
-    step = timedelta(minutes=MINUTE_STEP)
+    step = timedelta(minutes=FRAME_MINUTES)
 
     frames: list[Frame] = []
     moment = start

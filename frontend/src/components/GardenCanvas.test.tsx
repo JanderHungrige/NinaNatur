@@ -122,6 +122,7 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
         stale: false,
         morning: hours.map((h) => (h === null ? null : h / 2)),
         misplaced: [],
+        model: '',
       },
       mode: 'hours' as const,
     };
