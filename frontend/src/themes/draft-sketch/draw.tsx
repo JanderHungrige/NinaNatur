@@ -7,6 +7,7 @@ import type { DecoratedShape, Decoration } from '../types';
 import type {
   Band, Centre, Inner, Ink, Joins, Overlay, Overshoot, RoofLines, Shadow, Ticks, Wave,
 } from './overlays';
+import { pentArrow } from './ours/pentArrow';
 import { disc, mm, outline, ring, stroke, width } from './paths';
 
 /*
@@ -123,92 +124,36 @@ function tickMarks(o: Ticks, points: Point[], mpp: number, key: string): ReactNo
 }
 
 /** A pent roof's upper edge lies on the walls it rises to, where it cannot be
- *  seen; an arrow from it into the roof says which way it falls. The arrow
- *  starts on a drawn wall — the one nearest the middle of the whole edge, so a
- *  notch or an L's step neither tilts it nor sets it over the garden — and runs
- *  down the surveyed fall. Aimed at the outline's middle, it leaned with the
- *  shape of the house (review, 2026-09-21); that is left for a roof whose fall
- *  the drawing was not given. */
-function fall(lines: [Point, Point][], points: Point[], bearing: number | null | undefined): string {
-  const [a, b] = upperEdge(lines);
-  const from = nearestOn(lines, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-  const c = centreOf(points);
-  const toCentre = Math.hypot(c.x - from.x, c.y - from.y) || 1;
-  const down = bearing === null || bearing === undefined
-    ? { x: (c.x - from.x) / toCentre, y: (c.y - from.y) / toCentre }
-    : { x: Math.sin((bearing * Math.PI) / 180), y: Math.cos((bearing * Math.PI) / 180) };
-  // Sized by how far the house reaches down the fall from here, not by its
-  // middle: on an L that middle lies off to one side, and the arrow ran on past
-  // the wing into the garden (review, 2026-09-21). A rectangle's is as before.
-  const run = runInside(from, down, points) ?? 2 * toCentre;
-  const at = (share: number): Point => ({ x: from.x + down.x * run * share,
-                                          y: from.y + down.y * run * share });
-  const tail = at(0.125);
-  const tip = at(0.55);
+ *  seen; an arrow from it into the roof says which way it falls
+ *  (`ours/pentArrow`). The arrow is a mark of its own, clipped to the house: a
+ *  roof mark over the garden is what the owner's check of 2026-09-21 was about. */
+function fallArrow(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
+  const shaft = pentArrow(shape.roofLines, shape.points, shape.roofFall);
+  if (shaft === null) return null;
+  const [tail, tip] = shaft;
   const back = Math.hypot(tip.x - tail.x, tip.y - tail.y) * 0.3;
   const heading = Math.atan2(tip.y - tail.y, tip.x - tail.x);
   const barb = (turn: number) => ({ x: tip.x - back * Math.cos(heading + turn),
                                     y: tip.y - back * Math.sin(heading + turn) });
-  return segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]]);
-}
-
-/** How far a ray from a point on the outline runs inside it before it leaves,
- *  or null if it never enters. */
-function runInside(from: Point, way: Point, ring: Point[]): number | null {
-  let nearest: number | null = null;
-  ring.forEach((a, i) => {
-    const b = ring[(i + 1) % ring.length]!;
-    const ex = b.x - a.x;
-    const ey = b.y - a.y;
-    const denominator = way.x * ey - way.y * ex;
-    if (Math.abs(denominator) < 1e-12) return;
-    const t = ((a.x - from.x) * ey - (a.y - from.y) * ex) / denominator;
-    const u = ((a.x - from.x) * way.y - (a.y - from.y) * way.x) / denominator;
-    if (t > 1e-6 && u >= 0 && u <= 1 && (nearest === null || t < nearest)) nearest = t;
-  });
-  return nearest;
-}
-
-/** A pent's whole upper edge, end to end: the two ends farthest apart. */
-function upperEdge(lines: [Point, Point][]): [Point, Point] {
-  const ends = lines.flat();
-  let best: [Point, Point] = lines[0]!;
-  for (const a of ends) {
-    for (const b of ends) {
-      if (Math.hypot(b.x - a.x, b.y - a.y) > Math.hypot(best[1].x - best[0].x, best[1].y - best[0].y)) {
-        best = [a, b];
-      }
-    }
-  }
-  return best;
-}
-
-/** The point on the drawn lines nearest to `p`. */
-function nearestOn(lines: [Point, Point][], p: Point): Point {
-  let best = lines[0]![0];
-  let distance = Infinity;
-  for (const [a, b] of lines) {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const length = dx * dx + dy * dy;
-    const t = length === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length));
-    const q = { x: a.x + t * dx, y: a.y + t * dy };
-    const d = Math.hypot(q.x - p.x, q.y - p.y);
-    if (d < distance) {
-      best = q;
-      distance = d;
-    }
-  }
-  return best;
+  const clip = `ds-fall-${key}`;
+  return (
+    <g key={`${key}-fall`}>
+      <clipPath id={clip}><path d={ring(shape.points)} /></clipPath>
+      <path data-mark="fall" d={segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]])}
+            fill="none" stroke={o.colour} strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)}
+            strokeLinecap="round" clipPath={`url(#${clip})`} />
+    </g>
+  );
 }
 
 function roof(o: RoofLines, shape: DecoratedShape, mpp: number, key: string): ReactNode {
   const lines = shape.roofLines;
   if (lines.length === 0) return null;
-  const arrow = shape.roof === 'pent' ? fall(lines, shape.points, shape.roofFall) : '';
-  const d = lines.map((line) => stroke(line, o.wave, mpp)).join('') + arrow;
-  return <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
-               strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)} strokeLinecap="round" />;
+  const d = lines.map((line) => stroke(line, o.wave, mpp)).join('');
+  const drawnLines = <path key={key} data-mark="roof" d={d} fill="none" stroke={o.colour}
+                           strokeOpacity={o.opacity} strokeWidth={width(o.width, mpp)}
+                           strokeLinecap="round" />;
+  return shape.roof === 'pent' ? [drawnLines, fallArrow(o, shape, mpp, key)] : drawnLines;
 }
 
 function inner(o: Inner, points: Point[], mpp: number, key: string): ReactNode {

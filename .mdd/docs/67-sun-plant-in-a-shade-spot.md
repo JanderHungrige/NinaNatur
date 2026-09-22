@@ -62,17 +62,19 @@ rules for one question (review, 2026-09-21).
 
 **Where the light is read** is the one difference left. The list ranks a bed by
 its average; the warning reads the cell a cluster stands in, because a corner
-darker than its bed is what it is for. Where a cluster has no cell of its own
-it is judged by the value the list ranks its bed by (`misplaced._hours_at`):
+darker than its bed is what it is for. A cluster's cell is its own only where
+it is part of its bed — by the rule the bed's mean is taken by: its centre
+inside the bed, and not a roof. Otherwise it is judged by the value the list
+ranks its bed by (`misplaced._hours_at`):
 - **a cluster nobody placed** — what the list's add button plants. It stands
   nowhere in particular; read at the bed's middle, a bright cell of a bed half
   in shade, a species the list had just offered was warned about at once.
 - **a raised bed**, whose light is sampled at its height, over whatever darkens
   the ground grid beside it;
-- **a bed narrower than a cell**: no cell centre lies inside it, so a cluster's
-  cell is always centred outside — in the wall or hedge it borders, or behind
-  it — and it warned a plant the list had just offered as too dark. Judged as a
-  whole, its shaded end goes unsaid until the grid is finer than the border (a
+- **a cell centred outside the bed** — always, in a bed narrower than a cell,
+  and along the edge of any other: that centre can lie in the wall or hedge the
+  bed borders, and it warned a plant the list had just offered as too dark at
+  0 h (review, 2026-09-22). A shaded end finer than the grid goes unsaid (a
   known issue, below);
 - **a cell under a roof**: `LightGrid.at` answers None there, as it always said
   it did, and until the review it had handed back the roof's sun.
@@ -80,7 +82,9 @@ it is judged by the value the list ranks its bed by (`misplaced._hours_at`):
 A bed's own light is read from the stored map over the bed as it stands — the
 mean of its cells, which is exactly what the list ranks it by while the light
 is current — so a bed drawn or moved since the last press is judged where it
-is, not where it was, or not at all (review, 2026-09-21). And the warning stays
+is, not where it was (review, 2026-09-21). A raised bed, or one with no cell
+centre inside it, was measured at one point; that value stays where it was
+measured until the next press, and the map says it is out of date. And the warning stays
 on the season's grid when a month is shown (`api/light._read`): a month's grid
 had quietly taken its place, and warnings came and went with the months.
 

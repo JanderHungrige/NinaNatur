@@ -45,6 +45,18 @@ def test_convexity_ignores_a_node_on_a_straight_wall() -> None:
     assert not is_convex(ELL)
 
 
+def test_an_outline_closed_on_its_first_point_is_still_seen_to_be_concave() -> None:
+    """OpenStreetMap closes every way on its first node. Started at the inner
+    corner, the one turn that makes an L concave was never measured."""
+    closed = [(4.0, 4.0), (4.0, 10.0), (0.0, 10.0), (0.0, 0.0), (10.0, 0.0), (10.0, 4.0),
+              (4.0, 4.0)]
+    assert not is_convex(closed)
+    assert is_convex([*BOX, BOX[0]])
+    house = Obstacle(footprint=closed, height=7.0)
+    assert not is_shaded(Point(7.0, 7.0), house, SunPosition(altitude=30.0, azimuth=45.0))
+    assert _exact(SimpleNamespace(footprint=closed, height=7.0)) == "|exact"
+
+
 def test_the_inner_corner_of_an_l_is_in_the_sun_when_the_sun_is_behind_it() -> None:
     corner = Point(7.0, 7.0)
     house = Obstacle(footprint=ELL, height=7.0)

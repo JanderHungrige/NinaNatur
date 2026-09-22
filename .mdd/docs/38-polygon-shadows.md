@@ -107,7 +107,10 @@ sample and the containment test then walks four to sixteen edges.
   house, a courtyard between two wings — and read it as 0 h all day, on the map
   and in a bed's sample (review, 2026-09-21: a courtyard bed at 0 h reads 3.5 h
   now). A map drawn before, of a garden with such a house, reads stale once:
-  the signature marks a concave outline that casts (`lightgrid._exact`). The
+  the signature marks a concave outline that casts (`lightgrid._exact`).
+  Convexity is judged with a point repeated back to back taken once:
+  OpenStreetMap closes every way on its first node, and an L closed at its
+  inner corner passed as convex until the check of 2026-09-22. The
   price, measured on 40 L-shaped houses round a 25 × 40 m plot (1,836 cells): a
   grid in 7.2 s where it took 5.9 s; convex outlines cost what they did.
 

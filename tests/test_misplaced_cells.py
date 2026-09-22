@@ -119,6 +119,23 @@ def test_a_bed_drawn_since_the_last_press_is_judged_where_it_stands(
     assert (found.problem, found.sun_hours) == ("too_dark", 5.5)  # type: ignore[attr-defined]
 
 
+def test_a_cluster_whose_cell_is_centred_outside_its_bed_is_judged_by_the_bed(
+    conn: sqlite3.Connection,
+) -> None:
+    """A metre-wide border set a little off the grid: its northern row of cells
+    counts toward its mean, its southern row is centred outside it — in the
+    hedge it borders — and read 0 h for a plant the list had just offered
+    (review, 2026-09-22). A cell is the cluster's only where it is the bed's."""
+    garden_id, bed_id = _laid_out(conn, [[0, 0.55], [10, 0.55], [10, 1.55], [0, 1.55]], 9.0)
+    _species(conn, 13, 9.0, 2.0)
+    planting_id = add_planting(conn, bed_id, taxon_id=13, quantity=1)
+    bed = load_garden(conn, garden_id).beds[0]
+    place_planting(conn, planting_id, 1.0 - bed.x, 0.75 - bed.y)
+    assert _grid().mean_over(bed.polygon) == 9.0, "only the northern row is the bed's"
+
+    assert misplaced_plantings(conn, load_garden(conn, garden_id), _grid()) == []
+
+
 def test_a_cluster_on_a_roofs_cell_is_not_judged_by_the_roofs_sun(
     conn: sqlite3.Connection,
 ) -> None:

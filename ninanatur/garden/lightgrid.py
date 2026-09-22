@@ -85,6 +85,14 @@ class LightGrid:
         # house was judged by the sun on its roof (review, 2026-09-21).
         return None if self.is_roof(index) else self.hours[index]
 
+    def centre_at(self, x: float, y: float) -> tuple[float, float] | None:
+        """The centre of the cell containing this point; None outside the grid."""
+        col = int((x - self.min_x) // self.cell_m)
+        row = int((y - self.min_y) // self.cell_m)
+        if not (0 <= col < self.cols and 0 <= row < self.rows):
+            return None
+        return self.centre_of(col, row)
+
     def is_roof(self, index: int) -> bool:
         """Whether this cell is a roof. False on a grid computed before roofs."""
         return index < len(self.roof) and self.roof[index]

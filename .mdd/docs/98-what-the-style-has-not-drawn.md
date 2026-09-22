@@ -144,12 +144,17 @@ the roof the model knows, in garden metres.
   line past them): an OpenStreetMap outline carries a node wherever a
   neighbour's wall meets it, half the buildings in a street have one, and judged
   piece by piece a split wall lost its low end or came back as two lines. A real
-  kink stays. The arrow starts on a drawn wall, the one nearest the middle of
-  the whole upper edge, and runs down the surveyed fall (`roofFall` on the
-  shape, from `roof_fall_deg`): aimed at the outline's middle, it leaned with
-  the shape of the house, and from the middle of an L's step it began over the
-  garden. It is sized by how far the house reaches down the fall from there, so
-  on an L it stops inside the wing.
+  kink stays. The arrow (`ours/pentArrow`) runs down the surveyed fall
+  (`roofFall` on the shape, from `roof_fall_deg`) from the point on a drawn wall
+  nearest the middle of the whole upper edge whose first 5 cm down the fall lie
+  in the house, and is sized by how far the house reaches from there — to the
+  first wall the ray leaves through, not one it enters by. It is its own mark,
+  `fall`, clipped to the outline. Each simpler answer was wrong somewhere
+  (review, 2026-09-21/22): aimed at the outline's middle it leaned with the
+  house; sized by that middle it ran off an L; begun at the bare middle it
+  started over a notch; measured to the first crossing it shrank to a dot where
+  the drawn wall sat a millimetre outside the outline, and in a recess it
+  measured the recess.
 - **flat, mixed, other, unknown, an unsurveyed pent, a pitch under 5°** — no
   lines: the model treats them as a plane at one height, and so does the
   drawing.

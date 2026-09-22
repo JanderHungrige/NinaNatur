@@ -44,9 +44,13 @@ def near_edge(
     return None
 
 
-def is_convex(ring: list[tuple[float, float]] | tuple[tuple[float, float], ...]) -> bool:
+def is_convex(outline: list[tuple[float, float]] | tuple[tuple[float, float], ...]) -> bool:
     """Whether an outline turns the same way at every corner. A straight run
-    (a node on a wall) does not count as a turn."""
+    (a node on a wall) does not count as a turn, and a point repeated back to
+    back — OpenStreetMap closes every way on its first node — is one point: at a
+    repeated point the turn was never measured, and an L closed at its inner
+    corner passed as convex (review, 2026-09-22)."""
+    ring = [p for i, p in enumerate(outline) if p != outline[i - 1]] or list(outline[:1])
     n = len(ring)
     turns = set()
     for i in range(n):
