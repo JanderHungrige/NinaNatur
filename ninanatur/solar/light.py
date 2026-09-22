@@ -40,7 +40,11 @@ MONTH_DAY_STEP = 2
 #:   garden's DWD climate, and the sunshine to expect; the light value never
 #:   brighter than Ellenberg's classes say of the sky in leaf (doc 118). The
 #:   hours are 26.2's.
-MODEL_VERSION = "26.3"
+#: - "26.4" — the sun's share of a month is what its beam brings to the cell's
+#:   own surface, not its hours: a March sun at 8° counts for less than a June
+#:   sun at 60°, and a slope takes the light at its own angle (doc 119). The
+#:   hours, the sky and the light value are 26.3's.
+MODEL_VERSION = "26.4"
 
 # Mean daily direct sun (hours) -> light value on EIVE's own 0–10 scale, as
 # anchors joined by straight lines, darkest first.

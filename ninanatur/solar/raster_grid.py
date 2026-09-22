@@ -9,11 +9,21 @@ moments and parts; the cells are arrays.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
 
-from ninanatur.solar.raster import Directions, Moments, Part, covered, sun_directions, visible
+from ninanatur.solar.raster import (
+    Directions,
+    Incidence,
+    Moments,
+    Part,
+    cos_incidence,
+    covered,
+    sun_directions,
+    visible,
+)
 
 
 @dataclass(frozen=True)
@@ -34,6 +44,9 @@ class Cells:
     sky: np.ndarray
     #: (rings, degrees): how high the land stands in each degree of azimuth.
     rings: np.ndarray
+    #: (3, rows, cols): each cell's surface as `raster.Plane` coefficients — the
+    #: ground's slope, a roof's pitch (doc 119); None where every cell is level.
+    plane: np.ndarray | None = None
 
 
 def grid_hours(parts: list[Part], moments: Moments, cells: Cells,
@@ -46,8 +59,18 @@ def grid_hours(parts: list[Part], moments: Moments, cells: Cells,
 def grid_sums(parts: list[Part], directions: Directions, cells: Cells) -> np.ndarray:
     """(groups, rows, cols): each group's weighted sum of what reaches every
     cell — the sun's hours, or the share of the sky a cell sees."""
+    return grid_sweep(parts, directions, cells)[0]
+
+
+def grid_sweep(parts: list[Part], directions: Directions, cells: Cells,
+               incidence: Incidence | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """`grid_sums`, and in the same sweep (incidence groups, rows, cols): the
+    energy of what reaches each cell on its own surface (doc 119). The
+    occlusion is the cost, so it is asked once and added twice."""
     rows, cols = cells.z.shape
     sums = np.zeros((directions.groups, rows, cols))
+    energy = np.zeros((incidence.groups if incidence else 0, rows, cols))
+    brings = None if incidence is None else _brings(directions, incidence, cells)
     seen = visible(cells.rings, directions) if len(cells.rings) else None
     boxes = _boxes(parts)
     tops = np.array([part.top for part in parts])
@@ -64,7 +87,25 @@ def grid_sums(parts: list[Part], directions: Directions, cells: Cells) -> np.nda
             open_sky = np.append(seen[k], True)  # index -1: no ring, always open
             through *= open_sky[cells.sky]
         sums[int(directions.group[k])] += through * float(directions.weight[k])
-    return sums
+        if incidence is not None and brings is not None:
+            energy[int(incidence.group[k])] += through * brings(k)
+    return sums, energy
+
+
+def _brings(directions: Directions, incidence: Incidence,
+            cells: Cells) -> Callable[[int], np.ndarray | float]:
+    """Direction k's beam on each cell's surface, clamped at the surface's
+    edge: a number where every cell is level, an array where they tilt."""
+    level = incidence.beam * np.maximum(np.sin(np.radians(directions.altitude)), 0.0)
+    if cells.plane is None:
+        return lambda k: float(level[k])
+    plane = (cells.plane[0], cells.plane[1], cells.plane[2])
+
+    def on_surfaces(k: int) -> np.ndarray:
+        cos_i = cos_incidence(directions.altitude[k], directions.azimuth[k], plane)
+        tilted: np.ndarray = incidence.beam[k] * np.maximum(cos_i, 0.0)
+        return tilted
+    return on_surfaces
 
 
 def _boxes(parts: list[Part]) -> np.ndarray:
@@ -121,4 +162,4 @@ def _span(centres: np.ndarray, cell: float, lo: float, hi: float) -> tuple[int, 
     return first, last
 
 
-__all__ = ["Cells", "grid_hours", "grid_sums"]
+__all__ = ["Cells", "grid_hours", "grid_sums", "grid_sweep"]

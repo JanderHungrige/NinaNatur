@@ -175,7 +175,7 @@ class _PointLight:
         from ninanatur.garden.ground import standing_on
         from ninanatur.garden.lightcells import surface_at
         from ninanatur.solar.climate import climate_at
-        from ninanatur.solar.raster import moments_for, parts_of
+        from ninanatur.solar.raster import LEVEL, moments_for, parts_of, plane_of
         from ninanatur.solar.relative import point_sky_light
 
         if self._ready is None:
@@ -187,8 +187,12 @@ class _PointLight:
         # cell's does (`ground.height_at`).
         floor = min(self.ground.heights) if self.ground and self.ground.heights else 0.0
         surface = surface_at((x, y), self.ground, self.horizon, floor, [], height, self._rings)
+        # A raised bed is a box: its soil lies level however the ground under it
+        # falls, though the hillside still stands between it and the low sun,
+        # which is its ring (review, 2026-09-22).
+        plane = LEVEL if height > 0 else plane_of(surface.slope, surface.aspect)
         light = point_sky_light(parts, moments, climate, x, y, surface.z,
-                                list(surface.ring) or None)
+                                list(surface.ring) or None, plane=plane)
         return (float(light.morning[0] + light.afternoon[0]), float(light.sky[0]),
                 float(light.relative[0]), float(light.expected[0]))
 

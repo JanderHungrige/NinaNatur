@@ -104,3 +104,25 @@ def test_a_bed_measured_at_a_point_sees_what_the_cell_there_sees(
             assert expected == pytest.approx(grid.expected[index], abs=0.006)
             checked += 1
     assert checked >= 10
+
+
+def test_a_raised_bed_on_a_hillside_has_a_level_top(conn: sqlite3.Connection) -> None:
+    """Its soil lies level however the ground falls under it — the hillside is
+    its ring, not its surface (doc 119, review 2026-09-22). On the ground
+    beside it, the fall counts."""
+    from ninanatur.garden.lighting import _PointLight
+    from ninanatur.geo.terrain import TerrainWindow
+    from ninanatur.solar.position import Location
+
+    size = 80
+    north_face = TerrainWindow(
+        min_x=-40.0, min_y=-40.0, cell_m=1.0, cols=size, rows=size,
+        heights=[100.0 - (row - size / 2) * 0.4 for row in range(size) for _ in range(size)],
+        source="Test", licence="—", attribution="—", vertical_step_m=0.01)
+    point = _PointLight([], Location(51.25, 7.15), north_face, None)
+    on_the_ground = point.at(0.0, 0.0, 0.0)
+    raised = point.at(0.0, 0.0, 0.8)
+
+    assert on_the_ground[2] < 0.9, "the ground itself is turned away from the sun"
+    assert raised[2] > on_the_ground[2] + 0.1, "the bed's own top is level"
+    assert raised[1] == pytest.approx(on_the_ground[1]), "the same hillside hides the same sky"

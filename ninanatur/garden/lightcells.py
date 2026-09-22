@@ -24,6 +24,7 @@ from ninanatur.garden.roofs import Roof
 from ninanatur.garden.roofshape import RoofSurface, surface_of
 from ninanatur.garden.slopes import ASPECT_STEP_DEG, SLOPE_STEP_DEG, ring_for, slope_at
 from ninanatur.geo.terrain import TerrainWindow
+from ninanatur.solar.raster import plane_of
 from ninanatur.solar.raster_grid import Cells
 
 #: A ring gives the land's height in each degree of azimuth.
@@ -56,6 +57,10 @@ class Surface:
     owner: int | None
     on_a_roof: bool
     answered: bool = True
+    #: The surface itself: how steeply it tilts and which way it climbs, the
+    #: ground's fall or a roof's pitch. What the sun strikes it at (doc 119).
+    slope: float = 0.0
+    aspect: float = 0.0
 
 
 def roofs_of(garden: Garden, ground: TerrainWindow | None) -> list[Roofed]:
@@ -123,11 +128,11 @@ def surface_at(
         slope, aspect = roofed.surface.slope_aspect_at(x, y)
         return Surface(z=roofed.base + roofed.surface.height_at(x, y),
                        ring=_ring(horizon, slope, aspect, rings), owner=roofed.element_id,
-                       on_a_roof=True)
-    ring = tuple(horizon or ()) if ground is None else _ring(horizon, *slope_at(ground, x, y),
-                                                             rings)
+                       on_a_roof=True, slope=slope, aspect=aspect)
+    fall = (0.0, 0.0) if ground is None else slope_at(ground, x, y)
+    ring = tuple(horizon or ()) if ground is None else _ring(horizon, *fall, rings)
     return Surface(z=height_at(ground, x, y, floor) + height_above_ground, ring=ring,
-                   owner=None, on_a_roof=False)
+                   owner=None, on_a_roof=False, slope=fall[0], aspect=fall[1])
 
 
 def _ring(horizon: list[float] | None, slope: float, aspect: float,
@@ -171,6 +176,15 @@ def surfaces_of(xs: list[float], ys: list[float], ground: TerrainWindow | None,
              for c in range(len(xs))] for r in range(len(ys))]
 
 
+def _planes(surfaces: list[list[Surface]]) -> np.ndarray | None:
+    """(3, rows, cols) of what the sun strikes, or None where every cell is
+    level — the ordinary garden, and the sweep's cheap path (doc 119)."""
+    if not any(s.slope for row in surfaces for s in row):
+        return None
+    rows = [[plane_of(s.slope, s.aspect) for s in row] for row in surfaces]
+    return np.array(rows, dtype=float).transpose(2, 0, 1)
+
+
 def cells_of(surfaces: list[list[Surface]], xs: list[float], ys: list[float],
              cell_m: float) -> Cells:
     """The raster's arrays for a grid of surfaces, rows from the south.
@@ -199,7 +213,7 @@ def cells_of(surfaces: list[list[Surface]], xs: list[float], ys: list[float],
         z=np.array([[s.z for s in row] for row in surfaces], dtype=float),
         owner=np.array([[-1 if s.owner is None else s.owner for s in row]
                         for row in surfaces], dtype=int),
-        sky=sky, rings=table,
+        sky=sky, rings=table, plane=_planes(surfaces),
     )
 
 

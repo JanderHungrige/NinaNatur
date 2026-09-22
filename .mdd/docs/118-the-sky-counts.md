@@ -82,7 +82,7 @@ known_issues:
   - "Relative illuminance is shown, not matched by: on Ellenberg's thresholds it would put almost every garden spot at L 9 (owner's decision, 2026-09-22, below)."
   - "The sky floor bites only where a crown is dense, and the model's planted crowns are not: every broadleaf passes 20 % in leaf (`canopies.TRANSMISSION_IN_LEAF`), under which the floor says 6.25 against the hours' 6.5. The dense beech measured below assumed 5 %; crowns on trunks (feature 6) and species' own transmission are where it starts to matter."
   - "A tree, shrub or hedge the gardener drew — and a crown accepted from the surface model — is still cast as an opaque prism from the ground, whatever `api/canopies.py` says of broadleaves: inside one, hours and sky both read 0, and the value its floor, 2.5. Crowns become crowns in feature 6."
-  - "The direct share is sun hours over open ground's, not energy: a March hour at 8° counts like a June hour at 60°. Feature 4 weights by incidence."
+  - "Resolved by doc 119: the direct share was sun hours over open ground's, so a March hour at 8° counted like a June hour at 60°."
   - "Cloud is spread evenly over the day: the expected sunshine scales every hour by the month's share of possible sunshine. Morning fog in a valley or afternoon convection is not in a monthly climatology."
   - "Two skies, not twelve: a crown passes the in-leaf sky's light in every month it is in leaf and the bare sky's in every other."
   - "A sky patch is tested at its centre and counts wholly in or out: beside a long wall the isotropic sky seen is within 0.013 of the closed form on Reinhart's sky (0.031 on Tregenza's, which the season's bare months still use); near crowns and houses 0.003 on average, 0.019 at worst, against a sky of 20,624 patches."
@@ -246,19 +246,23 @@ A 20 × 30 m garden: its own 9 m house at the north end, an 8 m neighbour to the
 east, a 1.8 m fence on the south boundary, a 10 m crown (transmission 0.2 in
 leaf, 0.75 bare), a 2 m garden wall.
 
+(Relative as doc 119 weighs it, the beam rather than the hours; the column
+read 0.75, 0.54, 0.50, 0.47, 0.29, 0.57, 0.67, 0.56 before that.)
+
 | Spot | Place | Hours | L (hours) | Sky | Relative | Expected |
 |---|---|---|---|---|---|---|
-| Open lawn | Wuppertal | 8.97 h | 9.00 | 0.80 | 0.75 | 3.75 h |
+| Open lawn | Wuppertal | 8.97 h | 9.00 | 0.80 | 0.79 | 3.75 h |
 | 1 m north of the fence | Freiburg | 4.90 h | 6.81 | 0.66 | 0.54 | 2.38 h |
-| | Wuppertal | 3.83 h | 6.11 | 0.66 | 0.50 | 1.69 h |
-| | Kiel | 3.30 h | 5.66 | 0.66 | 0.47 | 1.64 h |
-| Under the crown | Wuppertal | 3.99 h | 6.25 | 0.19 | 0.29 | 1.61 h |
-| North of the house | Wuppertal | 5.71 h | 7.32 | 0.67 | 0.57 | 2.47 h |
-| 1 m south of the house | Wuppertal | 10.12 h | 9.00 | 0.55 | 0.67 | 4.25 h |
-| 1 m west of the wall | Wuppertal | 6.68 h | 8.01 | 0.61 | 0.56 | 2.79 h |
+| | Wuppertal | 3.83 h | 6.11 | 0.66 | 0.47 | 1.69 h |
+| | Kiel | 3.30 h | 5.66 | 0.66 | 0.43 | 1.64 h |
+| Under the crown | Wuppertal | 3.99 h | 6.25 | 0.19 | 0.30 | 1.61 h |
+| North of the house | Wuppertal | 5.71 h | 7.32 | 0.67 | 0.45 | 2.47 h |
+| 1 m south of the house | Wuppertal | 10.12 h | 9.00 | 0.55 | 0.74 | 4.25 h |
+| 1 m west of the wall | Wuppertal | 6.68 h | 8.01 | 0.61 | 0.63 | 2.79 h |
 
 The fence bed and the crown read the same hours (3.8 and 4.0) and differ by
-nearly half in light (0.50 against 0.29). That is the point of the feature.
+more than a third in light (0.47 against 0.30). That is the point of the
+feature.
 
 **Cost**: 4,800 cells at 0.5 m, 3,846 sun moments, this garden with its
 deciduous crown: hours alone 836 ms, hours and sky 996 ms — 577 directions in

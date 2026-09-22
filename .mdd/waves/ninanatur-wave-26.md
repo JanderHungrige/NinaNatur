@@ -72,7 +72,7 @@ term the number becomes a derivation from the definition.
 | 1 | no-hull | 116 | built | 0 |
 | 2 | room-to-compute | 117 | built | 0 |
 | 3 | the-sky-counts | 118 | built | 2 |
-| 4 | energy-not-hours | — | planned | 3 |
+| 4 | energy-not-hours | 119 | built | 3 |
 | 5 | a-roof-casts-as-a-roof | — | planned | 1 |
 | 6 | a-crown-is-not-a-cylinder | — | planned | 1 |
 | 7 | mark-the-shadow-edge | — | planned | 3 |
@@ -122,6 +122,19 @@ with a new date. The page says which model version computed a map.
   part 1, 4 on part 2, all fixed; the worst a month map showing a leafy sky
   under a bare March crown, and a floor that took every bed inside a drawn
   tree from 2.5 to 0.0.
+
+- **2026-09-22 — stage 2: feature 4 built** (doc 119). *Energy, not hours*:
+  inside relative illuminance the sun's share of a month is what its beam
+  brings to the cell's own surface — Kasten & Young's air mass through Meinel's
+  atmosphere, times the cosine of incidence on the ground's fall or a roof's
+  pitch — measured against open level ground. The strip north of a 9 m house
+  keeps its hours and loses a fifth of its light; a 22° north slope has *more
+  hours* than the south slope facing it and a fifth less light, which is doc
+  72's complaint in one line; a gable's two pitches read 1.05 and 0.66. Hours,
+  the sky, the expected sunshine and the light value are untouched.
+  `MODEL_VERSION` 26.4. 12 findings upheld, among them a raised bed given the
+  hillside's tilt as its own soil, and a cost charged per part that belonged
+  per cell.
 
 ## What each one is
 

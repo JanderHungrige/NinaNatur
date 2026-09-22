@@ -2,8 +2,8 @@
 
 Checked by what they must be: open ground has all of open ground's light and
 exactly the sunshine the DWD measured there; a spot's relative illuminance is
-the climate's months mixing its own direct share and sky share, recomputed here
-from the pieces; and the grid says of a cell what the point path says of it.
+the climate's months mixing its own share of the beam and its share of the sky,
+recomputed here from the pieces; and the grid says of a cell what the point path says of it.
 """
 from __future__ import annotations
 
@@ -13,9 +13,19 @@ import math
 import numpy as np
 import pytest
 
+from ninanatur.solar.beam import beam
 from ninanatur.solar.climate import climate_at
 from ninanatur.solar.position import Location
-from ninanatur.solar.raster import Directions, Moments, Part, moments_for, parts_of, point_sums
+from ninanatur.solar.raster import (
+    Directions,
+    Incidence,
+    Moments,
+    Part,
+    moments_for,
+    parts_of,
+    point_sums,
+    point_sweep,
+)
 from ninanatur.solar.raster_grid import Cells
 from ninanatur.solar.relative import grid_sky_light, point_sky_light
 from ninanatur.solar.shading import Obstacle
@@ -44,10 +54,9 @@ def test_relative_light_is_the_months_mixing_direct_and_sky_light() -> None:
     sky = point_sums(parts, sky_directions(7), x, y)[0]
     light = open_light = 0.0
     for k, month in enumerate(CLIMATE.months):
-        mine = _month_hours(parts, moments, month, x, y)
-        possible = _month_hours([], moments, month, x, y)
+        share = _month_share(parts, moments, month, x, y)
         radiation, diffuse = CLIMATE.global_kwh_m2[k], CLIMATE.diffuse_fraction[k]
-        light += radiation * ((1 - diffuse) * mine / possible + diffuse * sky)
+        light += radiation * ((1 - diffuse) * share + diffuse * sky)
         open_light += radiation
     got = point_sky_light(parts, moments, CLIMATE, x, y)
     assert float(got.sky[0]) == pytest.approx(sky)
@@ -55,14 +64,18 @@ def test_relative_light_is_the_months_mixing_direct_and_sky_light() -> None:
     assert 0.3 < float(got.relative[0]) < 0.7, "a north bed is lighter than its hours"
 
 
-def _month_hours(parts: list[Part], moments: Moments, month: int, x: float, y: float) -> float:
-    """The month's sun samples that reach (x, y), each weighing one."""
+def _month_share(parts: list[Part], moments: Moments, month: int, x: float, y: float) -> float:
+    """The month's sun as the model weighs it (doc 119): what the clear-sky
+    beam brings to (x, y) over what it brings to open level ground."""
     chosen = moments.month == month
     count = int(chosen.sum())
-    directions = Directions(azimuth=moments.azimuth[chosen], altitude=moments.altitude[chosen],
+    altitude = moments.altitude[chosen]
+    directions = Directions(azimuth=moments.azimuth[chosen], altitude=altitude,
                             month=moments.month[chosen], weight=np.ones(count),
                             group=np.zeros(count, dtype=int), groups=1)
-    return float(point_sums(parts, directions, x, y)[0])
+    incidence = Incidence(beam=beam(altitude), group=np.zeros(count, dtype=int), groups=1)
+    lit = float(point_sweep(parts, directions, x, y, incidence=incidence)[1][0])
+    return lit / float(np.sum(beam(altitude) * np.sin(np.radians(altitude))))
 
 
 @pytest.mark.parametrize("month", [None, 3, 5])
@@ -133,7 +146,7 @@ def test_a_season_under_a_deciduous_crown_mixes_each_month_with_its_own_sky() ->
     assert bare - leafy > 0.2
     light = open_light = 0.0
     for k, month in enumerate(CLIMATE.months):
-        share = _month_hours(parts, moments, month, x, y) / _month_hours([], moments, month, x, y)
+        share = _month_share(parts, moments, month, x, y)
         sky = leafy if passes(1.0, 0.0, month) == 1.0 else bare
         radiation, diffuse = CLIMATE.global_kwh_m2[k], CLIMATE.diffuse_fraction[k]
         light += radiation * ((1 - diffuse) * share + diffuse * sky)

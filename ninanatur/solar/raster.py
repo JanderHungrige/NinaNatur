@@ -63,6 +63,42 @@ class Directions:
     groups: int
 
 
+@dataclass(frozen=True)
+class Incidence:
+    """What each direction's beam brings, beside what it is worth (doc 119):
+    for the sun, the clear-sky beam at its altitude (`solar.beam`), added —
+    times what passes and the cosine of its incidence on each cell's surface —
+    to the energy sum named by `group`."""
+
+    beam: np.ndarray
+    group: np.ndarray
+    groups: int
+
+
+#: A surface as the sweep reads it: (cos s, −sin s·cos a, −sin s·sin a), which
+#: dotted with the sun's (sin h, cos h·cos A, cos h·sin A) is the cosine of
+#: incidence. Level ground is (1, 0, 0).
+Plane = tuple[float, float, float]
+LEVEL: Plane = (1.0, 0.0, 0.0)
+
+
+def plane_of(slope_deg: float, aspect_deg: float) -> Plane:
+    """A surface of this slope, its aspect uphill clockwise from north as every
+    aspect here is (`slopes.slope_at`): it faces the other way, downhill."""
+    s, a = np.radians(slope_deg), np.radians(aspect_deg)
+    return (float(np.cos(s)), float(-np.sin(s) * np.cos(a)), float(-np.sin(s) * np.sin(a)))
+
+
+def cos_incidence(altitude_deg: np.ndarray, azimuth_deg: np.ndarray,
+                  plane: tuple[np.ndarray | float, ...]) -> np.ndarray:
+    """The cosine of each direction's incidence on a surface (`Plane`), which
+    may be a cell's arrays: sin h cos s − cos h sin s cos(A − a)."""
+    h, az = np.radians(altitude_deg), np.radians(azimuth_deg)
+    cos_i: np.ndarray = (np.sin(h) * plane[0] + np.cos(h) * np.cos(az) * plane[1]
+                         + np.cos(h) * np.sin(az) * plane[2])
+    return cos_i
+
+
 def sun_directions(moments: Moments) -> Directions:
     """The sun's moments as directions: each a sample's share of a daily mean
     hour, in the morning sum or the afternoon one."""
@@ -197,6 +233,30 @@ def point_hours(parts: list[Part], moments: Moments, x: float, y: float, z: floa
 def point_sums(parts: list[Part], directions: Directions, x: float, y: float, z: float = 0.0,
                ring: list[float] | None = None, owner: int | None = None) -> np.ndarray:
     """(groups,): each group's weighted sum of what reaches one point."""
+    return point_sweep(parts, directions, x, y, z, ring, owner)[0]
+
+
+def point_sweep(parts: list[Part], directions: Directions, x: float, y: float,
+                z: float = 0.0, ring: list[float] | None = None, owner: int | None = None,
+                incidence: Incidence | None = None, plane: Plane = LEVEL,
+                ) -> tuple[np.ndarray, np.ndarray]:
+    """(groups,) as `point_sums`, and (incidence groups,): the energy of what
+    reaches the point on its surface (doc 119) — empty without `incidence`."""
+    through = _point_through(parts, directions, x, y, z, ring, owner)
+    sums: np.ndarray = np.bincount(directions.group, weights=through * directions.weight,
+                                   minlength=directions.groups)
+    if incidence is None:
+        return sums, np.zeros(0)
+    brings = incidence.beam * np.maximum(
+        cos_incidence(directions.altitude, directions.azimuth, plane), 0.0)
+    energy: np.ndarray = np.bincount(incidence.group, weights=through * brings,
+                                     minlength=incidence.groups)
+    return sums, energy
+
+
+def _point_through(parts: list[Part], directions: Directions, x: float, y: float, z: float,
+                   ring: list[float] | None, owner: int | None) -> np.ndarray:
+    """(directions,): what passes to the point from each direction."""
     through = np.ones(directions.azimuth.shape)
     for part in parts:
         if owner is not None and part.owner == owner:
@@ -205,9 +265,7 @@ def point_sums(parts: list[Part], directions: Directions, x: float, y: float, z:
         through *= np.where(covered_over_moments(part, x, y, z, directions), passes, 1.0)
     if ring:
         through = through * visible(np.asarray([ring], dtype=float), directions)[:, 0]
-    sums: np.ndarray = np.bincount(directions.group, weights=through * directions.weight,
-                                   minlength=directions.groups)
-    return sums
+    return through
 
 
 def visible(rings: np.ndarray, moments: Moments | Directions) -> np.ndarray:
@@ -228,5 +286,6 @@ def _through_by_month(part: Part, months: np.ndarray) -> np.ndarray:
     return through
 
 
-__all__ = ["Directions", "Moments", "Part", "covered", "covered_over_moments", "moments_for",
-           "moments_from", "parts_of", "point_hours", "point_sums", "sun_directions", "visible"]
+__all__ = ["LEVEL", "Directions", "Incidence", "Moments", "Part", "Plane", "cos_incidence",
+           "covered", "covered_over_moments", "moments_for", "moments_from", "parts_of",
+           "plane_of", "point_hours", "point_sums", "point_sweep", "sun_directions", "visible"]

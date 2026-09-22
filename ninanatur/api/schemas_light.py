@@ -43,9 +43,9 @@ class LightMap(BaseModel):
     model: str = ""
     #: In step with `hours`, empty on a map computed before them (doc 118): the
     #: share of the sky each cell sees (a month's with its crowns as they are
-    #: then, the season's in leaf), its relative
-    #: illuminance — sun and sky as a share of open ground's light, in the
-    #: garden's climate — and the hours of sunshine it can expect.
+    #: then, the season's in leaf), its relative illuminance — sun and sky as a
+    #: share of open *level* ground's light in the garden's climate, so a slope
+    #: facing the sun passes 1 (doc 119) — and the sunshine it can expect.
     sky: list[float | None] = []
     relative: list[float | None] = []
     expected: list[float | None] = []

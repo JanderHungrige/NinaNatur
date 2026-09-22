@@ -100,11 +100,16 @@ ANSWERS: dict[str, tuple[tuple[float, ...], ...]] = {
     "26.2": ((13.08,), (5.71,), (4.35,)),
     "26.3": ((13.08, 1.0, 1.0, 5.47, 9.0), (5.71, 0.665, 0.569, 2.47, 7.32),
              (4.35, 0.56, 0.451, 1.84, 6.47)),
+    # 26.4 weighs the sun by what its beam brings (doc 119): a house to the
+    # south takes the noon sun, and the light behind it falls with it.
+    "26.4": ((13.08, 1.0, 1.0, 5.47, 9.0), (5.71, 0.665, 0.454, 2.47, 7.32),
+             (4.35, 0.56, 0.404, 1.84, 6.47)),
 }
 #: The bed of `_drawn`, Berlin, behind its wall: what the app stores for it —
 #: the grid's path, end to end.
 BED_ANSWERS: dict[str, tuple[float, ...]] = {
     "26.3": (11.6, 0.93, 0.927, 5.6, 9.0),
+    "26.4": (11.6, 0.93, 0.911, 5.6, 9.0),
 }
 #: How near: hours and values to two places, shares of sky and light to three.
 TOLERANCE = (0.02, 0.002, 0.002, 0.02, 0.02)
