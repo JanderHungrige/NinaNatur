@@ -23,8 +23,23 @@ updates:
     schedule:
       interval: "weekly"
     groups:
+      # Packages that only install at matching versions come as one pull
+      # request, majors included: proposed one by one, each broke `npm ci`
+      # and could never go green (react-dom 19 without react, vite 8 without
+      # its plugin; 2026-09-22). A package goes to the first group that
+      # matches, so these stand before the catch-all.
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      vite:
+        patterns: ["vite", "@vitejs/*", "vitest", "@vitest/*"]
       frontend:
         update-types: ["minor", "patch"]
+    ignore:
+      # openapi-typescript, which writes src/api/types.ts, requires TypeScript
+      # 5 (peer ^5.x, 2026-09-22). TypeScript 7 cannot install beside it.
+      # Lift this when openapi-typescript accepts it.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 5
 
   - package-ecosystem: "github-actions"

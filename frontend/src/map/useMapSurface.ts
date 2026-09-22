@@ -32,9 +32,9 @@ interface Options {
 }
 
 export interface Surface {
-  /** Read only here; React fills it. Typed as the element's own ref, which is
-   *  what a `ref` prop takes. */
-  ref: RefObject<HTMLDivElement>;
+  /** Read only here; React fills it. Typed as `useRef(null)` gives it (React
+   *  19: empty until mounted), which is what a `ref` prop takes. */
+  ref: RefObject<HTMLDivElement | null>;
   /** The size everything on the map is drawn at. */
   box: Box;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
