@@ -62,8 +62,13 @@ rules for one question (review, 2026-09-21).
 
 **Where the light is read** is the one difference left. The list ranks a bed by
 its average; the warning reads the cell a cluster stands in, because a corner
-darker than its bed is what it is for. A cluster's cell is its own only where
-it is part of its bed — by the rule the bed's mean is taken by: its centre
+darker than its bed is what it is for. A placed cluster stands where the plan
+put it, in garden metres: the plan drags and draws it there, and the server
+read the same numbers as an offset from the bed's centre, so every placed
+cluster in a bed away from the garden's origin was judged somewhere else — and
+a tree's shade was cast from there (`lightview`; review, 2026-09-22). A map
+with a placed shading plant reads stale once. A cluster's cell is its own only
+where it is part of its bed — by the rule the bed's mean is taken by: its centre
 inside the bed, and not a roof. Otherwise it is judged by the value the list
 ranks its bed by (`misplaced._hours_at`):
 - **a cluster nobody placed** — what the list's add button plants. It stands

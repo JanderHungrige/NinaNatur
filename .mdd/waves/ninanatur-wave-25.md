@@ -630,6 +630,20 @@ Three stages:
   raised bed was warned about from the ground grid while the list ranked it by
   its own sampled light; and the landcover fetch run after the answer still
   held one of the two heavy slots until Overpass replied.
+  Then the fixes themselves were checked, four times, each round a checker per
+  fix and skeptics per finding, until the findings ran out of substance:
+  `e8f0e02`, `f3d23ce`, `03b7a4b`, `6baadf2`. What they found beyond the first
+  review: a narrow border's cell is centred outside it, often in the hedge it
+  borders (a cell is a cluster's own only where it is its bed's); a plant
+  planted from the list has no position and was judged at the bed's middle; a
+  pent's upper wall split by an OSM node, and an arrow that leaned, ran off an
+  L, shrank to a dot or measured a recess (now `ours/pentArrow`, clipped to the
+  house); rebuild fetches of the landcover unbounded once the slot was let go,
+  and a creation fetch skipped for want of room. And an older bug in the light
+  model itself: a concave house was shaded by its convex hull, so the inner
+  corner of every L-shaped house and every courtyard read 0 h all day, on the
+  map and in a bed's sample — exact now, checked against a 3D ray march over
+  half a million samples (doc 38).
 
 ## What each one is
 

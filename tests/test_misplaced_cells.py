@@ -82,8 +82,7 @@ def test_a_placed_cluster_in_a_narrow_border_is_not_judged_by_a_cell_outside_it(
     garden_id, bed_id = _laid_out(conn, [[0, 0.55], [10, 0.55], [10, 0.95], [0, 0.95]], 9.0)
     _species(conn, 10, 9.0, 2.0)
     planting_id = add_planting(conn, bed_id, taxon_id=10, quantity=1)
-    bed = load_garden(conn, garden_id).beds[0]
-    place_planting(conn, planting_id, 1.0 - bed.x, 0.75 - bed.y)
+    place_planting(conn, planting_id, 1.0, 0.75)
     assert _grid().at(1.0, 0.75) == 2.0, "the cell under the cluster is the dark one"
 
     assert misplaced_plantings(conn, load_garden(conn, garden_id), _grid()) == []
@@ -130,10 +129,31 @@ def test_a_cluster_whose_cell_is_centred_outside_its_bed_is_judged_by_the_bed(
     _species(conn, 13, 9.0, 2.0)
     planting_id = add_planting(conn, bed_id, taxon_id=13, quantity=1)
     bed = load_garden(conn, garden_id).beds[0]
-    place_planting(conn, planting_id, 1.0 - bed.x, 0.75 - bed.y)
+    place_planting(conn, planting_id, 1.0, 0.75)
     assert _grid().mean_over(bed.polygon) == 9.0, "only the northern row is the bed's"
 
     assert misplaced_plantings(conn, load_garden(conn, garden_id), _grid()) == []
+
+
+def test_a_placed_cluster_is_judged_where_the_plan_put_it(conn: sqlite3.Connection) -> None:
+    """The plan drags and draws a cluster in garden metres, and a bed is stored
+    round its own centre; the server added that centre once more, and judged
+    every placed cluster somewhere else (review, 2026-09-22)."""
+    garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    # As `store.add_bed` keeps it: the corners round its centre, which is x, y.
+    bed_id = insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=5, y=1,
+                            name="Beet", points=[[-5, -1], [5, -1], [5, 1], [-5, 1]],
+                            soil_type="loam", moisture="fresh")
+    conn.execute("UPDATE element SET sun_hours = 5.5 WHERE element_id = ?", (bed_id,))
+    conn.commit()
+    _species(conn, 14, 9.0, 1.0)
+    planting_id = add_planting(conn, bed_id, taxon_id=14, quantity=1)
+    place_planting(conn, planting_id, 1.0, 0.5)  # as useClusterDrag sends it: the dark row
+    bed = load_garden(conn, garden_id).beds[0]
+    assert (bed.x, bed.polygon[0]) == (5, [0, 0]), "stored round its centre"
+
+    [found] = misplaced_plantings(conn, load_garden(conn, garden_id), _grid())
+    assert (found.problem, found.sun_hours) == ("too_dark", 2.0)  # type: ignore[attr-defined]
 
 
 def test_a_cluster_on_a_roofs_cell_is_not_judged_by_the_roofs_sun(
@@ -144,9 +164,7 @@ def test_a_cluster_on_a_roofs_cell_is_not_judged_by_the_roofs_sun(
     # Suited to the bed's own 2 h; far too dark a plant for a roof's 12.6 h.
     _species(conn, 9, ellenberg_from_sun_hours(2.0), 1.0)
     planting_id = add_planting(conn, bed_id, taxon_id=9, quantity=1)
-    garden = load_garden(conn, garden_id)
-    bed = garden.beds[0]
-    place_planting(conn, planting_id, 4.5 - bed.x, 0.5 - bed.y)
+    place_planting(conn, planting_id, 4.5, 0.5)
     grid = _grid(roof_at=4)
     assert grid.at(4.5, 0.5) is None, "under a roof, as documented"
 

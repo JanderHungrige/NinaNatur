@@ -134,7 +134,8 @@ def drop_plantings(conn: sqlite3.Connection, element_id: int) -> int:
 def place_planting(
     conn: sqlite3.Connection, planting_id: int, x: float, y: float
 ) -> None:
-    """Put a cluster somewhere in its bed, in metres from the bed's origin.
+    """Put a cluster somewhere in its bed, in garden metres — the point the plan
+    drags it to and draws it at.
 
     Whether the point is actually inside the bed is the caller's question: the
     plan clamps a drag to the outline, and a stored position that once was

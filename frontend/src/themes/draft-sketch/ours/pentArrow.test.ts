@@ -44,6 +44,32 @@ describe('pentArrow', () => {
     expect(inside(shaft[0], house) && inside(shaft[1], house)).toBe(true);
   });
 
+  const clear = (shaft: [Point, Point], ring: Point[]) =>
+    inside(shaft[0], ring) && inside(shaft[1], ring)
+    && inside({ x: (shaft[0].x + shaft[1].x) / 2, y: (shaft[0].y + shaft[1].y) / 2 }, ring);
+
+  it.each([180, 185, 188])('keeps off a courtyard\'s walls when it opens uphill (fall %d°)', (fall) => {
+    // The middle of the upper edge is over the courtyard; its corner was the
+    // nearest start, and the arrow ran down the courtyard's wall or out of the
+    // house within centimetres.
+    const house = pts([0, 0], [12, 0], [12, 8], [8, 8], [8, 4], [4, 4], [4, 8], [0, 8]);
+    const lines = [line([12, 8], [8, 8]), line([4, 8], [0, 8])];
+    const shaft = pentArrow(lines, house, fall)!;
+    expect(clear(shaft, house)).toBe(true);
+    expect(length(shaft)).toBeGreaterThan(8 / 4);
+    expect(Math.min(Math.abs(shaft[0].x - 4), Math.abs(shaft[0].x - 8))).toBeGreaterThan(0.3);
+  });
+
+  it('is not a stub beside an entrance notch in the upper wall', () => {
+    const house = pts([3, -21], [-2, -21], [-2, -29], [0, -29], [0, -27.7], [0.6, -27.7],
+      [0.6, -29], [3, -29]);
+    // Falling 353°, it rises to the south, where the notch is: the server's walls.
+    const lines = [line([-2, -29], [0, -29]), line([0, -27.7], [0.6, -27.7]), line([0.6, -29], [3, -29])];
+    const shaft = pentArrow(lines, house, 353)!;
+    expect(clear(shaft, house)).toBe(true);
+    expect(length(shaft)).toBeGreaterThan(8 / 4);
+  });
+
   it('draws nothing rather than something over the garden', () => {
     // Lines that lead nowhere into the house: no arrow at all.
     expect(pentArrow([line([20, 20], [30, 20])], pts([0, 0], [10, 0], [10, 8], [0, 8]), 180))

@@ -145,10 +145,13 @@ the roof the model knows, in garden metres.
   neighbour's wall meets it, half the buildings in a street have one, and judged
   piece by piece a split wall lost its low end or came back as two lines. A real
   kink stays. The arrow (`ours/pentArrow`) runs down the surveyed fall
-  (`roofFall` on the shape, from `roof_fall_deg`) from the point on a drawn wall
-  nearest the middle of the whole upper edge whose first 5 cm down the fall lie
-  in the house, and is sized by how far the house reaches from there — to the
-  first wall the ray leaves through, not one it enters by. It is its own mark,
+  (`roofFall` on the shape, from `roof_fall_deg`) from a point on a drawn wall
+  whose first 5 cm down the fall lie in the house, and is sized by how far the
+  house reaches from there — to the first wall the ray leaves through, not one
+  it enters by. Of the starts tried along the walls it takes one that runs at
+  least half as far as the longest, keeps clear of the walls by its barbs'
+  spread, and is then nearest the middle of the whole upper edge: nearness
+  alone started it in a courtyard's corner, running down the courtyard's wall. It is its own mark,
   `fall`, clipped to the outline. Each simpler answer was wrong somewhere
   (review, 2026-09-21/22): aimed at the outline's middle it leaned with the
   house; sized by that middle it ran off an L; begun at the bare middle it

@@ -32,16 +32,42 @@ export function pentArrow(lines: [Point, Point][], ring: Point[],
     : { x: Math.sin((bearing * Math.PI) / 180), y: Math.cos((bearing * Math.PI) / 180) };
   if (down === null) return null;
   const starts = [nearestOn(lines, middle),
-    ...lines.flatMap(([p, q]) => TRIES.map((t) => ({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t })))]
-    .sort((p, q) => Math.hypot(p.x - middle.x, p.y - middle.y) - Math.hypot(q.x - middle.x, q.y - middle.y));
-  for (const from of starts) {
-    if (!inside({ x: from.x + down.x * STEP_M, y: from.y + down.y * STEP_M }, ring)) continue;
+    ...lines.flatMap(([p, q]) => TRIES.map((t) => ({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t })))];
+  const arrows = starts.flatMap((from) => {
+    if (!inside({ x: from.x + down.x * STEP_M, y: from.y + down.y * STEP_M }, ring)) return [];
     const run = leaving(from, down, ring);
-    if (run === null) continue;
+    if (run === null) return [];
     const at = (share: number): Point => ({ x: from.x + down.x * run * share, y: from.y + down.y * run * share });
-    return [at(0.125), at(0.55)];
-  }
-  return null;
+    const shaft: [Point, Point] = [at(0.125), at(0.55)];
+    return [{ shaft, run, apart: Math.hypot(from.x - middle.x, from.y - middle.y),
+              clear: clearance(shaft, ring) >= BARB_SPREAD * run }];
+  });
+  if (arrows.length === 0) return null;
+  // Long enough to read, clear of the walls so its barbs are not cut, and then
+  // as near the middle of the edge as that allows. Nearness alone started it
+  // in the corner of a courtyard, running down the courtyard's wall or out of
+  // the house within centimetres (review, 2026-09-22).
+  const longest = Math.max(...arrows.map((a) => a.run));
+  const long = arrows.filter((a) => a.run >= longest / 2);
+  const pool = long.some((a) => a.clear) ? long.filter((a) => a.clear) : long;
+  return pool.reduce((best, a) => (a.apart < best.apart ? a : best)).shaft;
+}
+
+/** How far a barb reaches sideways, as a share of the run: 30 % of the shaft
+ *  (0.425 of the run) at 0.45 rad. */
+const BARB_SPREAD = 0.3 * 0.425 * Math.sin(0.45);
+
+/** How far the shaft keeps from the outline at its tail, middle and tip. */
+function clearance([tail, tip]: [Point, Point], ring: Point[]): number {
+  const mid = { x: (tail.x + tip.x) / 2, y: (tail.y + tip.y) / 2 };
+  return Math.min(...[tail, mid, tip].map((p) => Math.min(...ring.map((a, i) => {
+    const b = ring[(i + 1) % ring.length]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const length = dx * dx + dy * dy;
+    const t = length === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length));
+    return Math.hypot(a.x + t * dx - p.x, a.y + t * dy - p.y);
+  }))));
 }
 
 function towards(from: Point, to: Point): Point | null {

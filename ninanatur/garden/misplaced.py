@@ -151,9 +151,10 @@ def _ring(polygon: list[list[float]]) -> list[tuple[float, float]]:
 
 
 def _placed_at(bed: object, planting: object) -> tuple[float, float] | None:
-    """Where the gardener put the cluster, in garden metres; None if nowhere."""
+    """Where the gardener put the cluster, in garden metres — as the plan drags
+    and draws it; None if nowhere. It was read as an offset from the bed's
+    centre, and every placed cluster in a bed away from the garden's origin
+    was judged somewhere else (review, 2026-09-22)."""
     x = getattr(planting, "x", None)
     y = getattr(planting, "y", None)
-    if x is None or y is None:
-        return None
-    return (float(getattr(bed, "x", 0.0)) + x, float(getattr(bed, "y", 0.0)) + y)
+    return None if x is None or y is None else (float(x), float(y))

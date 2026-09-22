@@ -285,6 +285,6 @@ def signature_of(
                 continue
             parts.append(
                 f"p{planting.planting_id}|{planting.taxon_id}|{planting.quantity}"
-                f"|{planting.x}|{planting.y}"
+                f"|{planting.x}|{planting.y}{'' if planting.x is None else '|at'}"
             )
     return hashlib.sha256("\n".join(parts).encode()).hexdigest()[:16]
