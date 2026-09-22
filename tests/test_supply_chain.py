@@ -75,12 +75,21 @@ def test_each_package_is_pinned_in_one_lock_only() -> None:
     assert not twice, f"pinned in both locks: {twice} (python scripts/compile_dev_lock.py)"
 
 
+def test_no_lock_is_paired_with_an_in_file() -> None:
+    """Dependabot compiles a `.txt` again from the `.in` of the same name —
+    without the image's lock as a constraint — and the runtime pins came back
+    into the dev lock at other versions (review, 2026-09-22). The tools are
+    listed in `scripts/compile_dev_lock.py` instead."""
+    for lock in (LOCK, DEV_LOCK):
+        assert not lock.with_suffix(".in").exists(), f"{lock.with_suffix('.in').name} is back"
+
+
 def test_the_dev_lock_keeps_only_what_the_image_does_not_pin() -> None:
     from scripts.compile_dev_lock import dev_only
 
     compiled = (
         "fastapi==1.0 \\\n    --hash=sha256:aa\n    # via app\n"
-        "pytest==9.0 \\\n    --hash=sha256:bb\n    # via -r requirements-dev.in\n"
+        "pytest==9.0 \\\n    --hash=sha256:bb\n    # via TOOLS in scripts/compile_dev_lock.py\n"
     )
     kept = dev_only(compiled, {"fastapi"})
     assert "pytest==9.0" in kept and "fastapi==" not in kept

@@ -31,7 +31,6 @@ source_files:
   - .github/workflows/healthz.yml
   - requirements.txt
   - requirements-dev.txt
-  - requirements-dev.in
   - scripts/compile_dev_lock.py
 routes: []
 models: [rate_limit, session, catalogue_meta]
@@ -218,7 +217,10 @@ image's lock plus the tools, so every runtime pin stood twice; Dependabot edits
 left behind. `scripts/compile_dev_lock.py` compiles the tools against the
 image's lock as before, then leaves out whatever the image's lock pins, keeping
 every pin it already had; CI installs both files, so it still tests exactly
-what ships.
+what ships. The tools are listed in the script, not in a `requirements-dev.in`:
+Dependabot pairs a `.txt` with the `.in` of its name and compiles it again
+itself, without the image's lock, which brought the runtime pins straight back
+(review). Without one, it bumps the dev lock's pins in place.
 
 **The two hand-written parsers trusted their input.** The building survey's
 CityGML went through the standard library's XML parser; a GeoTIFF header could

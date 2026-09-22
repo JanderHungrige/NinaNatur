@@ -132,9 +132,10 @@ the cap is for (doc 103).
 LAZ is LAS packed with an arithmetic coder, which is not a thing to
 reimplement. `laspy` (BSD-3) reads the format, `lazrs` (Apache-2.0) unpacks it,
 both permissive, and the Rust backend is what makes eight million points 0.4 s
-rather than a minute. They are pinned with hashes in `requirements.txt` **and**
-in `requirements-dev.txt` — the supply-chain test caught that the image would
-otherwise ship a library CI never tested.
+rather than a minute. They are pinned with hashes in `requirements.txt` — the
+supply-chain test caught that the image would otherwise ship a library CI never
+tested. (Pinned in both locks then; in one only since 2026-09-22, which CI
+installs beside the tools — doc 85.)
 
 ## Four more clouds, and one that classifies itself
 

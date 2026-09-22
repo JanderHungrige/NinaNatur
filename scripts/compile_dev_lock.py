@@ -2,6 +2,14 @@
 
     python scripts/compile_dev_lock.py      (needs `uv` on the PATH)
 
+The tools are listed here, in `TOOLS`, and not in a `requirements-dev.in`:
+Dependabot pairs a `.txt` with the `.in` of the same name and compiles it
+again itself — without the image's lock as a constraint, so every runtime pin
+came back into the dev lock, some at other versions (review, 2026-09-22).
+Without the `.in` it bumps the dev lock's pins in place, like any hashed
+requirements file. A tool update that needs a new dependency cannot be done in
+place; run this script for it.
+
 The dev lock used to be the image's lock plus the tools, compiled with
 `-c requirements.txt`, so every runtime pin stood in both files. Dependabot
 edits `requirements.txt` alone, and every Python proposal failed CI on the
@@ -24,6 +32,21 @@ LOCK = ROOT / "requirements.txt"
 DEV_LOCK = ROOT / "requirements-dev.txt"
 PYTHON = "3.13"
 
+#: What CI installs beside the image's lock: the tools, never the app's own
+#: dependencies.
+TOOLS = (
+    "pytest",
+    # Refuses every socket that is not a Unix one, so no test can reach the
+    # network by accident (`pyproject.toml` addopts; `tests/test_no_network.py`).
+    "pytest-socket",
+    "ruff",
+    "mypy",
+    "types-requests",
+    "types-defusedxml",
+    "httpx",
+    "pip-audit",
+)
+
 #: A requirement's first line, as uv writes it: `name==version \` or `name[extra]==…`.
 PIN = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]]*\])?==", re.M)
 
@@ -33,8 +56,7 @@ HEADER = """\
 # proposal that moves a runtime pin cannot leave a second copy behind. CI
 # installs both files (`pip install --require-hashes -r requirements.txt
 # -r requirements-dev.txt`). Made by `python scripts/compile_dev_lock.py`,
-# which compiles requirements-dev.in against requirements.txt with uv; do not
-# edit by hand.
+# which compiles its list of tools against requirements.txt with uv.
 """
 
 
@@ -63,18 +85,23 @@ def dev_only(compiled: str, image: set[str]) -> str:
 
 def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
+        tools = Path(scratch) / "tools.in"
+        tools.write_text("".join(f"{tool}\n" for tool in TOOLS))
         out = Path(scratch) / "requirements-dev.txt"
         # Seeded with the lock as it stands, so uv keeps every pin it can:
         # compiling afresh moves tools nobody asked to move.
         if DEV_LOCK.exists():
             out.write_text(DEV_LOCK.read_text())
         subprocess.run(
-            ["uv", "pip", "compile", "pyproject.toml", "requirements-dev.in",
+            ["uv", "pip", "compile", "pyproject.toml", str(tools),
              "-c", "requirements.txt", "--universal", "--generate-hashes",
              "--python-version", PYTHON, "--no-header", "-o", str(out)],
             cwd=ROOT, check=True,
         )
-        DEV_LOCK.write_text(dev_only(out.read_text(), pinned(LOCK.read_text())))
+        # uv names the list it was given in each `# via` line: the scratch file's
+        # path, which differs on every run. Named after where the list lives.
+        compiled = out.read_text().replace(f"-r {tools}", "TOOLS in scripts/compile_dev_lock.py")
+        DEV_LOCK.write_text(dev_only(compiled, pinned(LOCK.read_text())))
     return 0
 
 
