@@ -161,6 +161,15 @@ describe('SuggestionList', () => {
     expect(screen.getByText(/Die 2 passendsten von 1\.234 Arten/)).toBeDefined();
   });
 
+  it('says what the order means, in the header', () => {
+    // Owner, 2026-09-21: "nach besten Wachstumsbedingungen + Insektenwert".
+    show();
+    const header = document.querySelector('.suggestions__header');
+    expect(header?.textContent).toMatch(
+      /Oben steht, was hier am besten wächst; bei gleich guter Eignung entscheidet der Insektenwert\./,
+    );
+  });
+
   it('holds the filters in its own header, above the rows', () => {
     // Doc 90: the chips stay above the list, which scrolls without them.
     show({ filters: <p>Filterzeile</p> });

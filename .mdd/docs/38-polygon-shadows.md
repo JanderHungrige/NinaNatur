@@ -8,6 +8,7 @@ wave_status: complete
 depends_on: [37-object-footprints]
 relates: [34-sightlines, 12-bed-light]
 source_files:
+  - ninanatur/solar/reach.py
   - ninanatur/solar/shading.py
   - ninanatur/garden/sightlines.py
   - ninanatur/garden/store.py
@@ -15,11 +16,12 @@ source_files:
 routes: []
 models: []
 test_files:
+  - tests/test_concave_shadow.py
   - tests/test_polygon_shadows.py
   - tests/test_shading.py
   - tests/test_sightlines.py
 data_flow: reads-existing
-last_synced: 2026-08-30
+last_synced: 2026-09-22
 status: complete
 phase: all
 mdd_version: 11
@@ -96,13 +98,26 @@ sample and the containment test then walks four to sixteen edges.
   terrace would darken every one in the country.
 - **The ground under an object is shaded**, which the Wave 7 fix established and
   the polygon form keeps for free: the footprint is part of its own shadow.
-- **A concave outline gets a slightly generous shadow**, since the hull fills the
-  notch. Stated rather than pretended away.
+- **A concave outline is shaded exactly** since 2026-09-22. The hull still
+  draws its shadow (`shadow_polygon`), but whether a point is in it is asked of
+  the footprint itself: inside the hull, a point of a concave outline is shaded
+  only where the ray towards the sun meets the footprint within the shadow's
+  length (`solar.reach.near_edge`, used by `is_shaded` and the grid's
+  `ShadowAt`). The hull filled the notch — the inner corner of an L-shaped
+  house, a courtyard between two wings — and read it as 0 h all day, on the map
+  and in a bed's sample (review, 2026-09-21: a courtyard bed at 0 h reads 3.5 h
+  now). A map drawn before, of a garden with such a house, reads stale once:
+  the signature marks a concave outline that casts (`lightgrid._exact`).
+  Convexity is judged with a point repeated back to back taken once:
+  OpenStreetMap closes every way on its first node, and an L closed at its
+  inner corner passed as convex until the check of 2026-09-22. The
+  price, measured on 40 L-shaped houses round a 25 × 40 m plot (1,836 cells): a
+  grid in 7.2 s where it took 5.9 s; convex outlines cost what they did.
 
 ## Known Issues
 
-- Concave footprints are over-shaded by the hull. A sketched L-shaped house
-  shades its own inner corner.
+- ~~Concave footprints are over-shaded by the hull.~~ Fixed 2026-09-22 (above);
+  the shadow drawn on the plan (`day.py`) is still the hull.
 - The shadow polygon is recomputed per sun sample rather than cached. It is fast
   enough; it is not clever.
 

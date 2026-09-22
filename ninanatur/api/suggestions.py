@@ -21,11 +21,11 @@ from ninanatur.api.search import (
     ScoredPlant,
     SearchFilters,
     is_woody,
-    light_mismatch,
     rank_plants,
     with_observed,
 )
-from ninanatur.data.interactions import bird_counts, german_partner_totals
+from ninanatur.data.interactions import bird_counts
+from ninanatur.fit.light_fit import light_mismatch
 from ninanatur.fit.score import SiteVector
 from ninanatur.garden.canopy import polygon_area
 from ninanatur.garden.light_state import LightState, light_state
@@ -39,41 +39,24 @@ router = APIRouter(prefix="/api/v1/gardens", tags=["planning"])
 WOODY_LIMIT = 8
 
 
-def _light_suits(woody: list[ScoredPlant]) -> list[ScoredPlant]:
-    """The woody species whose light is not *unsuitable*, in either direction.
+def _woody_order(woody: list[ScoredPlant]) -> list[ScoredPlant]:
+    """The woody shortlist in the main list's order — growing conditions, then
+    insect value (`fit.rank`) — but with room left out of it.
 
-    Stricter than the main list, which only ranks a too-dark species down: this
-    shortlist is ordered by animal value rather than fit, so ranking down means
-    nothing here, and a willow for full sun would lead a deep-shade bed's list
-    (owner review #9, 2026-09-21). A species or a bed with no L value stays.
-    """
-    return [s for s in woody if light_mismatch(s.fit) is None]
-
-
-def _by_value(conn: sqlite3.Connection, woody: list[ScoredPlant]) -> list[ScoredPlant]:
-    """Order a woody shortlist by what it is worth to animals, not by site fit.
-
-    Called only on species the light suits (`_light_suits`). The fit score
-    removes nothing by itself, so this order alone once gave a full-sun bed, a
-    semi-shade bed and a bed with no light the same eight willows. Ordering by
-    fit instead put mistletoe and Ruscus at the top of every list and left
-    Salix caprea — 1,055 German insect partners, the highest count in the
-    catalogue — below the cut, which is the invisibility this whole feature
-    exists to end. A shrub is planted for what visits it.
+    Ordered by animal partners alone, it gave a full-sun bed, a semi-shade bed
+    and a bed with no light the same eight willows; ordered by fit alone, it
+    put mistletoe and Ruscus at the top of every list and Salix caprea, the
+    catalogue's most visited plant, below the cut. The combined order keeps
+    both lessons: among the shrubs that grow well here, the one insects visit
+    most leads. Birds are shown on the row and no longer added to the order —
+    what a bird is worth against an insect is a judgement this product has not
+    made (doc 25), and the owner asked for the Insektenwert.
 
     Room is deliberately not part of the order: the plant that is worth the most
     is worth seeing even when it does not fit, with what it would take beside it.
+    The light is: what it does not suit, shown on request, still comes last.
     """
-    ids = [s.plant.taxon_id for s in woody]
-    insects = german_partner_totals(conn, ids)
-    birds_by_taxon = bird_counts(conn, ids)
-    return sorted(
-        woody,
-        key=lambda s: (
-            -(insects.get(s.plant.taxon_id, 0) + birds_by_taxon.get(s.plant.taxon_id, 0)),
-            -s.score,
-        ),
-    )
+    return sorted(woody, key=lambda s: (light_mismatch(s.fit) is not None, -s.rank, -s.score))
 
 
 @router.get("/{token}/beds/{bed_id}/suggestions", response_model=BedSuggestions)
@@ -93,12 +76,11 @@ def bed_suggestions(
     exclude_planted: bool = True,
     include_light_unsuitable: bool = False,
 ) -> BedSuggestions:
-    """Species that suit this bed, ranked by fit against its own site vector.
+    """Species that suit this bed, in the order `fit.rank` describes (doc 13).
 
-    Woody plants get a shortlist of their own. Introduced species are left out
-    (the product promises native plants), and so, unless asked for, are species
-    the bed is far too bright for (`filters.light_verdict`). `light_state` says
-    whether there was a light value to judge by.
+    Woody plants get a shortlist of their own. Introduced species are left out,
+    and unless asked for so are those the light does not suit (`light_verdict`).
+    `light_state` says whether there was a light value to judge by.
     """
     garden = require_garden(conn, token)
     bed = require_bed(garden, bed_id)
@@ -122,6 +104,7 @@ def bed_suggestions(
             exclude_introduced=not include_introduced,
             exclude_taxa=planted if exclude_planted else frozenset(),
             exclude_light_unsuitable=not include_light_unsuitable,
+            light_misfits_last=include_light_unsuitable,
         ),
         colour=colour,
     )
@@ -153,9 +136,9 @@ def _presented(
     Salix caprea leads the whole database with 1,055 German partners.
     """
     herbaceous = [s for s in ranked.items if not is_woody(s.plant)]
-    candidates = _light_suits([s for s in ranked.items if is_woody(s.plant)])
+    candidates = [s for s in ranked.items if is_woody(s.plant)]
     woody_total = len(candidates)
-    woody = _by_value(conn, candidates)[:WOODY_LIMIT]
+    woody = _woody_order(candidates)[:WOODY_LIMIT]
     page = herbaceous[:limit] + woody
     birds = bird_counts(conn, [s.plant.taxon_id for s in page])
 

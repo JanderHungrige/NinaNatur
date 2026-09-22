@@ -6,8 +6,13 @@ would be a second answer, so the model says which lines to draw.
 """
 from __future__ import annotations
 
+import math
+
+import pytest
+
+from ninanatur.garden.roof_lines import inside_parts, roof_lines
 from ninanatur.garden.roofs import Roof
-from ninanatur.garden.roofshape import Line, roof_lines
+from ninanatur.garden.roofshape import Line
 
 #: 10 m east-west, 6 m north-south, centred on the origin.
 BOX = [(-5.0, -3.0), (5.0, -3.0), (5.0, 3.0), (-5.0, 3.0)]
@@ -58,3 +63,151 @@ def test_what_the_model_draws_as_a_plane_has_no_lines() -> None:
     assert roof_lines(BOX, Roof.GABLE, height_m=None) == []  # nobody said how high
     # A pitch under five degrees is flat to the model, and so to the drawing.
     assert roof_lines(BOX, Roof.GABLE, height_m=9.0, eaves_m=8.9) == []
+
+
+# --- a house that is not a rectangle (the owner, 2026-09-21) -------------------
+#
+# "Bei schrägen, nicht rechteckigen Häusern zeichnet das Dach manchmal über das
+# Haus hinaus. Vor allem beim Walmdach." The model's rectangle is wider than such
+# a house, and its corners lie outside the walls.
+
+#: A corner house: 10 m along the street, 6 m along its oblique end walls.
+TRAPEZOID = [(-5.0, -3.0), (5.0, -3.0), (3.0, 3.0), (-3.0, 3.0)]
+#: An L: 10 × 6 with the north-east 4 × 3 cut out.
+ELL = [(-5.0, -3.0), (5.0, -3.0), (5.0, 0.0), (1.0, 0.0), (1.0, 3.0), (-5.0, 3.0)]
+#: A parallelogram, leaning east.
+LEANING = [(0.0, 0.0), (10.0, 0.0), (13.0, 6.0), (3.0, 6.0)]
+
+
+def _inside_or_on(point: tuple[float, float], polygon: list[tuple[float, float]]) -> bool:
+    x, y = point
+    inside = False
+    for index, (ax, ay) in enumerate(polygon):
+        bx, by = polygon[(index + 1) % len(polygon)]
+        cross = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+        within = (min(ax, bx) - 1e-6 <= x <= max(ax, bx) + 1e-6
+                  and min(ay, by) - 1e-6 <= y <= max(ay, by) + 1e-6)
+        if abs(cross) < 1e-6 and within:
+            return True
+        if (ay > y) != (by > y) and x < ax + (y - ay) * (bx - ax) / (by - ay):
+            inside = not inside
+    return inside
+
+
+def _every_point_inside(lines: list[Line], polygon: list[tuple[float, float]]) -> bool:
+    return all(
+        _inside_or_on((a[0] + (b[0] - a[0]) * k / 20, a[1] + (b[1] - a[1]) * k / 20), polygon)
+        for a, b in lines for k in range(21)
+    )
+
+
+@pytest.mark.parametrize("footprint", [TRAPEZOID, ELL, LEANING], ids=["trapezoid", "L", "leaning"])
+@pytest.mark.parametrize("roof", [Roof.HIP, Roof.GABLE])
+def test_no_roof_line_leaves_the_house(footprint: list[tuple[float, float]], roof: Roof) -> None:
+    lines = roof_lines(footprint, roof, height_m=9.0, eaves_m=6.0)
+    assert lines, "the roof is still drawn"
+    assert _every_point_inside(lines, footprint)
+
+
+def test_a_hip_runs_to_the_houses_own_corners() -> None:
+    """Not to the rectangle's, two metres out in the garden past each oblique
+    end wall."""
+    lines = roof_lines(TRAPEZOID, Roof.HIP, height_m=9.0, eaves_m=6.0)
+    ends = {(round(x, 3) + 0.0, round(y, 3) + 0.0) for line in lines for x, y in line}
+    assert {(-5.0, -3.0), (5.0, -3.0), (3.0, 3.0), (-3.0, 3.0)} <= ends
+    assert (5.0, 3.0) not in ends and (-5.0, 3.0) not in ends
+
+
+def test_a_ridge_along_an_ls_notch_stays_whole() -> None:
+    """Its east half runs along the notch's wall, which is still the house."""
+    lines = roof_lines(ELL, Roof.GABLE, height_m=9.0, eaves_m=6.0)
+    assert _rounded(lines) == {frozenset({(-5.0, 0.0), (5.0, 0.0)})}, "along the notch's wall"
+
+
+def test_a_line_across_a_notch_comes_back_in_two_pieces() -> None:
+    notched = [(0.0, 0.0), (10.0, 0.0), (10.0, 4.0), (6.0, 4.0), (6.0, 2.0),
+               (4.0, 2.0), (4.0, 4.0), (0.0, 4.0)]
+    pieces = inside_parts(((-1.0, 3.0), (11.0, 3.0)), notched)
+    assert _rounded(pieces) == {frozenset({(0.0, 3.0), (4.0, 3.0)}),
+                                frozenset({(6.0, 3.0), (10.0, 3.0)})}
+
+
+def test_a_line_on_a_wall_is_kept() -> None:
+    """A pent's upper edge lies on its wall, where it cannot be seen."""
+    assert _rounded(inside_parts(((-5.0, 3.0), (5.0, 3.0)), BOX)) == {
+        frozenset({(-5.0, 3.0), (5.0, 3.0)})}
+
+
+def test_a_line_wholly_outside_is_not_drawn() -> None:
+    assert inside_parts(((6.0, 0.0), (9.0, 0.0)), BOX) == []
+
+
+# --- a surveyed pent over a real house (review, 2026-09-21) --------------------
+#
+# A surveyed fall is a mean over roof faces, never exactly square to a wall. The
+# model's upper edge then touches the house at one corner, and cut to the outline
+# nothing was left of it — nor of the arrow drawn from it.
+
+def _rotated(points: list[tuple[float, float]], degrees: float) -> list[tuple[float, float]]:
+    c, s = math.cos(math.radians(degrees)), math.sin(math.radians(degrees))
+    return [(x * c - y * s, x * s + y * c) for x, y in points]
+
+
+def test_a_pent_whose_fall_is_not_quite_square_keeps_its_upper_wall() -> None:
+    lines = roof_lines(BOX, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=180.5)
+    assert _rounded(lines) == {frozenset({(-5.0, 3.0), (5.0, 3.0)})}
+
+
+def test_a_pent_on_a_turned_house_is_the_wall_it_rises_to() -> None:
+    """Turned 30° anticlockwise, the north wall faces a bearing of 330°; falling
+    away from it, a little off."""
+    house = _rotated(BOX, 30.0)
+    lines = roof_lines(house, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=150.7)
+    assert _rounded(lines) == {frozenset({_round(house[2]), _round(house[3])})}
+
+
+def test_a_pent_on_a_corner_house_is_its_short_upper_wall() -> None:
+    lines = roof_lines(TRAPEZOID, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=181.3)
+    assert _rounded(lines) == {frozenset({(3.0, 3.0), (-3.0, 3.0)})}
+
+
+def test_a_pent_is_the_same_whichever_way_round_the_outline_runs() -> None:
+    forward = roof_lines(BOX, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=179.0)
+    backward = roof_lines(BOX[::-1], Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=179.0)
+    assert _rounded(forward) == _rounded(backward) == {frozenset({(-5.0, 3.0), (5.0, 3.0)})}
+
+
+@pytest.mark.parametrize("fall", [180.0, 180.5])
+def test_a_pent_wall_with_a_node_in_it_is_one_line(fall: float) -> None:
+    """Where a neighbour's wall meets it, an OpenStreetMap outline has a node in
+    the upper wall; the edge is still one line, so its arrow stands in its middle."""
+    garage = [(0.0, 0.0), (10.0, 0.0), (10.0, 4.0), (8.5, 4.0), (0.0, 4.0)]
+    lines = roof_lines(garage, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=fall)
+    assert _rounded(lines) == {frozenset({(10.0, 4.0), (0.0, 4.0)})}
+
+
+def test_a_pent_wall_split_where_the_ring_starts_is_one_line() -> None:
+    garage = [(8.5, 4.0), (0.0, 4.0), (0.0, 0.0), (10.0, 0.0), (10.0, 4.0)]
+    lines = roof_lines(garage, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=180.5)
+    assert _rounded(lines) == {frozenset({(10.0, 4.0), (0.0, 4.0)})}
+
+
+def test_a_node_in_an_oblique_upper_wall_keeps_the_whole_wall() -> None:
+    """Judged piece by piece, the low end of a garage row's upper wall fell
+    below the house's middle and was left out (review, 2026-09-21)."""
+    row = [(0.0, 0.0), (30.0, 0.0), (30.0, 5.0), (3.0, 5.0), (0.0, 5.0)]
+    whole = roof_lines(row, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=192.0)
+    assert _rounded(whole) == {frozenset({(30.0, 5.0), (0.0, 5.0)})}
+
+
+def test_a_real_kink_in_the_upper_wall_is_not_straightened_over_the_garden() -> None:
+    """Joined across, a wall kinked a quarter of a metre inwards was drawn
+    outside the house (review, 2026-09-21)."""
+    house = [(0.0, 0.0), (20.0, 0.0), (20.0, 6.0), (10.0, 5.756), (0.0, 6.0)]
+    lines = roof_lines(house, Roof.PENT, height_m=6.0, eaves_m=3.0, fall_deg=180.0)
+    assert _rounded(lines) == {frozenset({(20.0, 6.0), (10.0, 5.756)}),
+                               frozenset({(10.0, 5.756), (0.0, 6.0)})}
+
+
+def _round(point: tuple[float, float]) -> tuple[float, float]:
+    return (round(point[0], 3) + 0.0, round(point[1], 3) + 0.0)

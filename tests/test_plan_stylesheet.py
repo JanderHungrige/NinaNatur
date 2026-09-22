@@ -62,6 +62,32 @@ def test_the_gardens_ground_is_a_flat_grass_wash() -> None:
     assert re.search(r"\.obstacle \{[^}]*fill: none !important", contrast)
 
 
+def _block(css: str, media: str) -> str:
+    start = css.index(media)
+    return css[start : css.index("\n}", css.index("{", start))]
+
+
+def test_the_land_around_the_garden_is_context_never_a_target() -> None:
+    """Doc 114: OpenStreetMap's land lies under the plan, faint and flat, never
+    under a pointer; where the system asks for more contrast, or paints its own
+    colours, it goes — it is all wash and no outline. Both washes it takes from
+    the stylesheet exist in light and dark, and on Draft Sketch's paper."""
+    css = STYLESHEET.read_text(encoding="utf-8")
+    assert "pointer-events: none" in _rule(css, ".landcover")
+    area = _rule(css, ".landcover__area")
+    opacity = re.search(r"fill-opacity:\s*([\d.]+)", area)
+    assert opacity is not None and float(opacity.group(1)) < 1
+    assert "stroke: none" in area
+    for media in ("@media (prefers-contrast: more)", "@media (forced-colors: active)"):
+        assert re.search(r"\.landcover \{\s*display: none;", _block(css, media)), media
+    dark = _block(css, "@media (prefers-color-scheme: dark)")
+    sketch = _block(SKETCH.read_text(encoding="utf-8"), "@media (prefers-color-scheme: dark)")
+    for token in ("--wash-field", "--wash-residential"):
+        assert f"var({token})" in css
+        assert re.search(rf"^  {token}: #", css, re.M), f"{token} has no light value"
+        assert f"{token}: #" in dark and f"{token}: #" in sketch, token
+
+
 def test_the_waiting_marks_stand_still_for_reduced_motion() -> None:
     """Every sign that something is under way turns, rises, breathes or sweeps
     (doc 87) — and every one of them must stop for somebody who asked their

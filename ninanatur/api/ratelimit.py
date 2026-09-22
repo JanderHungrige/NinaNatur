@@ -105,6 +105,11 @@ def heavy_slot() -> Iterator[None]:
     handler's own rate-limit check: a visitor turned away because the house is
     full has not used up any of their own allowance. A route that computes only
     sometimes — the month view — takes `heavy` itself, in the same order.
+
+    Declare it with `scope="function"`: the slot is let go when the route's own
+    work ends. A request-scoped dependency lives until the response has been
+    sent, background tasks included, so the landcover fetch run after the
+    answer (doc 114) kept a slot for up to a minute of waiting on Overpass.
     """
     with heavy():
         yield

@@ -14,6 +14,7 @@ import os
 import sqlite3
 from pathlib import Path
 
+from ninanatur.ingest.light_scale import rescale_bed_light
 from ninanatur.ingest.migrations import apply_column_migrations, relax_planting_taxon
 from ninanatur.ingest.one_time import (
     ELEMENT_RESET_KEY,
@@ -134,5 +135,8 @@ def init_schema(conn: sqlite3.Connection) -> list[str]:
     outlines = mark_map_outlines(conn)
     if outlines is not None:
         applied.append(outlines)
+    rescaled = rescale_bed_light(conn)
+    if rescaled is not None:
+        applied.append(rescaled)
     conn.commit()
     return applied

@@ -124,8 +124,8 @@ permission (`THIRD_PARTY.md`).
   pinned `.stylx`, and `--check` regenerates into a temporary folder and
   compares byte for byte. Change the converter, never its output.
 - **The roof a drawing shows is the model's.** Ridges, hips and a pent roof's
-  upper edge come from `roof_lines` on `ObstacleOut` (`garden/roofshape.py`,
-  docs 94, 98). Working a ridge out in the browser as well is how two drawings
+  upper edge come from `roof_lines` on `ObstacleOut` (`garden/roof_lines.py`
+  over `garden/roofshape.py`, docs 94, 98), cut to the house's outline. Working a ridge out in the browser as well is how two drawings
   of one roof come to disagree.
 
 ## Schema changes

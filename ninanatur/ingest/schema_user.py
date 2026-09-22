@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS planting (
     raw_name    TEXT,
     quantity    INTEGER NOT NULL DEFAULT 1,
     added_at    TEXT    NOT NULL,
-    -- Where the gardener dragged this cluster, relative to the bed's origin.
+    -- Where the gardener dragged this cluster, in garden metres.
     -- Null until somebody moves it; the position is derived from the id until
     -- then, so an untouched garden still draws the same way twice.
     x           REAL,

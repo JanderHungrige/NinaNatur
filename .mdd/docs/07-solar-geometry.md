@@ -12,14 +12,17 @@ source_files:
   - ninanatur/solar/position.py
   - ninanatur/solar/shading.py
   - ninanatur/solar/light.py
+  - ninanatur/ingest/light_scale.py
 routes: []
 models: []
 test_files:
   - tests/test_solar_position.py
   - tests/test_shading.py
   - tests/test_bed_light.py
+  - tests/test_light_scale_migration.py
+  - tests/test_light_legend.py
 data_flow: greenfield
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -94,21 +97,51 @@ this floor, `1/tan(altitude)` also produces shadows kilometres long.
 ## Sun hours to Ellenberg L
 
 The honest weak point of this feature, so it lives in one table with its
-reasoning rather than inside a formula:
+reasoning rather than inside a formula. Since 2026-09-21 on **EIVE's own 0–10 scale**, the scale every species value is
+on, and as **straight lines between anchors** rather than steps
+(`solar/light.py::SUN_HOUR_ANCHORS`):
 
-| Mean daily direct sun (growing season) | Ellenberg L | Gardener's term |
-|---|---|---|
-| ≥ 8 h | 8.0 | full sun |
-| 6–8 h | 7.0 | sunny |
-| 4–6 h | 6.0 | light shade |
-| 2.5–4 h | 5.0 | semi-shade |
-| 1.5–2.5 h | 4.0 | shade |
-| < 1.5 h | 3.0 | deep shade |
+| Mean daily direct sun (growing season) | L (EIVE 0–10) | Classic Ellenberg | The map's word |
+|---|---|---|---|
+| 0 h | 2.5 | 3 | tiefer Schatten |
+| 1.5 h | 3.75 | 4 | Schatten |
+| 2.5 h | 5.0 | 5 | Halbschatten |
+| 4 h | 6.25 | 6 | sonnig |
+| 6 h | 7.5 | 7 | volle Sonne |
+| ≥ 8 h | 9.0 | between 8 and 9 | open ground |
 
-Sun hours are physical; Ellenberg L is an ecological indicator derived from where
-plants are found growing. **This conversion is a convention, not a measurement.**
-It is a table so that it can be argued with and adjusted in one place, and so
-that nobody mistakes it for physics.
+Between two anchors the value is on the line (3 h → 5.42, 1 h → 3.33); beyond
+the ends it is flat.
+
+- **Why EIVE's scale.** The staircase before it had classic-looking rungs, 3–8,
+  and was compared with EIVE values, which squeezed every bed towards the
+  middle: full sun read as classic 7.4, deep shade as 3.4. EIVE scaled each
+  source system linearly onto 0–10 (Dengler et al. 2023, Methods), which for
+  Ellenberg's 1–9 is (L − 1) × 1.25. Each anchor is the old rung at its old
+  threshold carried through that rescale — the scale and the steps changed,
+  not the judgement.
+- **Why lines.** 3.99 h and 4.01 h are the same place; a step made them a whole
+  class apart, enough to drop a species from a list.
+- **Why lower edges.** Anchored where the old steps began, each value leans a
+  little bright of the middle of its old interval — on purpose, because the
+  model counts direct sun only and a bed in the open with a wall to its south
+  still sees most of the sky.
+- **Why 9.0 from 8 h.** That long in direct sun is open ground; the hours past
+  eight are low sun at the ends of the day. EIVE's 9.5–10 is dunes and scree.
+- **Why not below 2.5.** Classic 1–2 is a closed forest floor; a bed with no
+  direct sun still has the sky.
+
+A bed's value comes from its hours as stored, so the two always agree — and a
+new convention needs no shadow work. `ingest/light_scale.py` is a one-time
+migration that carried every computed bed onto these lines from its stored
+hours when they replaced the staircase. No map read stale over it: the
+convention is not an input of the map, because no shadow moved. The next change
+to the anchors adds a marker there and runs it again.
+
+Sun hours are physical; an indicator value is ecological, read from where
+plants are found growing. **This conversion is a convention, not a
+measurement.** It is a table so that it can be argued with and adjusted in one
+place, and so that nobody mistakes it for physics.
 
 The growing season is March to October — a plant's light experience in December
 does not decide where it can live.

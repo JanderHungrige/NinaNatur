@@ -1,6 +1,6 @@
 import type { BedSuggestions } from '../api/client';
 import { colourLabel } from '../colours';
-import { birds } from '../plural';
+import { birds, insects } from '../plural';
 import { SWATCH } from './ClusterLayer';
 import { MonthStrip } from './MonthStrip';
 
@@ -71,6 +71,14 @@ function birdsFor(item: Suggestion): string | null {
     : null;
 }
 
+/** "214 Insektenarten": what the list's order weighs beside the growing
+ *  conditions, on the row so the order can be argued with. Nothing where GloBI
+ *  records none — "0" would claim the data knows there are none. */
+function insectsFor(item: Suggestion): string | null {
+  const n = item.insect_partners ?? null;
+  return n !== null && n > 0 ? insects(n) : null;
+}
+
 /** Whether a row has room or birds to show: what a third line is for. */
 export function hasExtraLine(item: Suggestion): boolean {
   return roomFor(item) !== null || birdsFor(item) !== null;
@@ -107,10 +115,42 @@ function readFit(axes: Suggestion['fit']['axes']): Fit | null {
   };
 }
 
+/** The flower colour as a dot and a word. The word gives way before the fit
+ *  badge does; its whole stays in the title. */
+function ColourMark({ item }: { item: Suggestion }) {
+  const colour = item.observed_colour ?? item.flower_colour;
+  const swatch = colour != null ? SWATCH[colour] : undefined;
+  const words = describeColour(item);
+  return (
+    <span className="suggestion-row__colour" title={words}>
+      <svg
+        className={colour == null ? 'suggestion-row__dot suggestion-row__dot--unknown' : 'suggestion-row__dot'}
+        viewBox="0 0 10 10"
+        aria-hidden="true"
+      >
+        <circle cx="5" cy="5" r="4" style={swatch !== undefined ? { fill: swatch } : undefined} />
+      </svg>
+      <span className="suggestion-row__colour-word">{words}</span>
+    </span>
+  );
+}
+
+/** "214 Insektenarten", or nothing where GloBI records none. */
+function InsectCount({ item }: { item: Suggestion }) {
+  const visited = insectsFor(item);
+  if (visited === null) return null;
+  return (
+    <span className="suggestion-row__insects" title={`${visited}, in Deutschland als Partner dieser Pflanze erfasst`}>
+      {visited}
+    </span>
+  );
+}
+
 /**
  * One suggestion as one compact row (doc 90): its name, which opens what is
- * known about the species; its colour, months and fit on the second line; room
- * and birds on a third when its window has any; and a button to plant it.
+ * known about the species; its colour, months, insects and fit on the second
+ * line; room and birds on a third when its window has any; and a button to
+ * plant it.
  */
 export function SuggestionRow(props: Props) {
   const { item, index, setsize, top, tabbable, extraLine, busy, onPlant, onShowInfo } = props;
@@ -118,9 +158,6 @@ export function SuggestionRow(props: Props) {
   const fit = readFit(item.fit.axes);
   const room = roomFor(item);
   const eaten = birdsFor(item);
-  const colour = item.observed_colour ?? item.flower_colour;
-  const swatch = colour != null ? SWATCH[colour] : undefined;
-  const colourWords = describeColour(item);
 
   return (
     <li
@@ -141,18 +178,9 @@ export function SuggestionRow(props: Props) {
         {item.canonical_name}
       </button>
       <span className="suggestion-row__traits">
-        {/* The word gives way before the fit badge does; its whole stays in the title. */}
-        <span className="suggestion-row__colour" title={colourWords}>
-          <svg
-            className={colour == null ? 'suggestion-row__dot suggestion-row__dot--unknown' : 'suggestion-row__dot'}
-            viewBox="0 0 10 10"
-            aria-hidden="true"
-          >
-            <circle cx="5" cy="5" r="4" style={swatch !== undefined ? { fill: swatch } : undefined} />
-          </svg>
-          <span className="suggestion-row__colour-word">{colourWords}</span>
-        </span>
+        <ColourMark item={item} />
         <MonthStrip start={item.flowering_start_month} end={item.flowering_end_month} />
+        <InsectCount item={item} />
         {fit !== null ? (
           <span className={`suggestion-row__fit suggestion-row__fit--${fit.band}`} title={fit.full}>
             <span aria-hidden="true">{fit.short}</span>

@@ -59,7 +59,7 @@ describe('SuggestionList and the light', () => {
 
   it('says when the light is older than the last change, and offers the same button', () => {
     const onComputeShade = show({ light_state: 'stale' });
-    expect(screen.getByText(/seit der letzten Änderung im Garten nicht neu berechnet/))
+    expect(screen.getByText(/Schatten ist nicht mehr aktuell/))
       .toBeDefined();
     expect(screen.queryByText(/gewertet nach den Standortwerten/)).toBeNull();
     fireEvent.click(button()!);
@@ -94,17 +94,17 @@ describe('SuggestionList and the light', () => {
 
   it('counts the species the light left out', () => {
     show({ filters: { light: { matched: 2800, unknown: 41, excluded: 1204 } } });
-    expect(screen.getByText(/1\.204 Arten, denen es hier zu hell ist, sind ausgeblendet/))
+    expect(screen.getByText(/1\.204 Arten, denen das Licht hier nicht passt, sind ausgeblendet/))
       .toBeDefined();
   });
 
   it('counts one in the singular, and none not at all', () => {
     show({ filters: { light: { matched: 9, unknown: 0, excluded: 1 } } });
-    expect(screen.getByText(/1 Art, der es hier zu hell ist, ist ausgeblendet/)).toBeDefined();
+    expect(screen.getByText(/1 Art, der das Licht hier nicht passt, ist ausgeblendet/)).toBeDefined();
   });
 
   it('says nothing about the light cut when it removed nothing', () => {
     show({ filters: { light: { matched: 9, unknown: 2, excluded: 0 } } });
-    expect(screen.queryByText(/zu hell/)).toBeNull();
+    expect(screen.queryByText(/nicht passt/)).toBeNull();
   });
 });

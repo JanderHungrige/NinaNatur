@@ -99,7 +99,10 @@ garden above the map now draws **seven** distinct strengths where it drew one.
 
 The gardening names sit on the step where each band begins; the steps between
 are increments of the same wash, not new names. A test asserts every name still
-agrees with `bandFor`, which mirrors the server's `SUN_HOUR_BANDS`.
+agrees with `bandFor`, whose bands begin at the server's `SUN_HOUR_ANCHORS`
+(doc 07) — and since 2026-09-21 `tests/test_light_legend.py` holds the two
+together, words included: until then the map called 6–8 h "volle Sonne" where
+the server's table said "sunny", and nothing noticed.
 
 Absolute because two inks make a stronger claim than one did. A single wash only
 ever said *more than the rest of this garden*; yellow says **sunny**, and a

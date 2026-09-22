@@ -9,7 +9,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 
 from ninanatur.api import ratelimit
 from ninanatur.api.deps import get_connection
@@ -22,6 +22,7 @@ from ninanatur.api.schemas_light import (
     ShadowFrame,
     TerrainOut,
 )
+from ninanatur.garden import landcover_sync
 from ninanatur.garden.building_sync import measure_buildings
 from ninanatur.garden.cloud_sync import ensure_cloud
 from ninanatur.garden.credits import credits_for
@@ -35,6 +36,7 @@ from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
 from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
 from ninanatur.geo.cloud_store import cloud_source
+from ninanatur.geo.landcover_store import draws_landcover, fetched
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain_store import cache_key, horizon_source
 from ninanatur.solar.day import MONTHS, shadow_day
@@ -72,7 +74,8 @@ def light_map(
 def rebuild_light_map(
     token: str,
     request: Request,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot)],
+    background: BackgroundTasks,
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> LightMap | None:
     """Recompute the whole map, now, because somebody asked.
@@ -91,6 +94,11 @@ def rebuild_light_map(
     # too long for a page load and fine for a button somebody pressed.
     standing = load_garden(conn, garden.garden_id)
     ensure_terrain(conn, standing)
+    # The land around it, for a garden made before it was fetched (doc 114):
+    # after this answer has gone out, never while somebody waits for the light.
+    # Asked and answered — nothing mapped is an answer too — is not asked again.
+    if not fetched(conn, garden.garden_id):
+        background.add_task(landcover_sync.fetch_later, garden.share_token)
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
     measure_buildings(conn, load_garden(conn, garden.garden_id))
@@ -159,6 +167,7 @@ def sources(
         ground=ground_for(conn, anchor),
         horizon_source=horizon_source(conn, cache_key(anchor)),
         laser_source=cloud_source(conn, cache_key(anchor)),
+        landcover=draws_landcover(conn, garden.garden_id),
     )
     return [CreditOut(**vars(credit)) for credit in found]
 
@@ -207,6 +216,7 @@ def _read(
     if stored is None:
         return None
     grid, signature, computed_at = stored
+    season = grid
     garden = load_garden(conn, garden_id)
     # The one signature the list's `light_state` uses too, so the map and the
     # list cannot disagree about what is out of date.
@@ -229,7 +239,7 @@ def _read(
         ]) else 0.0,
         morning=grid.morning,
         misplaced=[
-            MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, grid)
+            MisplacedOut(**vars(m)) for m in misplaced_plantings(conn, garden, season)
         ],
         computed_at=computed_at,
         stale=signature != now_signature,

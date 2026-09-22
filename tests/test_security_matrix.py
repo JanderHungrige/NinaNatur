@@ -70,6 +70,7 @@ BY_TOKEN: dict[tuple[str, str], Body] = {
     ("POST", f"{G}/claim"): None,
     ("PUT", f"{G}/colours/{{taxon_id}}"): {"colour": "blue"},
     ("GET", f"{G}/improvements"): None,
+    ("GET", f"{G}/landcover"): None,
     ("GET", f"{G}/light"): None,
     ("POST", f"{G}/light"): None,
     ("POST", f"{G}/obstacles"): {"kind": "shed", "x": 1.0, "y": 1.0},

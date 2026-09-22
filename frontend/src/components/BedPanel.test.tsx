@@ -32,7 +32,7 @@ function garden(bedOverrides: Partial<GardenOut['beds'][number]> = {}): GardenOu
         polygon: [],
         soil_type: 'loam',
         moisture: 'fresh',
-        ellenberg_l: 8,
+        ellenberg_l: 7.8,
         ellenberg_m: 5,
         ellenberg_n: 5.5,
         ellenberg_r: 6.5,
@@ -63,6 +63,19 @@ describe('BedPanel', () => {
     render(<BedPanel garden={garden()} selectedBedId={null} {...noop} />);
     const button = screen.getByRole('button', { name: /^Beet Südbeet, 6\.4 h\/Tag/ });
     expect(button.getAttribute('aria-label')).toContain('nichts gepflanzt');
+  });
+
+  it('shows the light value to one decimal, as the hours are', () => {
+    // On EIVE's scale the value is continuous: 4.5 h is L 6.5625, which says
+    // more than a model with assumed building heights knows.
+    render(
+      <BedPanel
+        garden={garden({ sun_hours: 4.5, ellenberg_l: 6.5625 })}
+        selectedBedId={null}
+        {...noop}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /4\.5 h\/Tag · L 6\.6,/ })).toBeDefined();
   });
 
   it('says a bed has no computed light rather than showing zero', () => {
@@ -139,7 +152,7 @@ describe('BedPanel — how the ground falls', () => {
   it('says the slope beside the light, not inside it', () => {
     render(
       <BedPanel
-        garden={garden({ sun_hours: 5.2, ellenberg_l: 6, slope_deg: 9, aspect_deg: 180 })}
+        garden={garden({ sun_hours: 5.2, ellenberg_l: 7, slope_deg: 9, aspect_deg: 180 })}
         selectedBedId={null}
         onSelectBed={() => {}}
       />,
@@ -152,7 +165,7 @@ describe('BedPanel — how the ground falls', () => {
   it('leaves level ground unmentioned', () => {
     render(
       <BedPanel
-        garden={garden({ sun_hours: 5.2, ellenberg_l: 6, slope_deg: 0, aspect_deg: null })}
+        garden={garden({ sun_hours: 5.2, ellenberg_l: 7, slope_deg: 0, aspect_deg: null })}
         selectedBedId={null}
         onSelectBed={() => {}}
       />,
@@ -165,7 +178,7 @@ describe('BedPanel — how the ground falls', () => {
   it('says nothing at all about ground nobody has fetched', () => {
     render(
       <BedPanel
-        garden={garden({ sun_hours: 5.2, ellenberg_l: 6 })}
+        garden={garden({ sun_hours: 5.2, ellenberg_l: 7 })}
         selectedBedId={null}
         onSelectBed={() => {}}
       />,

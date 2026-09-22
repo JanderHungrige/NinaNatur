@@ -24,6 +24,7 @@ from ninanatur.api.elements import router as elements_router
 from ninanatur.api.feedback import router as feedback_router
 from ninanatur.api.gardens import router as gardens_router
 from ninanatur.api.geo import router as geo_router
+from ninanatur.api.landcover import router as landcover_router
 from ninanatur.api.light import router as light_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
@@ -125,6 +126,7 @@ app.include_router(accounts_router)
 app.include_router(feedback_router)
 app.include_router(light_router)
 app.include_router(canopies_router)
+app.include_router(landcover_router)
 
 
 #: Who may say, in `X-Forwarded-For` and `X-Forwarded-Proto`, who the visitor

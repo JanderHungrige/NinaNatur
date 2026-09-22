@@ -66,6 +66,14 @@ export function heightOf(kind: string): number | null {
   return BY_KIND.get(kind)?.height ?? null;
 }
 
+/** Built rather than grown: a house, a shed, a wall. What stands on a street
+ *  hides the street's own line where it stands (Draft Sketch's roads). */
+const BUILT_SYMBOLS = new Set(['building', 'masonry']);
+
+export function isBuilt(kind: string): boolean {
+  return BUILT_SYMBOLS.has(BY_KIND.get(kind)?.symbol ?? '');
+}
+
 /**
  * The ground itself. It is not moved, resized or dragged.
  *

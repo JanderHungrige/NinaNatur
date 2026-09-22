@@ -106,6 +106,25 @@ def test_a_hazel_in_the_corner_costs_the_corner(conn: sqlite3.Connection) -> Non
     assert after > before * 0.5, "and it is a corner, not the whole bed"
 
 
+def test_a_placed_crown_stands_where_the_plan_draws_it(conn: sqlite3.Connection) -> None:
+    """The plan keeps a cluster's position in garden metres; the shadow model
+    added the bed's centre to it once more, and a hazel dragged to the corner of
+    a bed away from the garden's origin cast its shade somewhere else entirely
+    (review, 2026-09-22)."""
+    from ninanatur.garden.elements import polygon_centroid
+    from ninanatur.garden.lightview import shading_obstacles
+
+    garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
+    far = [[20.0, 20.0], [24.0, 20.0], [24.0, 24.0], [20.0, 24.0]]
+    bed_id = add_bed(conn, garden_id, BedInput(name="Beet", polygon=far, soil_type="loam",
+                                               moisture="fresh"))
+    planting_id = add_planting(conn, bed_id, taxon_id=4, quantity=1)
+    place_planting(conn, planting_id, 20.8, 20.8)
+    [crown] = shading_obstacles(conn, load_garden(conn, garden_id))  # the only thing that shades
+    centre = polygon_centroid([list(p) for p in crown.footprint])
+    assert centre == pytest.approx((20.8, 20.8), abs=0.05)
+
+
 def test_planting_a_harebell_changes_nothing(conn: sqlite3.Connection) -> None:
     # A 40 cm perennial's shadow falls inside its own footprint.
     garden_id, bed_id = _sunny_garden(conn)

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from ninanatur.api.deps import get_connection
 from ninanatur.ingest.db import connect, init_schema
+from ninanatur.ingest.provenance import upsert_trait
 from ninanatur.web.app import app
 
 BED = {"name": "Beet", "polygon": [[0, 0], [6, 0], [6, 4], [0, 4]],
@@ -246,9 +247,20 @@ def test_the_warnings_do_not_flicker_as_the_months_are_scrolled(
     client: TestClient,
 ) -> None:
     """Misplacement is a judgement about a growing season. Warnings appearing
-    and vanishing while somebody looks through the months would be noise."""
+    and vanishing while somebody looks through the months would be noise. With a
+    shade plant out in the bed, so there is a warning to keep (this was an empty
+    list, and a month's grid had quietly taken the season's place)."""
     token = _garden(client, with_wall=True)
+    conn = app.dependency_overrides[get_connection]()
+    conn.execute("INSERT INTO taxon (taxon_id, canonical_name) VALUES (1, 'Schattenkraut')")
+    # Deep shade only, and fussy about it: a niche one wide.
+    for key, value in (("ellenberg_l", 3.0), ("ellenberg_l_nw", 1.0)):
+        upsert_trait(conn, 1, key, value_num=value, source="EIVE-1.0", license="CC-BY-4.0")
+    conn.commit()
+    bed_id = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]["bed_id"]
+    client.post(f"/api/v1/gardens/{token}/beds/{bed_id}/plantings", json={"taxon_id": 1})
     season = client.get(f"/api/v1/gardens/{token}/light").json()["misplaced"]
+    assert [m["problem"] for m in season] == ["too_bright"]
 
     for month in (3, 6, 10):
         shown = client.get(f"/api/v1/gardens/{token}/light?month={month}").json()

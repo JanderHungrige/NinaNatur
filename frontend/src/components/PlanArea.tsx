@@ -39,6 +39,8 @@ export function PlanArea({ garden, controller }: Props) {
         onSelectCluster={controller.selectPlanting}
         onMoveCluster={clipboard.moveCluster}
         terrain={light.shadeOn ? derived.terrain : null}
+        // The neighbourhood is not the shade's: it is there either way (doc 114).
+        landcover={derived.landcover}
         sunMap={
           light.shadeOn && derived.lightMap !== null
             ? { map: derived.lightMap, mode: light.mapMode }

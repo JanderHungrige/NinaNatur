@@ -20,6 +20,7 @@ import { CanvasOverlays } from './CanvasOverlays';
 import { CanvasScene } from './CanvasScene';
 import { PlanCredit } from './PlanCredit';
 import { PlanFurniture } from './PlanFurniture';
+import { PlanHint } from './PlanHint';
 import { SunReadout, type SunReadoutHandle } from './SunReadout';
 import type { GardenCanvasProps } from './GardenCanvasProps';
 
@@ -53,7 +54,7 @@ export function GardenCanvas({
   onMoveCluster,
   onShowClusterInfo,
   sunMap,
-  terrain,
+  terrain, landcover,
   shadows,
   viewpoint = null,
   onPlaceViewpoint,
@@ -258,7 +259,7 @@ export function GardenCanvas({
           onGrabCluster={clusterDrag.grab}
           onShowClusterInfo={handlers.onShowClusterInfo}
           sunMap={sunMap}
-          terrain={terrain}
+          terrain={terrain} landcover={landcover}
           shadows={shadows}
           armed={tool !== null}
           onAskWhatItIs={handlers.onAskWhatItIs}
@@ -289,9 +290,9 @@ export function GardenCanvas({
       </svg>
       <PlanFurniture metresPerPixel={view.spanM / view.widthPx} title={garden.name}
                      updatedAt={garden.updated_at} />
-      {hint !== undefined && <p className="plan-hint" aria-live="polite">{hint}</p>}
+      {hint !== undefined && <PlanHint text={hint} />}
       </div>
-      <PlanCredit garden={garden} />
+      <PlanCredit garden={garden} landcover={(landcover?.areas.length ?? 0) > 0} />
     </div>
   );
 }

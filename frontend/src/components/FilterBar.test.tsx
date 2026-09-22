@@ -40,7 +40,7 @@ describe('FilterBar', () => {
     );
     expect(screen.queryByText(/nicht in der Liste/)).toBeNull();
     fireEvent.click(
-      screen.getByRole('button', { name: 'Filter „auch Arten, denen es zu hell ist“ entfernen' }),
+      screen.getByRole('button', { name: 'Filter „auch Arten, denen das Licht nicht passt“ entfernen' }),
     );
     expect(onChange).toHaveBeenCalledWith({});
   });

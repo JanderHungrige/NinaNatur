@@ -25,7 +25,7 @@ interface Props {
   busy: boolean;
 }
 
-/** "Blumenbeet, 6,0 m² · 6.4 h/Tag · L 8": what it is, what it covers, what light it gets. */
+/** "Blumenbeet, 6,0 m² · 6.4 h/Tag · L 7.8": what it is, what it covers, what light it gets. */
 export function bedDetail(bed: Bed): string {
   const what =
     bed.label !== null && bed.label !== '' ? `${labelOf(bed.kind)} — ${bed.label}` : labelOf(bed.kind);

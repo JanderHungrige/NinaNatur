@@ -7,6 +7,7 @@ depends_on: [64-light-across-the-bed]
 relates: [64-light-across-the-bed, 65-the-shade-switch]
 source_files:
   - ninanatur/garden/misplaced.py
+  - ninanatur/fit/light_fit.py
   - ninanatur/garden/lightgrid.py
   - ninanatur/solar/field.py
   - ninanatur/api/light.py
@@ -16,6 +17,7 @@ routes:
 models: [light_grid, planting, trait]
 test_files:
   - tests/test_misplaced.py
+  - tests/test_misplaced_cells.py
   - tests/test_light_grid.py
   - frontend/src/components/ShadeSwitch.test.tsx
 data_flow: reads-existing
@@ -30,6 +32,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "Species without an EIVE light value are never flagged; EIVE covers a good part of the German flora, not all of it."
+  - "A bed narrower than a grid cell is judged as a whole, by its one sampled value: a shaded end of a long, narrow border is not warned about until the grid's cells are finer than the border (map gardens with many neighbours get 1–3 m cells). The grid cannot resolve such a bed, and reading the cell centred outside it warned plants the list had just offered."
 ---
 
 # A Sun Plant in a Shade Spot, and Which Hours It Gets
@@ -42,11 +45,53 @@ and until the grid existed nothing could: one number per bed can say the bed is
 wrong, never the corner. "This bed is too dark" for a bed whose far end is in
 full sun is the kind of advice that teaches people to ignore advice.
 
-Each cluster's Ellenberg L is now compared against the light in the cell it
-actually stands in, and the difference is reported when it exceeds **two rungs**.
-Two rather than one: one rung is inside the noise of a model whose building
-heights are mostly assumed, and a warning nobody can act on is a warning people
-learn to scroll past.
+Each cluster's Ellenberg L is compared against the light in the cell it
+actually stands in, and a warning is given when the light is **unsuitable** for
+it: more than 1.5 of the species' own niche half-widths away (`03-niche-fit`).
+That is the rule the suggestions cut by (`fit.light_fit`, shared by both), so a
+species the list offers for a spot is never one the map then says stands in the
+wrong light. A borderline difference says nothing: it is inside the noise of a
+model whose building heights are mostly assumed, and a warning nobody can act
+on is a warning people learn to scroll past.
+
+Until 2026-09-21 the warning used a fixed distance of two classic rungs instead
+(2.0, then 2.5 on EIVE's scale). With an open spot at 9.0 the list offered
+*Quercus robur* (L 6.2, a niche 6.9 wide: 0.8 half-widths from full sun,
+merely *suitable*) for full sun and the map then called it too bright — two
+rules for one question (review, 2026-09-21).
+
+**Where the light is read** is the one difference left. The list ranks a bed by
+its average; the warning reads the cell a cluster stands in, because a corner
+darker than its bed is what it is for. A placed cluster stands where the plan
+put it, in garden metres: the plan drags and draws it there, and the server
+read the same numbers as an offset from the bed's centre, so every placed
+cluster in a bed away from the garden's origin was judged somewhere else — and
+a tree's shade was cast from there (`lightview`; review, 2026-09-22). A map
+with a placed shading plant reads stale once. A cluster's cell is its own only
+where it is part of its bed — by the rule the bed's mean is taken by: its centre
+inside the bed, and not a roof. Otherwise it is judged by the value the list
+ranks its bed by (`misplaced._hours_at`):
+- **a cluster nobody placed** — what the list's add button plants. It stands
+  nowhere in particular; read at the bed's middle, a bright cell of a bed half
+  in shade, a species the list had just offered was warned about at once.
+- **a raised bed**, whose light is sampled at its height, over whatever darkens
+  the ground grid beside it;
+- **a cell centred outside the bed** — always, in a bed narrower than a cell,
+  and along the edge of any other: that centre can lie in the wall or hedge the
+  bed borders, and it warned a plant the list had just offered as too dark at
+  0 h (review, 2026-09-22). A shaded end finer than the grid goes unsaid (a
+  known issue, below);
+- **a cell under a roof**: `LightGrid.at` answers None there, as it always said
+  it did, and until the review it had handed back the roof's sun.
+
+A bed's own light is read from the stored map over the bed as it stands — the
+mean of its cells, which is exactly what the list ranks it by while the light
+is current — so a bed drawn or moved since the last press is judged where it
+is, not where it was (review, 2026-09-21). A raised bed, or one with no cell
+centre inside it, was measured at one point; that value stays where it was
+measured until the next press, and the map says it is out of date. And the warning stays
+on the season's grid when a month is shown (`api/light._read`): a month's grid
+had quietly taken its place, and warnings came and went with the months.
 
 Both directions are named. `too_bright` is as real as `too_dark` — a fern in the
 open is as misplaced as a sedum under a hedge — and only one of the two ever
@@ -57,9 +102,9 @@ not: a cultivar bred for shade, a wall that throws light back, or simply that
 they want it there. The panel says so in as many words, under the list.
 
 That holds for what is already planted. What is *offered* became stricter on
-2026-09-21, by the owner's decision (review #9, `13-bed-suggestions`): the
-suggestions leave out a species the bed is far too bright for, because scorch
-and drought usually kill it, and only rank down one it is too dark for.
+2026-09-21, by the owner's decisions (review #9, `13-bed-suggestions`): the
+suggestions leave out a species whose light is *unsuitable* here, too bright or
+too dark — the best fit for the shade as much as for the sun.
 
 ## Which hours
 

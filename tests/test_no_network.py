@@ -82,6 +82,22 @@ def test_every_sync_that_asks_which_state_it_is_in_is_switched_off() -> None:
         f"it: {sorted(set(SURVEYING) - calling)}")
 
 
+def test_every_module_that_asks_for_the_land_around_a_garden_is_switched_off() -> None:
+    """The same for the surroundings (doc 114): one module fetches them, and
+    conftest switches that one off. A second caller of `landcover_in` would
+    reach Overpass from every test that makes a garden from the map."""
+    from conftest import LANDCOVER_FETCHING
+
+    code = GARDEN.parent
+    calling = {
+        ".".join(path.relative_to(code.parent).with_suffix("").parts)
+        for path in code.rglob("*.py")
+        if re.search(r"^from ninanatur\.geo\.osm_landcover import .*\blandcover_in\b",
+                     path.read_text(), re.M)
+    }
+    assert calling == {LANDCOVER_FETCHING}
+
+
 def test_no_test_reads_the_developers_own_http_cache() -> None:
     """`data/cache` holds real answers from real services. A test that reached
     the network by mistake passed on any machine that had fetched the same

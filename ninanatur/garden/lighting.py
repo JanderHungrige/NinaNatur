@@ -25,6 +25,7 @@ import sqlite3
 
 from ninanatur.garden.elements import now as _now
 from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
+from ninanatur.garden.footprint import covers
 from ninanatur.garden.lightgrid import compute_grid, signature_of
 from ninanatur.garden.lightgrid_store import save_grid
 from ninanatur.garden.lightview import (
@@ -33,6 +34,8 @@ from ninanatur.garden.lightview import (
     shading_obstacles,
     shading_taxa,
 )
+from ninanatur.garden.models import Garden
+from ninanatur.garden.objects import ObjectKind, symbol_of
 from ninanatur.garden.slopes import slope_at
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.light import bed_light_value, ellenberg_from_sun_hours
@@ -64,6 +67,32 @@ def _fall_of(
     if slope <= 0.0:
         return (0.0, None)
     return (round(slope), round(aspect / 5.0) * 5.0)
+
+
+def _is_built(kind: str) -> bool:
+    try:
+        return symbol_of(ObjectKind(kind)) in ("building", "masonry")
+    except ValueError:
+        return False
+
+
+def _open_point(outline: list[list[float]], garden: Garden) -> Point:
+    """Where to sample a bed that has no cells of its own: its middle, unless
+    something built stands there. A border drawn across a map house's wall line
+    had its middle inside the house, and the ground under a house — where the
+    sun never reaches — was stored as its light: 0 h, deep shade, for a border
+    in full sun (review, 2026-09-21). Then the first of its edges' middles and
+    its corners that is in the open; the middle if none is.
+    """
+    built = [e.footprint for e in garden.obstacles if _is_built(e.kind)]
+    middle = _polygon_centroid(outline)
+    ring = [(float(p[0]), float(p[1])) for p in outline]
+    halves = [((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+              for a, b in zip(ring, ring[1:] + ring[:1], strict=True)]
+    for point in [middle, *halves, *ring]:
+        if not any(len(f) >= 3 and covers(f, point) for f in built):
+            return Point(*point)
+    return Point(*middle)
 
 
 def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
@@ -104,7 +133,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
             # what this whole model did until now.
             mean = bed_light_value(
                 location,
-                Point(*_polygon_centroid(bed.polygon)),
+                _open_point(bed.polygon, garden),
                 everything,
                 height_above_ground=bed.height_above_ground,
             ).sun_hours
@@ -113,7 +142,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
             " aspect_deg = ?,"
             " light_computed_at = ? WHERE element_id = ?",
             (
-                ellenberg_from_sun_hours(mean),
+                ellenberg_from_sun_hours(round(mean, 2)),  # as stored: they agree
                 round(mean, 2),
                 *_fall_of(ground, bed),
                 _now(),

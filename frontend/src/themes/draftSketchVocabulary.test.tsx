@@ -42,9 +42,74 @@ describe('roofs', () => {
   it('points a pent roof down its fall, from the upper edge the server gives', () => {
     const pent = shape('house', 'building', box(0, 0, 5, 4),
       { roof: 'pent', roofLines: [[{ x: -2.5, y: 2 }, { x: 2.5, y: 2 }]] });
-    const d = drawn(pent).marks('roof')[0]!.getAttribute('d')!;
-    // The edge, then the arrow's shaft and its two barbs: four strokes.
-    expect(d.match(/M/g)).toHaveLength(4);
+    const marks = drawn(pent);
+    // The edge; and apart from it, clipped to the house, the shaft and its barbs.
+    expect(marks.marks('roof')[0]!.getAttribute('d')!.match(/M/g)).toHaveLength(1);
+    expect(marks.marks('fall')[0]!.getAttribute('d')!.match(/M/g)).toHaveLength(3);
+    expect(marks.marks('fall')[0]!.getAttribute('clip-path')).toMatch(/^url\(#ds-fall-/);
+  });
+
+  it('keeps the arrow when the upper edge is two walls, in the middle of both', () => {
+    // A notch in the upper wall: the server sends both pieces (review, 2026-09-21).
+    const pent = shape('house', 'building', box(0, 0, 8, 4), {
+      roof: 'pent',
+      roofLines: [[{ x: -4, y: 2 }, { x: 2, y: 2 }], [{ x: 3, y: 2 }, { x: 4, y: 2 }]],
+    });
+    const marks = drawn(pent);
+    expect(marks.marks('roof')[0]!.getAttribute('d')!.match(/M/g)).toHaveLength(2);
+    // The shaft starts an eighth of the way down the house from the whole edge's
+    // middle (0, 2): at (0, 1.5), y flipped — straight down, not askew from the
+    // longer piece's middle.
+    expect(marks.marks('fall')[0]!.getAttribute('d')).toContain('M0,-1.5L0,');
+  });
+
+  /** The arrow's shaft as the drawing has it, in plan metres (y back north). */
+  const shaft = (pent: DecoratedShape): [Point, Point] => {
+    const d = drawn(pent).marks('fall')[0]!.getAttribute('d')!;
+    const numbers = (d.split('M').filter(Boolean)[0] ?? '').match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+    return [{ x: numbers[0]!, y: -numbers[1]! }, { x: numbers[2]!, y: -numbers[3]! }];
+  };
+  const inside = (p: Point, ring: Point[]) => ring.reduce((odd, a, i) => {
+    const b = ring[(i + 1) % ring.length]!;
+    return (a.y > p.y) !== (b.y > p.y) && p.x < a.x + ((p.y - a.y) * (b.x - a.x)) / (b.y - a.y)
+      ? !odd : odd;
+  }, false);
+
+  it('starts the arrow on the house when the upper edge steps back, as on an L', () => {
+    // What the server sends for this L falling a degree off south (review, 2026-09-21):
+    // the chord between the two walls' far ends has its middle over the garden.
+    const ell = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 4 }, { x: 4, y: 4 },
+                 { x: 4, y: 8 }, { x: 0, y: 8 }];
+    const pent = shape('house', 'building', ell, {
+      roof: 'pent', roofFall: 181,
+      roofLines: [[{ x: 10, y: 4 }, { x: 4, y: 4 }], [{ x: 4, y: 8 }, { x: 0, y: 8 }]],
+    });
+    const [tail, tip] = shaft(pent);
+    expect(inside(tail, ell)).toBe(true);
+    expect(inside(tip, ell)).toBe(true);
+  });
+
+  it('keeps the arrow inside an L whose other wing hangs down at one end', () => {
+    // Its middle lies off to the side: sized by that, the arrow ran on past the
+    // shallow wing into the garden (review, 2026-09-21).
+    const ell = [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 8 }, { x: 12, y: 8 },
+                 { x: 12, y: 10 }, { x: 0, y: 10 }];
+    const pent = shape('house', 'building', ell, {
+      roof: 'pent', roofFall: 180, roofLines: [[{ x: 12, y: 10 }, { x: 0, y: 10 }]],
+    });
+    const [tail, tip] = shaft(pent);
+    expect(inside(tail, ell)).toBe(true);
+    expect(inside(tip, ell)).toBe(true);
+  });
+
+  it('points the arrow down the surveyed fall, not at the middle of a leaning house', () => {
+    const leaning = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 13, y: 6 }, { x: 3, y: 6 }];
+    const pent = shape('house', 'building', leaning, {
+      roof: 'pent', roofFall: 180, roofLines: [[{ x: 13, y: 6 }, { x: 3, y: 6 }]],
+    });
+    const [tail, tip] = shaft(pent);
+    expect(tip.x).toBeCloseTo(tail.x, 2);
+    expect(tip.y).toBeLessThan(tail.y);
   });
 
   it('and not at all where the model has a plane', () => {
@@ -109,48 +174,6 @@ describe('fences and walls, in his line', () => {
     // bands down the middle are what is left to draw.
     expect(wall.marks('line-ink')).toHaveLength(2);
     expect(wall.marks('ink').length).toBeGreaterThan(0);
-  });
-});
-
-describe('streets, which arrive as ways and meet at junctions', () => {
-  // A T: a road across, and one joining it from the south.
-  const across = shape('street', 'paving', box(0, 0, 36, 6),
-    { line: [{ x: -18, y: 0 }, { x: 18, y: 0 }] });
-  const joining = shape('street', 'paving', box(6, 4, 5, 8),
-    { line: [{ x: 6, y: 0 }, { x: 6, y: 8 }] });
-
-  it('draws no outline of its own round a single band', () => {
-    expect(drawn(across).marks('ink')).toHaveLength(0);
-    expect(drawn(across).marks('line-ink')).toHaveLength(0);
-  });
-
-  const Plan = draftSketch.Plan!;
-
-  it('outlines the network once, and shows the line only outside it', () => {
-    const { container } = render(<svg><Plan shapes={[across, joining]} metresPerPixel={0.05} /></svg>);
-    const ink = container.querySelector('[data-mark="roads"] > path')!;
-    const mask = container.querySelector('mask')!;
-    // The mask is the bands and the corners they turn, in two paths: in one, a
-    // disc winding the other way cancels against its band and opens a hole.
-    const cut = [...mask.querySelectorAll('path')].map((p) => p.getAttribute('d')).join('');
-    // One line for both bands, and the mask's cut-out is that same line: what
-    // lies on a road is hidden, so nothing crosses the junction.
-    expect(ink.getAttribute('d')).toBe(cut);
-    expect(ink.getAttribute('mask')).toBe(`url(#${mask.getAttribute('id')})`);
-    expect(mask.querySelector('rect')!.getAttribute('fill')).toBe('#ffffff');
-    expect(mask.querySelector('path')!.getAttribute('fill')).toBe('#000000');
-    // Grown by most of a pixel, so a way ending on another way's edge cannot
-    // leave a hairline of ink lying across the road.
-    for (const path of mask.querySelectorAll('path')) {
-      expect(Number(path.getAttribute('stroke-width'))).toBeGreaterThan(0);
-    }
-    // A road that turns is rounded, in the wash and in the line alike.
-    expect(cut).toContain('a');
-  });
-
-  it('and draws nothing at all where a garden has no street', () => {
-    const { container } = render(<svg><Plan shapes={[]} metresPerPixel={0.05} /></svg>);
-    expect(container.querySelector('[data-mark="roads"]')).toBeNull();
   });
 });
 

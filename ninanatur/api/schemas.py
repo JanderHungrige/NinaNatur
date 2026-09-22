@@ -31,7 +31,7 @@ class PlantingOut(BaseModel):
     raw_name: str | None
     quantity: int
     added_at: str
-    #: Where this cluster sits, in metres from the bed's origin. Null until
+    #: Where this cluster sits, in garden metres. Null until
     #: somebody moves it; the plan derives a position from the id until then.
     x: float | None
     y: float | None

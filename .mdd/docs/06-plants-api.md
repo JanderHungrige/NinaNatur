@@ -24,8 +24,9 @@ models:
   - insect_de
 test_files:
   - tests/test_plants_api.py
+  - tests/test_parasites_hidden.py
 data_flow: reads-existing
-last_synced: 2026-08-28
+last_synced: 2026-09-21
 status: complete
 phase: all
 mdd_version: 11
@@ -37,17 +38,17 @@ satisfies_contracts:
     function: score_species(site, species)
     when: ranking any species against a bed
     status: done
-    verified_at: "ninanatur/api/search.py:149"
+    verified_at: "ninanatur/api/search.py:120"
   - from: 04-trait-resolve
     function: resolve_trait(conn, taxon_id, trait_key)
     when: reading any trait value for display
     status: done
-    verified_at: "ninanatur/api/plants.py:144"
+    verified_at: "ninanatur/api/plants.py:174"
   - from: 05-insect-checklist-de
     function: german_partner_counts(conn, taxon_id)
     when: reporting a plant's animal partners
     status: done
-    verified_at: "ninanatur/api/plants.py:146"
+    verified_at: "ninanatur/api/plants.py:176"
 security_read_sites: []
 known_issues: []
 sister_projects: []
@@ -73,7 +74,12 @@ unchanged, so its shape matters more than its implementation.
 | `colour` | string | **soft** — ranks, never excludes |
 | `limit`, `offset` | int | paging, limit ≤ 200 |
 
-Response: `{ "total": N, "items": [PlantSummary] }`, ordered by fit descending.
+Response: `{ "total": N, "items": [PlantSummary] }`. Ordered by fit descending
+until 2026-09-21; since then by the bed lists' order — growing conditions, the
+insect value deciding among equals (`fit/rank.py`, doc 13) — because the
+ranking is decided in `api/search.py` once and not re-derived per route. Each
+`PlantSummary` carries `insect_partners`, the number that order weighs. Plants
+that live on a host or a fungus are never returned (`api/parasites.py`).
 
 ### `GET /api/v1/plants/{taxon_id}`
 

@@ -104,6 +104,7 @@ def get_json(
     timeout: tuple[float, float] = TIMEOUT,
     accept: Callable[[Any], bool] | None = None,
     max_bytes: int = DEFAULT_MAX_BYTES,
+    attempts: int = MAX_RETRIES,
 ) -> Any:
     """GET a JSON document, served from disk cache when available.
 
@@ -113,7 +114,7 @@ def get_json(
     path = _cache_path(url, params)
     if use_cache and path.exists():
         return json.loads(path.read_text())
-    payload = _get(url, params, timeout, max_bytes).json()
+    payload = _get(url, params, timeout, max_bytes, attempts).json()
     if accept is not None and not accept(payload):
         raise HttpError(f"GET {url} answered, but incompletely; not cached")
     if use_cache:
@@ -177,9 +178,10 @@ def _read_capped(response: requests.Response, url: str, max_bytes: int) -> None:
 
 def _get(
     url: str, params: dict[str, Any] | None, timeout: tuple[float, float], max_bytes: int,
+    attempts: int = MAX_RETRIES,
 ) -> requests.Response:
     last: Exception | None = None
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(attempts):
         time.sleep(REQUEST_DELAY_S)
         try:
             response = requests.get(
@@ -200,8 +202,9 @@ def _get(
                 raise HttpError(f"GET {url} refused: {response.status_code}",
                                 status=response.status_code)
             last = requests.HTTPError(f"{response.status_code} from {url}")
-        time.sleep(2**attempt)
-    raise HttpError(f"GET {url} failed after {MAX_RETRIES} attempts: {last}") from last
+        if attempt + 1 < attempts:
+            time.sleep(2**attempt)
+    raise HttpError(f"GET {url} failed after {attempts} attempts: {last}") from last
 
 
 def size_of(url: str) -> int:
