@@ -140,6 +140,11 @@ class Element:
     #: would tell a gardener on a hillside that their garden is flat.
     slope_deg: float | None = None
     aspect_deg: float | None = None
+    #: The sky it sees, its relative illuminance, the sunshine it can expect
+    #: (doc 118). None until its light is computed by a model that knows them.
+    sky_view: float | None = None
+    relative_light: float | None = None
+    expected_sun_h: float | None = None
     light_computed_at: str | None = None
     #: A raised bed stands above the low things around it, and its light is
     #: computed from up there.

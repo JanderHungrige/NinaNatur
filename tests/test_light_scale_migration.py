@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 from ninanatur.api.deps import get_connection
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.light_scale import LIGHT_SCALE_KEY, rescale_bed_light
-from ninanatur.solar.light import ellenberg_from_sun_hours
+from ninanatur.solar.light import ellenberg_from_sun_hours, light_value
 from ninanatur.web.app import app
 
 SQUARE = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]
@@ -91,3 +91,16 @@ def test_the_map_and_the_list_stay_current_across_it(
     assert client.get(f"/api/v1/gardens/{token}/light").json()["stale"] is False
     suggestions = client.get(f"/api/v1/gardens/{token}/beds/{bed_id}/suggestions")
     assert suggestions.json()["light_state"] == "current"
+
+
+def test_a_bed_stored_with_its_sky_moves_by_both(
+    client: TestClient, conn: sqlite3.Connection,
+) -> None:
+    """Since the sky counts, a bed's value is its hours' floored by the sky it
+    sees in leaf (doc 118). The recompute writes both; the rescale reads both."""
+    _token, bed_id = _computed_under_the_staircase(client, conn)
+    conn.execute("UPDATE element SET sky_view = 0.05 WHERE element_id = ?", (bed_id,))
+    rescale_bed_light(conn)
+    value = conn.execute("SELECT ellenberg_l FROM element WHERE element_id = ?",
+                         (bed_id,)).fetchone()[0]
+    assert value == light_value(7.9, 0.05) == 2.5

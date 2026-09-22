@@ -17,12 +17,30 @@ export function lightText(bed: GardenOut['beds'][number]): string {
   }
   // L on EIVE's 0–10 scale since 2026-09-21, and continuous: one decimal is
   // already finer than the model knows, and "L 7.8125" claimed more.
-  const light = `${bed.sun_hours.toFixed(1)} h/Tag · L ${bed.ellenberg_l.toFixed(1)}`;
+  const light = [
+    `${bed.sun_hours.toFixed(1)} h/Tag`,
+    ...skyTexts(bed),
+    `L ${bed.ellenberg_l.toFixed(1)}`,
+  ].join(' · ');
   // The slope is said, never scored. At this latitude it barely moves the
   // hours; what it moves is the energy per square metre, which this model does
   // not compute — so it belongs beside the figure rather than inside it.
   const fall = slopeSentence(bed.slope_deg, bed.aspect_deg);
   return fall === null || fall === 'eben' ? light : `${light} · ${fall}`;
+}
+
+/**
+ * What the sky adds to a bed (doc 118): the sunshine to expect with the
+ * climate's cloud, the share of the sky it sees, and its light as a share of
+ * open ground's. Left out on a bed whose light was computed before them.
+ */
+function skyTexts(bed: GardenOut['beds'][number]): string[] {
+  return [
+    bed.expected_sun_h === null ? null : `erwartbar ${bed.expected_sun_h.toFixed(1)} h`,
+    bed.sky_view === null ? null : `sieht ${Math.round(bed.sky_view * 100)} % des Himmels`,
+    bed.relative_light === null
+      ? null : `${Math.round(bed.relative_light * 100)} % des Freilandlichts`,
+  ].filter((text): text is string => text !== null);
 }
 
 /**

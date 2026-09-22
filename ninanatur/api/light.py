@@ -25,12 +25,12 @@ from ninanatur.api.schemas_light import (
 from ninanatur.garden import landcover_sync
 from ninanatur.garden.building_sync import measure_buildings
 from ninanatur.garden.cloud_sync import ensure_cloud
-from ninanatur.garden.credits import credits_for
+from ninanatur.garden.credits import credits_for, licence_url
 from ninanatur.garden.elements import now
 from ninanatur.garden.light_state import current_signature
 from ninanatur.garden.light_worker import month_grid, recompute_light
 from ninanatur.garden.lightgrid import extent_of
-from ninanatur.garden.lightgrid_store import load_grid
+from ninanatur.garden.lightgrid_store import load_grid, shows_climate
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
 from ninanatur.garden.store import load_garden
@@ -168,8 +168,10 @@ def sources(
         horizon_source=horizon_source(conn, cache_key(anchor)),
         laser_source=cloud_source(conn, cache_key(anchor)),
         landcover=draws_landcover(conn, garden.garden_id),
+        climate=shows_climate(conn, garden.garden_id),
     )
-    return [CreditOut(**vars(credit)) for credit in found]
+    return [CreditOut(**vars(credit), licence_url=licence_url(credit.licence))
+            for credit in found]
 
 
 @router.get("/{token}/shadows", response_model=ShadowDay)
@@ -251,6 +253,7 @@ def _read(
         computed_at=computed_at,
         stale=signature != now_signature,
         model=grid.model,
+        sky=grid.sky, relative=grid.relative, expected=grid.expected,
     )
 
 

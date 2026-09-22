@@ -62,9 +62,17 @@ class BedOut(BaseModel):
     ellenberg_r: float | None
     sun_hours: float | None
     #: Named, never scored. See `slopes.py` for why: at this latitude a slope
-    #: barely moves the hours and moves the energy a great deal.
+    #: barely moves the hours and moves the energy a great deal — which
+    #: `relative_light` now says, since doc 119 weighs the sun by what it
+    #: brings to the bed's own surface.
     slope_deg: float | None
     aspect_deg: float | None
+    #: The share of the sky the bed sees, 0–1; its relative illuminance, 1 on
+    #: open level ground and more on a surface turned towards the sun; and the
+    #: hours of sunshine it can expect, cloud included (docs 118, 119).
+    sky_view: float | None
+    relative_light: float | None
+    expected_sun_h: float | None
     light_computed_at: str | None
     # Required, not defaulted: the response always carries both, and a default
     # here makes them optional in the generated client for no reason.

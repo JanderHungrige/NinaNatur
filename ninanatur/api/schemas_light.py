@@ -41,6 +41,14 @@ class LightMap(BaseModel):
     #: The light model that computed it (`solar.light.MODEL_VERSION`); empty
     #: for a map computed before Wave 26 gave models a version.
     model: str = ""
+    #: In step with `hours`, empty on a map computed before them (doc 118): the
+    #: share of the sky each cell sees (a month's with its crowns as they are
+    #: then, the season's in leaf), its relative illuminance — sun and sky as a
+    #: share of open *level* ground's light in the garden's climate, so a slope
+    #: facing the sun passes 1 (doc 119) — and the sunshine it can expect.
+    sky: list[float | None] = []
+    relative: list[float | None] = []
+    expected: list[float | None] = []
     #: Of those hours, the ones before the sun crosses due south. Empty on a
     #: grid computed before the split existed; the next rebuild fills it, and
     #: nulls line up with `hours`.
@@ -66,6 +74,9 @@ class MisplacedOut(BaseModel):
     sun_hours: float
     #: 'too_dark' | 'too_bright'. Both happen; the second is the forgotten one.
     problem: str
+    #: The share of the sky the spot sees in leaf, which may be what darkens it
+    #: (doc 118); null on a map from before the sky counted.
+    sky_view: float | None = None
 
 
 class TerrainOut(BaseModel):
@@ -114,6 +125,9 @@ class CreditOut(BaseModel):
     attribution: str
     #: How fine it is, in the source's own terms. Null where it does not say.
     detail: str | None = None
+    #: The licence's text, which CC BY 4.0 asks to be linked; null where none
+    #: is known (`credits.LICENCE_URLS`).
+    licence_url: str | None = None
 
 
 class ShadowFrame(BaseModel):

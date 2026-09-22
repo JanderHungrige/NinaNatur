@@ -84,6 +84,58 @@ def test_terrain_costs_every_cell_a_little() -> None:
     assert estimate_ms(10_000, 5, 1, terrain=True) > estimate_ms(10_000, 5, 1)
 
 
+def test_a_cell_with_a_surface_of_its_own_is_priced_by_the_cell() -> None:
+    """Weighing every moment on each cell's own surface (doc 119) costs per
+    cell, not per part — and it is the cells' surfaces that turn it on, so a
+    pitched roof does even where nothing was surveyed (review, 2026-09-22)."""
+    from ninanatur.garden.lightgrid_extent import TILTED_CELL_MS
+
+    for parts, near in ((1, 1), (40, 5)):
+        level = estimate_ms(10_000, parts, near)
+        tilted = estimate_ms(10_000, parts, near, tilted=True)
+        assert tilted - level == pytest.approx(10_000 * TILTED_CELL_MS)
+
+
+def test_a_pitched_roof_alone_buys_the_tilted_cell(conn: sqlite3.Connection,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """No terrain at all, one gabled house: its roof cells have surfaces, so
+    the sweep takes the dearer path and the estimate must know."""
+    garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
+    add_obstacle(conn, garden_id, ObstacleInput(kind="house", x=0, y=0, shape="rect",
+                                                width=12, depth=10, height=9, roof="gable",
+                                                label="H"))
+    conn.commit()
+    garden = load_garden(conn, garden_id)
+    asked: list[bool] = []
+
+    def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
+            terrain: bool = False, deciduous: bool = False, tilted: bool = False) -> float:
+        asked.append(tilted)
+        return 1.0
+
+    monkeypatch.setattr(lightgrid, "cell_size_for", spy)
+    compute_grid(garden, shading_obstacles(conn, garden))
+    assert asked == [True]
+
+
+def test_the_sky_is_priced_by_the_directions_it_sweeps() -> None:
+    """The estimate's constants were fitted to the sun alone; the sky adds its
+    patches to every part and cell (doc 118). Its counts are the sky's and the
+    season's as they are, not numbers copied once."""
+    from ninanatur.garden import lightgrid_extent as extent
+    from ninanatur.solar.position import Location
+    from ninanatur.solar.raster import moments_for
+    from ninanatur.solar.sky import TREGENZA, sky_directions
+
+    assert len(sky_directions(7).azimuth) == extent.SKY_DIRECTIONS
+    assert len(sky_directions(3, split=TREGENZA).azimuth) == extent.BARE_SKY_DIRECTIONS
+    assert len(moments_for(Location(51.25, 7.15)).azimuth) == extent.SEASON_MOMENTS
+    evergreen = estimate_ms(10_000, 5, 1) - extent.GRID_FIXED_MS
+    deciduous = estimate_ms(10_000, 5, 1, deciduous=True) - extent.GRID_FIXED_MS
+    swept = extent.SEASON_MOMENTS + extent.SKY_DIRECTIONS
+    assert deciduous / evergreen == pytest.approx((swept + extent.BARE_SKY_DIRECTIONS) / swept)
+
+
 @pytest.fixture()
 def conn() -> Iterator[sqlite3.Connection]:
     made: sqlite3.Connection = connect(":memory:", same_thread=False)
@@ -113,8 +165,8 @@ def test_the_grid_counts_the_parts_standing_on_it(
     asked: list[tuple[int, int | None]] = []
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
-            terrain: bool = False) -> float:
-        asked.append((parts, near))
+            *what: object) -> float:
+        asked.append((parts, near))  # the rest is terrain, leaves and tilt
         return 1.0
 
     monkeypatch.setattr(lightgrid, "cell_size_for", spy)

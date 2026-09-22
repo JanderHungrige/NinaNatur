@@ -50,6 +50,12 @@ function morningShare(map: LightMap): number {
   return Math.round((morning / total) * 100);
 }
 
+/** What of the sky a spot sees, beside its hours when a plant stands too dark
+ *  there: under a crown it is often what darkens it (doc 118). */
+function skyAt(sky: number | null | undefined): string {
+  return sky === null || sky === undefined ? '' : ` und ${Math.round(sky * 100)} % des Himmels`;
+}
+
 /** German short date from an ISO timestamp, or the raw string if it is not one. */
 function whenText(iso: string): string {
   const at = new Date(iso);
@@ -232,7 +238,7 @@ export function ShadeSwitch({
                   <li key={m.planting_id}>
                     <strong>{m.name}</strong>{' '}
                     {m.problem === 'too_dark'
-                      ? `steht zu dunkel: ${m.sun_hours} h dort, die Art will mehr.`
+                      ? `steht zu dunkel: ${m.sun_hours} h dort${skyAt(m.sky_view)}, die Art will mehr.`
                       : `steht zu hell: ${m.sun_hours} h dort, die Art will weniger.`}
                   </li>
                 ))}

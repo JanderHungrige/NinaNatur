@@ -22,11 +22,12 @@ load-bearing instead of decorative.
 from __future__ import annotations
 
 import sqlite3
+from typing import Any
 
 from ninanatur.garden.elements import now as _now
 from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
 from ninanatur.garden.footprint import covers
-from ninanatur.garden.lightgrid import compute_grid, signature_of
+from ninanatur.garden.lightgrid import LightGrid, compute_grid, signature_of
 from ninanatur.garden.lightgrid_store import save_grid
 from ninanatur.garden.lightview import (
     _ground_under,
@@ -34,13 +35,13 @@ from ninanatur.garden.lightview import (
     shading_obstacles,
     shading_taxa,
 )
-from ninanatur.garden.models import Garden
+from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind, symbol_of
 from ninanatur.garden.slopes import slope_at
 from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.solar.light import bed_light_value, ellenberg_from_sun_hours
+from ninanatur.solar.light import light_value
 from ninanatur.solar.position import Location
-from ninanatur.solar.shading import Point
+from ninanatur.solar.shading import Obstacle, Point
 
 
 def _fall_of(
@@ -124,27 +125,19 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
         conn.execute("DELETE FROM light_grid WHERE garden_id = ?", (garden_id,))
 
     updated = 0
+    fallback = _PointLight(everything, location, ground, horizon)
     for bed in garden.beds:
-        raised = bed.height_above_ground > 0
-        mean = None if raised or grid is None else grid.mean_over(bed.polygon)
-        if mean is None:
-            # A raised bed, a bed narrower than a cell, or a garden with nothing
-            # drawn. The point answer is still the honest fallback, and it is
-            # what this whole model did until now.
-            mean = bed_light_value(
-                location,
-                _open_point(bed.polygon, garden),
-                everything,
-                height_above_ground=bed.height_above_ground,
-            ).sun_hours
+        hours, sky, relative, expected = _bed_light(grid, bed, garden, fallback)
         conn.execute(
             "UPDATE element SET ellenberg_l = ?, sun_hours = ?, slope_deg = ?,"
-            " aspect_deg = ?,"
+            " aspect_deg = ?, sky_view = ?, relative_light = ?, expected_sun_h = ?,"
             " light_computed_at = ? WHERE element_id = ?",
             (
-                ellenberg_from_sun_hours(round(mean, 2)),  # as stored: they agree
-                round(mean, 2),
+                # From the hours and the sky as stored, so they always agree.
+                light_value(round(hours, 2), _rounded(sky, 3)),
+                round(hours, 2),
                 *_fall_of(ground, bed),
+                _rounded(sky, 3), _rounded(relative, 3), _rounded(expected, 2),
                 _now(),
                 bed.bed_id,
             ),
@@ -154,5 +147,66 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
     return updated
 
 
+def _rounded(value: float | None, digits: int) -> float | None:
+    return None if value is None else round(value, digits)
 
 
+class _PointLight:
+    """The one-point answer, for a bed the grid cannot: its moments, parts and
+    climate worked out once for all of a garden's beds that need it.
+
+    Asked as a cell of the grid is asked (`lightcells.surface_at`): the point
+    at its own ground plus the bed's height, the obstacles each on the ground
+    under it, the sky through the point's own slope and the hills beyond. It
+    stood on flat ground under an open horizon until 2026-09-22, and a narrow
+    bed in a valley saw a sky its neighbouring cells did not (review)."""
+
+    def __init__(self, obstacles: list[Obstacle], location: Location,
+                 ground: TerrainWindow | None = None,
+                 horizon: list[float] | None = None) -> None:
+        self.obstacles, self.location = obstacles, location
+        self.ground, self.horizon = ground, horizon
+        self._ready: tuple[Any, Any, Any] | None = None
+        # The grid's rings are rounded to a step of slope and aspect and shared
+        # (`lightcells._ring`); a point's are rounded the same way.
+        self._rings: dict[tuple[float, float], tuple[float, ...]] = {}
+
+    def at(self, x: float, y: float, height: float) -> tuple[float, float, float, float]:
+        from ninanatur.garden.ground import standing_on
+        from ninanatur.garden.lightcells import surface_at
+        from ninanatur.solar.climate import climate_at
+        from ninanatur.solar.raster import LEVEL, moments_for, parts_of, plane_of
+        from ninanatur.solar.relative import point_sky_light
+
+        if self._ready is None:
+            self._ready = (parts_of(standing_on(self.obstacles, self.ground)),
+                           moments_for(self.location),
+                           climate_at(self.location.latitude, self.location.longitude))
+        parts, moments, climate = self._ready
+        # A hole in the survey stands on the lowest ground there is, as a
+        # cell's does (`ground.height_at`).
+        floor = min(self.ground.heights) if self.ground and self.ground.heights else 0.0
+        surface = surface_at((x, y), self.ground, self.horizon, floor, [], height, self._rings)
+        # A raised bed is a box: its soil lies level however the ground under it
+        # falls, though the hillside still stands between it and the low sun,
+        # which is its ring (review, 2026-09-22).
+        plane = LEVEL if height > 0 else plane_of(surface.slope, surface.aspect)
+        light = point_sky_light(parts, moments, climate, x, y, surface.z,
+                                list(surface.ring) or None, plane=plane)
+        return (float(light.morning[0] + light.afternoon[0]), float(light.sky[0]),
+                float(light.relative[0]), float(light.expected[0]))
+
+
+def _bed_light(grid: LightGrid | None, bed: Element, garden: Garden, fallback: _PointLight,
+               ) -> tuple[float, float | None, float | None, float | None]:
+    """A bed's sun hours, sky, relative illuminance and expected hours: the
+    mean of its cells, or — a raised bed, a bed narrower than a cell, a garden
+    with nothing drawn — the honest one-point answer this model always gave."""
+    if bed.height_above_ground <= 0 and grid is not None:
+        hours = grid.mean_over(bed.polygon)
+        if hours is not None:
+            return (hours, grid.mean_over(bed.polygon, grid.sky),
+                    grid.mean_over(bed.polygon, grid.relative),
+                    grid.mean_over(bed.polygon, grid.expected))
+    point = _open_point(bed.polygon, garden)
+    return fallback.at(point.x, point.y, bed.height_above_ground)

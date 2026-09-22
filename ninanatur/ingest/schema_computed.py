@@ -43,6 +43,12 @@ CREATE TABLE IF NOT EXISTS light_grid (
     -- The light model that computed it (Wave 26); empty before models had a
     -- version, so an old map says it was drawn by the model before them.
     model       TEXT    NOT NULL DEFAULT '',
+    -- Wave 26, feature 3 (doc 118), in step with hours: the sky each cell
+    -- sees, its relative illuminance, and the sunshine it can expect. Empty on
+    -- a map computed before.
+    sky         TEXT    NOT NULL DEFAULT '[]',
+    relative    TEXT    NOT NULL DEFAULT '[]',
+    expected    TEXT    NOT NULL DEFAULT '[]',
     signature   TEXT    NOT NULL,
     computed_at TEXT    NOT NULL
 );
