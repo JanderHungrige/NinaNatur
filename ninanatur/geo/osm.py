@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from ninanatur.geo.osm_rings import assemble, with_holes
+from ninanatur.geo.osm_rings import assemble, holes_within
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surroundings import OsmBuilding
 from ninanatur.ingest.http import HttpError, get_json
@@ -123,7 +123,7 @@ def buildings_in(
             continue
         # One building per outer ring: a multipolygon can be two separate
         # parts, a house and its barn under one relation.
-        for outline in _outlines_of(element) or [[]]:
+        for outline, courtyards in _outlines_of(element) or [([], [])]:
             centre = _centre_of(element, outline)
             # Neither an outline nor a centre is nothing to place. A relation
             # whose members were not returned lands here, which is why it is
@@ -136,33 +136,36 @@ def buildings_in(
                     centre=centre,
                     outline=outline,
                     tags={str(k): str(v) for k, v in (element.get("tags") or {}).items()},
+                    courtyards=tuple(tuple(ring) for ring in courtyards),
                 )
             )
     return found
 
 
-def _outlines_of(element: dict[str, Any]) -> list[list[LatLon]]:
-    """The outlines: a way's own geometry, or a relation's outer rings.
+def _outlines_of(element: dict[str, Any]) -> list[tuple[list[LatLon], list[list[LatLon]]]]:
+    """The outlines, each with the courtyards inside it: a way's own geometry,
+    or a relation's outer rings.
 
     A relation's outer ring is often several ways, and they are joined end to
-    end (`osm_rings.assemble`). Its holes are kept as courtyards: each is
-    joined to the ring around it by a slit of no width, so the courtyard stays
-    open ground. Concatenating the members instead gave a shape spanning both —
-    which is how a courtyard building came out enormous. A relation whose ways
-    will not close falls back to its first outer way, as before.
+    end (`osm_rings.assemble`). The outline is the outer ring alone, so a
+    courtyard counts as building — concatenating the members instead gave a
+    shape spanning both, which is how a courtyard building came out enormous —
+    and its inner rings travel beside it, so the import can tell a garden that
+    lies in one. A relation whose ways will not close falls back to its first
+    outer way, as before.
     """
     geometry = element.get("geometry")
     if isinstance(geometry, list):
-        return [_points(geometry)]
+        return [(_points(geometry), [])]
     members = [m for m in element.get("members") or [] if isinstance(m, dict)]
     outers = assemble([_points(m.get("geometry")) for m in members if m.get("role") == "outer"])
     inners = assemble([_points(m.get("geometry")) for m in members if m.get("role") == "inner"])
     if outers:
-        return [with_holes(ring, inners) for ring in outers]
+        return [(ring, holes_within(ring, inners)) for ring in outers]
     for member in members:
         ring = _points(member.get("geometry")) if member.get("role") == "outer" else []
         if len(ring) >= 3:
-            return [ring]
+            return [(ring, [])]
     return []
 
 

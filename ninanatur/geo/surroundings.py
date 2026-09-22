@@ -17,7 +17,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from ninanatur.garden.roofs import eaves_from_levels
-from ninanatur.geo.projection import LatLon, Metres, to_metres
+from ninanatur.geo.osm_rings import in_any
+from ninanatur.geo.projection import LatLon, Metres, centroid, to_metres
 
 # How far past the garden the map is read. A 12 m house casts 45 m of shadow at
 # a 15 degree sun, so a 25 m margin loses the morning and evening shade of
@@ -75,6 +76,9 @@ class OsmBuilding:
     centre: LatLon
     outline: list[LatLon]
     tags: dict[str, str]
+    #: A multipolygon's inner rings. The outline is the outer ring alone, so a
+    #: courtyard counts as building; these say where one is (`surroundings_from`).
+    courtyards: tuple[tuple[LatLon, ...], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -253,6 +257,11 @@ def surroundings_from(
               HeightSource.NEIGHBOURHOOD: 0}
 
     for building in buildings:
+        if outline and in_any(centroid(outline), [list(c) for c in building.courtyards]):
+            # A garden in a courtyard would stand under the building whose
+            # outline is its outer ring: left out, as it was before multipolygons
+            # arrived at all (2026-09-22, doc 63).
+            continue
         here = to_metres(building.centre, anchor)
         height, source = _height_of(building.tags, neighbourhood)
         radius = _radius_of(building, anchor)

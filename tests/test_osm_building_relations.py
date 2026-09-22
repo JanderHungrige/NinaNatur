@@ -11,11 +11,8 @@ from typing import Any
 
 from ninanatur.garden.footprint import covers
 from ninanatur.geo.osm import buildings_in
-from ninanatur.geo.osm_rings import with_holes
-from ninanatur.geo.projection import LatLon, centroid, to_metres
+from ninanatur.geo.projection import LatLon, centroid
 from ninanatur.geo.surroundings import surroundings_from
-from ninanatur.solar.position import SunPosition
-from ninanatur.solar.shading import Obstacle, Point, is_shaded
 
 
 def _way(role: str, *corners: tuple[float, float]) -> dict[str, Any]:
@@ -42,14 +39,17 @@ def test_an_outer_ring_drawn_as_two_ways_is_one_building() -> None:
     assert set(house.outline) == {LatLon(S, W), LatLon(S, E), LatLon(N, E), LatLon(N, W)}
 
 
-def test_a_courtyard_stays_open_ground() -> None:
+def test_a_courtyard_counts_as_building_and_is_recorded() -> None:
+    """The outline is the outer ring alone; the courtyard travels beside it. A
+    ring with a slit to each courtyard was tried and left: every stroke on the
+    plan drew the slit as a wall, and its doubled corners broke editing."""
     [house] = _found(
         _way("outer", (S, W), (S, E), (N, E), (N, W), (S, W)),
         _way("inner", (CS, CW), (CS, CE), (CN, CE), (CN, CW), (CS, CW)),
     )
     ring = [(p.lon, p.lat) for p in house.outline]
-    assert covers(ring, (W + 0.00005, S + 0.00005)), "a wing is the building"
-    assert not covers(ring, ((CW + CE) / 2, (CS + CN) / 2)), "the courtyard is not"
+    assert covers(ring, ((CW + CE) / 2, (CS + CN) / 2)), "the courtyard is under the outline"
+    assert len(house.courtyards) == 1 and len(house.courtyards[0]) == 4
 
 
 def test_two_separate_parts_are_two_buildings() -> None:
@@ -62,25 +62,36 @@ def test_two_separate_parts_are_two_buildings() -> None:
     assert all(b.osm_id == 9 and b.tags["height"] == "9" for b in found)
 
 
-def test_a_courtyard_imported_gets_its_sun() -> None:
-    """Through the import's own placing: the courtyard of a 9 m house, the sun
-    high in the south — open sky over it, where the whole square was shade."""
+def test_a_garden_in_a_courtyard_is_not_put_under_the_building() -> None:
+    """With the courtyard counted as building, a garden in it would stand
+    under the house: the house is left out, as before multipolygons arrived."""
     [house] = _found(
         _way("outer", (S, W), (S, E), (N, E), (N, W), (S, W)),
         _way("inner", (CS, CW), (CS, CE), (CN, CE), (CN, CW), (CS, CW)),
     )
-    anchor = centroid(house.outline)
-    [placed] = surroundings_from(anchor, [house], outline=house.outline).objects
-    footprint = [(float(x), float(y)) for x, y in placed.outline]
-    middle = to_metres(LatLon((CS + CN) / 2, (CW + CE) / 2), anchor)
-    assert not is_shaded(Point(middle.x, middle.y), Obstacle(footprint=footprint, height=9.0),
-                         SunPosition(altitude=60.0, azimuth=180.0))
+    garden = [LatLon(CS + 0.00003, CW + 0.00005), LatLon(CS + 0.00003, CE - 0.00005),
+              LatLon(CN - 0.00003, CE - 0.00005), LatLon(CN - 0.00003, CW + 0.00005)]
+    assert surroundings_from(centroid(garden), [house], outline=garden).objects == []
 
 
-def test_a_hole_turns_the_other_way_whichever_way_it_was_drawn() -> None:
-    outer = [LatLon(S, W), LatLon(S, E), LatLon(N, E), LatLon(N, W)]
-    hole = [LatLon(CS, CW), LatLon(CS, CE), LatLon(CN, CE), LatLon(CN, CW)]
-    for drawn in (hole, list(reversed(hole))):
-        ring = [(p.lon, p.lat) for p in with_holes(outer, [drawn])]
-        assert not covers(ring, ((CW + CE) / 2, (CS + CN) / 2))
-        assert len(ring) == len(outer) + len(hole) + 2, "a slit there and back"
+def test_a_garden_beside_a_courtyard_building_keeps_it() -> None:
+    [house] = _found(
+        _way("outer", (S, W), (S, E), (N, E), (N, W), (S, W)),
+        _way("inner", (CS, CW), (CS, CE), (CN, CE), (CN, CW), (CS, CW)),
+    )
+    south = 0.0002  # about 22 m south of the building
+    garden = [LatLon(S - south, W), LatLon(S - south, E), LatLon(S - 0.00005, E),
+              LatLon(S - 0.00005, W)]
+    [placed] = surroundings_from(centroid(garden), [house], outline=garden).objects
+    assert placed.osm_id == 9
+
+
+def test_a_courtyard_touching_the_outer_wall_is_still_recorded() -> None:
+    """OpenStreetMap lets an inner ring share a node with the outer; started on
+    that node, a test of its first corner alone came out on the wall."""
+    mid = (W + E) / 2
+    [house] = _found(
+        _way("outer", (S, W), (S, E), (N, E), (N, mid), (N, W), (S, W)),
+        _way("inner", (N, mid), (CS, CW), (CS, CE), (N, mid)),
+    )
+    assert len(house.courtyards) == 1
