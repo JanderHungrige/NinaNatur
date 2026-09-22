@@ -84,6 +84,24 @@ def test_terrain_costs_every_cell_a_little() -> None:
     assert estimate_ms(10_000, 5, 1, terrain=True) > estimate_ms(10_000, 5, 1)
 
 
+def test_the_sky_is_priced_by_the_directions_it_sweeps() -> None:
+    """The estimate's constants were fitted to the sun alone; the sky adds its
+    patches to every part and cell (doc 118). Its counts are the sky's and the
+    season's as they are, not numbers copied once."""
+    from ninanatur.garden import lightgrid_extent as extent
+    from ninanatur.solar.position import Location
+    from ninanatur.solar.raster import moments_for
+    from ninanatur.solar.sky import TREGENZA, sky_directions
+
+    assert len(sky_directions(7).azimuth) == extent.SKY_DIRECTIONS
+    assert len(sky_directions(3, split=TREGENZA).azimuth) == extent.BARE_SKY_DIRECTIONS
+    assert len(moments_for(Location(51.25, 7.15)).azimuth) == extent.SEASON_MOMENTS
+    evergreen = estimate_ms(10_000, 5, 1) - extent.GRID_FIXED_MS
+    deciduous = estimate_ms(10_000, 5, 1, deciduous=True) - extent.GRID_FIXED_MS
+    swept = extent.SEASON_MOMENTS + extent.SKY_DIRECTIONS
+    assert deciduous / evergreen == pytest.approx((swept + extent.BARE_SKY_DIRECTIONS) / swept)
+
+
 @pytest.fixture()
 def conn() -> Iterator[sqlite3.Connection]:
     made: sqlite3.Connection = connect(":memory:", same_thread=False)
@@ -113,7 +131,7 @@ def test_the_grid_counts_the_parts_standing_on_it(
     asked: list[tuple[int, int | None]] = []
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
-            terrain: bool = False) -> float:
+            terrain: bool = False, deciduous: bool = False) -> float:
         asked.append((parts, near))
         return 1.0
 

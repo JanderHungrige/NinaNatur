@@ -227,6 +227,17 @@
             ],
             "title": "Ellenberg R"
           },
+          "expected_sun_h": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Sun H"
+          },
           "height_above_ground": {
             "title": "Height Above Ground",
             "type": "number"
@@ -306,9 +317,31 @@
             "title": "Polygon",
             "type": "array"
           },
+          "relative_light": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Light"
+          },
           "shape": {
             "title": "Shape",
             "type": "string"
+          },
+          "sky_view": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sky View"
           },
           "slope_deg": {
             "anyOf": [
@@ -383,6 +416,9 @@
           "sun_hours",
           "slope_deg",
           "aspect_deg",
+          "sky_view",
+          "relative_light",
+          "expected_sun_h",
           "light_computed_at",
           "height_above_ground",
           "label",
@@ -751,6 +787,17 @@
           "licence": {
             "title": "Licence",
             "type": "string"
+          },
+          "licence_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence Url"
           },
           "name": {
             "title": "Name",
@@ -1294,6 +1341,21 @@
             "title": "Computed At",
             "type": "string"
           },
+          "expected": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Expected",
+            "type": "array"
+          },
           "hours": {
             "items": {
               "anyOf": [
@@ -1346,6 +1408,21 @@
             "title": "Morning",
             "type": "array"
           },
+          "relative": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Relative",
+            "type": "array"
+          },
           "roof": {
             "items": {
               "type": "boolean"
@@ -1356,6 +1433,21 @@
           "rows": {
             "title": "Rows",
             "type": "integer"
+          },
+          "sky": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Sky",
+            "type": "array"
           },
           "stale": {
             "title": "Stale",

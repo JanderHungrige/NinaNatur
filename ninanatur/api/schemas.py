@@ -65,6 +65,11 @@ class BedOut(BaseModel):
     #: barely moves the hours and moves the energy a great deal.
     slope_deg: float | None
     aspect_deg: float | None
+    #: The share of the sky the bed sees, 0–1, its relative illuminance, 0–1,
+    #: and the hours of sunshine it can expect, cloud included (doc 118).
+    sky_view: float | None
+    relative_light: float | None
+    expected_sun_h: float | None
     light_computed_at: str | None
     # Required, not defaulted: the response always carries both, and a default
     # here makes them optional in the generated client for no reason.

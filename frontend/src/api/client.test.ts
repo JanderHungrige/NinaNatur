@@ -56,7 +56,7 @@ describe('NinaNaturClient', () => {
         beds: [{
           bed_id: 1, name: 'Beet', polygon: [], soil_type: null, moisture: null, observed_colours: {},
           ellenberg_l: null, ellenberg_m: null, ellenberg_n: null, ellenberg_r: null,
-          sun_hours: null, light_computed_at: null,
+          sun_hours: null, sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: null,
         }],
       }),
     });

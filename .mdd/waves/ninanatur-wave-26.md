@@ -71,7 +71,7 @@ term the number becomes a derivation from the definition.
 | 0 | the-measuring-instrument | 115 | built | — |
 | 1 | no-hull | 116 | built | 0 |
 | 2 | room-to-compute | 117 | built | 0 |
-| 3 | the-sky-counts | — | planned | 2 |
+| 3 | the-sky-counts | 118 | in progress | 2 |
 | 4 | energy-not-hours | — | planned | 3 |
 | 5 | a-roof-casts-as-a-roof | — | planned | 1 |
 | 6 | a-crown-is-not-a-cylinder | — | planned | 1 |

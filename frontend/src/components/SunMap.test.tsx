@@ -126,8 +126,15 @@ describe('atPoint', () => {
       roof: [true, false, false, false],
       max_hours: 7.0,
     });
-    expect(atPoint(roofed, 0.5, 0.5)).toEqual({ hours: 11.0, onARoof: true });
-    expect(atPoint(roofed, 1.5, 1.5)).toEqual({ hours: 7.0, onARoof: false });
+    expect(atPoint(roofed, 0.5, 0.5)).toEqual(
+      { hours: 11.0, onARoof: true, sky: null, expected: null });
+    expect(atPoint(roofed, 1.5, 1.5)).toEqual(
+      { hours: 7.0, onARoof: false, sky: null, expected: null });
+  });
+
+  it('reads the sky and the sunshine to expect where the map has them (doc 118)', () => {
+    const skyful = map({ sky: [0.6, 1, 1, 1], expected: [1.8, 5, 5, 5] });
+    expect(atPoint(skyful, 0.5, 0.5)).toMatchObject({ sky: 0.6, expected: 1.8 });
   });
 
   it('has nothing to say off the map, or where nothing could be computed', () => {

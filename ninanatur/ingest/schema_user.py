@@ -110,6 +110,12 @@ CREATE TABLE IF NOT EXISTS element (
     -- counts hours. Scoring it would be a claim the model cannot support.
     slope_deg   REAL,
     aspect_deg  REAL,
+    -- Wave 26, feature 3 (doc 118): the share of the sky the bed sees (crowns
+    -- in leaf), its relative illuminance — its light, sun and sky, as a share
+    -- of open ground's in its climate — and the sunshine it can expect.
+    sky_view    REAL,
+    relative_light REAL,
+    expected_sun_h REAL,
     light_computed_at TEXT,
     -- A raised bed stands above the low things around it; Wave 9's sightlines
     -- need the same number, which is why it is stored rather than derived.

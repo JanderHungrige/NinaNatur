@@ -39,7 +39,13 @@ export function useSunReadout(
     if (at === null) return setReadout(null);
     // "Dach" first, because a roof's hours answer a different question from the
     // ground's and a reader who missed that would take it for the bed below.
-    const reading = `${at.hours.toFixed(1)} h · ${bandFor(at.hours)}`;
+    // Then what the sky adds (doc 118): the hours to expect once the climate's
+    // cloud is counted, and how much of the sky the spot sees.
+    const reading = [
+      `${at.hours.toFixed(1)} h · ${bandFor(at.hours)}`,
+      at.expected === null ? null : `erwartbar ${at.expected.toFixed(1)} h`,
+      at.sky === null ? null : `sieht ${Math.round(at.sky * 100)} % des Himmels`,
+    ].filter((part) => part !== null).join(' · ');
     return setReadout({ left, top, text: at.onARoof ? `Dach · ${reading}` : reading });
   };
 

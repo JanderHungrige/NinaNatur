@@ -54,7 +54,8 @@ OSM_ATTRIBUTION = "© OpenStreetMap-Mitwirkende"
 class Credit:
     """One source a garden's numbers rest on."""
 
-    #: `ground`, `horizon`, `buildings`, `laser` or `map` — what it decided.
+    #: `ground`, `horizon`, `buildings`, `laser`, `map` or `climate` — what it
+    #: decided.
     about: str
     #: What it is called on the page: "DGM1 Bayern", "Copernicus GLO-30".
     name: str
@@ -133,13 +134,31 @@ def _osm_credit(garden: Garden, landcover: bool) -> Credit | None:
                   attribution=OSM_ATTRIBUTION)
 
 
+def _climate_credit(garden: Garden) -> Credit:
+    """The DWD's climate grids, wherever a light map can show them (doc 118):
+    what share of the light is sky, how much sun there is. It says whose cell
+    the numbers are: the garden's own, a neighbour's, or the country's mean."""
+    from ninanatur.solar.climate import climate_at
+
+    source = climate_at(garden.latitude, garden.longitude)
+    if source.assumed:
+        detail = "Mittel für Deutschland, angenommen"
+    elif source.distance_km > 0:
+        detail = f"nächste Zelle, {source.distance_km:.0f} km entfernt"
+    else:
+        detail = "10 km, Monatsmittel"
+    return Credit(about="climate", name="DWD Klimadaten", licence=source.licence,
+                  attribution=source.attribution, detail=detail)
+
+
 def credits_for(garden: Garden, *, ground: TerrainWindow | None,
                 horizon_source: str | None, laser_source: str | None = None,
-                landcover: bool = False) -> list[Credit]:
+                landcover: bool = False, climate: bool = False) -> list[Credit]:
     """Every source this garden's numbers actually rest on, once each.
 
     `landcover` is whether the plan draws OpenStreetMap's land around the
-    garden (`landcover_store.draws_landcover`).
+    garden (`landcover_store.draws_landcover`); `climate` whether its page can
+    show a number the DWD's climate went into (`lightgrid_store.shows_climate`).
 
     Built from what is stored and nothing else. Naming the building model needs
     a state, and the stored window already says which one measured the ground —
@@ -162,10 +181,28 @@ def credits_for(garden: Garden, *, ground: TerrainWindow | None,
     laser = _laser_credit(laser_source)
     if laser is not None:
         found.append(laser)
+    if climate:
+        found.append(_climate_credit(garden))
     osm = _osm_credit(garden, landcover)
     if osm is not None:
         found.append(osm)
     return _without_repeats(found)
+
+
+#: Where each licence a credit may carry is written down. CC BY 4.0 asks for
+#: the licence to be named with a link to it (§ 3(a)(1)(C)); the others are
+#: linked for the same reason. A licence not listed is shown as text.
+LICENCE_URLS: dict[str, str] = {
+    "CC-BY-4.0": "https://creativecommons.org/licenses/by/4.0/",
+    "dl-de/by-2-0": "https://www.govdata.de/dl-de/by-2-0",
+    "dl-de/zero-2-0": "https://www.govdata.de/dl-de/zero-2-0",
+    "ODbL-1.0": "https://opendatacommons.org/licenses/odbl/1-0/",
+}
+
+
+def licence_url(licence: str) -> str | None:
+    """The licence's text, where it has a known one."""
+    return LICENCE_URLS.get(licence)
 
 
 def _without_repeats(credits: list[Credit]) -> list[Credit]:

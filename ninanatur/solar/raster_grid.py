@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ninanatur.solar.raster import Moments, Part, covered, visible
+from ninanatur.solar.raster import Directions, Moments, Part, covered, sun_directions, visible
 
 
 @dataclass(frozen=True)
@@ -39,26 +39,32 @@ class Cells:
 def grid_hours(parts: list[Part], moments: Moments, cells: Cells,
                ) -> tuple[np.ndarray, np.ndarray]:
     """(morning, afternoon): mean daily sun hours per cell, rows × cols."""
+    sums = grid_sums(parts, sun_directions(moments), cells)
+    return sums[0], sums[1]
+
+
+def grid_sums(parts: list[Part], directions: Directions, cells: Cells) -> np.ndarray:
+    """(groups, rows, cols): each group's weighted sum of what reaches every
+    cell — the sun's hours, or the share of the sky a cell sees."""
     rows, cols = cells.z.shape
-    before, after = np.zeros((rows, cols)), np.zeros((rows, cols))
-    seen = visible(cells.rings, moments) if len(cells.rings) else None
+    sums = np.zeros((directions.groups, rows, cols))
+    seen = visible(cells.rings, directions) if len(cells.rings) else None
     boxes = _boxes(parts)
     tops = np.array([part.top for part in parts])
     lowest = float(cells.z.min()) if cells.z.size else 0.0
-    for k in range(len(moments.azimuth)):
-        az = math.radians(float(moments.azimuth[k]))
+    for k in range(len(directions.azimuth)):
+        az = math.radians(float(directions.azimuth[k]))
         sun_x, sun_y = math.sin(az), math.cos(az)
-        cot = 1.0 / math.tan(math.radians(float(moments.altitude[k])))
+        cot = 1.0 / math.tan(math.radians(float(directions.altitude[k])))
         through = np.ones((rows, cols))
-        month = int(moments.month[k])
+        month = int(directions.month[k])
         for j in _reaching(boxes, tops, lowest, sun_x, sun_y, cot, cells):
             _shade(parts[j], cells, through, sun_x, sun_y, cot, month, lowest)
         if seen is not None:
             open_sky = np.append(seen[k], True)  # index -1: no ring, always open
             through *= open_sky[cells.sky]
-        (before if moments.morning[k] else after)[:] += through
-    scale = moments.minute_step / 60 / moments.days if moments.days else 0.0
-    return before * scale, after * scale
+        sums[int(directions.group[k])] += through * float(directions.weight[k])
+    return sums
 
 
 def _boxes(parts: list[Part]) -> np.ndarray:
@@ -115,4 +121,4 @@ def _span(centres: np.ndarray, cell: float, lo: float, hi: float) -> tuple[int, 
     return first, last
 
 
-__all__ = ["Cells", "grid_hours"]
+__all__ = ["Cells", "grid_hours", "grid_sums"]

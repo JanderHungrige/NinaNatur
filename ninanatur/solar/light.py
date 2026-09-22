@@ -36,7 +36,10 @@ MONTH_DAY_STEP = 2
 #: - "" — before Wave 26: every 10th day, every half hour, the sun from 5°.
 #: - "26.2" — every 5th day, every 10 minutes, a month every 2nd day, the sun
 #:   from 3°, concave shadows exact (docs 115–117).
-MODEL_VERSION = "26.2"
+#: - "26.3" — the sky: each cell's sky-view factor, relative illuminance in the
+#:   garden's DWD climate, and the sunshine to expect (doc 118). The hours and
+#:   the light value are 26.2's.
+MODEL_VERSION = "26.3"
 
 # Mean daily direct sun (hours) -> light value on EIVE's own 0–10 scale, as
 # anchors joined by straight lines, darkest first.

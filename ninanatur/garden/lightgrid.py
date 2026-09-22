@@ -12,8 +12,8 @@ every one of them.
 from __future__ import annotations
 
 import hashlib
-import math
-from dataclasses import dataclass, field
+
+import numpy as np
 
 from ninanatur.garden.ground import lowest_ground, standing_on
 from ninanatur.garden.lightcells import cells_of, roofs_of, surfaces_of
@@ -24,129 +24,19 @@ from ninanatur.garden.lightgrid_extent import cell_size_for as cell_size_for
 from ninanatur.garden.lightgrid_extent import check_extent as check_extent
 from ninanatur.garden.lightgrid_extent import extent_of as extent_of
 from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model, stands_in
+from ninanatur.garden.lightgrid_model import LightGrid as LightGrid
 from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
+from ninanatur.solar.climate import climate_at
 from ninanatur.solar.light import MODEL_VERSION
 from ninanatur.solar.position import Location
-from ninanatur.solar.raster import moments_for, parts_of
-from ninanatur.solar.raster_grid import grid_hours
+from ninanatur.solar.raster import Part, moments_for, parts_of
 
 # The box and the cell size live in `lightgrid_extent` since 2026-09-21. The
 # names are re-exported because this is where every caller has imported them.
 from ninanatur.solar.reach import is_convex
+from ninanatur.solar.relative import grid_sky_light
 from ninanatur.solar.shading import Obstacle
-
-
-@dataclass(frozen=True)
-class LightGrid:
-    """Mean daily sun hours per cell, row-major from the south-west corner."""
-
-    min_x: float
-    min_y: float
-    cell_m: float
-    cols: int
-    rows: int
-    #: None only where nothing can be answered: a building whose height nobody
-    #: has recorded, which the shading model has skipped since Wave 8.
-    #:
-    #: A cell under a house is **not** null. It is answered on the roof, which
-    #: is the surface anything looking down at a plan can see, and which at
-    #: 51°N is a very different place on its north pitch than on its south. It
-    #: used to be answered on the ground under the building — where the sun
-    #: never reaches, all day, every day — and painted as deep shade.
-    hours: list[float | None]
-    #: Of those hours, the ones before the sun crosses due south. Kept because
-    #: afternoon sun is hotter and harsher, and a great many species sold as
-    #: *Halbschatten* want the morning specifically — a total cannot say which
-    #: four hours a spot gets.
-    morning: list[float | None] = field(default_factory=list)
-    #: Which cells are a roof rather than ground, in step with `hours`. Empty on
-    #: a grid computed before roofs were; the next rebuild fills it.
-    #:
-    #: Kept apart from the hours instead of folded into them, because a roof's
-    #: sun is a real answer to a different question: it is not where anything is
-    #: planted, so it must not reach a bed's mean or the garden's brightest
-    #: point, and the reader is told which one they are hovering.
-    roof: list[bool] = field(default_factory=list)
-    #: The light model that computed it (`solar.light.MODEL_VERSION`); empty on
-    #: a map computed before Wave 26 gave the model a version.
-    model: str = ""
-
-    def at(self, x: float, y: float) -> float | None:
-        """The cell containing this point.
-
-        None outside the grid, and None for a cell that is under a roof — the
-        caller cannot tell the two apart and does not need to, because both mean
-        "this model has no answer for that point".
-        """
-        col = int((x - self.min_x) // self.cell_m)
-        row = int((y - self.min_y) // self.cell_m)
-        if not (0 <= col < self.cols and 0 <= row < self.rows):
-            return None
-        index = row * self.cols + col
-        # As the docstring always said, and the code did not: a plant beside a
-        # house was judged by the sun on its roof (review, 2026-09-21).
-        return None if self.is_roof(index) else self.hours[index]
-
-    def centre_at(self, x: float, y: float) -> tuple[float, float] | None:
-        """The centre of the cell containing this point; None outside the grid."""
-        col = int((x - self.min_x) // self.cell_m)
-        row = int((y - self.min_y) // self.cell_m)
-        if not (0 <= col < self.cols and 0 <= row < self.rows):
-            return None
-        return self.centre_of(col, row)
-
-    def is_roof(self, index: int) -> bool:
-        """Whether this cell is a roof. False on a grid computed before roofs."""
-        return index < len(self.roof) and self.roof[index]
-
-    def centre_of(self, col: int, row: int) -> tuple[float, float]:
-        return (
-            self.min_x + (col + 0.5) * self.cell_m,
-            self.min_y + (row + 0.5) * self.cell_m,
-        )
-
-    def mean_over(self, polygon: list[list[float]]) -> float | None:
-        """The mean of the cells whose centres fall inside a polygon.
-
-        None when no cell centre lands inside — a bed narrower than a cell — and
-        None when every cell that does land inside is under a roof. The caller
-        falls back rather than being handed a zero, because zero is a number
-        this model uses for genuine darkness.
-        """
-        from ninanatur.garden.footprint import covers
-
-        ring = [(float(p[0]), float(p[1])) for p in polygon]
-        if len(ring) < 3:
-            return None  # `covers` holds nothing inside fewer than three corners
-        cols, rows = self._cells_near(ring)
-        inside = [
-            hours
-            for row in rows
-            for col in cols
-            if covers(ring, self.centre_of(col, row))
-            and not self.is_roof(row * self.cols + col)
-            and (hours := self.hours[row * self.cols + col]) is not None
-        ]
-        return sum(inside) / len(inside) if inside else None
-
-    def _cells_near(self, ring: list[tuple[float, float]]) -> tuple[range, range]:
-        """The columns and rows whose centres could fall inside this outline.
-
-        Its bounding box, widened by a cell each way so a centre lying on the
-        edge is still asked; `covers` decides, exactly as before. It only stops
-        every cell of the garden being tested for every bed, which at 0.5 m over
-        a whole plot is thousands of point-in-polygon tests per bed.
-        """
-        xs = [x for x, _ in ring]
-        ys = [y for _, y in ring]
-        if not all(math.isfinite(v) for v in xs + ys):
-            return range(self.cols), range(self.rows)
-        first_col = max(0, int((min(xs) - self.min_x) // self.cell_m) - 1)
-        last_col = min(self.cols - 1, int((max(xs) - self.min_x) // self.cell_m) + 1)
-        first_row = max(0, int((min(ys) - self.min_y) // self.cell_m) - 1)
-        last_row = min(self.rows - 1, int((max(ys) - self.min_y) // self.cell_m) + 1)
-        return range(first_col, last_col + 1), range(first_row, last_row + 1)
 
 
 def compute_grid(
@@ -184,15 +74,10 @@ def compute_grid(
     if box is None:
         return None
     min_x, min_y, max_x, max_y = box
-    standing = standing_on(obstacles, ground)
-    # What the raster pays for is parts, not obstacles (review, 2026-09-22).
-    parts = parts_of(standing)
-    near = sum(1 for p in parts if stands_in([(float(x), float(y)) for x, y in p.corners], box))
-    terrain = ground is not None
-    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain)
+    parts = parts_of(standing_on(obstacles, ground))
+    cell = _cell_for(parts, box, terrain=ground is not None)
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
-    cell = cell_size_for(width, depth, len(parts), near, terrain)
     cols = max(1, int(width / cell) + 1)
     rows = max(1, int(depth / cell) + 1)
 
@@ -205,19 +90,37 @@ def compute_grid(
     ys = [grid.centre_of(0, row)[1] for row in range(rows)]
     surfaces = surfaces_of(xs, ys, ground, horizon, floor, roofs, height_above_ground)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
-    before, after = grid_hours(parts, moments_for(location, year, month),
-                               cells_of(surfaces, xs, ys, cell))
+    # The sun and the sky together, in the garden's climate (doc 118).
+    light = grid_sky_light(parts, moments_for(location, year, month),
+                           cells_of(surfaces, xs, ys, cell),
+                           climate_at(garden.latitude, garden.longitude))
     flat = [s for row in surfaces for s in row]
-    total = (before + after).ravel()
+
+    def listed(values: np.ndarray, digits: int) -> list[float | None]:
+        return [round(float(v), digits) if s.answered else None
+                for s, v in zip(flat, values.ravel(), strict=True)]
+
     return LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows,
-        hours=[round(float(h), 2) if s.answered else None for s, h in zip(flat, total,
-                                                                          strict=True)],
-        morning=[round(float(h), 2) if s.answered else None
-                 for s, h in zip(flat, before.ravel(), strict=True)],
-        roof=[s.on_a_roof for s in flat],
-        model=MODEL_VERSION,
+        hours=listed(light.morning + light.afternoon, 2), morning=listed(light.morning, 2),
+        roof=[s.on_a_roof for s in flat], model=MODEL_VERSION,
+        sky=listed(light.sky, 3), relative=listed(light.relative, 3),
+        expected=listed(light.expected, 2),
     )
+
+
+def _cell_for(parts: list[Part], box: tuple[float, float, float, float], *,
+              terrain: bool) -> float:
+    """The finest cell the budget buys over this box, once a box no cell could
+    make affordable has been refused. What the raster pays for is parts, not
+    obstacles (review, 2026-09-22), and a crown that drops its leaves makes it
+    sweep the sky twice (doc 118)."""
+    min_x, min_y, max_x, max_y = box
+    near = sum(1 for p in parts if stands_in([(float(x), float(y)) for x, y in p.corners], box))
+    deciduous = any(p.bare_transmission is not None for p in parts)
+    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain, deciduous)
+    return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), len(parts),
+                         near, terrain, deciduous)
 
 
 def _exact(element: object) -> str:

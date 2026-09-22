@@ -49,8 +49,9 @@ include = ["ninanatur*"]
 [tool.setuptools.package-data]
 "ninanatur.web" = ["static/*"]
 # The runtime catalogue travels with the code it was built against — plant data
-# is derived from static sources, gardens are not.
-"ninanatur.data" = ["catalogue.sqlite"]
+# is derived from static sources, gardens are not. So does the DWD's climate
+# (doc 118), which no garden should wait on a request for.
+"ninanatur.data" = ["catalogue.sqlite", "climate_de.json.gz"]
 
 [project.scripts]
 ninanatur-ingest = "ninanatur.ingest.cli:main"

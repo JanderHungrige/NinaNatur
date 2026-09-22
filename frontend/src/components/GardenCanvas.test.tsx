@@ -26,7 +26,7 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
     sun_hours: 6.4,
     slope_deg: null,
     aspect_deg: null,
-    light_computed_at: '2026-08-28T10:00:00+00:00',
+    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00',
     height_above_ground: 0,
     label: null,
     plantings: [],
@@ -111,7 +111,8 @@ describe('GardenCanvas', () => {
 });
 
 describe('GardenCanvas — what the sun map says under the pointer', () => {
-  function sunMap(hours: (number | null)[], roof = hours.map(() => false)) {
+  function sunMap(hours: (number | null)[], roof = hours.map(() => false),
+    sky: number[] = [], expected: number[] = []) {
     return {
       map: {
         cell_m: 1, min_x: -1, min_y: -1, cols: 2, rows: 2,
@@ -122,20 +123,21 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
         stale: false,
         morning: hours.map((h) => (h === null ? null : h / 2)),
         misplaced: [],
-        model: '',
+        model: '', sky, relative: [], expected,
       },
       mode: 'hours' as const,
     };
   }
 
-  function plan(hours: (number | null)[] | null, roof?: boolean[]) {
+  function plan(hours: (number | null)[] | null, roof?: boolean[], sky?: number[],
+    expected?: number[]) {
     render(
       <GardenCanvas
         garden={garden()}
         selectedBedId={null}
         onSelectBed={vi.fn()}
         size={{ widthPx: 600, heightPx: 400 }}
-        {...(hours === null ? {} : { sunMap: sunMap(hours, roof) })}
+        {...(hours === null ? {} : { sunMap: sunMap(hours, roof, sky, expected) })}
       />,
     );
     const surface = screen.getByTestId('canvas-surface');
@@ -157,6 +159,14 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
     const surface = plan([9.2, 9.2, 9.2, 9.2]);
     fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
     expect(screen.getByTestId('sun-readout').textContent).toBe('9.2 h · volle Sonne');
+  });
+
+  it('adds the sunshine to expect and the sky the spot sees (doc 118)', () => {
+    const surface = plan([4.0, 4.0, 4.0, 4.0], undefined, [0.6, 0.6, 0.6, 0.6],
+      [1.75, 1.75, 1.75, 1.75]);
+    fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
+    expect(screen.getByTestId('sun-readout').textContent).toBe(
+      '4.0 h · sonnig · erwartbar 1.8 h · sieht 60 % des Himmels');
   });
 
   it('says when the hours it is reading are a roof', () => {

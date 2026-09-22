@@ -104,6 +104,10 @@ export function washFor(hours: number): Wash | null {
 export interface AtPoint {
   hours: number;
   onARoof: boolean;
+  /** The sky the cell sees, 0–1, and the sunshine it can expect (doc 118);
+   *  null on a map computed before them. */
+  sky: number | null;
+  expected: number | null;
 }
 
 export function atPoint(map: LightMap, x: number, y: number): AtPoint | null {
@@ -119,7 +123,11 @@ export function atPoint(map: LightMap, x: number, y: number): AtPoint | null {
   const index = row * map.cols + col;
   const hours = map.hours[index];
   if (hours === undefined || hours === null) return null;
-  return { hours, onARoof: map.roof[index] === true };
+  return {
+    hours, onARoof: map.roof[index] === true,
+    // A map stored before doc 118 has neither list.
+    sky: map.sky?.[index] ?? null, expected: map.expected?.[index] ?? null,
+  };
 }
 
 /**

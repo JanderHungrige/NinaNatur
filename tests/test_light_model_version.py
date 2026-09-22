@@ -58,7 +58,7 @@ def test_a_map_another_model_drew_reads_stale(
     token = _drawn(client)
     client.post(f"/api/v1/gardens/{token}/light")
     assert client.get(f"/api/v1/gardens/{token}/light").json()["stale"] is False
-    monkeypatch.setattr(light, "MODEL_VERSION", "26.3")
+    monkeypatch.setattr(light, "MODEL_VERSION", light.MODEL_VERSION + ".next")
     assert client.get(f"/api/v1/gardens/{token}/light").json()["stale"] is True
 
 
@@ -95,6 +95,7 @@ def test_a_map_stored_before_versions_says_so() -> None:
 #: its answers are pinned here — so no map of an older model's reads current.
 ANSWERS: dict[str, tuple[float, float, float]] = {
     "26.2": (13.08, 5.71, 4.35),
+    "26.3": (13.08, 5.71, 4.35),
 }
 
 

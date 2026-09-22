@@ -996,6 +996,8 @@ export interface components {
             ellenberg_n: number | null;
             /** Ellenberg R */
             ellenberg_r: number | null;
+            /** Expected Sun H */
+            expected_sun_h: number | null;
             /** Height Above Ground */
             height_above_ground: number;
             /** Kind */
@@ -1014,8 +1016,12 @@ export interface components {
             points: number[][] | null;
             /** Polygon */
             polygon: number[][];
+            /** Relative Light */
+            relative_light: number | null;
             /** Shape */
             shape: string;
+            /** Sky View */
+            sky_view: number | null;
             /** Slope Deg */
             slope_deg: number | null;
             /** Soil Type */
@@ -1172,6 +1178,8 @@ export interface components {
             detail?: string | null;
             /** Licence */
             licence: string;
+            /** Licence Url */
+            licence_url?: string | null;
             /** Name */
             name: string;
         };
@@ -1409,6 +1417,11 @@ export interface components {
             cols: number;
             /** Computed At */
             computed_at: string;
+            /**
+             * Expected
+             * @default []
+             */
+            expected: (number | null)[];
             /** Hours */
             hours: (number | null)[];
             /** Max Hours */
@@ -1426,10 +1439,20 @@ export interface components {
             model: string;
             /** Morning */
             morning: (number | null)[];
+            /**
+             * Relative
+             * @default []
+             */
+            relative: (number | null)[];
             /** Roof */
             roof: boolean[];
             /** Rows */
             rows: number;
+            /**
+             * Sky
+             * @default []
+             */
+            sky: (number | null)[];
             /** Stale */
             stale: boolean;
         };

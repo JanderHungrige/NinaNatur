@@ -25,7 +25,7 @@ function bed(plantings: Bed['plantings']): Bed {
     polygon: [[0, 0], [3, 0], [3, 2], [0, 2]],
     soil_type: null, moisture: null, ellenberg_l: null, ellenberg_m: null,
     ellenberg_n: null, ellenberg_r: null, sun_hours: null,
-    light_computed_at: null, height_above_ground: 0, label: null, plantings,
+    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: null, height_above_ground: 0, label: null, plantings,
   } as Bed;
 }
 

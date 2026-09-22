@@ -57,6 +57,21 @@ describe('where the numbers come from', () => {
     expect(screen.queryByRole('link')).toBeNull();
   });
 
+  it('names every licence, and links it where its text is known (2026-09-22)', () => {
+    render(<SourceCredits credits={[{
+      about: 'climate', name: 'DWD Klimadaten', licence: 'CC-BY-4.0',
+      attribution: 'Datenbasis: Deutscher Wetterdienst, Einzelwerte gemittelt',
+      detail: '10 km, Monatsmittel',
+      licence_url: 'https://creativecommons.org/licenses/by/4.0/',
+    }, HORIZON]} />);
+    expect(screen.getByText(/^Klima: DWD Klimadaten/)).toBeDefined();
+    const link = screen.getByRole('link', { name: 'CC-BY-4.0' });
+    expect(link.getAttribute('href')).toBe('https://creativecommons.org/licenses/by/4.0/');
+    // Copernicus has terms and no licence page to link: named, not linked.
+    expect(screen.getByText('Lizenz Copernicus')).toBeDefined();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+  });
+
   it('and draws nothing at all for a garden that rests on nothing', () => {
     const { container } = render(<SourceCredits credits={[]} />);
     expect(container.innerHTML).toBe('');

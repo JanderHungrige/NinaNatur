@@ -182,6 +182,21 @@ def test_no_env_file_can_reach_an_image() -> None:
     assert lines.index("!ninanatur/data/catalogue.sqlite") > lines.index("data")
 
 
+def test_every_data_file_the_code_reads_is_installed_with_it() -> None:
+    """The climate table shipped in the tree and not in the package: an install
+    had no climate, and only the image's second copy of the source hid it."""
+    from fnmatch import fnmatch
+
+    declared = tomllib.loads((ROOT / "pyproject.toml").read_text())[
+        "tool"]["setuptools"]["package-data"]["ninanatur.data"]
+    shipped = [p.name for p in (ROOT / "ninanatur/data").iterdir()
+               if p.is_file() and p.suffix not in (".py", ".pyc")
+               and not p.name.startswith(".")]
+    assert shipped, "ninanatur/data holds no data file"
+    for name in shipped:
+        assert any(fnmatch(name, pattern) for pattern in declared), name
+
+
 def test_a_pull_request_builds_the_image_but_never_pushes_it() -> None:
     """Dependabot's base-image and action bumps change the Dockerfile and the
     build job — and a pull request skipped that job entirely, so they passed on

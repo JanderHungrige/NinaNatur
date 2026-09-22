@@ -34,7 +34,7 @@ function bed(): GardenOut['beds'][number] {
     constraint_hint: null, name: 'Südbeet', polygon: [[0, -12], [6, -12], [6, -8], [0, -8]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: 8, ellenberg_m: 5, ellenberg_n: 5.5,
     ellenberg_r: 6.5, sun_hours: 6.4, slope_deg: null, aspect_deg: null,
-    light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null, plantings: [],
+    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null, plantings: [],
   };
 }
 

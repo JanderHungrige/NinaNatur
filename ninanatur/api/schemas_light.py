@@ -41,6 +41,13 @@ class LightMap(BaseModel):
     #: The light model that computed it (`solar.light.MODEL_VERSION`); empty
     #: for a map computed before Wave 26 gave models a version.
     model: str = ""
+    #: In step with `hours`, empty on a map computed before them (doc 118): the
+    #: share of the sky each cell sees (crowns in leaf), its relative
+    #: illuminance — sun and sky as a share of open ground's light, in the
+    #: garden's climate — and the hours of sunshine it can expect.
+    sky: list[float | None] = []
+    relative: list[float | None] = []
+    expected: list[float | None] = []
     #: Of those hours, the ones before the sun crosses due south. Empty on a
     #: grid computed before the split existed; the next rebuild fills it, and
     #: nulls line up with `hours`.
@@ -114,6 +121,9 @@ class CreditOut(BaseModel):
     attribution: str
     #: How fine it is, in the source's own terms. Null where it does not say.
     detail: str | None = None
+    #: The licence's text, which CC BY 4.0 asks to be linked; null where none
+    #: is known (`credits.LICENCE_URLS`).
+    licence_url: str | None = None
 
 
 class ShadowFrame(BaseModel):

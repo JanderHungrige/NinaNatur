@@ -26,7 +26,7 @@ export function bed(overrides: Partial<Bed> = {}): Bed {
     constraint_hint: null, name: 'Südbeet', polygon: [[0, 0], [3, 0], [3, 2], [0, 2]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: 7.8, ellenberg_m: 5, ellenberg_n: 5.5,
     ellenberg_r: 6.5, sun_hours: 6.4, slope_deg: null, aspect_deg: null,
-    light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null,
+    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null,
     plantings: [],
     ...overrides,
   };
@@ -98,5 +98,5 @@ export const suggestions = (): BedSuggestions => ({
 export const lightMap = (): LightMap => ({
   cell_m: 1, min_x: 0, min_y: 0, cols: 2, rows: 2, hours: [1, 1, 7, 7],
   roof: [false, false, false, false], max_hours: 7, computed_at: '2026-09-04T10:00:00+00:00',
-  stale: false, morning: [0.5, 0.5, 3.5, 3.5], misplaced: [], model: '',
+  stale: false, morning: [0.5, 0.5, 3.5, 3.5], misplaced: [], model: '', sky: [], relative: [], expected: [],
 } as LightMap);
