@@ -89,7 +89,10 @@ def test_the_query_asks_for_outlines_and_for_relations() -> None:
         return {"elements": []}
 
     buildings_in(52.3, 13.1, 52.5, 13.3, fetch=fetch)
-    assert "out tags geom" in seen["data"]
+    # `out geom`, not `out tags geom`: at `tags` Overpass leaves a relation's
+    # members out, and every multipolygon building was skipped (2026-09-22).
+    assert seen["data"].endswith("out geom;")
+    assert "out tags" not in seen["data"]
     assert 'relation["building"]' in seen["data"]
 
 

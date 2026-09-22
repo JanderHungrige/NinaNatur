@@ -9,6 +9,7 @@ depends_on: [31-map-selection, 59-osm-streets, 96-a-theme-is-a-thing, 106-which-
 relates: [65-the-shade-switch, 68-which-ground-and-whose, 97-draft-sketch-in-svg, 112-drawing-at-any-zoom]
 source_files:
   - ninanatur/geo/osm_landcover.py
+  - ninanatur/geo/osm_rings.py
   - ninanatur/geo/landcover_clip.py
   - ninanatur/geo/landcover_store.py
   - ninanatur/garden/landcover_sync.py
@@ -67,7 +68,7 @@ known_issues:
   - "The areas reach 150 m past the plot. Zoomed out past about 330 m the edge of that box shows as a straight line where the colours stop."
   - "OpenStreetMap maps private plots as 'residential' almost everywhere (measured: the Kleinmachnow plot lies in one landuse=residential polygon). The plot is cut out and keeps its own ground; the neighbours' gardens stay the palest neutral."
   - "Relation assembly is tested on canned answers only. The one live request used `out tags geom`, which leaves relations' members out; the query now says `out geom`, not re-measured live (one request, as agreed)."
-  - "The buildings query in `geo/osm.py` still says `out tags geom`, so its multipolygon buildings arrive without members and are skipped — the same finding, outside this feature."
+  - "~~The buildings query in `geo/osm.py` still says `out tags geom`, so its multipolygon buildings arrive without members and are skipped — the same finding, outside this feature.~~ Fixed 2026-09-22 (doc 63); relation assembly verified live there."
   - "The shade rebuild of a garden that has no surroundings yet costs one Overpass request after its answer, two where the garden has OSM streets (the offset), once per garden and never two at a time. A failure is left alone for six hours; the pause is kept in memory, so a restart forgets it and costs one more attempt. A fetch skipped for want of room records nothing, so a later rebuild asks again."
   - "`frontend/src/api/client.ts` was 602 lines before this feature and is 609 after; the length hook asks for a split of the client, which is not this feature's to make."
 sister_projects: []

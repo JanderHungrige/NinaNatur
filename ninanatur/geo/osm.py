@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from ninanatur.geo.osm_rings import assemble, with_holes
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.surroundings import OsmBuilding
 from ninanatur.ingest.http import HttpError, get_json
@@ -102,8 +103,10 @@ def _overpass_query(south: float, west: float, north: float, east: float) -> str
         # `geom`, not `center`. A centre alone says nothing about size, so every
         # building was judged for shading — and drawn — as the same 9 m square,
         # a 60 m barn included. Overpass answers one or the other, never both,
-        # which is why the centre is computed below.
-        f"out tags geom;"
+        # which is why the centre is computed below. And `geom`, not `tags geom`:
+        # at `tags` a relation comes back without its members, so every
+        # building drawn as a multipolygon was skipped (2026-09-22).
+        f"out geom;"
     )
 
 
@@ -116,48 +119,61 @@ def buildings_in(
         return []
     found: list[OsmBuilding] = []
     for element in raw.get("elements", []):
-        outline = _outline_of(element)
-        centre = _centre_of(element, outline)
-        # Neither an outline nor a centre is nothing to place. A relation whose
-        # members were not returned lands here, which is why it is skipped
-        # rather than defaulted to somewhere.
-        if centre is None:
+        if not isinstance(element, dict):
             continue
-        found.append(
-            OsmBuilding(
-                osm_id=int(element.get("id", 0)),
-                centre=centre,
-                outline=outline,
-                tags={str(k): str(v) for k, v in (element.get("tags") or {}).items()},
+        # One building per outer ring: a multipolygon can be two separate
+        # parts, a house and its barn under one relation.
+        for outline in _outlines_of(element) or [[]]:
+            centre = _centre_of(element, outline)
+            # Neither an outline nor a centre is nothing to place. A relation
+            # whose members were not returned lands here, which is why it is
+            # skipped rather than defaulted to somewhere.
+            if centre is None:
+                continue
+            found.append(
+                OsmBuilding(
+                    osm_id=int(element.get("id", 0)),
+                    centre=centre,
+                    outline=outline,
+                    tags={str(k): str(v) for k, v in (element.get("tags") or {}).items()},
+                )
             )
-        )
     return found
 
 
-def _outline_of(element: dict[str, Any]) -> list[LatLon]:
-    """The node list, from a way's own geometry or a relation's members."""
+def _outlines_of(element: dict[str, Any]) -> list[list[LatLon]]:
+    """The outlines: a way's own geometry, or a relation's outer rings.
+
+    A relation's outer ring is often several ways, and they are joined end to
+    end (`osm_rings.assemble`). Its holes are kept as courtyards: each is
+    joined to the ring around it by a slit of no width, so the courtyard stays
+    open ground. Concatenating the members instead gave a shape spanning both —
+    which is how a courtyard building came out enormous. A relation whose ways
+    will not close falls back to its first outer way, as before.
+    """
     geometry = element.get("geometry")
     if isinstance(geometry, list):
-        return [
-            LatLon(lat=float(p["lat"]), lon=float(p["lon"]))
-            for p in geometry
-            if isinstance(p, dict) and "lat" in p and "lon" in p
-        ]
-    # Outer rings only. A multipolygon's members are outer rings *and* holes,
-    # and concatenating them gives a shape spanning both — which is how a
-    # courtyard building came out enormous. One outer ring is enough for a
-    # shadow; the second is rare and the hole is not a wall.
-    for member in element.get("members") or []:
-        if not isinstance(member, dict) or member.get("role") != "outer":
-            continue
-        ring = [
-            LatLon(lat=float(p["lat"]), lon=float(p["lon"]))
-            for p in member.get("geometry") or []
-            if isinstance(p, dict) and "lat" in p and "lon" in p
-        ]
+        return [_points(geometry)]
+    members = [m for m in element.get("members") or [] if isinstance(m, dict)]
+    outers = assemble([_points(m.get("geometry")) for m in members if m.get("role") == "outer"])
+    inners = assemble([_points(m.get("geometry")) for m in members if m.get("role") == "inner"])
+    if outers:
+        return [with_holes(ring, inners) for ring in outers]
+    for member in members:
+        ring = _points(member.get("geometry")) if member.get("role") == "outer" else []
         if len(ring) >= 3:
-            return ring
+            return [ring]
     return []
+
+
+def _points(geometry: object) -> list[LatLon]:
+    if not isinstance(geometry, list):
+        return []
+    return [
+        LatLon(lat=float(p["lat"]), lon=float(p["lon"]))
+        for p in geometry
+        if isinstance(p, dict) and "lat" in p and "lon" in p
+    ]
 
 
 def _centre_of(element: dict[str, Any], outline: list[LatLon]) -> LatLon | None:

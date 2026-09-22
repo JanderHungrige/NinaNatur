@@ -8,6 +8,7 @@ relates: []
 source_files:
   - ninanatur/geo/surroundings.py
   - ninanatur/geo/osm.py
+  - ninanatur/geo/osm_rings.py
   - ninanatur/geo/projection.py
   - ninanatur/api/geo.py
 routes:
@@ -16,9 +17,10 @@ models: [element]
 test_files:
   - tests/test_surroundings_reach.py
   - tests/test_osm.py
+  - tests/test_osm_building_relations.py
   - tests/test_map_selection.py
 data_flow: reads-existing
-last_synced: 2026-09-04
+last_synced: 2026-09-22
 status: complete
 phase: all
 mdd_version: 11
@@ -97,6 +99,21 @@ being 8.9 m.
 
 A test asserting the old choice — "a centre is all the shading model needs" —
 was reversed rather than deleted. It was a reasonable belief and it was wrong.
+
+### Buildings drawn as multipolygons were missing (2026-09-22)
+
+`out tags geom` has a catch the landcover work found live (doc 114): at `tags`
+Overpass returns a relation with its tags and a bounding box, and no members.
+Every building drawn as a multipolygon — a courtyard building, a farm range, a
+house and its barn under one relation — had no outline and no centre, and was
+skipped without a word. The query now ends in `out geom`, which carries the
+tags as well. A relation's outer ring, often several ways, is joined end to end
+(`geo/osm_rings.assemble`, shared with the landcover); its holes are kept as
+courtyards, each joined to the ring around it by a slit of no width, so the
+courtyard stays open ground for the shadow model, for a bed drawn in it, and on
+the plan. Each outer ring is a building of its own. One live request round
+Berlin's Rotes Rathaus: 4 buildings where 2 came before, the Rathaus itself one
+outline of 137 corners with its three courtyards open.
 
 ## What did not change
 
