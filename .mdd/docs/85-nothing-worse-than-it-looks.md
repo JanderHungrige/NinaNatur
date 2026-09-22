@@ -31,6 +31,7 @@ source_files:
   - .github/workflows/healthz.yml
   - requirements.txt
   - requirements-dev.txt
+  - scripts/compile_dev_lock.py
 routes: []
 models: [rate_limit, session, catalogue_meta]
 test_files:
@@ -55,7 +56,7 @@ test_files:
   - tests/test_served_fast.py
   - tests/test_measure_is_bounded.py
 data_flow: mixed
-last_synced: 2026-09-11
+last_synced: 2026-09-22
 status: complete
 phase: all
 mdd_version: 11
@@ -209,6 +210,17 @@ for the health check and rolls back; and a container that runs read-only with
 every capability dropped and memory, process and CPU limits. *Held by*
 `tests/test_supply_chain.py`, `tests/test_auto_deploy.py`,
 `tests/test_container_hardening.py`.
+
+Each package is pinned in one lock only (2026-09-22). The dev lock was the
+image's lock plus the tools, so every runtime pin stood twice; Dependabot edits
+`requirements.txt` alone, and every Python proposal failed CI on the copy it
+left behind. `scripts/compile_dev_lock.py` compiles the tools against the
+image's lock as before, then leaves out whatever the image's lock pins, keeping
+every pin it already had; CI installs both files, so it still tests exactly
+what ships. The tools are listed in the script, not in a `requirements-dev.in`:
+Dependabot pairs a `.txt` with the `.in` of its name and compiles it again
+itself, without the image's lock, which brought the runtime pins straight back
+(review). Without one, it bumps the dev lock's pins in place.
 
 **The two hand-written parsers trusted their input.** The building survey's
 CityGML went through the standard library's XML parser; a GeoTIFF header could

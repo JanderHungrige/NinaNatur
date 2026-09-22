@@ -44,6 +44,8 @@ Every value stored carries its source, licence and retrieval date.
 ## Development
 
 ```bash
-python3.13 -m venv .venv && .venv/bin/pip install -e . pytest ruff mypy
+python3.13 -m venv .venv
+.venv/bin/pip install --require-hashes -r requirements.txt -r requirements-dev.txt
+.venv/bin/pip install --no-deps -e .
 .venv/bin/python -m pytest -q && .venv/bin/ruff check . && .venv/bin/mypy ninanatur
 ```

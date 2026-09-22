@@ -67,13 +67,33 @@ def test_every_locked_line_carries_its_hashes() -> None:
             assert "--hash=sha256:" in block, f"{path.name}: {block.splitlines()[0]} has no hash"
 
 
-def test_ci_tests_exactly_what_the_image_ships() -> None:
-    """The finding itself: two resolutions that merely usually agreed."""
-    shipped, tested = _pins(LOCK), _pins(DEV_LOCK)
-    for name, version in shipped.items():
-        assert tested.get(name) == version, (
-            f"the image ships {name}=={version}, CI tests {tested.get(name)}"
-        )
+def test_each_package_is_pinned_in_one_lock_only() -> None:
+    """CI installs the image's lock itself and the tools beside it, so it tests
+    what ships. A second copy of a runtime pin in the dev lock is what every
+    Dependabot proposal left behind and failed on (2026-09-22)."""
+    twice = sorted(set(_pins(LOCK)) & set(_pins(DEV_LOCK)))
+    assert not twice, f"pinned in both locks: {twice} (python scripts/compile_dev_lock.py)"
+
+
+def test_no_lock_is_paired_with_an_in_file() -> None:
+    """Dependabot compiles a `.txt` again from the `.in` of the same name —
+    without the image's lock as a constraint — and the runtime pins came back
+    into the dev lock at other versions (review, 2026-09-22). The tools are
+    listed in `scripts/compile_dev_lock.py` instead."""
+    for lock in (LOCK, DEV_LOCK):
+        assert not lock.with_suffix(".in").exists(), f"{lock.with_suffix('.in').name} is back"
+
+
+def test_the_dev_lock_keeps_only_what_the_image_does_not_pin() -> None:
+    from scripts.compile_dev_lock import dev_only
+
+    compiled = (
+        "fastapi==1.0 \\\n    --hash=sha256:aa\n    # via app\n"
+        "pytest==9.0 \\\n    --hash=sha256:bb\n    # via TOOLS in scripts/compile_dev_lock.py\n"
+    )
+    kept = dev_only(compiled, {"fastapi"})
+    assert "pytest==9.0" in kept and "fastapi==" not in kept
+    assert kept.startswith("# The tools CI installs")
 
 
 def test_the_lock_is_for_the_python_the_image_runs() -> None:
@@ -92,7 +112,7 @@ def test_the_image_installs_the_hashed_lock_and_nothing_else() -> None:
 
 def test_ci_installs_the_hashed_dev_lock() -> None:
     text = DEPLOY.read_text()
-    assert "pip install --require-hashes -r requirements-dev.txt" in text
+    assert "pip install --require-hashes -r requirements.txt -r requirements-dev.txt" in text
     assert "pip install --no-deps -e ." in text
     assert "pip install -e . pytest" not in text
 

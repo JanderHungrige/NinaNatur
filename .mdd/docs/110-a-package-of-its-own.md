@@ -106,8 +106,9 @@ in geokachel, tag, let Trusted Publishing release, bump the pin here. What
 makes that bearable is that doc 109's check says *when* a fix is needed, and a
 release is `git tag && git push`.
 
-So this repository depends on it like any other package, hash-pinned in both
-locks so CI tests exactly what the image ships:
+So this repository depends on it like any other package, hash-pinned in
+`requirements.txt` — the one lock that pins it; CI installs that lock beside the
+tools, so it tests exactly what the image ships (doc 85, since 2026-09-22):
 
 ```
 geokachel==0.1.0 \
@@ -117,7 +118,8 @@ geokachel==0.1.0 \
 
 Pinned exactly, not `>=`: a new state should arrive because somebody chose it,
 not because a resolver did. The supply-chain test caught `requirements-dev.txt`
-missing it on the first run — the drift it exists to catch.
+missing it on the first run — the drift it exists to catch, and the reason each
+package is now pinned in one lock only.
 
 ## Published without a token
 
