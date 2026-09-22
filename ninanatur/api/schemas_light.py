@@ -121,6 +121,8 @@ class ShadowFrame(BaseModel):
     minute: int
     altitude: float
     azimuth: float
+    #: Every shadow at this moment as rings — outlines anticlockwise, holes
+    #: clockwise — drawn as one path under the non-zero rule (doc 116).
     polygons: list[list[list[float]]]
 
 

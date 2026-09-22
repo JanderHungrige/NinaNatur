@@ -14,11 +14,10 @@ plan reads as afternoon at a glance.
 """
 from __future__ import annotations
 
-import math
 from datetime import UTC, datetime, timedelta
 
 from ninanatur.solar.position import Location, SunPosition, sun_position
-from ninanatur.solar.shading import shadow_length
+from ninanatur.solar.shading import shadow_offset
 
 #: The drawing's date. A year is needed for the arithmetic and nothing turns on
 #: which one: the sun of mid-June repeats.
@@ -51,12 +50,8 @@ def drawing_shadow(height_m: float | None, sun: SunPosition) -> tuple[float, flo
     """
     if height_m is None or height_m <= 0:
         return None
-    length = shadow_length(height_m, sun.altitude)
-    if length <= 0:
-        return None
-    # Away from the sun, as `shading.shadow_polygon` sweeps a footprint.
-    azimuth = math.radians(sun.azimuth)
-    return -math.sin(azimuth) * length, -math.cos(azimuth) * length
+    # Away from the sun, as the day's shadows are swept (`shading.shadow_offset`).
+    return shadow_offset(height_m, sun)
 
 
 __all__ = [

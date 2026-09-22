@@ -25,7 +25,7 @@ from ninanatur.garden.footprint import covers
 from ninanatur.solar.light import MINUTE_STEP, _season_days
 from ninanatur.solar.position import Location, SunPosition, sun_position
 from ninanatur.solar.reach import is_convex, near_edge
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_polygon
+from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_hull
 
 
 @dataclass(frozen=True)
@@ -288,7 +288,7 @@ def shadow_field(
 
 
 def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:
-    polygon = shadow_polygon(obstacle, sun)
+    polygon = shadow_hull(obstacle, sun)
     xs = [p[0] for p in polygon]
     ys = [p[1] for p in polygon]
     azimuth = math.radians(sun.azimuth)

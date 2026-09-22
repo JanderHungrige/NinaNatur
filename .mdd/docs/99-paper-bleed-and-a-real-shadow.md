@@ -84,9 +84,13 @@ gable rather than of its ridge.
 **The shape is swept, not moved.** Offsetting the outline by eight metres
 leaves a gap between a house and its own shadow, which reads as a second
 building; the shadow is the ground the thing hides all the way over. So the
-mark is the hull of the outline and its offset copy (`sweep`), which is the
-same hull `solar/shading.shadow_polygon` takes — the drawing and the light
-model draw one outline, not two.
+mark is the outline swept (`canvas/sweep.ts`): for a convex outline the hull
+of it and its offset copy, for a concave one the outline, its copy and the band
+each wall sweeps, drawn as one path under the non-zero rule (Wave 26, doc 116;
+it was the hull for every outline, which filled an L-shaped house's open
+corner). `solar/sweep.shadow_shape` sweeps the same way for the day's shadows,
+so the drawing and the light model draw one shadow, not two. An outline that
+crosses itself keeps the hull here.
 
 And it is **not wobbled**. His drop shadow was a pen mark and wobbled like one;
 a cast shadow has the edge the wall has. Dropping the wobble from 51 shadows on

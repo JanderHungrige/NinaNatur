@@ -546,3 +546,7 @@ types-requests==2.33.0.20260906 \
     --hash=sha256:76ab8a0fb736744a0c3deee7aa57b2927e301f078d9e61f5391b3e92002416b9 \
     --hash=sha256:9f53622652bd921ead7a54d665be1b8d518165c8b51cc9d68d944cd6b6bfa8fb
     # via TOOLS in scripts/compile_dev_lock.py
+types-shapely==2.1.0.20260728 \
+    --hash=sha256:7299a62025528b3f0cc5af37095f05fbe7d76d399bdc8d7ea9b3d395e988f547 \
+    --hash=sha256:8ec23a5aa484c1ec7bbc56aa353cc230ae63e38e0f35a6e4b79a011d99bcfcc2
+    # via TOOLS in scripts/compile_dev_lock.py

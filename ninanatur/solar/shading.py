@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from ninanatur.garden.footprint import covers
 from ninanatur.solar.position import SunPosition
 from ninanatur.solar.reach import is_convex, near_edge
+from ninanatur.solar.sweep import convex_hull, shadow_shape
 
 # Below this the sun is weak and in practice blocked by whatever surrounds the
 # garden. It also bounds the shadow: 1/tan(altitude) grows without limit as the
@@ -99,47 +100,54 @@ def shadow_length(height: float, altitude: float) -> float:
     return height / math.tan(math.radians(altitude))
 
 
-def shadow_polygon(obstacle: Obstacle, sun: SunPosition) -> list[tuple[float, float]]:
-    """The ground this object shades, at this sun position.
+def shadow_offset(height: float, sun: SunPosition) -> tuple[float, float] | None:
+    """How far and which way a thing this tall throws its shadow, in metres,
+    x east and y north — None where the sun is too low to count.
 
-    The footprint swept along the anti-solar direction by
-    `height / tan(altitude)`, and the convex hull of the original and the swept
-    copy. For a convex outline the hull is the shadow; for a concave one it is
-    generous — it covers the open ground in an L's inner corner — so the tests
-    of a point (`is_shaded`, `field.ShadowAt`) ask the exact question there.
+    Azimuth is clockwise from north, so the sun lies at (sin A, cos A) and the
+    shadow runs the other way.
     """
-    length = shadow_length(obstacle.height, sun.altitude)
+    length = shadow_length(height, sun.altitude)
     if length <= 0:
-        return list(obstacle.footprint)
-
-    # Azimuth is clockwise from north, so the sun lies at (sin A, cos A) and the
-    # shadow runs the other way.
+        return None
     azimuth = math.radians(sun.azimuth)
-    dx, dy = -math.sin(azimuth) * length, -math.cos(azimuth) * length
+    return -math.sin(azimuth) * length, -math.cos(azimuth) * length
+
+
+def shadow_hull(obstacle: Obstacle, sun: SunPosition) -> list[tuple[float, float]]:
+    """A cheap superset of the ground this object shades, at this sun position.
+
+    The convex hull of the footprint and its copy swept along the shadow. For a
+    convex outline that is the shadow; for a concave one it covers the open
+    ground in an L's inner corner, so it is only ever a first rejection: the
+    point tests (`is_shaded`, `field.ShadowAt`) ask the exact question inside
+    it, and nothing draws it (doc 116). Until Wave 26 this was
+    `shadow_polygon`, and it was drawn.
+    """
+    offset = shadow_offset(obstacle.height, sun)
+    if offset is None:
+        return list(obstacle.footprint)
+    dx, dy = offset
     swept = [(px + dx, py + dy) for px, py in obstacle.footprint]
-    return _convex_hull(list(obstacle.footprint) + swept)
+    return convex_hull(list(obstacle.footprint) + swept)
 
 
-def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    """Andrew's monotone chain. Small inputs — a rectangle's shadow is eight
-    points before the hull and four to six after."""
-    unique = sorted(set(points))
-    if len(unique) < 3:
-        return unique
+def shadow_rings(obstacles: list[Obstacle], sun: SunPosition) -> list[list[tuple[float, float]]]:
+    """Every shadow at this moment, as rings to be drawn in one path under the
+    non-zero rule (doc 116): outlines anticlockwise, holes clockwise.
 
-    def half(source: list[tuple[float, float]]) -> list[tuple[float, float]]:
-        chain: list[tuple[float, float]] = []
-        for p in source:
-            while len(chain) >= 2 and _cross(chain[-2], chain[-1], p) <= 0:
-                chain.pop()
-            chain.append(p)
-        return chain[:-1]
-
-    return half(unique) + half(unique[::-1])
-
-
-def _cross(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]) -> float:
-    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    Exact for concave outlines, so what the plan draws is what the light model
+    counts; a courtyard the sun still reaches is a hole. Each obstacle's shadow
+    is its own shape — two that overlap add up to one filled area in the path,
+    and are not merged here, which is what a union of every shadow in the
+    garden cost a frame (review, 2026-09-22).
+    """
+    rings: list[list[tuple[float, float]]] = []
+    for obstacle in obstacles:
+        offset = shadow_offset(obstacle.height, sun)
+        if offset is not None:
+            rings.extend(shadow_shape(list(obstacle.footprint), *offset))
+    return rings
 
 
 def is_shaded(
@@ -165,7 +173,7 @@ def is_shaded(
         return False
 
     lifted = Obstacle(footprint=obstacle.footprint, height=effective)
-    if not covers(shadow_polygon(lifted, sun), (point.x, point.y)):
+    if not covers(shadow_hull(lifted, sun), (point.x, point.y)):
         return False
     if is_convex(obstacle.footprint):
         return True

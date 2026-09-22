@@ -17,7 +17,7 @@ from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.roofs import Roof, shading_height
 from ninanatur.solar.light import MINUTE_STEP
 from ninanatur.solar.position import Location, sun_position
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_polygon
+from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_rings
 
 #: The months a garden is watched in. The same window the light model uses, and
 #: for the same reason: December says nothing about where a plant can live.
@@ -35,6 +35,9 @@ class Frame:
     minute: int
     altitude: float
     azimuth: float
+    #: Every shadow as rings — outlines anticlockwise, holes clockwise — drawn
+    #: as one path under the non-zero rule (doc 116). Until Wave 26 one convex
+    #: hull per obstacle, which filled an L's open corner.
     polygons: list[list[tuple[float, float]]]
 
 
@@ -68,7 +71,7 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
                     minute=moment.hour * 60 + moment.minute,
                     altitude=sun.altitude,
                     azimuth=sun.azimuth,
-                    polygons=[shadow_polygon(o, sun) for o in obstacles],
+                    polygons=shadow_rings(obstacles, sun),
                 )
             )
         moment += step

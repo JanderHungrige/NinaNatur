@@ -244,6 +244,11 @@ drawn with light, not with more dark.
 
 `GET .../shadows?month=` returns the shadows of one middling day — the 15th, at
 every half hour the sun is above 5°. The day's player walks the plan through it.
+Each frame is every shadow at that moment as rings — outlines anticlockwise,
+holes clockwise — drawn as one path under the non-zero rule (Wave 26, doc 116).
+Until then it was one convex hull per obstacle, drawn one by one: an L-shaped
+house's open corner was drawn shaded where the map counted sun, and two shadows
+darkened where they overlapped. The route takes a heavy slot since then.
 
 **The player stands in this panel, directly under the chips** (`DayPlayer`, since
 2026-09-21). It used to be the dock's play button changing its meaning from

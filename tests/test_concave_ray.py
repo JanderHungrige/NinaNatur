@@ -32,7 +32,7 @@ from ninanatur.solar.field import _shadow_at, shadow_field
 from ninanatur.solar.light import bed_light_value
 from ninanatur.solar.position import Location, SunPosition
 from ninanatur.solar.reach import is_convex
-from ninanatur.solar.shading import Obstacle, Point, is_shaded, shadow_polygon
+from ninanatur.solar.shading import Obstacle, Point, is_shaded, shadow_hull
 
 Answer = Callable[[float, float], bool]
 STEP_M = 0.05
@@ -86,7 +86,7 @@ def _where_it_matters(rng: random.Random, prisms: list[tuple[Outline, float]],
     outline, top = rng.choice(prisms)
     # A millimetre's sweep is the outline's own hull.
     height = 0.001 if pick < 2 / 3 else top
-    hull = shadow_polygon(Obstacle(footprint=outline, height=height), sun)
+    hull = shadow_hull(Obstacle(footprint=outline, height=height), sun)
     xs, ys = [p[0] for p in hull], [p[1] for p in hull]
     for _ in range(50):
         x, y = rng.uniform(min(xs), max(xs)), rng.uniform(min(ys), max(ys))
@@ -98,7 +98,7 @@ def _where_it_matters(rng: random.Random, prisms: list[tuple[Outline, float]],
 def _hull_says(prisms: list[tuple[Outline, float]], sun: SunPosition, x: float, y: float,
                z: float) -> bool:
     """What the hull alone answered, before 2026-09-22."""
-    return any(covers(shadow_polygon(Obstacle(footprint=o, height=top - z), sun), (x, y))
+    return any(covers(shadow_hull(Obstacle(footprint=o, height=top - z), sun), (x, y))
                for o, top in prisms if top > z)
 
 

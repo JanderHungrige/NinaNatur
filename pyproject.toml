@@ -32,6 +32,12 @@ dependencies = [
     # is what makes a hundred-megabyte tile a few seconds rather than a minute.
     "laspy>=2.5",
     "lazrs>=0.6",
+    # Wave 26, feature 1 (doc 116): a concave house's shadow is a union of
+    # pieces, and a shadow can have a hole — a courtyard's lit ground. The day
+    # playback draws that union, and shapely (BSD-3, GEOS inside) computes it
+    # rather than a boolean routine written here. Roofs cast plane by plane
+    # (feature 5) need the same union.
+    "shapely>=2.0",
 ]
 
 # Explicit, not auto-discovered: setuptools' flat-layout discovery sees every
