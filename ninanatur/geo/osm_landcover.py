@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, TypeGuard
 
 from ninanatur.geo.osm import OVERPASS, Fetch, complete_or_fail, overpass_complete
+from ninanatur.geo.osm_rings import assemble
 from ninanatur.geo.projection import LatLon
 from ninanatur.ingest.http import get_json
 
@@ -224,43 +225,6 @@ def _points(geometry: Any) -> list[LatLon] | None:
 def _number(value: object) -> TypeGuard[float]:
     """A coordinate: an int or a float, never a string or a bool."""
     return isinstance(value, int | float) and not isinstance(value, bool)
-
-
-def assemble(pieces: list[list[LatLon] | None]) -> list[list[LatLon]]:
-    """Join ways end to end into closed rings, the last point not repeated.
-
-    A multipolygon's outline is usually several ways, each a stretch of it, in
-    no particular order or direction. Drawn one by one they are open lines, and
-    a filled open line closes itself with a straight edge — a wedge across the
-    plan. So a chain that cannot be closed is dropped, never drawn.
-    """
-    rings: list[list[LatLon]] = []
-    loose: list[list[LatLon]] = []
-    for piece in pieces:
-        if piece is None or len(piece) < 2:
-            continue
-        (rings if piece[0] == piece[-1] else loose).append(list(piece))
-    while loose:
-        ring = loose.pop()
-        while ring[0] != ring[-1]:
-            joined = _next_piece(ring[-1], loose)
-            if joined is None:
-                break
-            ring.extend(joined[1:])
-        if ring[0] == ring[-1]:
-            rings.append(ring)
-    return [ring[:-1] for ring in rings if len(ring) >= 4]
-
-
-def _next_piece(end: LatLon, loose: list[list[LatLon]]) -> list[LatLon] | None:
-    """The piece that continues from `end`, taken out of `loose` and turned to
-    run on from it; None if no piece touches it."""
-    for index, piece in enumerate(loose):
-        if piece[0] == end:
-            return loose.pop(index)
-        if piece[-1] == end:
-            return list(reversed(loose.pop(index)))
-    return None
 
 
 __all__ = ["KEY_ORDER", "LANDCOVER", "OsmArea", "assemble", "kind_of", "landcover_in",
