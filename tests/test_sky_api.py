@@ -76,6 +76,75 @@ def test_a_bed_says_its_sky_its_light_and_its_sunshine(client: TestClient) -> No
     assert north["relative_light"] > north["sun_hours"] / south["sun_hours"]
 
 
+def test_every_bed_is_matched_by_the_light_value_its_hours_and_sky_give(
+        client: TestClient) -> None:
+    """The owner's rule of 2026-09-22 (doc 118), as stored: the hours'
+    convention, floored by the sky in leaf — so the value can always be
+    worked back from the two numbers beside it."""
+    from ninanatur.solar.light import light_value
+
+    token = _garden(client)
+    client.post(f"/api/v1/gardens/{token}/light")
+    for bed in client.get(f"/api/v1/gardens/{token}").json()["beds"]:
+        assert bed["ellenberg_l"] == light_value(bed["sun_hours"], bed["sky_view"])
+
+
+def test_under_a_drawn_tree_the_value_stays_at_the_hours_floor(client: TestClient) -> None:
+    """A drawn tree is still an opaque prism from the ground (until feature 6):
+    inside it hours and sky both read 0, and the sky's floor took the bed to
+    0.0 where the hours had always held it at 2.5 (review, 2026-09-22)."""
+    token: str = client.post(
+        "/api/v1/gardens", json={"name": "G", "latitude": 51.25, "longitude": 7.15}
+    ).json()["share_token"]
+    client.post(f"/api/v1/gardens/{token}/obstacles", json={
+        "kind": "tree", "x": 0.0, "y": 0.0, "shape": "circle", "width": 8.0, "height": 10.0})
+    client.post(f"/api/v1/gardens/{token}/beds", json={
+        "name": "Baumscheibe", "polygon": [[-1.5, -1.5], [1.5, -1.5], [1.5, 1.5], [-1.5, 1.5]],
+        "soil_type": "loam", "moisture": "fresh"})
+    client.post(f"/api/v1/gardens/{token}/light")
+    [bed] = client.get(f"/api/v1/gardens/{token}").json()["beds"]
+    assert bed["sun_hours"] == 0.0 and bed["sky_view"] == 0.0
+    assert bed["ellenberg_l"] == 2.5
+
+
+def test_a_bed_stores_its_cells_means_each_under_its_own_name(client: TestClient) -> None:
+    """Swapping the sky and the relative light between the columns passed every
+    range and ordering check (review, 2026-09-22): each is its cells' mean of
+    its own list, and one served cell is what the model says of that spot."""
+    from ninanatur.garden.lightgrid_store import load_grid
+    from ninanatur.garden.lightview import shading_obstacles
+    from ninanatur.garden.store import load_garden
+    from ninanatur.solar.climate import climate_at
+    from ninanatur.solar.position import Location
+    from ninanatur.solar.raster import moments_for, parts_of
+    from ninanatur.solar.relative import point_sky_light
+
+    token = _garden(client)
+    body = client.post(f"/api/v1/gardens/{token}/light").json()
+    conn: sqlite3.Connection = app.dependency_overrides[get_connection]()
+    garden_id = conn.execute("SELECT garden_id FROM garden WHERE share_token = ?",
+                             (token,)).fetchone()[0]
+    stored = load_grid(conn, garden_id)
+    assert stored is not None
+    grid = stored[0]
+    for bed in client.get(f"/api/v1/gardens/{token}").json()["beds"]:
+        for column, values, digits in (("sky_view", grid.sky, 3),
+                                       ("relative_light", grid.relative, 3),
+                                       ("expected_sun_h", grid.expected, 2)):
+            mean = grid.mean_over(bed["polygon"], values)
+            assert mean is not None and bed[column] == round(mean, digits), column
+    garden = load_garden(conn, garden_id)
+    parts = parts_of(shading_obstacles(conn, garden))
+    col, row = body["cols"] // 2, body["rows"] // 3
+    x, y = grid.centre_of(col, row)
+    spot = point_sky_light(parts, moments_for(Location(51.25, 7.15)), climate_at(51.25, 7.15),
+                           x, y)
+    index = row * body["cols"] + col
+    assert body["sky"][index] == pytest.approx(float(spot.sky[0]), abs=6e-4)
+    assert body["relative"][index] == pytest.approx(float(spot.relative[0]), abs=6e-4)
+    assert body["expected"][index] == pytest.approx(float(spot.expected[0]), abs=0.006)
+
+
 def test_the_dwd_is_thanked_once_a_map_rests_on_its_climate(client: TestClient) -> None:
     token = _garden(client)
     before = client.get(f"/api/v1/gardens/{token}/sources").json()

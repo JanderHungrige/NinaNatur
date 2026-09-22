@@ -1495,6 +1495,8 @@ export interface components {
             planting_id: number;
             /** Problem */
             problem: string;
+            /** Sky View */
+            sky_view?: number | null;
             /** Sun Hours */
             sun_hours: number;
             /** Taxon Id */

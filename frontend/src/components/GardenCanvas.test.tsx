@@ -112,7 +112,7 @@ describe('GardenCanvas', () => {
 
 describe('GardenCanvas — what the sun map says under the pointer', () => {
   function sunMap(hours: (number | null)[], roof = hours.map(() => false),
-    sky: number[] = [], expected: number[] = []) {
+    sky: number[] = [], expected: number[] = [], relative: number[] = []) {
     return {
       map: {
         cell_m: 1, min_x: -1, min_y: -1, cols: 2, rows: 2,
@@ -123,21 +123,21 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
         stale: false,
         morning: hours.map((h) => (h === null ? null : h / 2)),
         misplaced: [],
-        model: '', sky, relative: [], expected,
+        model: '', sky, relative, expected,
       },
       mode: 'hours' as const,
     };
   }
 
   function plan(hours: (number | null)[] | null, roof?: boolean[], sky?: number[],
-    expected?: number[]) {
+    expected?: number[], relative?: number[]) {
     render(
       <GardenCanvas
         garden={garden()}
         selectedBedId={null}
         onSelectBed={vi.fn()}
         size={{ widthPx: 600, heightPx: 400 }}
-        {...(hours === null ? {} : { sunMap: sunMap(hours, roof, sky, expected) })}
+        {...(hours === null ? {} : { sunMap: sunMap(hours, roof, sky, expected, relative) })}
       />,
     );
     const surface = screen.getByTestId('canvas-surface');
@@ -161,12 +161,12 @@ describe('GardenCanvas — what the sun map says under the pointer', () => {
     expect(screen.getByTestId('sun-readout').textContent).toBe('9.2 h · volle Sonne');
   });
 
-  it('adds the sunshine to expect and the sky the spot sees (doc 118)', () => {
+  it('adds the sunshine to expect, the sky the spot sees and its light (doc 118)', () => {
     const surface = plan([4.0, 4.0, 4.0, 4.0], undefined, [0.6, 0.6, 0.6, 0.6],
-      [1.75, 1.75, 1.75, 1.75]);
+      [1.75, 1.75, 1.75, 1.75], [0.47, 0.47, 0.47, 0.47]);
     fireEvent.pointerMove(surface, { clientX: 300, clientY: 200 });
     expect(screen.getByTestId('sun-readout').textContent).toBe(
-      '4.0 h · sonnig · erwartbar 1.8 h · sieht 60 % des Himmels');
+      '4.0 h · sonnig · erwartbar 1.8 h · sieht 60 % des Himmels · 47 % des Freilandlichts');
   });
 
   it('says when the hours it is reading are a roof', () => {

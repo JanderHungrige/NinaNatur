@@ -42,7 +42,8 @@ class LightMap(BaseModel):
     #: for a map computed before Wave 26 gave models a version.
     model: str = ""
     #: In step with `hours`, empty on a map computed before them (doc 118): the
-    #: share of the sky each cell sees (crowns in leaf), its relative
+    #: share of the sky each cell sees (a month's with its crowns as they are
+    #: then, the season's in leaf), its relative
     #: illuminance — sun and sky as a share of open ground's light, in the
     #: garden's climate — and the hours of sunshine it can expect.
     sky: list[float | None] = []
@@ -73,6 +74,9 @@ class MisplacedOut(BaseModel):
     sun_hours: float
     #: 'too_dark' | 'too_bright'. Both happen; the second is the forgotten one.
     problem: str
+    #: The share of the sky the spot sees in leaf, which may be what darkens it
+    #: (doc 118); null on a map from before the sky counted.
+    sky_view: float | None = None
 
 
 class TerrainOut(BaseModel):

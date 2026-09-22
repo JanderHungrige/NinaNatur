@@ -39,7 +39,7 @@ from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind, symbol_of
 from ninanatur.garden.slopes import slope_at
 from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.solar.light import ellenberg_from_sun_hours
+from ninanatur.solar.light import light_value
 from ninanatur.solar.position import Location
 from ninanatur.solar.shading import Obstacle, Point
 
@@ -125,7 +125,7 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
         conn.execute("DELETE FROM light_grid WHERE garden_id = ?", (garden_id,))
 
     updated = 0
-    fallback = _PointLight(everything, location)
+    fallback = _PointLight(everything, location, ground, horizon)
     for bed in garden.beds:
         hours, sky, relative, expected = _bed_light(grid, bed, garden, fallback)
         conn.execute(
@@ -133,7 +133,8 @@ def recompute_light(conn: sqlite3.Connection, garden_id: int) -> int:
             " aspect_deg = ?, sky_view = ?, relative_light = ?, expected_sun_h = ?,"
             " light_computed_at = ? WHERE element_id = ?",
             (
-                ellenberg_from_sun_hours(round(hours, 2)),  # as stored: they agree
+                # From the hours and the sky as stored, so they always agree.
+                light_value(round(hours, 2), _rounded(sky, 3)),
                 round(hours, 2),
                 *_fall_of(ground, bed),
                 _rounded(sky, 3), _rounded(relative, 3), _rounded(expected, 2),
@@ -152,22 +153,42 @@ def _rounded(value: float | None, digits: int) -> float | None:
 
 class _PointLight:
     """The one-point answer, for a bed the grid cannot: its moments, parts and
-    climate worked out once for all of a garden's beds that need it."""
+    climate worked out once for all of a garden's beds that need it.
 
-    def __init__(self, obstacles: list[Obstacle], location: Location) -> None:
+    Asked as a cell of the grid is asked (`lightcells.surface_at`): the point
+    at its own ground plus the bed's height, the obstacles each on the ground
+    under it, the sky through the point's own slope and the hills beyond. It
+    stood on flat ground under an open horizon until 2026-09-22, and a narrow
+    bed in a valley saw a sky its neighbouring cells did not (review)."""
+
+    def __init__(self, obstacles: list[Obstacle], location: Location,
+                 ground: TerrainWindow | None = None,
+                 horizon: list[float] | None = None) -> None:
         self.obstacles, self.location = obstacles, location
+        self.ground, self.horizon = ground, horizon
         self._ready: tuple[Any, Any, Any] | None = None
+        # The grid's rings are rounded to a step of slope and aspect and shared
+        # (`lightcells._ring`); a point's are rounded the same way.
+        self._rings: dict[tuple[float, float], tuple[float, ...]] = {}
 
     def at(self, x: float, y: float, height: float) -> tuple[float, float, float, float]:
+        from ninanatur.garden.ground import standing_on
+        from ninanatur.garden.lightcells import surface_at
         from ninanatur.solar.climate import climate_at
         from ninanatur.solar.raster import moments_for, parts_of
         from ninanatur.solar.relative import point_sky_light
 
         if self._ready is None:
-            self._ready = (parts_of(self.obstacles), moments_for(self.location),
+            self._ready = (parts_of(standing_on(self.obstacles, self.ground)),
+                           moments_for(self.location),
                            climate_at(self.location.latitude, self.location.longitude))
         parts, moments, climate = self._ready
-        light = point_sky_light(parts, moments, climate, x, y, height)
+        # A hole in the survey stands on the lowest ground there is, as a
+        # cell's does (`ground.height_at`).
+        floor = min(self.ground.heights) if self.ground and self.ground.heights else 0.0
+        surface = surface_at((x, y), self.ground, self.horizon, floor, [], height, self._rings)
+        light = point_sky_light(parts, moments, climate, x, y, surface.z,
+                                list(surface.ring) or None)
         return (float(light.morning[0] + light.afternoon[0]), float(light.sky[0]),
                 float(light.relative[0]), float(light.expected[0]))
 

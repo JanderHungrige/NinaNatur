@@ -50,6 +50,23 @@ def test_beside_a_long_wall_the_isotropic_sky_is_the_closed_form(split: int,
     assert bound - 0.005 < worst <= bound
 
 
+@pytest.mark.parametrize(("split", "tolerance"), [(TREGENZA, 0.003), (REINHART, 0.001)])
+def test_the_overcast_sky_is_moon_and_spencers(split: int, tolerance: float) -> None:
+    """Luminance (1 + 2 sin a) / 3, the zenith three times the horizon: of its
+    light on level ground, the share from below 24° is F(sin 24°) / F(1) with
+    F(s) = (s²/2 + 2s³/3) / 3 — 0.109. Any sky that merely brightens upwards
+    passed the test below; a 2:1 sky gives 0.126, an even one 0.165."""
+    def f(s: float) -> float:
+        return (s * s / 2 + 2 * s ** 3 / 3) / 3
+
+    low = sky_directions(7, overcast=True, split=split)
+    share = float(low.weight[low.altitude < 24.0].sum())
+    assert share == pytest.approx(f(math.sin(math.radians(24.0))) / f(1.0), abs=tolerance)
+    even = sky_directions(7, overcast=False, split=split)
+    assert float(even.weight[even.altitude < 24.0].sum()) == pytest.approx(
+        math.sin(math.radians(24.0)) ** 2, abs=tolerance)
+
+
 def test_a_wall_takes_less_of_an_overcast_sky_than_of_an_even_one() -> None:
     parts = parts_of(_wall(5.0, 5.0))
     overcast = point_sums(parts, sky_directions(7), 0.0, 0.0)[0]

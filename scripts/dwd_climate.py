@@ -65,11 +65,11 @@ def _blocks(grid: np.ndarray) -> np.ndarray:
     rows, cols = -(-grid.shape[0] // BLOCK) * BLOCK, -(-grid.shape[1] // BLOCK) * BLOCK
     padded = np.full((rows, cols), np.nan)
     padded[:grid.shape[0], :grid.shape[1]] = grid
-    squares = padded.reshape(rows // BLOCK, BLOCK, cols // BLOCK, BLOCK).swapaxes(1, 2)
-    squares = squares.reshape(rows // BLOCK, cols // BLOCK, BLOCK * BLOCK)
-    counts = np.sum(~np.isnan(squares), axis=2)
+    tiles = padded.reshape(rows // BLOCK, BLOCK, cols // BLOCK, BLOCK).swapaxes(1, 2)
+    cells = tiles.reshape(rows // BLOCK, cols // BLOCK, BLOCK * BLOCK)
+    counts = np.sum(~np.isnan(cells), axis=2)
     with np.errstate(invalid="ignore"):
-        means = np.nanmean(np.where(counts[..., None] > 0, squares, 0.0), axis=2)
+        means = np.nanmean(np.where(counts[..., None] > 0, cells, 0.0), axis=2)
     means[counts == 0] = np.nan
     return means
 

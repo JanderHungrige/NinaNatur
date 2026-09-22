@@ -18,7 +18,7 @@ from ninanatur.garden.plantings import add_planting, place_planting
 from ninanatur.garden.store import create_garden, load_garden
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.ingest.provenance import upsert_trait
-from ninanatur.solar.light import ellenberg_from_sun_hours
+from ninanatur.solar.light import ellenberg_from_sun_hours, light_value
 from ninanatur.solar.shading import Obstacle
 
 EIVE = {"source": "EIVE-1.0", "license": "CC-BY-4.0"}
@@ -97,12 +97,12 @@ def test_a_shade_plant_in_full_sun_is_flagged_too(conn: sqlite3.Connection) -> N
 
 
 def _spot_value(conn: sqlite3.Connection, garden_id: int, x: float, y: float) -> float:
-    """What the spot itself gets, whatever the hours->L convention of the day
-    makes of its sun."""
+    """What the spot itself gets, whatever the convention of the day makes of
+    its sun and its sky (`light_value`)."""
     grid = compute_grid(load_garden(conn, garden_id), [WALL])
     hours = None if grid is None else grid.at(x, y)
-    assert hours is not None
-    return ellenberg_from_sun_hours(hours)
+    assert grid is not None and hours is not None
+    return light_value(hours, grid.at(x, y, grid.sky))
 
 
 def _species(conn: sqlite3.Connection, tid: int, light: float, width: float | None) -> None:
@@ -181,9 +181,10 @@ def test_a_raised_bed_is_judged_by_the_light_the_list_ranks_it_by(
     assert bed.sun_hours is not None
     ground = stored[0].at(1.5, 0.75)
     assert ground is not None and ground < bed.sun_hours - 2, "the ground is darker"
-    offered = ellenberg_from_sun_hours(bed.sun_hours) - 0.5
+    assert bed.ellenberg_l is not None
+    offered = bed.ellenberg_l - 0.5
     _species(conn, 7, offered, 2.0)
-    assert light_mismatch_at(ellenberg_from_sun_hours(bed.sun_hours), offered, 2.0) is None
+    assert light_mismatch_at(bed.ellenberg_l, offered, 2.0) is None
     add_planting(conn, bed_id, taxon_id=7, quantity=1)
 
     assert misplaced_plantings(conn, load_garden(conn, garden_id), stored[0]) == []
@@ -206,3 +207,67 @@ def test_nothing_is_said_without_a_grid(conn: sqlite3.Connection) -> None:
     add_planting(conn, bed_id, taxon_id=1, quantity=1)
 
     assert misplaced_plantings(conn, load_garden(conn, garden_id), None) == []
+
+
+def test_under_a_dense_crown_the_sky_says_what_the_hours_do_not(
+    conn: sqlite3.Connection,
+) -> None:
+    """Its bare months let the sun through, and by the hours alone a sun plant
+    under a dense beech read as merely in half shade. In leaf it passes a
+    twentieth of the sky (doc 118), and the warning says that too."""
+    import math
+
+    beech = Obstacle(footprint=[(5 + 4 * math.cos(a), 4 + 4 * math.sin(a))
+                                for a in [k * math.pi / 8 for k in range(16)]],
+                     height=14.0, transmission=0.05, bare_transmission=0.75)
+    garden_id, bed_id = _garden(conn)
+    _species(conn, 8, 6.0, 1.0)  # a plant of half shade, narrow niche
+    planting_id = add_planting(conn, bed_id, taxon_id=8, quantity=1)
+    place_planting(conn, planting_id, 5.0, 4.0)
+    garden = load_garden(conn, garden_id)
+    grid = compute_grid(garden, [beech])
+    assert grid is not None
+    hours, sky = grid.at(5.0, 4.0), grid.at(5.0, 4.0, grid.sky)
+    assert hours is not None and sky is not None and sky < 0.1
+    assert light_mismatch_at(ellenberg_from_sun_hours(hours), 6.0, 1.0) is None, \
+        "by the hours alone it would be fine"
+
+    [found] = misplaced_plantings(conn, garden, grid)
+    assert found.problem == "too_dark"
+    assert found.gets == light_value(hours, sky)
+    assert found.sky_view == round(sky, 2)
+
+
+def test_an_unplaced_cluster_and_a_raised_bed_are_judged_by_their_beds_sky_too(
+    conn: sqlite3.Connection,
+) -> None:
+    """Where a cluster has no cell of its own it is judged by its bed's light —
+    hours and sky both, the list's rule. Only the placed cluster was tested,
+    and the bed's sky could be dropped unnoticed (review, 2026-09-22)."""
+    import math
+
+    beech = Obstacle(footprint=[(5 + 8 * math.cos(a), 4 + 8 * math.sin(a))
+                                for a in [k * math.pi / 8 for k in range(16)]],
+                     height=16.0, transmission=0.05, bare_transmission=0.75)
+    garden_id, bed_id = _garden(conn)
+    _species(conn, 8, 6.0, 1.0)
+    add_planting(conn, bed_id, taxon_id=8, quantity=1)  # placed nowhere
+    garden = load_garden(conn, garden_id)
+    grid = compute_grid(garden, [beech])
+    assert grid is not None
+    hours, sky = grid.mean_over(BED), grid.mean_over(BED, grid.sky)
+    assert hours is not None and sky is not None and sky < 0.1
+    [found] = misplaced_plantings(conn, garden, grid)
+    assert found.gets == light_value(round(hours, 2), round(sky, 3))
+    assert found.sky_view == round(sky, 2)
+
+    raised = insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
+                            name="Hochbeet", points=[[20, 0], [23, 0], [23, 1], [20, 1]],
+                            height_above_ground=0.8)
+    conn.execute("UPDATE element SET sun_hours = 4.0, sky_view = 0.05 WHERE element_id = ?",
+                 (raised,))
+    add_planting(conn, raised, taxon_id=8, quantity=1)
+    conn.commit()
+    lifted = [m for m in misplaced_plantings(conn, load_garden(conn, garden_id), grid)
+              if m.bed_id == raised]
+    assert [(m.gets, m.sky_view) for m in lifted] == [(light_value(4.0, 0.05), 0.05)]

@@ -1541,6 +1541,17 @@
             "title": "Problem",
             "type": "string"
           },
+          "sky_view": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sky View"
+          },
           "sun_hours": {
             "title": "Sun Hours",
             "type": "number"

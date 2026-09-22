@@ -19,7 +19,8 @@ plants the list had just offered. What still differs is only *where* the light
 is read: the list ranks by the bed's average, the warning by the cell a cluster
 stands in — a corner darker than its bed is what this is for. Where a cluster
 has no cell of its own, it is judged by the value the list ranks its bed by
-(`_hours_at`).
+(`_light_at`). The value is the list's rule too: the hours, floored by the sky
+in leaf (`solar.light.light_value`, doc 118).
 """
 from __future__ import annotations
 
@@ -31,7 +32,7 @@ from ninanatur.fit.light_fit import light_mismatch_at
 from ninanatur.garden.footprint import covers
 from ninanatur.garden.lightgrid import LightGrid
 from ninanatur.garden.models import Element, Garden
-from ninanatur.solar.light import ellenberg_from_sun_hours
+from ninanatur.solar.light import light_value
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,9 @@ class Misplaced:
     #: 'too_dark' when it wants more light than the spot has, 'too_bright' when
     #: it wants less. Both happen, and the second is the one people forget.
     problem: str
+    #: The share of the sky the spot sees in leaf, which may be what darkens it
+    #: (doc 118); None on a map from before the sky counted.
+    sky_view: float | None = None
 
 
 def misplaced_plantings(
@@ -71,11 +75,14 @@ def misplaced_plantings(
             if planting.taxon_id is None:
                 continue
             wanted = _wanted_light(conn, planting.taxon_id)
-            hours = None if wanted is None else _hours_at(grid, bed, planting, own)
-            if wanted is None or hours is None:
+            if wanted is None:
+                continue
+            hours, sky = _light_at(grid, bed, planting, own)
+            if hours is None:
                 continue
             wants, width = wanted
-            gets = ellenberg_from_sun_hours(hours)
+            # The rule the list ranks by (`solar.light.light_value`).
+            gets = light_value(hours, sky)
             problem = light_mismatch_at(gets, wants, width)
             if problem is None:
                 continue
@@ -89,6 +96,7 @@ def misplaced_plantings(
                     gets=gets,
                     sun_hours=round(hours, 1),
                     problem=problem,
+                    sky_view=None if sky is None else round(sky, 2),
                 )
             )
     return found
@@ -109,21 +117,28 @@ def _wanted_light(conn: sqlite3.Connection, taxon_id: int) -> tuple[float, float
     return float(trait.value_num), None if width is None else width.value_num
 
 
-def _bed_light(grid: LightGrid, bed: Element) -> float | None:
-    """The bed's own light: its cells' mean, as `lighting.recompute_light`
-    stores it — the value the list ranks the bed by — read from this grid over
-    the bed as it stands, so a bed drawn or moved since the last press is
-    judged where it is (review, 2026-09-21). A raised bed, or one with no cell
-    centre inside it, was measured at one point: its stored value, which stays
-    where it was measured until the next press."""
+#: A spot's sun hours and the share of the sky it sees; either may be unknown.
+Light = tuple[float | None, float | None]
+
+
+def _bed_light(grid: LightGrid, bed: Element) -> Light:
+    """The bed's own light: its cells' mean hours and sky, as
+    `lighting.recompute_light` stores them — what the list ranks the bed by —
+    read from this grid over the bed as it stands, so a bed drawn or moved
+    since the last press is judged where it is (review, 2026-09-21). A raised
+    bed, or one with no cell centre inside it, was measured at one point: its
+    stored values, which stay where they were measured until the next press."""
     mean = None if bed.height_above_ground > 0 else grid.mean_over(bed.polygon)
-    return bed.sun_hours if mean is None else round(mean, 2)
+    if mean is None:
+        return bed.sun_hours, bed.sky_view
+    sky = grid.mean_over(bed.polygon, grid.sky)
+    return round(mean, 2), None if sky is None else round(sky, 3)
 
 
-def _hours_at(grid: LightGrid, bed: Element, planting: object, own: float | None) -> float | None:
-    """The sun a cluster gets: its own cell's, where that cell is part of its
-    bed — the rule the bed's own mean is taken by (`LightGrid.mean_over`): its
-    centre inside the bed, and not a roof.
+def _light_at(grid: LightGrid, bed: Element, planting: object, own: Light) -> Light:
+    """The light a cluster gets: its own cell's hours and sky, where that cell
+    is part of its bed — the rule the bed's own mean is taken by
+    (`LightGrid.mean_over`): its centre inside the bed, and not a roof.
 
     Otherwise its bed's own light (`_bed_light`):
     - for a cluster nobody has placed — it stands nowhere in particular, and it
@@ -143,7 +158,7 @@ def _hours_at(grid: LightGrid, bed: Element, planting: object, own: float | None
     if at is None or centre is None or not covers(_ring(bed.polygon), centre):
         return own
     here = grid.at(*at)
-    return own if here is None else here
+    return own if here is None else (here, grid.at(*at, grid.sky))
 
 
 def _ring(polygon: list[list[float]]) -> list[tuple[float, float]]:

@@ -35,6 +35,9 @@ source_files:
   - frontend/src/components/SunMap.tsx
   - frontend/src/canvas/useSunReadout.ts
   - frontend/src/components/SourceCredits.tsx
+  - frontend/src/components/ShadeSwitch.tsx
+  - ninanatur/garden/misplaced.py
+  - ninanatur/ingest/light_scale.py
   - ninanatur/garden/lightgrid_extent.py
   - NOTICE
   - pyproject.toml
@@ -52,13 +55,19 @@ test_files:
   - tests/test_credits.py
   - tests/test_light_model_version.py
   - tests/test_supply_chain.py
+  - tests/test_light_value.py
+  - tests/test_misplaced.py
+  - tests/test_light_scale_migration.py
+  - tests/test_light_legend.py
+  - tests/test_light_grid_cost.py
+  - frontend/src/components/ShadeSwitch.test.tsx
   - frontend/src/components/BedPanel.sky.test.tsx
   - frontend/src/components/SourceCredits.test.tsx
   - frontend/src/components/SunMap.test.tsx
   - frontend/src/components/GardenCanvas.test.tsx
 data_flow: writes-existing
 last_synced: 2026-09-22
-status: in_progress
+status: complete
 phase: all
 mdd_version: 11
 tags: [solar, light, sky-view, diffuse, climate, dwd, relative-illuminance, ellenberg, sunshine, cie-overcast, tregenza]
@@ -71,6 +80,8 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "Relative illuminance is shown, not matched by: on Ellenberg's thresholds it would put almost every garden spot at L 9 (owner's decision, 2026-09-22, below)."
+  - "The sky floor bites only where a crown is dense, and the model's planted crowns are not: every broadleaf passes 20 % in leaf (`canopies.TRANSMISSION_IN_LEAF`), under which the floor says 6.25 against the hours' 6.5. The dense beech measured below assumed 5 %; crowns on trunks (feature 6) and species' own transmission are where it starts to matter."
+  - "A tree, shrub or hedge the gardener drew — and a crown accepted from the surface model — is still cast as an opaque prism from the ground, whatever `api/canopies.py` says of broadleaves: inside one, hours and sky both read 0, and the value its floor, 2.5. Crowns become crowns in feature 6."
   - "The direct share is sun hours over open ground's, not energy: a March hour at 8° counts like a June hour at 60°. Feature 4 weights by incidence."
   - "Cloud is spread evenly over the day: the expected sunshine scales every hour by the month's share of possible sunshine. Morning fog in a valley or afternoon convection is not in a monthly climatology."
   - "Two skies, not twelve: a crown passes the in-leaf sky's light in every month it is in leaf and the bare sky's in every other."
@@ -182,15 +193,31 @@ month. Open ground has both shares 1 and gets H. **Relative illuminance** is
 the sky weighs more, lost sun costs less.
 
 **The sunshine to expect**: each month's geometric hours times the share of
-possible sunshine the DWD measured there (sunshine duration over the
-astronomically possible hours), averaged over the calendar days. Open ground
-in Wuppertal expects exactly the DWD's 1,340 h over 245 days: 5.5 h a day
-against 13.1 geometric.
+them the sun actually shone — the DWD's sunshine duration over the model's own
+possible hours, the sun above 3° (`MIN_ALTITUDE`), not the astronomical day
+(13.1 h against 13.95 in a Wuppertal season). A sunshine recorder needs a sun
+bright enough to burn, which a sun within 3° of the horizon rarely is, so the
+model's day is the fairer denominator; and it makes open ground expect exactly
+the DWD's 1,340 h over 245 days: 5.5 h a day. Against the astronomical day
+every *erwartbar* would be about 7 % lower. (The first version of this doc said
+"astronomically possible", and the code never did — review, 2026-09-22.)
 
 The grid computes everything in one pass (`grid_sky_light`); a bed narrower
 than a cell, or raised, takes the point path (`point_sky_light`), which the
-tests hold to the grid's answer at 1e-9, for the season and for a month in
-leaf and a month bare.
+tests hold to the grid's answer at 1e-9 — for the season and for a month in
+leaf and a month bare, on flat ground and on raised cells, on a building's own
+roof and behind a ring of hills. And the app asks the point as it asks a cell
+(`lighting._PointLight` over `lightcells.surface_at`): at its own ground plus
+the bed's height, the obstacles on the ground under them, the sky through its
+own slope and the hills. It stood on flat ground under an open horizon before,
+the hours with it since Wave 17, and a narrow bed in a valley saw a sky and a
+sun its neighbouring cells did not (review, 2026-09-22).
+
+What the model answers is pinned through that path, version by version
+(`tests/test_light_model_version.py`): hours, sky, relative light, sunshine
+and light value at three spots, and a bed end to end. The first pin read the
+hours from a function the app no longer called, and the overcast sky or the
+hour weight could change without a version.
 
 ## On the page
 
@@ -267,8 +294,25 @@ value is the hours' convention, never brighter than Ellenberg's thresholds say
 of the overcast sky in full leaf — which is how Ellenberg measured. It changes
 nothing in the open, where that sky saturates at L 9 from a share of 0.42 up,
 and under a dense beech it lists *Galium odoratum*, *Carex sylvatica* and
-*Euphorbia amygdaloides* instead of meadow plants. Part 2 builds it; values
-under crowns will move again with feature 6, which lifts crowns onto trunks.
+*Euphorbia amygdaloides* instead of meadow plants. Values under crowns will
+move again with feature 6, which lifts crowns onto trunks.
+
+**Built** (`solar.light`): `SKY_ANCHORS` — Ellenberg's classes 3 to 8 at
+their thresholds, (L − 1) × 1.25 as the hours' anchors are, flat at 9.0 from
+42 % and at 2.5 below 5 %, the hours' own floor (classes 1 and 2 were kept at
+first, and every bed inside a drawn tree, where the sky reads 0, fell from 2.5
+to 0.0 — review, 2026-09-22) —
+and `light_value(hours, sky)`, the lower of the two, or the hours alone where
+no sky is stored. One rule wherever a value is given: a bed's stored value
+from its stored hours and sky (`lighting.recompute_light`), the one-point
+answer (`bed_light_value`, which now reports the sky too), a cluster's cell in
+the misplaced-plant warning (`misplaced`, with `LightGrid.at` reading the sky
+list as it reads the hours), and the one-time rescale, which reads the stored
+sky beside the hours. A warning that a plant stands too dark names the sky
+beside the hours: *steht zu dunkel: 2.7 h dort und 5 % des Himmels*.
+
+What the model's crowns do with it today is modest (known issues): the floor
+is right where a crown is dense, and the model does not yet know one that is.
 
 ## Business rules
 
@@ -280,7 +324,7 @@ under crowns will move again with feature 6, which lifts crowns onto trunks.
    borrowed cell says how far it is, and an assumed climate says so. The DWD
    is credited wherever its numbers can be shown.
 4. Hours stay the headline. The light value is the hours', floored by the sky
-   in leaf (part 2).
+   in leaf, by one rule wherever a value is given (`light_value`).
 
 ## Security
 

@@ -54,21 +54,25 @@ class LightGrid:
     relative: list[float | None] = field(default_factory=list)
     expected: list[float | None] = field(default_factory=list)
 
-    def at(self, x: float, y: float) -> float | None:
-        """The cell containing this point.
+    def at(self, x: float, y: float,
+           values: list[float | None] | None = None) -> float | None:
+        """The cell containing this point — its hours, or its value in another
+        list in step with them (`sky`, `relative`).
 
         None outside the grid, and None for a cell that is under a roof — the
         caller cannot tell the two apart and does not need to, because both mean
-        "this model has no answer for that point".
+        "this model has no answer for that point". None too from a list the
+        grid does not have: a map computed before the sky counted.
         """
+        read = self.hours if values is None else values
         col = int((x - self.min_x) // self.cell_m)
         row = int((y - self.min_y) // self.cell_m)
-        if not (0 <= col < self.cols and 0 <= row < self.rows):
+        if not (0 <= col < self.cols and 0 <= row < self.rows) or len(read) != len(self.hours):
             return None
         index = row * self.cols + col
         # As the docstring always said, and the code did not: a plant beside a
         # house was judged by the sun on its roof (review, 2026-09-21).
-        return None if self.is_roof(index) else self.hours[index]
+        return None if self.is_roof(index) else read[index]
 
     def centre_at(self, x: float, y: float) -> tuple[float, float] | None:
         """The centre of the cell containing this point; None outside the grid."""

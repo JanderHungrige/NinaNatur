@@ -12,14 +12,15 @@ this moved every computed bed across at once. Before it, each garden had to run
 the slow rebuild to re-label hours it already had, and until somebody did, one
 page mixed both scales.
 
-Whoever next changes `SUN_HOUR_ANCHORS` adds a marker here and runs this again:
+Whoever next changes `SUN_HOUR_ANCHORS` or `SKY_ANCHORS` adds a marker here and
+runs this again:
 reading the convention as it is on the day it runs is the point of it.
 """
 from __future__ import annotations
 
 import sqlite3
 
-from ninanatur.solar.light import ellenberg_from_sun_hours
+from ninanatur.solar.light import light_value
 
 #: Marks the move from the staircase onto EIVE's scale (2026-09-21).
 LIGHT_SCALE_KEY = "wave_25_light_on_eive_scale"
@@ -36,13 +37,15 @@ def rescale_bed_light(conn: sqlite3.Connection) -> str | None:
     ).fetchone()
     if done is not None:
         return None
+    # With the sky each bed was stored with, where it has one (doc 118): the
+    # convention as it is on the day this runs, which is the point of it.
     rows = conn.execute(
-        "SELECT element_id, sun_hours, ellenberg_l FROM element"
+        "SELECT element_id, sun_hours, sky_view, ellenberg_l FROM element"
         " WHERE sun_hours IS NOT NULL"
     ).fetchall()
     moved = 0
-    for element_id, hours, old in rows:
-        new = ellenberg_from_sun_hours(float(hours))
+    for element_id, hours, sky, old in rows:
+        new = light_value(float(hours), None if sky is None else float(sky))
         if old != new:
             conn.execute(
                 "UPDATE element SET ellenberg_l = ? WHERE element_id = ?",
