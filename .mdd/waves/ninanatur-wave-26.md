@@ -7,7 +7,7 @@ status: in_progress
 depends_on: ninanatur-wave-25
 demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
 created: 2026-09-07
-hash: 7e7d027f
+hash: 54716ad1
 ---
 
 # Wave 26: Light, not hours
@@ -68,7 +68,7 @@ term the number becomes a derivation from the definition.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | the-measuring-instrument | — | planned | — |
+| 0 | the-measuring-instrument | 115 | built | — |
 | 1 | no-hull | — | planned | 0 |
 | 2 | room-to-compute | — | planned | 0 |
 | 3 | the-sky-counts | — | planned | 2 |
@@ -121,7 +121,10 @@ on the grid (bbox slices, vectorised point-in-polygon), accumulate transmission
 multiplicatively, batch the ray tests per moment; run the whole grid in the
 process pool Wave 20 introduces so it never holds the request thread. Then the
 sampling moves to **10 min / 5 days** and the cutoff to **3°** — the +2 % and
-the 0.7 h that were thrown away, within the same budget.
+the 0.7 h that were thrown away, within the same budget. A month's view moves
+to **every 2nd day**: it already samples every 5th, and doc 115 measured that
+leaving April 0.34 h off at 10 min, against 0.10 h at every 2nd day. Both of
+doc 115's marked tests name this sampling.
 
 ### 3. the-sky-counts
 
