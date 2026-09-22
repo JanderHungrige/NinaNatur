@@ -649,6 +649,16 @@ Three stages:
   the garden's origin was judged — and a placed tree cast its shade — somewhere
   else (doc 67).
 
+- **2026-09-22 — released to production as V0.23.223** (merge `b773f2d` from
+  `dev-deployment`, at the owner's word "push and merge into main"), with the
+  Dependabot proposals that had been red (vite 8, vitest 5, React 19, uvicorn,
+  the Actions off Node 20; TypeScript 7 held back for openapi-typescript).
+  Every runbook step passed: the smoke test on the preview in both windows, CI
+  on main, and production serving the preview's assets exactly
+  (`index-D2klXZwy.js`, `index-XZV7gEIl.css`) after one 502 while the container
+  rolled. Its migration, after the automatic pre-migration copy: 37 bed light
+  values moved onto EIVE's scale from their stored hours.
+
 ## What each one is
 
 ### 0. which-tiles-and-whose
