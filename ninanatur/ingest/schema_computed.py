@@ -40,6 +40,9 @@ CREATE TABLE IF NOT EXISTS light_grid (
     -- or the garden's brightest point, and the reader is told which they are
     -- looking at. Empty on a grid computed before roofs were.
     roof        TEXT    NOT NULL DEFAULT '[]',
+    -- The light model that computed it (Wave 26); empty before models had a
+    -- version, so an old map says it was drawn by the model before them.
+    model       TEXT    NOT NULL DEFAULT '',
     signature   TEXT    NOT NULL,
     computed_at TEXT    NOT NULL
 );

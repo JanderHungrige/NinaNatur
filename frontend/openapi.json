@@ -1327,6 +1327,11 @@
             "title": "Misplaced",
             "type": "array"
           },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
           "morning": {
             "items": {
               "anyOf": [
@@ -4885,7 +4890,7 @@
     },
     "/api/v1/gardens/{token}/shadows": {
       "get": {
-        "description": "Where the shadows fall through one middling day of a month.\n\nThe 15th, because a month's first and last days differ by a fortnight of sun\nand the middle is the one that represents it. Computed rather than stored:\nit is one day rather than a season, and nobody watches it twice in a row.",
+        "description": "Where the shadows fall through one middling day of a month.\n\nThe 15th, because a month's first and last days differ by a fortnight of sun\nand the middle is the one that represents it. Computed rather than stored:\nit is one day rather than a season, and nobody watches it twice in a row.\n\nA heavy route since Wave 26 (doc 116): the exact shadow of a house with a\nmany-cornered outline is a union per frame, and a garden imported from the\nmap has two dozen of them \u2014 up to seconds, like the month view.",
         "operationId": "shadows_through_a_day_api_v1_gardens__token__shadows_get",
         "parameters": [
           {

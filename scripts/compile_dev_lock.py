@@ -43,6 +43,7 @@ TOOLS = (
     "mypy",
     "types-requests",
     "types-defusedxml",
+    "types-shapely",
     "httpx",
     "pip-audit",
 )

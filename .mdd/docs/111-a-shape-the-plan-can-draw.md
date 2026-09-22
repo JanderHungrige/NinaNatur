@@ -4,7 +4,7 @@ title: A Shape the Plan Can Draw
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [37-object-footprints, 42-element-model, 46-freehand-paths]
 relates: [44-vertex-editing, 40-freehand-shapes, 112-drawing-at-any-zoom]
 source_files:

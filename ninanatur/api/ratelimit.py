@@ -35,6 +35,9 @@ LIMITS: dict[str, tuple[int, float]] = {
     # A month view is looked at, not pressed: eight months, clicked through a
     # few times, is well inside it.
     "month": (60, 600.0),
+    # A day of shadows is played like a month is looked at: a few months, a few
+    # times (doc 116).
+    "shadows": (60, 600.0),
 }
 
 REFUSAL = "Zu viele Anfragen. Bitte warte ein paar Minuten."

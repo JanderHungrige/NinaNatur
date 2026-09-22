@@ -3,11 +3,11 @@ id: ninanatur-wave-25
 title: "Wave 25: Down to the square metre"
 initiative: ninanatur
 initiative_version: 23
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-21
 demo_state: "Ein Garten in München, Dresden, Wiesbaden oder Kiel bekommt sein Relief, seinen Horizont und die Nachbarhäuser mit gemessener Höhe und Dachform — und in Nordrhein-Westfalen kennt jeder Baum in der Nachbarschaft seinen Kronenansatz, aus der Punktwolke. Jede Zahl sagt, woher sie kommt und wie fein sie ist. (Das eigene Grundstück mit dem Telefon zu vermessen ist am 2026-09-20 in den Backlog gegangen, Feature 6.)"
 created: 2026-09-07
-hash: 75f01f33
+hash: bc6960fe
 ---
 
 # Wave 25: Down to the square metre
@@ -658,6 +658,13 @@ Three stages:
   (`index-D2klXZwy.js`, `index-XZV7gEIl.css`) after one 502 while the container
   rolled. Its migration, after the automatic pre-migration copy: 37 bed light
   values moved onto EIVE's scale from their stored hours.
+
+- **2026-09-22 — complete**, at the owner's word "Complete Wave 25, then
+  start", given at Wave 26's gate. Every feature but the backlogged sixth is
+  built and has been in production since V0.23.217. The owner used the wave on
+  the preview (the eleven items above) and twice more after the release; what
+  those rounds found is fixed and live in V0.23.223. The header reads V0.25.x
+  from the next build.
 
 ## What each one is
 

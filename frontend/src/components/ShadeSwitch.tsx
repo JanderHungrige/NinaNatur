@@ -97,8 +97,10 @@ export function ShadeSwitch({
         {map !== null && (
           <span className="hint">
             {map.stale
-              ? 'Nicht mehr aktuell: seitdem hat sich am Garten oder an der Berechnung etwas geändert.'
-              : `Berechnet am ${whenText(map.computed_at)}.`}
+              ? `Nicht mehr aktuell: seitdem hat sich am Garten oder an der Berechnung etwas geändert. ${
+                map.model ? `Gezeichnet mit Lichtmodell ${map.model}.` : 'Gezeichnet mit einem älteren Lichtmodell.'}`
+              : `Berechnet am ${whenText(map.computed_at)}${
+                map.model ? `, Lichtmodell ${map.model}` : ''}.`}
           </span>
         )}
       </div>

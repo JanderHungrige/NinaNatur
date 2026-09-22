@@ -3,11 +3,11 @@ id: ninanatur-wave-26
 title: "Wave 26: Light, not hours"
 initiative: ninanatur
 initiative_version: 23
-status: planned
+status: in_progress
 depends_on: ninanatur-wave-25
 demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
 created: 2026-09-07
-hash: c4cc662f
+hash: 699125da
 ---
 
 # Wave 26: Light, not hours
@@ -68,9 +68,9 @@ term the number becomes a derivation from the definition.
 
 | # | Feature | Doc | Status | Depends on |
 |---|---------|-----|--------|------------|
-| 0 | the-measuring-instrument | — | planned | — |
-| 1 | no-hull | — | planned | 0 |
-| 2 | room-to-compute | — | planned | 0 |
+| 0 | the-measuring-instrument | 115 | built | — |
+| 1 | no-hull | 116 | built | 0 |
+| 2 | room-to-compute | 117 | built | 0 |
 | 3 | the-sky-counts | — | planned | 2 |
 | 4 | energy-not-hours | — | planned | 3 |
 | 5 | a-roof-casts-as-a-roof | — | planned | 1 |
@@ -87,6 +87,28 @@ Three stages:
 Every model change bumps a `MODEL_VERSION` that enters `signature_of`, so a
 stored grid computed by an older model shows `stale` rather than an old answer
 with a new date. The page says which model version computed a map.
+
+## Progress
+
+- **2026-09-22 — stage 1 built** (branch `feat/ninanatur-wave-26`, not yet on
+  the preview). Three features, each reviewed by three lenses with two
+  skeptics per finding, every upheld finding fixed before its commit:
+  - *0, the measuring instrument* (doc 115, `0fe17ab`): the sun against NREL's
+    SPA to 0.016°; concave outlines against a marched ray; the sampling against
+    a converged answer, whose strict expected failures named feature 2.
+    16 findings upheld.
+  - *1, no hull* (doc 116, `76a2533`): the day's frames and Draft Sketch's drop
+    shadow draw what the model counts — an L's open corner, a courtyard's lit
+    hole; shapely joins the image. 12 findings upheld, among them a union that
+    GEOS could fail and a first design that made `/shadows` 10–47× slower.
+  - *2, room to compute* (doc 117, `b4bfdc4`): the raster, equal to the old
+    field on every cell; sampling every 10 min on every 5th day (a month every
+    2nd), the sun from 3°; doc 115's marks came off. `MODEL_VERSION` 26.2 on
+    every map. 19 findings upheld, the worst corners one bit apart that cut
+    half a hedge out of its own shadow.
+  Measured on the way: Wave 21's north-pitch demo was sampling noise on a 27°
+  roof (it holds on a 38° one), and beds in the 2–6 h band read up to half a
+  light value brighter under the new model.
 
 ## What each one is
 
@@ -121,7 +143,10 @@ on the grid (bbox slices, vectorised point-in-polygon), accumulate transmission
 multiplicatively, batch the ray tests per moment; run the whole grid in the
 process pool Wave 20 introduces so it never holds the request thread. Then the
 sampling moves to **10 min / 5 days** and the cutoff to **3°** — the +2 % and
-the 0.7 h that were thrown away, within the same budget.
+the 0.7 h that were thrown away, within the same budget. A month's view moves
+to **every 2nd day**: it already samples every 5th, and doc 115 measured that
+leaving April 0.34 h off at 10 min, against 0.10 h at every 2nd day. Both of
+doc 115's marked tests name this sampling.
 
 ### 3. the-sky-counts
 

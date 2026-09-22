@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-1
 demo_state: "GET /api/v1/plants with a bed's site conditions returns ranked species with a graded fit score, every trait value carrying its source"
 created: 2026-08-27
-hash: f03f08c1
+hash: 2cf6ab0c
 ---
 
 # Wave 2 — The data layer answers questions

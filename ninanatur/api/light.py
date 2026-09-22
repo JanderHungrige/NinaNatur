@@ -175,6 +175,8 @@ def sources(
 @router.get("/{token}/shadows", response_model=ShadowDay)
 def shadows_through_a_day(
     token: str,
+    request: Request,
+    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
     month: Annotated[int, Query(ge=1, le=12)] = 6,
 ) -> ShadowDay:
@@ -183,7 +185,12 @@ def shadows_through_a_day(
     The 15th, because a month's first and last days differ by a fortnight of sun
     and the middle is the one that represents it. Computed rather than stored:
     it is one day rather than a season, and nobody watches it twice in a row.
+
+    A heavy route since Wave 26 (doc 116): the exact shadow of a house with a
+    many-cornered outline is a union per frame, and a garden imported from the
+    map has two dozen of them — up to seconds, like the month view.
     """
+    ratelimit.check(conn, request, "shadows")
     garden = require_garden(conn, token)
     day = shadow_day(conn, load_garden(conn, garden.garden_id), month)
     return ShadowDay(
@@ -243,6 +250,7 @@ def _read(
         ],
         computed_at=computed_at,
         stale=signature != now_signature,
+        model=grid.model,
     )
 
 

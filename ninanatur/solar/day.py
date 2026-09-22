@@ -15,9 +15,8 @@ from datetime import UTC, datetime, timedelta
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
 from ninanatur.garden.roofs import Roof, shading_height
-from ninanatur.solar.light import MINUTE_STEP
 from ninanatur.solar.position import Location, sun_position
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_polygon
+from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_rings
 
 #: The months a garden is watched in. The same window the light model uses, and
 #: for the same reason: December says nothing about where a plant can live.
@@ -27,6 +26,11 @@ MONTHS: tuple[int, ...] = tuple(range(3, 11))
 #: middle is the one that represents the month rather than either edge.
 MID_MONTH_DAY = 15
 
+#: A frame every half hour. The light model's own sampling has been every ten
+#: minutes since Wave 26 (doc 117); a day watched through does not need three
+#: times the frames, and each frame is the shadows of the whole garden.
+FRAME_MINUTES = 30
+
 
 @dataclass(frozen=True)
 class Frame:
@@ -35,6 +39,9 @@ class Frame:
     minute: int
     altitude: float
     azimuth: float
+    #: Every shadow as rings — outlines anticlockwise, holes clockwise — drawn
+    #: as one path under the non-zero rule (doc 116). Until Wave 26 one convex
+    #: hull per obstacle, which filled an L's open corner.
     polygons: list[list[tuple[float, float]]]
 
 
@@ -56,7 +63,7 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
     obstacles = _casting(garden)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
     start = datetime(year, month, MID_MONTH_DAY, tzinfo=UTC)
-    step = timedelta(minutes=MINUTE_STEP)
+    step = timedelta(minutes=FRAME_MINUTES)
 
     frames: list[Frame] = []
     moment = start
@@ -68,7 +75,7 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
                     minute=moment.hour * 60 + moment.minute,
                     altitude=sun.altitude,
                     azimuth=sun.azimuth,
-                    polygons=[shadow_polygon(o, sun) for o in obstacles],
+                    polygons=shadow_rings(obstacles, sun),
                 )
             )
         moment += step

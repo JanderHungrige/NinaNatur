@@ -38,6 +38,9 @@ class LightMap(BaseModel):
     max_hours: float
     computed_at: str
     stale: bool
+    #: The light model that computed it (`solar.light.MODEL_VERSION`); empty
+    #: for a map computed before Wave 26 gave models a version.
+    model: str = ""
     #: Of those hours, the ones before the sun crosses due south. Empty on a
     #: grid computed before the split existed; the next rebuild fills it, and
     #: nulls line up with `hours`.
@@ -121,6 +124,8 @@ class ShadowFrame(BaseModel):
     minute: int
     altitude: float
     azimuth: float
+    #: Every shadow at this moment as rings — outlines anticlockwise, holes
+    #: clockwise — drawn as one path under the non-zero rule (doc 116).
     polygons: list[list[list[float]]]
 
 

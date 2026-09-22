@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-5
 demo_state: "A user finds a plant by its German name, filters by height and colour, clicks a month to see only what flowers then, and opens any species for a description and a photo"
 created: 2026-08-28
-hash: e393d583
+hash: 76681adb
 ---
 
 # Wave 6 — A catalogue you can actually browse

@@ -10,7 +10,7 @@ import math
 import pytest
 
 from ninanatur.garden.footprint import Shape, footprint_of
-from ninanatur.solar.shading import Obstacle, Point, SunPosition, is_shaded, shadow_polygon
+from ninanatur.solar.shading import Obstacle, Point, SunPosition, is_shaded, shadow_hull
 
 # Sun in the south at 30°, so shadows run north.
 SOUTH_30 = SunPosition(altitude=30.0, azimuth=180.0)
@@ -26,7 +26,7 @@ def _house(width: float = 10.0, depth: float = 4.0, rotation: float = 0.0) -> Ob
 
 def test_a_long_house_casts_a_long_shadow_not_a_round_one() -> None:
     """The sentence this whole feature exists for."""
-    shadow = shadow_polygon(_house(width=10.0, depth=4.0), SOUTH_30)
+    shadow = shadow_hull(_house(width=10.0, depth=4.0), SOUTH_30)
     xs = [p[0] for p in shadow]
     ys = [p[1] for p in shadow]
     assert max(xs) - min(xs) == pytest.approx(10.0), "as wide as the house"
@@ -37,19 +37,19 @@ def test_a_long_house_casts_a_long_shadow_not_a_round_one() -> None:
 def test_the_shadow_runs_away_from_the_sun() -> None:
     # Sun in the south, shadow to the north. Getting this backwards mirrors
     # every garden.
-    shadow = shadow_polygon(_house(), SOUTH_30)
+    shadow = shadow_hull(_house(), SOUTH_30)
     assert max(p[1] for p in shadow) > 2.0
 
 
 def test_a_shadow_from_the_east_runs_west() -> None:
     east = SunPosition(altitude=30.0, azimuth=90.0)
-    shadow = shadow_polygon(_house(width=4.0, depth=4.0), east)
+    shadow = shadow_hull(_house(width=4.0, depth=4.0), east)
     assert min(p[0] for p in shadow) < -2.0
 
 
 def test_rotating_the_house_rotates_its_shadow() -> None:
-    straight = shadow_polygon(_house(width=10.0, depth=2.0), SOUTH_30)
-    turned = shadow_polygon(_house(width=10.0, depth=2.0, rotation=90.0), SOUTH_30)
+    straight = shadow_hull(_house(width=10.0, depth=2.0), SOUTH_30)
+    turned = shadow_hull(_house(width=10.0, depth=2.0, rotation=90.0), SOUTH_30)
     width = lambda poly: max(p[0] for p in poly) - min(p[0] for p in poly)  # noqa: E731
     assert width(straight) > width(turned)
 

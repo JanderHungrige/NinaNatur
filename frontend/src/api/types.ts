@@ -615,6 +615,10 @@ export interface paths {
          *     The 15th, because a month's first and last days differ by a fortnight of sun
          *     and the middle is the one that represents it. Computed rather than stored:
          *     it is one day rather than a season, and nobody watches it twice in a row.
+         *
+         *     A heavy route since Wave 26 (doc 116): the exact shadow of a house with a
+         *     many-cornered outline is a union per frame, and a garden imported from the
+         *     map has two dozen of them — up to seconds, like the month view.
          */
         get: operations["shadows_through_a_day_api_v1_gardens__token__shadows_get"];
         put?: never;
@@ -1415,6 +1419,11 @@ export interface components {
             min_y: number;
             /** Misplaced */
             misplaced: components["schemas"]["MisplacedOut"][];
+            /**
+             * Model
+             * @default
+             */
+            model: string;
             /** Morning */
             morning: (number | null)[];
             /** Roof */

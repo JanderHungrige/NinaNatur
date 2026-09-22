@@ -81,15 +81,17 @@ function World({
       <CanopyMarks trees={canopies} />
 
       {/* One moment of one day, over everything: while it plays, where the
-          shadow is *now* is the only question being asked. */}
+          shadow is *now* is the only question being asked. Every shadow of the
+          moment, as rings — outlines anticlockwise, the holes in them clockwise
+          (doc 116) — in one path under the non-zero rule, so a courtyard the
+          sun still reaches is drawn open and two that overlap fill once. */}
       {shadows !== undefined && (
         <g className="day-shadows" aria-hidden="true" pointerEvents="none">
-          {shadows.map((polygon, i) => (
-            <polygon
-              key={i}
-              points={polygon.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-            />
-          ))}
+          <path
+            fillRule="nonzero"
+            d={shadows.map((ring) =>
+              `M${ring.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join('L')}Z`).join('')}
+          />
         </g>
       )}
 

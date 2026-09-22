@@ -49,7 +49,8 @@ def is_convex(outline: list[tuple[float, float]] | tuple[tuple[float, float], ..
     (a node on a wall) does not count as a turn, and a point repeated back to
     back — OpenStreetMap closes every way on its first node — is one point: at a
     repeated point the turn was never measured, and an L closed at its inner
-    corner passed as convex (review, 2026-09-22)."""
+    corner passed as convex (review, 2026-09-22). An edge that doubles straight
+    back is not convex."""
     ring = [p for i, p in enumerate(outline) if p != outline[i - 1]] or list(outline[:1])
     n = len(ring)
     turns = set()
@@ -58,6 +59,12 @@ def is_convex(outline: list[tuple[float, float]] | tuple[tuple[float, float], ..
         cross = (bx - ax) * (cy - by) - (by - ay) * (cx - bx)
         if abs(cross) > 1e-9:
             turns.add(cross > 0)
+        elif (bx - ax) * (cx - bx) + (by - ay) * (cy - by) < 0:
+            # Straight back the way it came: a spur. A wall drawn as a line
+            # has one at the inside of every corner (`polyline.band_of`), and
+            # read as no turn at all it made every turning wall convex — its
+            # hull then shaded the corner it turns round (review, 2026-09-22).
+            return False
     return len(turns) <= 1
 
 

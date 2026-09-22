@@ -61,6 +61,6 @@ export function sunMapFor(garden: GardenOut): LightMap {
   return {
     cell_m: CELL_M, min_x: minX - 1, min_y: minY - 1, cols, rows, hours, roof,
     max_hours: OPEN_SKY_H, computed_at: '2026-09-18T00:00:00+00:00', stale: false,
-    morning: hours.map((h) => Math.round(h * 4.5) / 10), misplaced: [],
+    morning: hours.map((h) => Math.round(h * 4.5) / 10), misplaced: [], model: '',
   };
 }

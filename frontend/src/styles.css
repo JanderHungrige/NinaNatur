@@ -1869,7 +1869,7 @@ button[disabled] { opacity: 0.55; cursor: default; }
 
 /* One moment of one day, over everything: while it plays, where the shadow is
    *now* is the only question being asked. */
-.day-shadows polygon {
+.day-shadows path {
   fill: rgb(43 47 40 / 34%);
   stroke: rgb(43 47 40 / 55%);
   stroke-width: 1;

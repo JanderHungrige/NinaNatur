@@ -13,41 +13,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
+import shapely
+from shapely.geometry import Polygon
+
 from ninanatur.garden.ground import height_at
 from ninanatur.garden.models import Garden
 from ninanatur.garden.objects import ObjectKind, is_roofed
 from ninanatur.garden.roofs import Roof
 from ninanatur.garden.roofshape import RoofSurface, surface_of
-from ninanatur.garden.slopes import ring_for, slope_at
+from ninanatur.garden.slopes import ASPECT_STEP_DEG, SLOPE_STEP_DEG, ring_for, slope_at
 from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.solar.field import ShadowAt, ShadowField
+from ninanatur.solar.raster_grid import Cells
 
-
-def _on_the_ground(
-    field_of: ShadowField,
-    centre: tuple[float, float],
-    ground: TerrainWindow | None,
-    horizon: list[float] | None,
-    floor: float,
-    skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]],
-) -> tuple[float, float]:
-    """One cell's morning and afternoon, at its own height and under its own sky.
-
-    The ring is built per cell rather than per garden because the near field is
-    the slope and the slope is a property of the cell. Without terrain there is
-    no slope to add, so the garden's ring is used unchanged — and without a ring
-    either, the whole question disappears.
-    """
-    x, y = centre
-    z = height_at(ground, x, y, floor)
-    ring = (
-        tuple(horizon or ())
-        if ground is None
-        else ring_for(horizon, *slope_at(ground, x, y))
-    )
-    if ring not in skies:
-        skies[ring] = field_of.moments_under(ring or None)
-    return field_of.halves_at(x, y, z, under=skies[ring])
+#: A ring gives the land's height in each degree of azimuth.
+DEGREES = 360
 
 
 @dataclass(frozen=True)
@@ -61,11 +41,21 @@ class Roofed:
 
 
 @dataclass(frozen=True)
-class Answer:
-    """One cell: its two halves, and whether they are about a roof."""
+class Surface:
+    """What one cell's sun is asked about — since Wave 26 the raster asks it
+    for every cell at once (`solar.raster_grid`); this says what each cell is.
 
-    halves: tuple[float, float] | None
+    `z` is the absolute height it stands at, `ring` how high the land stands
+    around it in each degree (empty for an open sky), `owner` the building
+    whose roof it is, left out of its own shadows. `answered` is False only for
+    a roof nobody has given a height, which the model has skipped since Wave 8.
+    """
+
+    z: float
+    ring: tuple[float, ...]
+    owner: int | None
     on_a_roof: bool
+    answered: bool = True
 
 
 def roofs_of(garden: Garden, ground: TerrainWindow | None) -> list[Roofed]:
@@ -93,15 +83,15 @@ def roofs_of(garden: Garden, ground: TerrainWindow | None) -> list[Roofed]:
     return roofed
 
 
-def answer_at(
-    field_of: ShadowField,
+def surface_at(
     centre: tuple[float, float],
     ground: TerrainWindow | None,
     horizon: list[float] | None,
     floor: float,
-    skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]],
     roofs: list[Roofed],
-) -> Answer:
+    height_above_ground: float = 0.0,
+    rings: dict[tuple[float, float], tuple[float, ...]] | None = None,
+) -> Surface:
     """One cell, on whatever surface is actually there.
 
     Ground, unless a building stands on it — and then the roof, at its own
@@ -109,6 +99,16 @@ def answer_at(
     Answering the ground under a house is answering a place the sun has never
     reached, and painting the result on a plan says *deep shade* where anyone
     looking down sees a sunlit roof.
+
+    The pitch is folded into the sky the way a hillside already is: a north
+    pitch has its own ridge standing between it and the southern sun. On the
+    ground the ring is built per cell, because the near field is the slope and
+    the slope is a property of the cell; without terrain there is no slope,
+    and the garden's own ring is used unchanged.
+
+    `rings` shares one ring among every cell of one slope and aspect, as the
+    ring rounds them: kept per cell, a hillside's grid held a 360-number ring
+    for each of forty thousand cells (review, 2026-09-22).
     """
     from ninanatur.garden.footprint import covers
 
@@ -117,22 +117,90 @@ def answer_at(
         if not covers(roofed.outline, (x, y)):
             continue
         if roofed.surface is None:
-            # A building nobody has recorded the height of. Skipped by the
-            # shading model since Wave 8, and there is no surface to stand on.
-            return Answer(halves=None, on_a_roof=True)
-        z = roofed.base + roofed.surface.height_at(x, y)
+            # Unanswered, and on the lowest ground: a height of zero on a
+            # garden 150 m up swept every shadow from 150 m below it (review).
+            return Surface(z=floor, ring=(), owner=None, on_a_roof=True, answered=False)
         slope, aspect = roofed.surface.slope_aspect_at(x, y)
-        # The pitch, folded into the sky the way a hillside already is: a north
-        # pitch has its own ridge standing between it and the southern sun.
-        ring = ring_for(horizon, slope, aspect)
-        if ring not in skies:
-            skies[ring] = field_of.moments_under(ring or None)
-        return Answer(
-            halves=field_of.halves_at(x, y, z, under=skies[ring],
-                                      ignore=roofed.element_id),
-            on_a_roof=True,
-        )
-    return Answer(
-        halves=_on_the_ground(field_of, centre, ground, horizon, floor, skies),
-        on_a_roof=False,
+        return Surface(z=roofed.base + roofed.surface.height_at(x, y),
+                       ring=_ring(horizon, slope, aspect, rings), owner=roofed.element_id,
+                       on_a_roof=True)
+    ring = tuple(horizon or ()) if ground is None else _ring(horizon, *slope_at(ground, x, y),
+                                                             rings)
+    return Surface(z=height_at(ground, x, y, floor) + height_above_ground, ring=ring,
+                   owner=None, on_a_roof=False)
+
+
+def _ring(horizon: list[float] | None, slope: float, aspect: float,
+          rings: dict[tuple[float, float], tuple[float, ...]] | None) -> tuple[float, ...]:
+    """`ring_for`, shared among the cells it rounds to the same ring."""
+    if rings is None:
+        return ring_for(horizon, slope, aspect)
+    key = (-1.0, 0.0) if slope <= 0.0 else (
+        round(slope / SLOPE_STEP_DEG) * SLOPE_STEP_DEG,
+        round(aspect / ASPECT_STEP_DEG) * ASPECT_STEP_DEG)
+    found = rings.get(key)
+    if found is None:
+        found = rings[key] = ring_for(horizon, slope, aspect)
+    return found
+
+
+def surfaces_of(xs: list[float], ys: list[float], ground: TerrainWindow | None,
+                horizon: list[float] | None, floor: float, roofs: list[Roofed],
+                height_above_ground: float = 0.0) -> list[list[Surface]]:
+    """Every cell's surface, rows from the south: `surface_at` for a grid.
+
+    Which roof a cell is on is asked of each roof once, for every cell at
+    once — asked per cell, a garden of forty houses spent more time finding
+    roofs than computing sun (doc 117). A cell on the ground with no terrain
+    under it has nothing of its own, and shares one surface with the rest.
+    """
+    x, y = np.meshgrid(np.asarray(xs, dtype=float), np.asarray(ys, dtype=float))
+    whose = np.full(x.shape, -1, dtype=int)
+    for index, roofed in enumerate(roofs):
+        if len(roofed.outline) < 3:
+            continue
+        on = shapely.intersects_xy(shapely.make_valid(Polygon(roofed.outline)), x, y)
+        whose[(whose < 0) & on] = index
+    flat = None if ground is not None else Surface(
+        z=height_above_ground, ring=tuple(horizon or ()), owner=None, on_a_roof=False)
+    rings: dict[tuple[float, float], tuple[float, ...]] = {}
+    return [[flat if flat is not None and whose[r, c] < 0 else
+             surface_at((xs[c], ys[r]), ground, horizon, floor,
+                        [] if whose[r, c] < 0 else [roofs[int(whose[r, c])]],
+                        height_above_ground, rings)
+             for c in range(len(xs))] for r in range(len(ys))]
+
+
+def cells_of(surfaces: list[list[Surface]], xs: list[float], ys: list[float],
+             cell_m: float) -> Cells:
+    """The raster's arrays for a grid of surfaces, rows from the south.
+
+    Rings are shared: on a uniform hillside every cell has the same one, and
+    it is stored once. One of another length than a degree each is spread over
+    the 360 degrees the way the sun reads it, by the degree modulo its length.
+    """
+    # By identity: `surfaces_of` shares each ring, and hashing 360 numbers per
+    # cell cost more than the rest of the step.
+    index_of: dict[int, int] = {}
+    kept: list[tuple[float, ...]] = []
+    sky = np.full((len(ys), len(xs)), -1, dtype=int)
+    for r, row in enumerate(surfaces):
+        for c, surface in enumerate(row):
+            if surface.ring:
+                found = index_of.get(id(surface.ring))
+                if found is None:
+                    found = index_of[id(surface.ring)] = len(kept)
+                    kept.append(surface.ring)
+                sky[r, c] = found
+    table = np.array([[ring[d % len(ring)] for d in range(DEGREES)] for ring in kept],
+                     dtype=float).reshape(-1, DEGREES)
+    return Cells(
+        xs=np.array(xs, dtype=float), ys=np.array(ys, dtype=float), cell_m=cell_m,
+        z=np.array([[s.z for s in row] for row in surfaces], dtype=float),
+        owner=np.array([[-1 if s.owner is None else s.owner for s in row]
+                        for row in surfaces], dtype=int),
+        sky=sky, rings=table,
     )
+
+
+__all__ = ["Roofed", "Surface", "cells_of", "roofs_of", "surface_at", "surfaces_of"]

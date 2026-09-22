@@ -199,6 +199,21 @@ describe('the shadow the sun casts (doc 99)', () => {
     expect(drawn(house({ shadow: null })).marks('shadow')).toHaveLength(0);
   });
 
+  it('keeps an L-shaped house\'s open corner out of it, in one mark (doc 116)', () => {
+    const ell = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 4 }, { x: 4, y: 4 },
+                 { x: 4, y: 10 }, { x: 0, y: 10 }];
+    const marks = drawn(house({ points: ell, shadow: { x: 2, y: 2 } })).marks('shadow');
+    // One path of pieces, not one path per piece: a single fill never darkens
+    // where two pieces overlap, and there is nothing to stroke between them.
+    expect(marks).toHaveLength(1);
+    const d = marks[0]!.getAttribute('d') ?? '';
+    expect(d.match(/M/g)!.length).toBeGreaterThan(1);
+    expect(marks[0]!.getAttribute('fill-rule')).toBeNull();
+    // A rectangle is still the one hull it always was.
+    const box1 = drawn(house({ shadow: { x: 2, y: 2 } })).marks('shadow')[0]!;
+    expect((box1.getAttribute('d') ?? '').match(/M/g)).toHaveLength(1);
+  });
+
   it('but a raised bed keeps its own side, which is not the sun\'s doing', () => {
     const bed = shape('bed', 'planting', box(0, 0, 3, 1.5), { raised: 0.5, shadow: null });
     expect(drawn(bed).under.querySelectorAll('[data-mark="shadow"]')).toHaveLength(1);

@@ -61,8 +61,10 @@ Measured against the live services:
 | **Wolfach, Schwarzwald** | **12.54°** | 135° | **12.54°** |
 | Eschwege, Werratal | 6.63° | 271° | 4.38° |
 
-Midwinter noon at 51°N is 15.5°. Potsdam's 4.80° is below the light model's own
-`MIN_ALTITUDE = 5°` and changes nothing at all. Wolfach's 12.54° to the south
+Midwinter noon at 51°N is 15.5°. Potsdam's 4.80° was below the light model's own
+`MIN_ALTITUDE = 5°` and changed nothing at all. Since Wave 26 the sun counts from
+3° (doc 117); Potsdam's highest point lies due south, where the season's sun is
+never that low, so the ring still changes next to nothing there. Wolfach's 12.54° to the south
 means the sun barely clears the ridge at noon in December — which is the whole
 reason for the feature, and a thing no garden-sized model could ever have said.
 

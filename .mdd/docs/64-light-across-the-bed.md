@@ -55,8 +55,10 @@ to place a plant by.
 
 The same computation, asked at many points. The garden is covered with square
 cells (see *What the grid covers*) and each one gets its own mean daily sun
-hours over the light season (1 March to 31 October, every tenth day, every half
-hour above 5° altitude — 1,200 sun positions).
+hours over the light season (1 March to 31 October; since Wave 26 every fifth
+day, every ten minutes, the sun above 3° — about 3,800 sun positions, computed
+for every cell at once by the raster, doc 117; until then every tenth day, every
+half hour, above 5° — 1,200).
 
 That only became affordable because `solar/field.py` stopped redoing the work
 per point. The sun positions and the shadow polygons of a season are the same
@@ -211,10 +213,10 @@ neighbourhoods on 2026-09-07; re-measuring them inside plots is open.
 ## One month instead of the season
 
 `GET .../light?month=3` narrows the average from the whole March-to-October
-season to one month, computed on the spot and never stored. The season is
-sampled every tenth day and a month every fifth, so a month costs about a
-quarter of a season — cheap enough to answer live, and far cheaper than storing
-eight grids per garden would be to keep up to date.
+season to one month, computed on the spot and never stored. Since Wave 26 the
+season is sampled every fifth day and a month every second (doc 117), so a month
+costs about a third of a season — cheap enough to answer live, and far cheaper
+than storing eight grids per garden would be to keep up to date.
 
 Winter is a 422. The whole light model stops at October: a plant's December does
 not decide where it can live, and a December map would drag every German garden

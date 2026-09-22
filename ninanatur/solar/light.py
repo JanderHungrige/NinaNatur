@@ -9,22 +9,34 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from ninanatur.solar.position import Location, sun_position
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, Point, is_shaded
+from ninanatur.solar.position import Location
+from ninanatur.solar.shading import Obstacle, Point
 
 # March to October. A plant's light experience in December does not decide where
 # it can live, and including winter would drag every German garden into shade.
 SEASON_START = (3, 1)
 SEASON_END = (10, 31)
 
-# One day every ten, sampled every half hour. Fine enough that the answer stops
-# moving, coarse enough to stay well under a second per bed.
-DAY_STEP = 10
-MINUTE_STEP = 30
+# Every fifth day, every ten minutes; a month every second day. Until Wave 26 it
+# was every tenth day and every half hour, a month every fifth, with the claim
+# "fine enough that the answer stops moving" — measured, it was 0.22 h low over
+# the season and 0.46 h in an April month, mostly from the days skipped
+# (doc 115). These are the steps its convergence suite asks for, within 0.04 h
+# and 0.10 h of an answer that has stopped moving, and the raster pays for
+# them (doc 117).
+DAY_STEP = 5
+MINUTE_STEP = 10
+MONTH_DAY_STEP = 2
 
-# A single month gets a finer step, because ten days would sample it three
-# times. Six samples over four weeks, at a quarter of the season's cost.
-MONTH_DAY_STEP = 5
+#: Which light model computed a map. It enters every map's signature, so a map
+#: an older model drew reads stale instead of showing its answer under a new
+#: date, and the page names it (Wave 26: "every model change bumps a
+#: MODEL_VERSION"). Raise it with every change to what the model answers:
+#:
+#: - "" — before Wave 26: every 10th day, every half hour, the sun from 5°.
+#: - "26.2" — every 5th day, every 10 minutes, a month every 2nd day, the sun
+#:   from 3°, concave shadows exact (docs 115–117).
+MODEL_VERSION = "26.2"
 
 # Mean daily direct sun (hours) -> light value on EIVE's own 0–10 scale, as
 # anchors joined by straight lines, darkest first.
@@ -95,7 +107,7 @@ def ellenberg_from_sun_hours(sun_hours: float) -> float:
     return SUN_HOUR_ANCHORS[-1][1]
 
 
-def _season_days(year: int, month: int | None = None) -> list[datetime]:
+def season_days(year: int, month: int | None = None) -> list[datetime]:
     """The days a light answer is averaged over.
 
     March to October by default — a plant's whole growing season, which is what
@@ -133,31 +145,24 @@ def bed_light_value(
     Returns the sun hours alongside the value: a bare number the user cannot
     trace back to their own obstacles is not explainable, and this one will
     surprise people.
+
+    A crown passes what it passes, as it does on the map: until Wave 26 this
+    point path counted any shadow as a wall, trees included, and a raised bed
+    under an apple tree read darker than the ground beside it.
     """
-    days = _season_days(year)
-    lit_minutes = 0
-    samples = 0
-    step = timedelta(minutes=MINUTE_STEP)
+    # The raster's point path, every moment at once (doc 117). It imports
+    # this module's sampling, so it is imported here rather than at the top.
+    from ninanatur.solar.raster import moments_for, parts_of, point_hours
 
-    for day in days:
-        moment = day
-        end_of_day = day + timedelta(days=1)
-        while moment < end_of_day:
-            samples += 1
-            sun = sun_position(location, moment)
-            if sun.altitude > MIN_ALTITUDE and not any(
-                is_shaded(bed, obstacle, sun, height_above_ground)
-                for obstacle in obstacles
-            ):
-                lit_minutes += MINUTE_STEP
-            moment += step
-
+    moments = moments_for(location, year)
+    before, after = point_hours(parts_of(obstacles), moments, bed.x, bed.y,
+                                height_above_ground)
     # The value from the hours as stored, so the two always agree: on lines
     # rather than steps, a rounding of the hours moves the value too.
-    sun_hours = round((lit_minutes / 60) / len(days), 2) if days else 0.0
+    sun_hours = round(before + after, 2)
     return BedLight(
         ellenberg_l=ellenberg_from_sun_hours(sun_hours),
         sun_hours=sun_hours,
-        samples=samples,
+        samples=moments.days * (24 * 60 // MINUTE_STEP),
         year=year,
     )

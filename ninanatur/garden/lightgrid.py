@@ -16,20 +16,20 @@ import math
 from dataclasses import dataclass, field
 
 from ninanatur.garden.ground import lowest_ground, standing_on
-from ninanatur.garden.lightcells import answer_at, roofs_of
-from ninanatur.garden.lightgrid_extent import CELL_COST_MS as CELL_COST_MS
+from ninanatur.garden.lightcells import cells_of, roofs_of, surfaces_of
 from ninanatur.garden.lightgrid_extent import CELL_LADDER_M as CELL_LADDER_M
 from ninanatur.garden.lightgrid_extent import GRID_BUDGET_S as GRID_BUDGET_S
-from ninanatur.garden.lightgrid_extent import OBSTACLE_COST_MS as OBSTACLE_COST_MS
 from ninanatur.garden.lightgrid_extent import GardenTooLarge as GardenTooLarge
 from ninanatur.garden.lightgrid_extent import cell_size_for as cell_size_for
 from ninanatur.garden.lightgrid_extent import check_extent as check_extent
 from ninanatur.garden.lightgrid_extent import extent_of as extent_of
-from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model
+from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model, stands_in
 from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.solar.field import ShadowAt, ShadowField, shadow_field
+from ninanatur.solar.light import MODEL_VERSION
 from ninanatur.solar.position import Location
+from ninanatur.solar.raster import moments_for, parts_of
+from ninanatur.solar.raster_grid import grid_hours
 
 # The box and the cell size live in `lightgrid_extent` since 2026-09-21. The
 # names are re-exported because this is where every caller has imported them.
@@ -68,6 +68,9 @@ class LightGrid:
     #: planted, so it must not reach a bed's mean or the garden's brightest
     #: point, and the reader is told which one they are hovering.
     roof: list[bool] = field(default_factory=list)
+    #: The light model that computed it (`solar.light.MODEL_VERSION`); empty on
+    #: a map computed before Wave 26 gave the model a version.
+    model: str = ""
 
     def at(self, x: float, y: float) -> float | None:
         """The cell containing this point.
@@ -173,48 +176,47 @@ def compute_grid(
     level, and one downhill shades less.
 
     `horizon` is the ring from `geo/horizon.py`: what the land does beyond the
-    plot. In flat country it changes nothing, because the ring sits below the
-    5° altitude the model already stops counting at. In a valley it decides
-    whether the garden sees December at all.
+    plot. In flat country it changes next to nothing, because the ring sits
+    below the altitude the model stops counting at (`MIN_ALTITUDE`). In a
+    valley it decides whether the garden sees December at all.
     """
     box = grid_extent_of(garden)
     if box is None:
         return None
     min_x, min_y, max_x, max_y = box
-    check_extent(min_x, min_y, max_x, max_y, len(obstacles))
+    standing = standing_on(obstacles, ground)
+    # What the raster pays for is parts, not obstacles (review, 2026-09-22).
+    parts = parts_of(standing)
+    near = sum(1 for p in parts if stands_in([(float(x), float(y)) for x, y in p.corners], box))
+    terrain = ground is not None
+    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain)
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
-    cell = cell_size_for(width, depth, len(obstacles))
+    cell = cell_size_for(width, depth, len(parts), near, terrain)
     cols = max(1, int(width / cell) + 1)
     rows = max(1, int(depth / cell) + 1)
 
-    standing = standing_on(obstacles, ground)
     floor = lowest_ground(ground, min_x, min_y, cell, cols, rows)
-    field_of: ShadowField = shadow_field(
-        Location(latitude=garden.latitude, longitude=garden.longitude),
-        standing,
-        year=year,
-        height_above_ground=height_above_ground,
-        ground_floor=floor,
-        horizon=horizon,
-        month=month,
-    )
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
-    skies: dict[tuple[float, ...], list[tuple[list[ShadowAt], bool]]] = {}
     roofs = roofs_of(garden, ground)
-    answers = [
-        answer_at(field_of, grid.centre_of(col, row), ground, horizon, floor,
-                  skies, roofs)
-        for row in range(rows)
-        for col in range(cols)
-    ]
+    xs = [grid.centre_of(col, 0)[0] for col in range(cols)]
+    ys = [grid.centre_of(0, row)[1] for row in range(rows)]
+    surfaces = surfaces_of(xs, ys, ground, horizon, floor, roofs, height_above_ground)
+    location = Location(latitude=garden.latitude, longitude=garden.longitude)
+    before, after = grid_hours(parts, moments_for(location, year, month),
+                               cells_of(surfaces, xs, ys, cell))
+    flat = [s for row in surfaces for s in row]
+    total = (before + after).ravel()
     return LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows,
-        hours=[None if a.halves is None else round(sum(a.halves), 2) for a in answers],
-        morning=[None if a.halves is None else round(a.halves[0], 2) for a in answers],
-        roof=[a.on_a_roof for a in answers],
+        hours=[round(float(h), 2) if s.answered else None for s, h in zip(flat, total,
+                                                                          strict=True)],
+        morning=[round(float(h), 2) if s.answered else None
+                 for s, h in zip(flat, before.ravel(), strict=True)],
+        roof=[s.on_a_roof for s in flat],
+        model=MODEL_VERSION,
     )
 
 

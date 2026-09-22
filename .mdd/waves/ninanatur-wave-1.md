@@ -7,7 +7,7 @@ status: complete
 depends_on: ""
 demo_state: "ninanatur.w3rth.de serves a branded NinaNatur page, and a push to main replaces it automatically within a minute"
 created: 2026-08-27
-hash: edc6d384
+hash: 44dd6988
 ---
 
 # Wave 1 — Branded shell, online and self-updating

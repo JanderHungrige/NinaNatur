@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-10
 demo_state: "A user drags out a rectangle, a circle and a freehand path, moves a vertex to shape one of them, then clicks each and says what it is — and the plan redraws it as a bed, a gravel path and a pool"
 created: 2026-08-30
-hash: 5abbd009
+hash: b65f8ed7
 ---
 
 # Wave 11 — Draw first, say what it is afterwards
