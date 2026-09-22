@@ -630,9 +630,9 @@ Three stages:
   raised bed was warned about from the ground grid while the list ranked it by
   its own sampled light; and the landcover fetch run after the answer still
   held one of the two heavy slots until Overpass replied.
-  Then the fixes themselves were checked, four times, each round a checker per
+  Then the fixes themselves were checked, five times, each round a checker per
   fix and skeptics per finding, until the findings ran out of substance:
-  `e8f0e02`, `f3d23ce`, `03b7a4b`, `6baadf2`. What they found beyond the first
+  `e8f0e02`, `f3d23ce`, `03b7a4b`, `6baadf2`, `5183f65`. What they found beyond the first
   review: a narrow border's cell is centred outside it, often in the hedge it
   borders (a cell is a cluster's own only where it is its bed's); a plant
   planted from the list has no position and was judged at the bed's middle; a
@@ -643,7 +643,11 @@ Three stages:
   model itself: a concave house was shaded by its convex hull, so the inner
   corner of every L-shaped house and every courtyard read 0 h all day, on the
   map and in a bed's sample — exact now, checked against a 3D ray march over
-  half a million samples (doc 38).
+  half a million samples (doc 38). And one in how positions are read: the plan
+  keeps a dragged cluster in garden metres, the server read the same numbers as
+  an offset from the bed's centre, so every placed cluster in a bed away from
+  the garden's origin was judged — and a placed tree cast its shade — somewhere
+  else (doc 67).
 
 ## What each one is
 
