@@ -4,7 +4,7 @@ title: Drawing at Any Zoom
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [26-drawing-canvas, 50-polygon-closing, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg]
 relates: [111-a-shape-the-plan-can-draw, 113-a-plan-that-keeps-up, 31-map-selection]
 source_files:

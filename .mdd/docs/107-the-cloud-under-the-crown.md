@@ -4,7 +4,7 @@ title: The Cloud Under the Crown
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service, 105-every-roof-in-the-country]
 relates: [84-canopies-found, 106-which-source-said-so, 07-solar-geometry]
 source_files:

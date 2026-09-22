@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-8
 demo_state: "A user places themselves on the plan and sees what is actually visible from there, and can keep their gardens under an account without giving an email address"
 created: 2026-08-28
-hash: 1d695de7
+hash: 953ec256
 ---
 
 # Wave 9 — Standing in the garden, and keeping it

@@ -4,7 +4,7 @@ title: A Package of Its Own
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service, 109-is-it-still-there]
 relates: [106-which-source-said-so, 17-terrain-window]
 source_files:

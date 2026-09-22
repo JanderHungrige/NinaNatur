@@ -5,7 +5,7 @@ edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-13
 wave_status: complete
-depends_on: [36-accounts]
+depends_on: [35-accounts]
 relates: [54-one-way-in, 30-landing-and-garden-id, 91-a-sheet-from-below]
 source_files:
   - frontend/src/components/AccountBar.tsx

@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-4
 demo_state: "A planting shows an insect score built on counted German relations, and suggested swaps that measurably raise it — each explained in a sentence"
 created: 2026-08-27
-hash: 5fc1811e
+hash: b33e6e84
 ---
 
 # Wave 5 — What the planting is worth to insects

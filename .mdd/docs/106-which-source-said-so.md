@@ -4,7 +4,7 @@ title: Which Source Said So
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [102-which-tiles-and-whose, 104-a-horizon-for-everyone, 105-every-roof-in-the-country]
 relates: [93-where-the-roof-came-from, 68-terrain-sources, 114-the-ground-around-the-garden]
 source_files:

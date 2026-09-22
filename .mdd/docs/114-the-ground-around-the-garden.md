@@ -4,7 +4,7 @@ title: The Ground Around the Garden
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [31-map-selection, 59-osm-streets, 96-a-theme-is-a-thing, 106-which-source-said-so, 113-a-plan-that-keeps-up]
 relates: [65-the-shade-switch, 68-which-ground-and-whose, 97-draft-sketch-in-svg, 112-drawing-at-any-zoom]
 source_files:

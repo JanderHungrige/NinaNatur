@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-11
 demo_state: "A user opens a garden, finds the drawing tools at the top, drags out a shape without anything else being selected, closes a polygon by coming back to where they started, names it with a right-click, and finds every element again in a list"
 created: 2026-08-31
-hash: 20f7d2d4
+hash: 314e3873
 ---
 
 # Wave 12 — The plan gets out of its own way

@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-15
 demo_state: "Ein Schalter legt eine Sonnenstunden- oder Schattenstundenkarte über den Plan, in Graustufen bzw. Transparenz. Der Play-Knopf lässt den Schatten über einen mittleren Tag des gewählten Monats wandern. Das Licht wird über ein Raster berechnet, nicht an einem Punkt je Beet — und eine Sonnenpflanze, die im Schatten steht, wird als solche benannt."
 created: 2026-09-04
-hash: 413f1abc
+hash: de240e58
 ---
 
 # Wave 16: The shade switch

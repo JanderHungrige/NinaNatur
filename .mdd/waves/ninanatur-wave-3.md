@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-2
 demo_state: "A user draws beds on a garden plan, places obstacles, and each bed gets a computed light value from the real sun path — reload the page and it is all still there"
 created: 2026-08-27
-hash: 98b45717
+hash: 3f0b1fca
 ---
 
 # Wave 3 — The garden as a floor plan

@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-6
 demo_state: "A user draws their garden — outline, beds, trees, walls — labels each object by clicking it, enters what already grows there, and plays the bloom year as colour on the plan"
 created: 2026-08-28
-hash: 6bf3323a
+hash: 4d3f98a7
 ---
 
 # Wave 7 — The garden as a drawing
