@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from ninanatur.garden.footprint import covers
 from ninanatur.solar.position import SunPosition
+from ninanatur.solar.reach import is_convex, near_edge
 
 # Below this the sun is weak and in practice blocked by whatever surrounds the
 # garden. It also bounds the shadow: 1/tan(altitude) grows without limit as the
@@ -103,9 +104,9 @@ def shadow_polygon(obstacle: Obstacle, sun: SunPosition) -> list[tuple[float, fl
 
     The footprint swept along the anti-solar direction by
     `height / tan(altitude)`, and the convex hull of the original and the swept
-    copy. For the shapes a garden contains — rectangles, circles, sketched
-    outlines — the hull is the shadow; for a genuinely concave outline it is
-    slightly generous, which is stated rather than pretended away.
+    copy. For a convex outline the hull is the shadow; for a concave one it is
+    generous — it covers the open ground in an L's inner corner — so the tests
+    of a point (`is_shaded`, `field.ShadowAt`) ask the exact question there.
     """
     length = shadow_length(obstacle.height, sun.altitude)
     if length <= 0:
@@ -164,4 +165,16 @@ def is_shaded(
         return False
 
     lifted = Obstacle(footprint=obstacle.footprint, height=effective)
-    return covers(shadow_polygon(lifted, sun), (point.x, point.y))
+    if not covers(shadow_polygon(lifted, sun), (point.x, point.y)):
+        return False
+    if is_convex(obstacle.footprint):
+        return True
+    # The hull of a concave outline covers its inner corner, which is open
+    # ground: ask whether the ray towards the sun meets the footprint in reach.
+    azimuth = math.radians(sun.azimuth)
+    sin_a, cos_a = math.sin(azimuth), math.cos(azimuth)
+    aligned = tuple((px * cos_a - py * sin_a, px * sin_a + py * cos_a)
+                    for px, py in obstacle.footprint)
+    near = near_edge(aligned, point.x * cos_a - point.y * sin_a,
+                     point.x * sin_a + point.y * cos_a)
+    return near is not None and shadow_length(effective, sun.altitude) >= near

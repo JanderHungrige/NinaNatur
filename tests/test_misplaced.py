@@ -9,7 +9,7 @@ import pytest
 from ninanatur.fit.light_fit import light_mismatch_at
 from ninanatur.fit.score import MEDIAN_WIDTH
 from ninanatur.garden.elements import insert_element
-from ninanatur.garden.lightgrid import LightGrid, compute_grid
+from ninanatur.garden.lightgrid import compute_grid
 from ninanatur.garden.lightgrid_store import load_grid
 from ninanatur.garden.lighting import recompute_light
 from ninanatur.garden.misplaced import misplaced_plantings
@@ -187,85 +187,6 @@ def test_a_raised_bed_is_judged_by_the_light_the_list_ranks_it_by(
     add_planting(conn, bed_id, taxon_id=7, quantity=1)
 
     assert misplaced_plantings(conn, load_garden(conn, garden_id), stored[0]) == []
-
-
-def _laid_out(conn: sqlite3.Connection, bed: list[list[float]], hours: float) -> tuple[int, int]:
-    """A garden with one bed whose stored light is `hours`, as a rebuild left it."""
-    garden_id = create_garden(conn, name="G", latitude=52.5, longitude=13.4)
-    bed_id = insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
-                            name="Beet", points=bed, soil_type="loam", moisture="fresh")
-    conn.execute("UPDATE element SET sun_hours = ?, ellenberg_l = ? WHERE element_id = ?",
-                 (hours, ellenberg_from_sun_hours(hours), bed_id))
-    conn.commit()
-    return garden_id, bed_id
-
-
-#: A metre-square grid, 10 × 10: dark along the southern row, bright above it.
-def _grid(roof_at: int | None = None) -> LightGrid:
-    hours: list[float | None] = [2.0 if i < 10 else 9.0 for i in range(100)]
-    roof = [False] * 100
-    if roof_at is not None:
-        hours[roof_at], roof[roof_at] = 12.6, True
-    return LightGrid(min_x=0.0, min_y=0.0, cell_m=1.0, cols=10, rows=10, hours=hours, roof=roof)
-
-
-def test_a_bed_narrower_than_a_cell_is_judged_by_its_own_light(conn: sqlite3.Connection) -> None:
-    """No cell centre falls inside it, so the rebuild sampled its middle; the
-    cell under that middle is another place (review, 2026-09-21)."""
-    garden_id, bed_id = _laid_out(conn, [[2, 0.55], [8, 0.55], [8, 0.95], [2, 0.95]], 8.0)
-    _species(conn, 8, ellenberg_from_sun_hours(8.0), 2.0)
-    add_planting(conn, bed_id, taxon_id=8, quantity=1)
-    garden = load_garden(conn, garden_id)
-    assert _grid().mean_over(garden.beds[0].polygon) is None, "narrower than a cell"
-
-    assert misplaced_plantings(conn, garden, _grid()) == []
-
-
-def test_a_placed_cluster_in_a_narrow_border_is_judged_by_its_own_cell(
-    conn: sqlite3.Connection,
-) -> None:
-    """A long border misses every cell centre, but not the cells: its shaded end
-    is still the shaded end (review, 2026-09-21 — for a while the whole border
-    was judged by the one sample at its middle)."""
-    garden_id, bed_id = _laid_out(conn, [[0, 0.55], [10, 0.55], [10, 0.95], [0, 0.95]], 9.0)
-    _species(conn, 10, 9.0, 2.0)
-    planting_id = add_planting(conn, bed_id, taxon_id=10, quantity=1)
-    bed = load_garden(conn, garden_id).beds[0]
-    place_planting(conn, planting_id, 1.0 - bed.x, 0.75 - bed.y)
-
-    [found] = misplaced_plantings(conn, load_garden(conn, garden_id), _grid())
-    assert (found.problem, found.sun_hours) == ("too_dark", 2.0)  # type: ignore[attr-defined]
-
-
-def test_an_unplaced_cluster_is_judged_by_what_the_list_ranked_its_bed_by(
-    conn: sqlite3.Connection,
-) -> None:
-    """Planted from the list, a cluster has no position. Read at the bed's middle
-    — a bright cell of a bed half in shade — a species the list had just offered
-    was warned about at once (review, 2026-09-21)."""
-    garden_id, bed_id = _laid_out(conn, [[0, 0], [10, 0], [10, 2], [0, 2]], 5.5)
-    _species(conn, 11, ellenberg_from_sun_hours(5.5), 1.0)
-    add_planting(conn, bed_id, taxon_id=11, quantity=1)
-    assert _grid().at(5.0, 1.0) == 9.0, "the middle is in the bright row"
-
-    assert misplaced_plantings(conn, load_garden(conn, garden_id), _grid()) == []
-
-
-def test_a_cluster_on_a_roofs_cell_is_not_judged_by_the_roofs_sun(
-    conn: sqlite3.Connection,
-) -> None:
-    """A roof's sun is a real answer to another question: nothing grows on it."""
-    garden_id, bed_id = _laid_out(conn, [[0, 0], [10, 0], [10, 1], [0, 1]], 2.0)
-    # Suited to the bed's own 2 h; far too dark a plant for a roof's 12.6 h.
-    _species(conn, 9, ellenberg_from_sun_hours(2.0), 1.0)
-    planting_id = add_planting(conn, bed_id, taxon_id=9, quantity=1)
-    garden = load_garden(conn, garden_id)
-    bed = garden.beds[0]
-    place_planting(conn, planting_id, 4.5 - bed.x, 0.5 - bed.y)
-    grid = _grid(roof_at=4)
-    assert grid.at(4.5, 0.5) is None, "under a roof, as documented"
-
-    assert misplaced_plantings(conn, load_garden(conn, garden_id), grid) == []
 
 
 def test_a_species_with_no_indicator_value_is_left_alone(

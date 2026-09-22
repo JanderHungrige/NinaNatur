@@ -88,6 +88,19 @@ describe('roofs', () => {
     expect(inside(tip, ell)).toBe(true);
   });
 
+  it('keeps the arrow inside an L whose other wing hangs down at one end', () => {
+    // Its middle lies off to the side: sized by that, the arrow ran on past the
+    // shallow wing into the garden (review, 2026-09-21).
+    const ell = [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 8 }, { x: 12, y: 8 },
+                 { x: 12, y: 10 }, { x: 0, y: 10 }];
+    const pent = shape('house', 'building', ell, {
+      roof: 'pent', roofFall: 180, roofLines: [[{ x: 12, y: 10 }, { x: 0, y: 10 }]],
+    });
+    const [tail, tip] = shaft(drawn(pent).marks('roof')[0]!.getAttribute('d')!, 1);
+    expect(inside(tail, ell)).toBe(true);
+    expect(inside(tip, ell)).toBe(true);
+  });
+
   it('points the arrow down the surveyed fall, not at the middle of a leaning house', () => {
     const leaning = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 13, y: 6 }, { x: 3, y: 6 }];
     const pent = shape('house', 'building', leaning, {

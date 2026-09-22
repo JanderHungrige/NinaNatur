@@ -17,6 +17,7 @@ routes:
 models: [light_grid, planting, trait]
 test_files:
   - tests/test_misplaced.py
+  - tests/test_misplaced_cells.py
   - tests/test_light_grid.py
   - frontend/src/components/ShadeSwitch.test.tsx
 data_flow: reads-existing
@@ -31,6 +32,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "Species without an EIVE light value are never flagged; EIVE covers a good part of the German flora, not all of it."
+  - "A bed narrower than a grid cell is judged as a whole, by its one sampled value: a shaded end of a long, narrow border is not warned about until the grid's cells are finer than the border (map gardens with many neighbours get 1–3 m cells). The grid cannot resolve such a bed, and reading the cell centred outside it warned plants the list had just offered."
 ---
 
 # A Sun Plant in a Shade Spot, and Which Hours It Gets
@@ -67,12 +69,18 @@ it is judged by the value the list ranks its bed by (`misplaced._hours_at`):
   in shade, a species the list had just offered was warned about at once.
 - **a raised bed**, whose light is sampled at its height, over whatever darkens
   the ground grid beside it;
+- **a bed narrower than a cell**: no cell centre lies inside it, so a cluster's
+  cell is always centred outside — in the wall or hedge it borders, or behind
+  it — and it warned a plant the list had just offered as too dark. Judged as a
+  whole, its shaded end goes unsaid until the grid is finer than the border (a
+  known issue, below);
 - **a cell under a roof**: `LightGrid.at` answers None there, as it always said
   it did, and until the review it had handed back the roof's sun.
 
-A placed cluster in a bed narrower than a cell reads its own cell like any other:
-for a while the whole of such a border was judged by the one sample at its
-middle, and its shaded end lost its warning. And the warning stays
+A bed's own light is read from the stored map over the bed as it stands — the
+mean of its cells, which is exactly what the list ranks it by while the light
+is current — so a bed drawn or moved since the last press is judged where it
+is, not where it was, or not at all (review, 2026-09-21). And the warning stays
 on the season's grid when a month is shown (`api/light._read`): a month's grid
 had quietly taken its place, and warnings came and went with the months.
 

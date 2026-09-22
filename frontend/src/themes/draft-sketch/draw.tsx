@@ -133,19 +133,40 @@ function fall(lines: [Point, Point][], points: Point[], bearing: number | null |
   const [a, b] = upperEdge(lines);
   const from = nearestOn(lines, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
   const c = centreOf(points);
-  const reach = Math.hypot(c.x - from.x, c.y - from.y) || 1;
+  const toCentre = Math.hypot(c.x - from.x, c.y - from.y) || 1;
   const down = bearing === null || bearing === undefined
-    ? { x: (c.x - from.x) / reach, y: (c.y - from.y) / reach }
+    ? { x: (c.x - from.x) / toCentre, y: (c.y - from.y) / toCentre }
     : { x: Math.sin((bearing * Math.PI) / 180), y: Math.cos((bearing * Math.PI) / 180) };
-  const at = (share: number): Point => ({ x: from.x + down.x * reach * share,
-                                          y: from.y + down.y * reach * share });
-  const tail = at(0.25);
-  const tip = at(1.1);
+  // Sized by how far the house reaches down the fall from here, not by its
+  // middle: on an L that middle lies off to one side, and the arrow ran on past
+  // the wing into the garden (review, 2026-09-21). A rectangle's is as before.
+  const run = runInside(from, down, points) ?? 2 * toCentre;
+  const at = (share: number): Point => ({ x: from.x + down.x * run * share,
+                                          y: from.y + down.y * run * share });
+  const tail = at(0.125);
+  const tip = at(0.55);
   const back = Math.hypot(tip.x - tail.x, tip.y - tail.y) * 0.3;
   const heading = Math.atan2(tip.y - tail.y, tip.x - tail.x);
   const barb = (turn: number) => ({ x: tip.x - back * Math.cos(heading + turn),
                                     y: tip.y - back * Math.sin(heading + turn) });
   return segments([[tail, tip], [barb(0.45), tip], [barb(-0.45), tip]]);
+}
+
+/** How far a ray from a point on the outline runs inside it before it leaves,
+ *  or null if it never enters. */
+function runInside(from: Point, way: Point, ring: Point[]): number | null {
+  let nearest: number | null = null;
+  ring.forEach((a, i) => {
+    const b = ring[(i + 1) % ring.length]!;
+    const ex = b.x - a.x;
+    const ey = b.y - a.y;
+    const denominator = way.x * ey - way.y * ex;
+    if (Math.abs(denominator) < 1e-12) return;
+    const t = ((a.x - from.x) * ey - (a.y - from.y) * ex) / denominator;
+    const u = ((a.x - from.x) * way.y - (a.y - from.y) * way.x) / denominator;
+    if (t > 1e-6 && u >= 0 && u <= 1 && (nearest === null || t < nearest)) nearest = t;
+  });
+  return nearest;
 }
 
 /** A pent's whole upper edge, end to end: the two ends farthest apart. */

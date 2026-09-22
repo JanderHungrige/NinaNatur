@@ -269,8 +269,9 @@ flag was already built and merely decorative; it is now load-bearing.
 ## Why it is trusted
 
 The model is a projection, not a ray tracer: a footprint swept along the sun
-vector by `height / tan(altitude)`, then the convex hull of both. That is fast
-and it is an approximation, so it is checked against the thing it approximates.
+vector by `height / tan(altitude)`, then the convex hull of both — asked of the
+footprint itself where the outline is concave (doc 38). That is fast and it is
+an approximation, so it is checked against the thing it approximates.
 `tests/test_shading_is_ray_tracing.py` marches a ray in 3D from a point towards
 the sun and asks whether anything blocks it, over 263 random scenes, and the two
 agree. Overlapping shadows, a tree behind a taller house, and a raised bed

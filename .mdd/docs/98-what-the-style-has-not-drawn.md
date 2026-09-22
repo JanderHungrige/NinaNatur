@@ -148,7 +148,8 @@ the roof the model knows, in garden metres.
   the whole upper edge, and runs down the surveyed fall (`roofFall` on the
   shape, from `roof_fall_deg`): aimed at the outline's middle, it leaned with
   the shape of the house, and from the middle of an L's step it began over the
-  garden.
+  garden. It is sized by how far the house reaches down the fall from there, so
+  on an L it stops inside the wing.
 - **flat, mixed, other, unknown, an unsurveyed pent, a pitch under 5°** — no
   lines: the model treats them as a plane at one height, and so does the
   drawing.

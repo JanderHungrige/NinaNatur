@@ -65,11 +65,12 @@ def misplaced_plantings(
 
     found: list[Misplaced] = []
     for bed in garden.beds:
+        own = _bed_light(grid, bed)
         for planting in bed.plantings:
             if planting.taxon_id is None:
                 continue
             wanted = _wanted_light(conn, planting.taxon_id)
-            hours = None if wanted is None else _hours_at(grid, bed, planting)
+            hours = None if wanted is None else _hours_at(grid, bed, planting, own)
             if wanted is None or hours is None:
                 continue
             wants, width = wanted
@@ -107,20 +108,40 @@ def _wanted_light(conn: sqlite3.Connection, taxon_id: int) -> tuple[float, float
     return float(trait.value_num), None if width is None else width.value_num
 
 
-def _hours_at(grid: LightGrid, bed: Element, planting: object) -> float | None:
+def _bed_light(grid: LightGrid, bed: Element) -> tuple[float | None, bool]:
+    """The bed's own light, and whether it is one value for the whole bed.
+
+    Its cells' mean, as `lighting.recompute_light` stores it — the value the
+    list ranks the bed by — read from this grid over the bed as it stands, so
+    a bed drawn or moved since the last press is judged where it is and not
+    where it was (review, 2026-09-21). A raised bed, or one narrower than a
+    cell, was measured at one point: its stored value, for the whole bed.
+    """
+    mean = None if bed.height_above_ground > 0 else grid.mean_over(bed.polygon)
+    return (bed.sun_hours, True) if mean is None else (round(mean, 2), False)
+
+
+def _hours_at(
+    grid: LightGrid, bed: Element, planting: object, own: tuple[float | None, bool]
+) -> float | None:
     """The sun a cluster gets: its own cell's, where it has one.
 
-    Otherwise the bed's stored hours, the value the list ranks the bed by: in a
-    raised bed (its light is sampled at its height, over whatever darkens the
-    ground grid beside it), for a cluster nobody has placed — it stands nowhere
-    in particular, and it is what the list has just planted — and in a cell
-    under a roof or outside the grid. Until the review of 2026-09-21 an unplaced
-    cluster was read at the bed's middle, and a species the list had just
-    offered was warned about the moment it was added.
+    Otherwise its bed's own light (`_bed_light`):
+    - for a cluster nobody has placed — it stands nowhere in particular, and it
+      is what the list has just planted; read at the bed's middle, a species the
+      list had just offered was warned about the moment it was added;
+    - in a raised bed, whose light is sampled at its height, over whatever
+      darkens the ground grid beside it;
+    - in a bed narrower than a cell: no cell centre lies inside it, so a
+      cluster's cell is always centred outside — in the wall or hedge it
+      borders, or behind it — and warned a plant the list had just offered as
+      too dark. Its shaded end goes unsaid until the grid is finer than it;
+    - in a cell under a roof or outside the grid.
     """
-    at = _placed_at(bed, planting)
-    here = None if at is None or bed.height_above_ground > 0 else grid.at(*at)
-    return bed.sun_hours if here is None else here
+    value, whole = own
+    at = None if whole else _placed_at(bed, planting)
+    here = None if at is None else grid.at(*at)
+    return value if here is None else here
 
 
 def _placed_at(bed: object, planting: object) -> tuple[float, float] | None:
