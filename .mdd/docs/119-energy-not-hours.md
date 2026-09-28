@@ -9,6 +9,7 @@ depends_on: [118-the-sky-counts, 117-room-to-compute, 72-the-hill-that-eats-the-
 relates: [71-buildings-stand-on-the-ground, 70-the-horizon-ring, 07-solar-geometry]
 source_files:
   - ninanatur/solar/beam.py
+  - ninanatur/solar/incidence.py
   - ninanatur/solar/raster.py
   - ninanatur/solar/raster_grid.py
   - ninanatur/solar/relative.py
@@ -64,7 +65,7 @@ This feature weights each lit moment by what it brings: the clear-sky beam at
 that altitude, times the cosine of its incidence on the cell's own surface.
 
 **What does not change.** The hours stay the headline, and hours they are.
-The light value stays the hours' convention floored by the sky (the owner's
+The light value stays the hours' convention capped by the sky (the owner's
 decision of 2026-09-22, doc 118). The sunshine to expect stays hours. This is
 a weighting inside relative illuminance, reported relative to open level
 ground: no kWh is claimed, and Wave 21's line — this is not a solar-yield

@@ -128,14 +128,17 @@ class ObstacleUpdate(BaseModel):
     #: assumption that stands in when nobody has. `building:levels` fills it at
     #: import wherever OSM carries it.
     eaves_m: float | None = Field(default=None, ge=0, le=200)
+    #: Where a tree's or shrub's crown starts, in metres (doc 121). Seen from
+    #: under the tree, and it decides whether a low sun passes beneath it.
+    crown_base_m: float | None = Field(default=None, ge=0, le=200)
     #: A bed may differ from its garden — bought soil, a watered corner.
     soil_type: str | None = None
     moisture: str | None = None
     height: float | None = Field(default=None, gt=0, le=200)
     label: str | None = Field(default=None, max_length=200)
-    # No `height_source`, `roof_source` or `eaves_source`: the server marks what
-    # a caller changed as the caller's (doc 93), and a caller cannot say that a
-    # number it sent was surveyed.
+    # No `height_source`, `roof_source`, `eaves_source` or `crown_base_source`:
+    # the server marks what a caller changed as the caller's (doc 93), and a
+    # caller cannot say that a number it sent was surveyed.
 
 
 class GardenSoil(BaseModel):

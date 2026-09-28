@@ -1876,6 +1876,45 @@ button[disabled] { opacity: 0.55; cursor: default; }
   vector-effect: non-scaling-stroke;
 }
 
+/* Where the gardener saw a shadow end, and where the model ends it (doc 122):
+   the model's edge dashed, the way between them a thin line, the mark a cross
+   in the focus colour — the cross and the line on a halo of the paper, so
+   they read over the sun map's darkest shade. Over everything and never a
+   target. */
+.shadow-mark__halo {
+  fill: none;
+  stroke: var(--bg-raised);
+  stroke-width: 6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.shadow-mark__edge {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
+.shadow-mark__way {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.shadow-mark__cross {
+  fill: none;
+  stroke: var(--focus);
+  stroke-width: 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.shadow-mark-panel__list {
+  display: grid; gap: var(--space-2); margin: var(--space-2) 0 0; padding: 0; list-style: none;
+}
+.shadow-mark-panel__item { display: grid; gap: var(--space-1); }
+.shadow-mark-panel__when { color: var(--ink-muted); font-size: var(--text-sm); }
+
 .shade-switch { display: grid; gap: 0.6rem; }
 .shade-switch h2 { margin: 0; font-size: var(--text-lg); }
 .shade-switch__modes { display: flex; gap: 0.5rem; flex-wrap: wrap; }

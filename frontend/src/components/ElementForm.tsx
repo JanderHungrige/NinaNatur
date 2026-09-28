@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 import type { FormValues } from '../garden/selection';
-import { eavesNote, roofNote } from '../heights';
+import { CROWNED, eavesNote, roofNote } from '../heights';
 import { KINDS, PLANTING_KIND } from '../kinds';
+import { CrownBaseField } from './CrownBaseField';
+import { useStoredField } from './useStoredField';
 import { ROOFED, ROOFS, ridgeNote } from '../roofs';
 
 interface Props extends FormValues {
@@ -45,6 +47,9 @@ export function ElementForm({
   roofPitchDeg,
   eavesM,
   eavesSource,
+  crownBaseM,
+  crownBaseSource,
+  crownFits,
   height,
   width,
   soilType,
@@ -62,12 +67,14 @@ export function ElementForm({
   const box = useRef<HTMLElement | null>(null);
   const [chosen, setChosen] = useState(kind);
   const [text, setText] = useState(label ?? '');
-  // What the fields opened with, so that only what changed is sent (doc 93).
-  const tallAtStart = height === null ? '' : String(height);
-  const eavesAtStart = eavesM === null ? '' : String(eavesM);
-  const [tall, setTall] = useState(tallAtStart);
-  const [roofShape, setRoofShape] = useState(roof);
-  const [eaves, setEaves] = useState(eavesAtStart);
+  // Over what is stored, so that only what the gardener changed is sent (doc
+  // 93) — and a value the server fills while the form is open is not sent
+  // back as theirs (`useStoredField`).
+  const [tall, setTall, tallChanged] = useStoredField(height === null ? '' : String(height));
+  const [roofShape, setRoofShape, roofChanged] = useStoredField(roof);
+  const [eaves, setEaves, eavesChanged] = useStoredField(eavesM === null ? '' : String(eavesM));
+  const [crownBase, setCrownBase, baseChanged] = useStoredField(
+    crownBaseM === null ? '' : String(crownBaseM));
   const [band, setBand] = useState(width === null ? '' : String(width));
   const [soil, setSoil] = useState(soilType ?? '');
   const [wet, setWet] = useState(moisture ?? '');
@@ -96,16 +103,20 @@ export function ElementForm({
       // Empty means "whatever the garden says", not "no soil".
       if (soil !== '') changes.soil_type = soil;
       if (wet !== '') changes.moisture = wet;
-    } else if (tall !== '' && tall !== tallAtStart) {
+    } else if (tall !== '' && tallChanged) {
       changes.height = Number(tall);
     }
     // Only what was changed (doc 93). The server takes a value in the body as
     // the gardener's word on it, and a rename is nobody's word on the roof.
-    if (ROOFED.has(chosen) && roofShape !== roof) changes.roof = roofShape;
-    if (ROOFED.has(chosen) && eaves !== eavesAtStart) {
+    if (ROOFED.has(chosen) && roofChanged) changes.roof = roofShape;
+    if (ROOFED.has(chosen) && eavesChanged) {
       // Empty is "nobody has said", which is a value: it puts the building back
       // on the assumed eaves rather than on zero.
       changes.eaves_m = eaves === '' ? null : Number(eaves);
+    }
+    if (CROWNED.has(chosen) && baseChanged) {
+      // Empty is "nobody has said": back on the assumption, not on the ground.
+      changes.crown_base_m = crownBase === '' ? null : Number(crownBase);
     }
     if (shape === 'line' && band !== '') changes.width = Number(band);
     onSave(changes);
@@ -114,13 +125,13 @@ export function ElementForm({
   // Where the stored values came from. A note belongs to the value it describes:
   // once the field is changed, the value is the gardener's and says nothing.
   const ridge = tall === '' || !Number.isFinite(Number(tall)) ? null : Number(tall);
-  const roofSaid = roofShape === roof ? roofNote(roof, roofSource) : null;
+  const roofSaid = roofChanged ? null : roofNote(roof, roofSource);
   // The ridge described the stored roof too: another shape chosen, it goes.
-  const ridgeSaid = roofShape === roof ? ridgeNote(roof, roofFallDeg, roofPitchDeg) : null;
+  const ridgeSaid = roofChanged ? null : ridgeNote(roof, roofFallDeg, roofPitchDeg);
   const roofNotes = [roofSaid === null ? null : field('roof-said'),
                      ridgeSaid === null ? null : field('ridge-said')]
     .filter((id) => id !== null).join(' ');
-  const eavesSaid = eaves === eavesAtStart ? eavesNote(eavesM, eavesSource, ridge) : null;
+  const eavesSaid = eavesChanged ? null : eavesNote(eavesM, eavesSource, ridge);
 
   return (
     <section ref={box} className="panel element-form" aria-labelledby={field('heading')}>
@@ -172,6 +183,20 @@ export function ElementForm({
             nicht weniger Sonne als die Südseite.
           </p>
         </>
+      )}
+
+      {/* Not asked where no crown fits the outline: it casts as a row, and
+          a base would change nothing (doc 121). */}
+      {CROWNED.has(chosen) && crownFits !== false && (
+        <CrownBaseField id={id} kind={chosen} storedKind={kind} storedM={crownBaseM}
+                        storedSource={crownBaseSource} heightM={ridge} value={crownBase}
+                        onChange={setCrownBase} />
+      )}
+      {CROWNED.has(chosen) && crownFits === false && (
+        <p className="hint">
+          Zu lang oder zu schmal für eine Krone: das Element wirft Schatten wie
+          eine Reihe, vom Boden an.
+        </p>
       )}
 
       {shape === 'line' && (

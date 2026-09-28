@@ -98,6 +98,8 @@ describe('ToolRail', () => {
     expect(hintFor('polygon')).toMatch(/Ecke für Ecke/);
     expect(hintFor('freehand')).toMatch(/In einem Zug/);
     expect(hintFor('viewpoint')).toMatch(/wo du stehst/);
+    // Armed from an element's details, not the rail (doc 122).
+    expect(hintFor('shadowmark')).toMatch(/wo die Schattenkante gerade liegt/);
     expect(hintFor(null)).toMatch(/Wähle eine Form/);
   });
 });

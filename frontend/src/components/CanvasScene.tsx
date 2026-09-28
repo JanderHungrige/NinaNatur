@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 
-import type { CanopySuggestion, GardenOut, Landcover, LightMap, Terrain } from '../api/client';
+import type {
+  CanopySuggestion, GardenOut, Landcover, LightMap, ShadowMark, Terrain,
+} from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import { type Point, type Viewport, svgPoints } from '../canvas/viewport';
 import { usePlanTheme } from '../themes/context';
@@ -21,6 +23,8 @@ interface Props {
   selectedBedId: number | null;
   draft: Point[];
   viewpoint?: { x: number; y: number } | null;
+  /** Where the gardener saw shadows end, and the model's edges (doc 122). */
+  shadowMarks?: ShadowMark[] | undefined;
   onSelectBed: (bedId: number) => void;
   onSelectObstacle?: ((obstacleId: number) => void) | undefined;
   /** The element selected, said on the plan as the selected bed is (doc 88). */
@@ -78,6 +82,7 @@ export function CanvasScene({
   selectedBedId,
   draft,
   viewpoint = null,
+  shadowMarks = NONE,
   onSelectBed,
   onSelectObstacle,
   selectedObstacleId = null,
@@ -167,6 +172,7 @@ export function CanvasScene({
           freshPlantingId={freshPlantingId} onSelectCluster={onSelectCluster}
           onGrabCluster={onGrabCluster} onShowClusterInfo={onShowClusterInfo}
           sunMap={sunMap?.map} mapMode={sunMap?.mode} shadows={shadows} canopies={canopies}
+          shadowMarks={shadowMarks}
         />
 
       {draft.length > 0 && (

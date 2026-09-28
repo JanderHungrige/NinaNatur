@@ -35,12 +35,15 @@ export type Terrain = components['schemas']['TerrainOut'];
 export type Credit = components['schemas']['CreditOut'];
 export type CanopySuggestion = components['schemas']['CanopyOut'];
 export type Landcover = components['schemas']['LandcoverOut'];
+export type ShadowMark = components['schemas']['ShadowMarkOut'];
 
-/** A non-2xx response, carrying whatever reason the API gave. */
+/** A non-2xx response, carrying whatever reason the API gave — and, from a
+ *  server too busy to compute now, how many seconds it asked to be left. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly detail: string,
+    readonly retryAfterS: number | null = null,
   ) {
     super(`${status}: ${detail}`);
     this.name = 'ApiError';
@@ -119,7 +122,9 @@ export class NinaNaturClient {
       ...init,
     });
     if (!response.ok) {
-      throw new ApiError(response.status, await readDetail(response));
+      const wait = Number(response.headers.get('retry-after') ?? '');
+      throw new ApiError(response.status, await readDetail(response),
+                         Number.isFinite(wait) && wait > 0 ? wait : null);
     }
     if (response.status === 204) {
       return undefined as T;
@@ -537,6 +542,28 @@ export class NinaNaturClient {
     return this.request<SightlinesOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/sightlines`,
       { method: 'POST', body: JSON.stringify(viewpoint) },
+    );
+  }
+
+  /** Where the gardener saw shadows end, each read against the model now (doc 122). */
+  async shadowMarks(token: string): Promise<ShadowMark[]> {
+    return this.request<ShadowMark[]>(`/api/v1/gardens/${encodeURIComponent(token)}/shadow-marks`);
+  }
+
+  async markShadow(
+    token: string,
+    mark: { element_id: number; x: number; y: number; seen_at: string },
+  ): Promise<ShadowMark> {
+    return this.request<ShadowMark>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/shadow-marks`,
+      { method: 'POST', body: JSON.stringify(mark) },
+    );
+  }
+
+  async forgetShadowMark(token: string, markId: number): Promise<void> {
+    return this.request<void>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/shadow-marks/${markId}`,
+      { method: 'DELETE' },
     );
   }
 

@@ -16,14 +16,16 @@ import hashlib
 import numpy as np
 
 from ninanatur.garden.ground import lowest_ground, standing_on
-from ninanatur.garden.lightcells import cells_of, roofs_of, surfaces_of
+from ninanatur.garden.lightcells import Roofed, cells_of, roofs_of, surfaces_of
 from ninanatur.garden.lightgrid_extent import CELL_LADDER_M as CELL_LADDER_M
 from ninanatur.garden.lightgrid_extent import GRID_BUDGET_S as GRID_BUDGET_S
 from ninanatur.garden.lightgrid_extent import GardenTooLarge as GardenTooLarge
 from ninanatur.garden.lightgrid_extent import cell_size_for as cell_size_for
 from ninanatur.garden.lightgrid_extent import check_extent as check_extent
 from ninanatur.garden.lightgrid_extent import extent_of as extent_of
-from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model, stands_in
+from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model
+from ninanatur.garden.lightgrid_load import grid_cost as grid_cost
+from ninanatur.garden.lightgrid_load import load_of
 from ninanatur.garden.lightgrid_model import LightGrid as LightGrid
 from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
@@ -76,10 +78,7 @@ def compute_grid(
     min_x, min_y, max_x, max_y = box
     parts = parts_of(standing_on(obstacles, ground))
     roofs = roofs_of(garden, ground)
-    cell = _cell_for(parts, box, terrain=ground is not None,
-                     tilted=ground is not None or any(
-                         roofed.surface is not None and roofed.surface.pitched
-                         for roofed in roofs))
+    cell = _cell_for(parts, box, ground, roofs)
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
     cols = max(1, int(width / cell) + 1)
@@ -112,19 +111,22 @@ def compute_grid(
     )
 
 
-def _cell_for(parts: list[Part], box: tuple[float, float, float, float], *,
-              terrain: bool, tilted: bool) -> float:
+def _cell_for(parts: list[Part], box: tuple[float, float, float, float],
+              ground: TerrainWindow | None, roofs: list[Roofed]) -> float:
     """The finest cell the budget buys over this box, once a box no cell could
     make affordable has been refused. What the raster pays for is parts, not
-    obstacles (review, 2026-09-22); a crown that drops its leaves makes it
-    sweep the sky twice (doc 118); and cells with surfaces of their own — a
-    hillside's or a roof's — make it weigh every moment per cell (doc 119)."""
+    obstacles (review, 2026-09-22), and what they are: `lightgrid_load`."""
     min_x, min_y, max_x, max_y = box
-    near = sum(1 for p in parts if stands_in([(float(x), float(y)) for x, y in p.corners], box))
-    deciduous = any(p.bare_transmission is not None for p in parts)
-    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain, deciduous, tilted)
-    return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), len(parts),
-                         near, terrain, deciduous, tilted)
+    load = load_of(parts, box, ground, roofs)
+    check_extent(min_x, min_y, max_x, max_y, load.parts, load.near, load.terrain,
+                 load.deciduous, load.tilted, load.near_planes, load.far_planes,
+                 far_crowns=load.far_crowns, near_crowns=load.near_crowns,
+                 reaching=load.reaching, relief_m=load.relief_m)
+    return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), load.parts,
+                         load.near, load.terrain, load.deciduous, load.tilted,
+                         load.near_planes, load.far_planes, far_crowns=load.far_crowns,
+                         near_crowns=load.near_crowns, reaching=load.reaching,
+                         relief_m=load.relief_m)
 
 
 def _exact(element: object) -> str:
@@ -149,8 +151,9 @@ def signature_of(
     looks right. This is a fact about the inputs instead, so a new feature
     cannot forget to declare itself.
 
-    What is in it: where the garden is, and every obstacle's kind, height, roof
-    and outline, and every planting that casts a shadow, by species and position
+    What is in it: where the garden is, and every obstacle's kind, height, roof,
+    crown base (doc 121) and outline, and every planting that casts a shadow,
+    by species and position
     (`shading_taxa`; without it, every planting) — and **what the
     ground and the horizon were measured from** (Wave 25, doc 106). A state that
     gains a source is the case this last part is for: Bayern had no terrain at
@@ -187,7 +190,7 @@ def signature_of(
         parts.append(
             f"{element.element_id}|{element.kind}|{element.height}"
             f"|{element.roof}|{element.eaves_m}|{element.roof_fall_deg}"
-            f"|{element.height_above_ground}|{outline}"
+            f"|{element.crown_base_m}|{element.height_above_ground}|{outline}"
         )
         for planting in element.plantings:
             if shading_taxa is not None and planting.taxon_id not in shading_taxa:

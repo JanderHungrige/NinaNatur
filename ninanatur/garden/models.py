@@ -124,6 +124,13 @@ class Element:
     #: The bearing the roof falls towards, from the survey (doc 94). None: the
     #: ridge is assumed to run along the long side, and a pent is left flat.
     roof_fall_deg: float | None = None
+    #: Where a tree's or shrub's crown starts, above its ground (doc 121). None
+    #: is nobody: the model then assumes a third of a tree's height, and the
+    #: ground under a shrub.
+    crown_base_m: float | None = None
+    #: Who gave it: 'user' | 'measured' (the laser, doc 107). None exactly when
+    #: nobody did.
+    crown_base_source: str | None = None
     label: str | None = None
 
     # --- what a planting site needs, null on everything else ----------------

@@ -77,6 +77,9 @@ class BedOut(BaseModel):
     # Required, not defaulted: the response always carries both, and a default
     # here makes them optional in the generated client for no reason.
     height_above_ground: float
+    #: Whether one crown fits the outline (as `ObstacleOut.crown_fits`), so a
+    #: form that turns a bed into a tree knows whether to ask for a crown base.
+    crown_fits: bool
     label: str | None
     plantings: list[PlantingOut]
 
@@ -102,6 +105,18 @@ class ObstacleOut(BaseModel):
     #: The bearing the roof falls towards, as the survey read it (doc 94); null
     #: when it has not, and the ridge is assumed to run along the long side.
     roof_fall_deg: float | None
+    #: Where a tree's or shrub's crown starts (doc 121), and who said:
+    #: 'user' | 'measured'. Null is nobody, and the model assumes a third of a
+    #: tree's height and the ground under a shrub. Required, not defaulted,
+    #: for the reason `BedOut.height_above_ground` gives.
+    crown_base_m: float | None
+    crown_base_source: str | None
+    #: Whether one crown fits what was drawn (doc 121): a tree or shrub on it
+    #: casts as a crown on a trunk. False for a line, or an outline too long or
+    #: thin — it casts as the solid a row is, a crown base would change
+    #: nothing, and the form does not ask for one. Said of every outline, so a
+    #: form that turns a hedge into a tree knows. Required, as above.
+    crown_fits: bool
     #: The pitch the model uses, from eaves, ridge and the span across the
     #: ridge; null where it models the roof unpitched.
     roof_pitch_deg: float | None

@@ -89,17 +89,19 @@ def test_every_bed_is_matched_by_the_light_value_its_hours_and_sky_give(
         assert bed["ellenberg_l"] == light_value(bed["sun_hours"], bed["sky_view"])
 
 
-def test_under_a_drawn_tree_the_value_stays_at_the_hours_floor(client: TestClient) -> None:
-    """A drawn tree is still an opaque prism from the ground (until feature 6):
-    inside it hours and sky both read 0, and the sky's floor took the bed to
-    0.0 where the hours had always held it at 2.5 (review, 2026-09-22)."""
+def test_inside_a_hedge_the_value_stays_at_the_hours_floor(client: TestClient) -> None:
+    """Where hours and sky both read 0, the sky's floor took the bed to 0.0
+    where the hours had always held it at 2.5 (review, 2026-09-22). A drawn
+    tree was the case until doc 121 made it a crown, which passes a fifth of
+    the light along its longest chord; a hedge is still solid to the ground."""
     token: str = client.post(
         "/api/v1/gardens", json={"name": "G", "latitude": 51.25, "longitude": 7.15}
     ).json()["share_token"]
     client.post(f"/api/v1/gardens/{token}/obstacles", json={
-        "kind": "tree", "x": 0.0, "y": 0.0, "shape": "circle", "width": 8.0, "height": 10.0})
+        "kind": "hedge", "x": 0.0, "y": 0.0, "shape": "polygon", "height": 2.5,
+        "points": [[-4, -4], [4, -4], [4, 4], [-4, 4]]})
     client.post(f"/api/v1/gardens/{token}/beds", json={
-        "name": "Baumscheibe", "polygon": [[-1.5, -1.5], [1.5, -1.5], [1.5, 1.5], [-1.5, 1.5]],
+        "name": "In der Hecke", "polygon": [[-1.5, -1.5], [1.5, -1.5], [1.5, 1.5], [-1.5, 1.5]],
         "soil_type": "loam", "moisture": "fresh"})
     client.post(f"/api/v1/gardens/{token}/light")
     [bed] = client.get(f"/api/v1/gardens/{token}").json()["beds"]

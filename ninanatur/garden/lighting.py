@@ -175,7 +175,8 @@ class _PointLight:
         from ninanatur.garden.ground import standing_on
         from ninanatur.garden.lightcells import surface_at
         from ninanatur.solar.climate import climate_at
-        from ninanatur.solar.raster import LEVEL, moments_for, parts_of, plane_of
+        from ninanatur.solar.incidence import LEVEL, plane_of
+        from ninanatur.solar.raster import moments_for, parts_of
         from ninanatur.solar.relative import point_sky_light
 
         if self._ready is None:

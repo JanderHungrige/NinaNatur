@@ -1,4 +1,6 @@
-import type { CanopySuggestion, GardenOut, Landcover, LightMap, Terrain } from '../api/client';
+import type {
+  CanopySuggestion, GardenOut, Landcover, LightMap, ShadowMark, Terrain,
+} from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Box } from '../canvas/handles';
 import type { DrawnShape, Tool } from '../canvas/shapes';
@@ -37,8 +39,11 @@ export interface GardenCanvasProps {
   shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
-  /** Placing one, while the rail's Standpunkt is armed (doc 89). */
+  /** Placing one, while the rail's Standpunkt is armed (doc 89) — or a shadow
+   *  mark, while an element's details have armed one (doc 122). */
   onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
+  /** Where the gardener saw shadows end, and the model's edges (doc 122). */
+  shadowMarks?: ShadowMark[] | undefined;
   /** Trees the surface model found, marked where they stand (doc 89). */
   canopies?: CanopySuggestion[] | undefined;
   /** The plan's "N gefundene Bäume": show their card. */

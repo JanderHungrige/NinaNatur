@@ -24,7 +24,7 @@ from ninanatur.api.schemas_light import (
 )
 from ninanatur.garden import landcover_sync
 from ninanatur.garden.building_sync import measure_buildings
-from ninanatur.garden.cloud_sync import ensure_cloud
+from ninanatur.garden.cloud_sync import ensure_cloud, fill_crown_bases
 from ninanatur.garden.credits import credits_for, licence_url
 from ninanatur.garden.elements import now
 from ninanatur.garden.light_state import current_signature
@@ -101,11 +101,13 @@ def rebuild_light_map(
         background.add_task(landcover_sync.fetch_later, garden.share_token)
     # After the ground, because a raw surface model is only object heights once
     # the terrain has been taken off it.
-    measure_buildings(conn, load_garden(conn, garden.garden_id))
+    measured = measure_buildings(conn, load_garden(conn, garden.garden_id))
     # And after the buildings, because the laser cannot tell a roof from a
     # crown on its own and the building model is what decides (doc 107). Only
-    # where a state publishes a cloud, which is nine of them.
-    ensure_cloud(conn, load_garden(conn, garden.garden_id))
+    # where a state publishes a cloud, which is nine of them. Then where each
+    # tree's crown starts, for the trees nobody has said it of (doc 121).
+    ensure_cloud(conn, load_garden(conn, garden.garden_id), buildings=measured.buildings)
+    fill_crown_bases(conn, load_garden(conn, garden.garden_id))
     recompute_light(conn, garden.garden_id)
     return _read(conn, garden.garden_id)
 

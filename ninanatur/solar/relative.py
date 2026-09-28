@@ -30,13 +30,11 @@ import numpy as np
 
 from ninanatur.solar.beam import beam
 from ninanatur.solar.climate import Climate
+from ninanatur.solar.incidence import LEVEL, Incidence, Plane
 from ninanatur.solar.raster import (
-    LEVEL,
     Directions,
-    Incidence,
     Moments,
     Part,
-    Plane,
     point_sums,
     point_sweep,
 )

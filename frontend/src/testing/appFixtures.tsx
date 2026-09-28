@@ -36,6 +36,11 @@ export function fakeClient(
     // What the garden's numbers rest on (doc 106): nothing, in a fixture.
     sources: vi.fn(async () => []),
     canopies: vi.fn(async () => []),
+    shadowMarks: vi.fn(async () => []),
+    markShadow: vi.fn(async (_token: string, mark: { element_id: number; x: number; y: number;
+                                                      seen_at: string }) => (
+      { mark_id: 1, ...mark, reading: null })),
+    forgetShadowMark: vi.fn(async () => undefined),
     // The land around it (doc 114): none mapped, in a fixture.
     landcover: vi.fn(async () => ({ areas: [], attribution: '', licence: '' })),
     bedSuggestions: vi.fn(async () => suggestions()),

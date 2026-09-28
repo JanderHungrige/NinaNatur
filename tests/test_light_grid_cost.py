@@ -15,7 +15,8 @@ import pytest
 from ninanatur.garden import lightgrid
 from ninanatur.garden.lightcells import Roofed, surfaces_of
 from ninanatur.garden.lightgrid import GRID_BUDGET_S, cell_size_for, compute_grid
-from ninanatur.garden.lightgrid_extent import MAX_CELLS, cells_at, estimate_ms, stands_in
+from ninanatur.garden.lightgrid_cost import estimate_ms
+from ninanatur.garden.lightgrid_extent import MAX_CELLS, cells_at, stands_in
 from ninanatur.garden.lightview import shading_obstacles
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import add_obstacle, create_garden, load_garden
@@ -88,7 +89,7 @@ def test_a_cell_with_a_surface_of_its_own_is_priced_by_the_cell() -> None:
     """Weighing every moment on each cell's own surface (doc 119) costs per
     cell, not per part — and it is the cells' surfaces that turn it on, so a
     pitched roof does even where nothing was surveyed (review, 2026-09-22)."""
-    from ninanatur.garden.lightgrid_extent import TILTED_CELL_MS
+    from ninanatur.garden.lightgrid_cost import TILTED_CELL_MS
 
     for parts, near in ((1, 1), (40, 5)):
         level = estimate_ms(10_000, parts, near)
@@ -106,23 +107,44 @@ def test_a_pitched_roof_alone_buys_the_tilted_cell(conn: sqlite3.Connection,
                                                 label="H"))
     conn.commit()
     garden = load_garden(conn, garden_id)
-    asked: list[bool] = []
+    asked: list[tuple[bool, int, int]] = []
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
-            terrain: bool = False, deciduous: bool = False, tilted: bool = False) -> float:
-        asked.append(tilted)
+            terrain: bool = False, deciduous: bool = False, tilted: bool = False,
+            near_planes: int = 0, far_planes: int = 0, **crowns_and_more: object) -> float:
+        asked.append((tilted, near_planes, far_planes))
         return 1.0
 
     monkeypatch.setattr(lightgrid, "cell_size_for", spy)
     compute_grid(garden, shading_obstacles(conn, garden))
-    assert asked == [True]
+    # Its two pitch planes stand on the grid, and are priced as near planes.
+    assert asked == [(True, 2, 0)]
+
+
+def test_a_roofs_planes_are_priced_per_plane_like_the_walls_they_resemble() -> None:
+    """A plane is one more cut of the ray at every moment its part is asked
+    about, so it costs per plane — near dearer than far, like parts — and only
+    a little per cell. Priced per cell alone, 36 hipped houses were estimated
+    at 4.7 s and took 7.1 (review, 2026-09-28)."""
+    from ninanatur.garden import lightgrid_cost as cost
+
+    swept = 1.0 + cost.SKY_DIRECTIONS / cost.SEASON_MOMENTS
+    plain = estimate_ms(10_000, 5, 5)
+    for near, far in ((10, 0), (0, 10), (6, 4)):
+        roofed = estimate_ms(10_000, 5, 5, near_planes=near, far_planes=far)
+        per_plane = cost.NEAR_PLANE_MS * near + cost.FAR_PLANE_MS * far
+        per_cell = 10_000 * cost.PLANE_CELL_MS * (near + far)
+        assert roofed - plain == pytest.approx(swept * (per_plane + per_cell))
+    assert cost.NEAR_PLANE_MS > cost.FAR_PLANE_MS
+    # A small grid still pays for its planes: they do not cost by the cell.
+    assert estimate_ms(100, 5, 5, near_planes=72) - estimate_ms(100, 5, 5) > 1_000
 
 
 def test_the_sky_is_priced_by_the_directions_it_sweeps() -> None:
     """The estimate's constants were fitted to the sun alone; the sky adds its
     patches to every part and cell (doc 118). Its counts are the sky's and the
     season's as they are, not numbers copied once."""
-    from ninanatur.garden import lightgrid_extent as extent
+    from ninanatur.garden import lightgrid_cost as extent
     from ninanatur.solar.position import Location
     from ninanatur.solar.raster import moments_for
     from ninanatur.solar.sky import TREGENZA, sky_directions
@@ -165,8 +187,8 @@ def test_the_grid_counts_the_parts_standing_on_it(
     asked: list[tuple[int, int | None]] = []
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
-            *what: object) -> float:
-        asked.append((parts, near))  # the rest is terrain, leaves and tilt
+            *what: object, **more: object) -> float:
+        asked.append((parts, near))  # the rest is terrain, leaves, tilt and crowns
         return 1.0
 
     monkeypatch.setattr(lightgrid, "cell_size_for", spy)
@@ -186,3 +208,63 @@ def test_a_roof_nobody_measured_stands_on_the_lowest_ground() -> None:
     rows = surfaces_of([-1.0, 0.0, 1.0, 5.0], [0.0], None, None, 150.0, [roof])
     unanswered = [s for s in rows[0] if not s.answered]
     assert len(unanswered) == 3 and all(s.z == 150.0 for s in unanswered)
+
+
+def test_a_crown_off_the_grid_is_priced_above_a_far_part(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A crown just past the grid's edge throws its shadow in at most moments,
+    and cost more than the far price said (doc 121, review 2026-09-28): the
+    grid counts the crowns that stand off it, and each is priced above a far
+    part — one on the grid is priced as the part it is."""
+    garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
+    add_obstacle(conn, garden_id, ObstacleInput(kind="garden", x=0, y=0, shape="rect",
+                                                width=20, depth=20, label="Garten"))
+    for x in (0.0, 40.0):
+        add_obstacle(conn, garden_id, ObstacleInput(kind="tree", x=x, y=0, shape="circle",
+                                                    width=6, height=10, label="Linde"))
+    conn.execute("UPDATE element SET height_source = 'measured' WHERE kind = 'tree' AND x > 20")
+    conn.commit()
+    garden = load_garden(conn, garden_id)
+    asked: list[tuple[int | None, int]] = []
+
+    def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
+            *what: object, far_crowns: int = 0, **more: object) -> float:
+        asked.append((near, far_crowns))
+        return 1.0
+
+    monkeypatch.setattr(lightgrid, "cell_size_for", spy)
+    compute_grid(garden, shading_obstacles(conn, garden))
+    assert asked == [(1, 1)], "the tree on the plot is near; the laser's, 40 m out, is not"
+    assert estimate_ms(10_000, 1, 0, far_crowns=1) > estimate_ms(10_000, 1, 0)
+
+
+def test_a_neighbour_within_its_height_of_the_grid_is_priced_above_a_far_part(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A house from the map 5 m past the grid's edge throws its shadow in at
+    most moments; one 30 m out only while shadows are long. 36 of the first
+    kind took 1.8 s where the far price said 1.0 (review of feature 5,
+    2026-09-28): each is counted as reaching, and priced above a far part."""
+    garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
+    add_obstacle(conn, garden_id, ObstacleInput(kind="garden", x=0, y=0, shape="rect",
+                                                width=20, depth=20, label="Garten"))
+    # The grid's box is the plot and 5 m: its edge at y = 15.
+    for y in (24.0, 49.0):
+        add_obstacle(conn, garden_id, ObstacleInput(kind="house", x=0, y=y, shape="rect",
+                                                    width=10, depth=8, height=9, label="N"))
+    conn.execute("UPDATE element SET roof_source = 'osm', height_source = 'osm'"
+                 " WHERE kind = 'house'")
+    conn.commit()
+    garden = load_garden(conn, garden_id)
+    asked: list[tuple[int | None, int]] = []
+
+    def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
+            *what: object, reaching: int = 0, **more: object) -> float:
+        asked.append((near, reaching))
+        return 1.0
+
+    monkeypatch.setattr(lightgrid, "cell_size_for", spy)
+    compute_grid(garden, shading_obstacles(conn, garden))
+    assert asked == [(0, 1)], "5 m past the edge it reaches in; 30 m out it does not"
+    assert estimate_ms(10_000, 2, 0, reaching=1) > estimate_ms(10_000, 2, 0)

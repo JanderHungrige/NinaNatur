@@ -15,124 +15,31 @@ the raster is tested against (`tests/test_raster.py`).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import timedelta
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from ninanatur.solar.convex_parts import SAME_M, convex_parts
-from ninanatur.solar.light import MINUTE_STEP, season_days
-from ninanatur.solar.position import Location, sun_position
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, passes
+from ninanatur.solar.crown import Crown, CrownSolid, chord, passing, standing
+from ninanatur.solar.incidence import LEVEL, Incidence, Plane, cos_incidence
+from ninanatur.solar.moments import Directions, Moments, moments_for, moments_from, sun_directions
+from ninanatur.solar.shading import Obstacle, passes
 
 #: A wall this nearly parallel to the sun's direction is parallel to it.
 PARALLEL = 1e-12
 
 
 @dataclass(frozen=True)
-class Moments:
-    """The sun at every sampled moment it is above `MIN_ALTITUDE`."""
-
-    azimuth: np.ndarray
-    altitude: np.ndarray
-    month: np.ndarray
-    #: East of due south: the morning half of a day.
-    morning: np.ndarray
-    #: Days sampled, for turning lit samples into a daily mean.
-    days: int
-    minute_step: int = MINUTE_STEP
-    #: Days sampled in each month, indexed by the month (0 unused), for a
-    #: month's own mean within the season (`solar.relative`).
-    month_days: tuple[int, ...] = ()
-
-
-@dataclass(frozen=True)
-class Directions:
-    """Where light comes from, and what each direction is worth: the sun at
-    its sampled moments, or the patches of an overcast sky (`solar.sky`).
-
-    Each direction that reaches a cell adds its `weight`, times what passes, to
-    the sum named by its `group` — morning and afternoon for the sun, one sum
-    for the sky. `month` says which leaves the crowns have."""
-
-    azimuth: np.ndarray
-    altitude: np.ndarray
-    month: np.ndarray
-    weight: np.ndarray
-    group: np.ndarray
-    groups: int
-
-
-@dataclass(frozen=True)
-class Incidence:
-    """What each direction's beam brings, beside what it is worth (doc 119):
-    for the sun, the clear-sky beam at its altitude (`solar.beam`), added —
-    times what passes and the cosine of its incidence on each cell's surface —
-    to the energy sum named by `group`."""
-
-    beam: np.ndarray
-    group: np.ndarray
-    groups: int
-
-
-#: A surface as the sweep reads it: (cos s, −sin s·cos a, −sin s·sin a), which
-#: dotted with the sun's (sin h, cos h·cos A, cos h·sin A) is the cosine of
-#: incidence. Level ground is (1, 0, 0).
-Plane = tuple[float, float, float]
-LEVEL: Plane = (1.0, 0.0, 0.0)
-
-
-def plane_of(slope_deg: float, aspect_deg: float) -> Plane:
-    """A surface of this slope, its aspect uphill clockwise from north as every
-    aspect here is (`slopes.slope_at`): it faces the other way, downhill."""
-    s, a = np.radians(slope_deg), np.radians(aspect_deg)
-    return (float(np.cos(s)), float(-np.sin(s) * np.cos(a)), float(-np.sin(s) * np.sin(a)))
-
-
-def cos_incidence(altitude_deg: np.ndarray, azimuth_deg: np.ndarray,
-                  plane: tuple[np.ndarray | float, ...]) -> np.ndarray:
-    """The cosine of each direction's incidence on a surface (`Plane`), which
-    may be a cell's arrays: sin h cos s − cos h sin s cos(A − a)."""
-    h, az = np.radians(altitude_deg), np.radians(azimuth_deg)
-    cos_i: np.ndarray = (np.sin(h) * plane[0] + np.cos(h) * np.cos(az) * plane[1]
-                         + np.cos(h) * np.sin(az) * plane[2])
-    return cos_i
-
-
-def sun_directions(moments: Moments) -> Directions:
-    """The sun's moments as directions: each a sample's share of a daily mean
-    hour, in the morning sum or the afternoon one."""
-    share = moments.minute_step / 60 / moments.days if moments.days else 0.0
-    return Directions(azimuth=moments.azimuth, altitude=moments.altitude, month=moments.month,
-                      weight=np.full(moments.azimuth.shape, share),
-                      group=np.where(moments.morning, 0, 1), groups=2)
-
-
-def moments_for(location: Location, year: int = 2026, month: int | None = None) -> Moments:
-    """The season's moments, or one month's, at the model's sampling."""
-    days = season_days(year, month)
-    found: list[tuple[float, float, int, bool]] = []
-    for day in days:
-        for minute in range(0, 24 * 60, MINUTE_STEP):
-            sun = sun_position(location, day + timedelta(minutes=minute))
-            if sun.altitude > MIN_ALTITUDE:
-                found.append((sun.azimuth, sun.altitude, day.month, sun.azimuth < 180.0))
-    month_days = tuple(sum(1 for day in days if day.month == m) for m in range(13))
-    return moments_from(found, len(days), month_days=month_days)
-
-
-def moments_from(found: list[tuple[float, float, int, bool]], days: int,
-                 minute_step: int = MINUTE_STEP, month_days: tuple[int, ...] = ()) -> Moments:
-    rows = np.array(found, dtype=float).reshape(-1, 4)
-    return Moments(azimuth=rows[:, 0], altitude=rows[:, 1], month=rows[:, 2].astype(int),
-                   morning=rows[:, 3].astype(bool), days=days, minute_step=minute_step,
-                   month_days=month_days)
-
-
-@dataclass(frozen=True)
 class Part:
     """One convex part of something that casts: its corners anticlockwise, its
-    walls' outward normals, and each wall's offset along its normal."""
+    walls' outward normals, each wall's offset along its normal, and the roof
+    planes over it, if it has any (doc 120).
+
+    A convex solid, cut against the ray by the same interval either way: a
+    wall bounds it sideways, the flat top at `top` bounds it above, and a
+    roof's plane leans between the two. `roof` holds those as rows of
+    (n_x, n_y, n_z, d) in absolute heights, inside being n·X ≤ d.
+    """
 
     corners: np.ndarray
     normals: np.ndarray
@@ -141,6 +48,10 @@ class Part:
     transmission: float
     bare_transmission: float | None
     owner: int | None
+    roof: np.ndarray = field(default_factory=lambda: np.empty((0, 4)))
+    #: The crown it is (doc 121): then the walls are its bounding box's, and
+    #: what passes is decided by the depth of the crossing, not by the walls.
+    crown: CrownSolid | None = None
 
     def through(self, month: int) -> float:
         return passes(self.transmission, self.bare_transmission, month)
@@ -150,6 +61,9 @@ def parts_of(obstacles: list[Obstacle]) -> list[Part]:
     """Every obstacle as its convex parts, each standing to its absolute top."""
     parts: list[Part] = []
     for obstacle in obstacles:
+        if obstacle.crown is not None:
+            parts.append(_crown_part(obstacle, obstacle.crown))
+            continue
         for ring in convex_parts(list(obstacle.footprint)):
             corners = np.array(ring, dtype=float)
             edges = np.roll(corners, -1, axis=0) - corners
@@ -161,13 +75,34 @@ def parts_of(obstacles: list[Obstacle]) -> list[Part]:
             if len(corners) < 3:
                 continue
             normals = np.column_stack([edges[:, 1], -edges[:, 0]]) / lengths[:, None]
+            # The roof's planes are given in the obstacle's own datum, its
+            # base being zero, and stand where the obstacle stands (doc 120).
+            roof = np.array([[nx, ny, nz, d + nz * obstacle.base]
+                             for nx, ny, nz, d in
+                             (obstacle.roof.planes if obstacle.roof else ())],
+                            dtype=float).reshape(-1, 4)
             parts.append(Part(
                 corners=corners, normals=normals,
                 offsets=np.einsum("ij,ij->i", normals, corners), top=obstacle.top,
                 transmission=obstacle.transmission,
                 bare_transmission=obstacle.bare_transmission, owner=obstacle.owner,
+                roof=roof,
             ))
     return parts
+
+
+def _crown_part(obstacle: Obstacle, crown: Crown) -> Part:
+    """A crown as a part: the square round it, which is what the sweep's
+    boxes and reach read, and the ellipsoid, which is what it casts."""
+    solid = standing(crown, obstacle.base)
+    x0, x1 = solid.cx - solid.rh, solid.cx + solid.rh
+    y0, y1 = solid.cy - solid.rh, solid.cy + solid.rh
+    corners = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])
+    normals = np.array([[0.0, -1.0], [1.0, 0.0], [0.0, 1.0], [-1.0, 0.0]])
+    return Part(corners=corners, normals=normals,
+                offsets=np.einsum("ij,ij->i", normals, corners), top=solid.cz + solid.rv,
+                transmission=obstacle.transmission, bare_transmission=obstacle.bare_transmission,
+                owner=obstacle.owner, crown=solid)
 
 
 def covered(part: Part, x: np.ndarray, y: np.ndarray, z: np.ndarray,
@@ -192,6 +127,20 @@ def covered(part: Part, x: np.ndarray, y: np.ndarray, z: np.ndarray,
             np.minimum(t_hi, along, out=t_hi)
         else:
             np.maximum(t_lo, along, out=t_lo)
+    for nx, ny, nz, d in part.roof.tolist():
+        # The same interval, cut by a plane that leans: along the ray the
+        # height rises by 1/cot for every metre travelled (doc 120). One plane
+        # at a time, as floats: cut all at once or read as numpy's scalars, a
+        # plane cost more than the arithmetic (review, 2026-09-28).
+        along = nx * sun_x + ny * sun_y + nz / cot
+        room = d - (nx * x + ny * y + nz * z)
+        if abs(along) <= PARALLEL:
+            t_hi = np.where(room >= 0, t_hi, -1.0)
+            continue
+        if along > 0:
+            np.minimum(t_hi, room / along, out=t_hi)
+        else:
+            np.maximum(t_lo, room / along, out=t_lo)
     covering: np.ndarray = t_lo <= t_hi
     return covering
 
@@ -214,6 +163,14 @@ def covered_over_moments(part: Part, x: float, y: float, z: float,
             t_lo = np.where(toward < -PARALLEL, np.maximum(t_lo, limit), t_lo)
             if room < 0:
                 t_hi = np.where(np.abs(toward) <= PARALLEL, -1.0, t_hi)
+        for nx, ny, nz, d in part.roof.tolist():
+            room = d - (nx * x + ny * y + nz * z)
+            along = nx * sun_x + ny * sun_y + nz / cot
+            limit = room / along
+            t_hi = np.where(along > PARALLEL, np.minimum(t_hi, limit), t_hi)
+            t_lo = np.where(along < -PARALLEL, np.maximum(t_lo, limit), t_lo)
+            if room < 0:
+                t_hi = np.where(np.abs(along) <= PARALLEL, -1.0, t_hi)
     covering: np.ndarray = t_lo <= t_hi
     return covering
 
@@ -262,6 +219,12 @@ def _point_through(parts: list[Part], directions: Directions, x: float, y: float
         if owner is not None and part.owner == owner:
             continue
         passes = _through_by_month(part, directions.month)
+        if part.crown is not None:
+            az = np.radians(directions.azimuth)
+            depth = chord(part.crown, x, y, z, np.sin(az), np.cos(az),
+                          1.0 / np.tan(np.radians(directions.altitude)))
+            through *= passing(passes, part.crown, depth)
+            continue
         through *= np.where(covered_over_moments(part, x, y, z, directions), passes, 1.0)
     if ring:
         through = through * visible(np.asarray([ring], dtype=float), directions)[:, 0]
@@ -286,6 +249,6 @@ def _through_by_month(part: Part, months: np.ndarray) -> np.ndarray:
     return through
 
 
-__all__ = ["LEVEL", "Directions", "Incidence", "Moments", "Part", "Plane", "cos_incidence",
-           "covered", "covered_over_moments", "moments_for", "moments_from", "parts_of",
-           "plane_of", "point_hours", "point_sums", "point_sweep", "sun_directions", "visible"]
+__all__ = ["Directions", "Moments", "Part", "covered", "covered_over_moments", "moments_for",
+           "moments_from", "parts_of", "point_hours", "point_sums", "point_sweep",
+           "sun_directions", "visible"]

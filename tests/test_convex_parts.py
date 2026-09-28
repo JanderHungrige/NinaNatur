@@ -116,3 +116,31 @@ def test_an_outline_geos_will_not_triangulate_is_split_anyway() -> None:
         for polygon in solid_of(ring):
             shapely.constrained_delaunay_triangles(polygon)
     _exact(ring)
+
+
+def test_a_many_cornered_outline_is_merged_by_looking_edges_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A 200-corner star, split exactly and with a few joins tried per corner.
+    Searching every pair from the start after each join tried 970,000 here
+    and grew with the cube of the corners: a 500-corner house took 18 s to
+    split, in the serving process once roofs cast through their parts
+    (review of stage 3, 2026-09-28). Counted, not timed, so no machine
+    decides it."""
+    from ninanatur.solar import convex_parts as module
+
+    star = [((10.0 if i % 2 == 0 else 4.0) * math.cos(math.pi * i / 100) + 37.0,
+             (10.0 if i % 2 == 0 else 4.0) * math.sin(math.pi * i / 100) - 21.0)
+            for i in range(200)]
+    tried = 0
+    real = module._join
+
+    def counted(*args: object) -> object:
+        nonlocal tried
+        tried += 1
+        return real(*args)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(module, "_join", counted)
+    module._parts.cache_clear()
+    _exact(star)
+    assert tried <= 10 * len(star), tried

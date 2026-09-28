@@ -21,7 +21,7 @@ function obstacle(id: number, kind: string): GardenOut['obstacles'][number] {
     obstacle_id: id, kind, x: id === HOUSE ? -10 : 10, y: 10, shape: 'polygon',
     width: null, constraint_hint: null,
     points: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
-    height: kind === 'house' ? 7 : null, label: null, roof: 'unknown', roof_source: 'user', eaves_m: null, eaves_source: null,
+    height: kind === 'house' ? 7 : null, label: null, roof: 'unknown', roof_source: 'user', eaves_m: null, eaves_source: null, crown_base_m: null, crown_base_source: null, crown_fits: true,
     roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [],
     height_source: 'user',
     footprint: [[-3, -2], [3, -2], [3, 2], [-3, 2]],
@@ -34,7 +34,7 @@ function bed(): GardenOut['beds'][number] {
     constraint_hint: null, name: 'Südbeet', polygon: [[0, -12], [6, -12], [6, -8], [0, -8]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: 8, ellenberg_m: 5, ellenberg_n: 5.5,
     ellenberg_r: 6.5, sun_hours: 6.4, slope_deg: null, aspect_deg: null,
-    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null, plantings: [],
+    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, crown_fits: true, label: null, plantings: [],
   };
 }
 

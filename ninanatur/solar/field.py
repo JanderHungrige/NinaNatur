@@ -12,8 +12,7 @@ Measured on a garden with 26 buildings:
     sun positions and shadow polygons hoisted        20 ms per point
     plus a bounding box rejected before each test   1.09 ms per point
 
-The field is built once for a location, a set of obstacles and a height above
-ground; after that a point costs a run of rectangle comparisons.
+Built once per location, obstacles and height; a point then costs box tests.
 """
 from __future__ import annotations
 
@@ -45,24 +44,20 @@ class ShadowAt:
     #: What passes through this shadow. Zero for anything built.
     transmission: float = 0.0
     #: The receiving height the polygon was swept for — the **lowest** ground in
-    #: the garden, so the polygon is a superset of every real shadow. A point
-    #: standing higher than this needs the exact check below; on flat ground
-    #: nothing ever does, and the fast path is the only path.
+    #: the garden, so the polygon covers every real shadow; only a point
+    #: standing higher needs the exact check below, and on flat ground none does.
     floor: float = 0.0
-    #: The absolute height of the thing casting this, and the sun's tangent at
-    #: this moment. Together they say how far the shadow reaches onto a point at
-    #: any height: (top - z) / tan(altitude).
+    #: The caster's absolute height and the sun's tangent: the shadow reaches
+    #: (top - z) / tan(altitude) onto a point at height z.
     top: float = 0.0
     tan_altitude: float = 1.0
-    #: The footprint turned so the shadow runs along -y, and the rotation that
-    #: put it there. Then "how far must the shadow reach to arrive here" is one
-    #: interval comparison rather than a second polygon.
+    #: The footprint turned so the shadow runs along -y, and that rotation: how
+    #: far the shadow must reach is then one interval, not a second polygon.
     aligned: tuple[tuple[float, float], ...] = ()
     sin_azimuth: float = 0.0
     cos_azimuth: float = 1.0
-    #: True while the sun is east of due south. The two halves of a day are not
-    #: interchangeable: afternoon sun is hotter and harsher, and a great many
-    #: species sold as *Halbschatten* want the morning specifically.
+    #: True while the sun is east of due south: afternoon sun is hotter, and a
+    #: great many species sold as *Halbschatten* want the morning specifically.
     morning: bool = True
     #: The element this shadow belongs to. See `Obstacle.owner`.
     owner: int | None = None
@@ -122,15 +117,12 @@ class ShadowField:
     #: Days sampled, for turning lit samples into a daily mean.
     days: int
     year: int
-    #: Each moment's sun azimuth and altitude, in step with `moments`. Kept so a
-    #: horizon can be consulted without the sun being recomputed — the whole
-    #: reason this field exists is that sun positions are expensive.
+    #: Each moment's sun azimuth and altitude, in step with `moments`, so a
+    #: horizon can be consulted without the sun being recomputed.
     sun: list[tuple[float, float]] = field(default_factory=list)
     #: How high the land stands in each degree of azimuth, for the garden as a
-    #: whole. Five kilometres of terrain does not change across twenty metres of
-    #: plot, so this is measured once — but it is *combined* with each cell's own
-    #: slope before being consulted, which is why the query takes a ring rather
-    #: than reading this one.
+    #: whole — measured once, then combined with each cell's own slope, which
+    #: is why the query takes a ring rather than reading this one.
     horizon: list[float] = field(default_factory=list)
 
     def sun_hours_at(
@@ -145,10 +137,8 @@ class ShadowField:
     ) -> list[tuple[list[ShadowAt], bool]]:
         """The moments the sun actually clears the land in, for one sky.
 
-        Dropping them here rather than testing per point is what keeps the ring
-        from costing anything: a garden in a valley ends up iterating *fewer*
-        moments than a flat one, so the feature with the largest effect in hill
-        country is also the only one in this model that makes it faster.
+        Dropped here rather than tested per point, so a garden in a valley
+        iterates *fewer* moments than a flat one: the ring costs nothing.
         """
         pairs = list(zip(self.moments, self.halves, strict=True))
         if not ring:
@@ -176,18 +166,12 @@ class ShadowField:
         the azimuth already says which half a sample is in — exactly, and
         without a second calculation per day.
 
-        `z` is the ground this point stands on. Zero is the flat world every
-        shadow in this project was computed in until Wave 17: a point uphill of
-        a house sees over it, and a point below it does not.
-
-        `ignore` drops one element's shadow, for a point standing on that
-        element. See the note where it is used.
-
-        `ring` is how high the land stands in each degree of azimuth as seen
-        from **this** point — the hills beyond the plot and the slope underfoot,
-        whichever blocks the sun first. `under` is the same thing already
-        applied, for a caller with many points sharing one sky; on a uniform
-        hillside that is every cell in the garden.
+        `z` is the ground this point stands on (zero, the flat world until
+        Wave 17). `ignore` drops one element's shadow, for a point standing on
+        that element. `ring` is how high the land stands in each degree of
+        azimuth as seen from **this** point — the hills and the slope
+        underfoot; `under` is the same already applied, for many points that
+        share one sky.
         """
         if self.days == 0:
             return (0.0, 0.0)
@@ -220,7 +204,6 @@ class ShadowField:
         return (before * hours, after * hours)
 
 
-
 def shadow_field(
     location: Location,
     obstacles: list[Obstacle],
@@ -243,6 +226,7 @@ def shadow_field(
     and only a point standing higher pays for the exact check. On flat ground
     the floor is zero, every point is at zero, and nothing ever does.
     """
+    _prisms_only(obstacles)
     days = season_days(year, month)
     step = timedelta(minutes=MINUTE_STEP)
     receiver = ground_floor + height_above_ground
@@ -285,6 +269,13 @@ def shadow_field(
         sun=suns,
         horizon=list(horizon or []),
     )
+
+
+def _prisms_only(obstacles: list[Obstacle]) -> None:
+    """The reference for prisms; a roof's is `shading.is_shaded` (review,
+    2026-09-28: rebuilt here field by field, a roof was cast as a block)."""
+    if any(o.roof is not None or o.crown is not None for o in obstacles):
+        raise ValueError("the field casts prisms; ask the raster about a roof or a crown")
 
 
 def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:

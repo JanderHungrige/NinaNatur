@@ -5,7 +5,11 @@ import { ElementForm } from '../components/ElementForm';
 
 type Props = Parameters<typeof ElementForm>[0];
 
-/** The form as the details show it: an element with no kind and no name yet. */
+/**
+ * The form as the details show it: an element with no kind and no name yet.
+ * `update` renders it again over a changed store, as a server answer does
+ * while it is open.
+ */
 export function open(props: Partial<Props> = {}) {
   const handlers = {
     onSave: vi.fn(),
@@ -13,7 +17,7 @@ export function open(props: Partial<Props> = {}) {
     onCancel: vi.fn(),
     onFocusTaken: vi.fn(),
   };
-  render(
+  const form = (more: Partial<Props>) => (
     <ElementForm
       heading="Was ist das?"
       kind="other"
@@ -26,6 +30,9 @@ export function open(props: Partial<Props> = {}) {
       roofPitchDeg={null}
       eavesM={null}
       eavesSource={null}
+      crownBaseM={null}
+      crownBaseSource={null}
+      crownFits={null}
       height={null}
       width={null}
       soilType={null}
@@ -35,9 +42,11 @@ export function open(props: Partial<Props> = {}) {
       takeFocus={false}
       {...handlers}
       {...props}
-    />,
+      {...more}
+    />
   );
-  return handlers;
+  const { rerender } = render(form({}));
+  return { ...handlers, update: (more: Partial<Props>) => rerender(form(more)) };
 }
 
 /** Every note a screen reader hears after a field's name, in order. */

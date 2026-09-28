@@ -5,7 +5,7 @@ initiative: ninanatur
 initiative_version: 23
 status: in_progress
 depends_on: ninanatur-wave-25
-demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
+demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und unter einer dichten Krone sagt die Stufe, was Ellenberg dort misst. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
 created: 2026-09-07
 hash: 699125da
 ---
@@ -15,11 +15,15 @@ hash: 699125da
 ## Demo-State
 
 Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt
-keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht
-und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs
-Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie
-des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im
-Plan markiert, sieht, wie weit das Modell danebenliegt.
+keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des
+Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und
+unter einer dichten Krone sagt die Stufe, was Ellenberg dort misst. Und wer
+die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell
+danebenliegt.
+
+(The second sentence was rewritten at the owner's word on 2026-09-28: it said
+the level follows Ellenberg's relative illuminance, which the owner's
+decision of 2026-09-22 replaced — the hours lead, capped by the sky in leaf.)
 
 *(This wave is not complete until this can be manually demonstrated.)*
 
@@ -73,9 +77,9 @@ term the number becomes a derivation from the definition.
 | 2 | room-to-compute | 117 | built | 0 |
 | 3 | the-sky-counts | 118 | built | 2 |
 | 4 | energy-not-hours | 119 | built | 3 |
-| 5 | a-roof-casts-as-a-roof | — | planned | 1 |
-| 6 | a-crown-is-not-a-cylinder | — | planned | 1 |
-| 7 | mark-the-shadow-edge | — | planned | 3 |
+| 5 | a-roof-casts-as-a-roof | 120 | built | 1 |
+| 6 | a-crown-is-not-a-cylinder | 121 | built | 1 |
+| 7 | mark-the-shadow-edge | 122 | built | 3 |
 
 Three stages:
 
@@ -117,7 +121,7 @@ with a new date. The page says which model version computed a map.
   the plan's first source, is refused by its robots.txt; the DWD's grids ship
   in the image instead, credited in their own wording, the licence linked.
   The owner's decision on the light value, taken on measured suggestion lists:
-  the hours, floored by Ellenberg's classes on the sky in leaf — nothing moves
+  the hours, capped by Ellenberg's classes on the sky in leaf — nothing moves
   in the open, a dense crown reads as woodland floor. 15 findings upheld on
   part 1, 4 on part 2, all fixed; the worst a month map showing a leafy sky
   under a bare March crown, and a floor that took every bed inside a drawn
@@ -135,6 +139,54 @@ with a new date. The page says which model version computed a map.
   `MODEL_VERSION` 26.4. 12 findings upheld, among them a raised bed given the
   hillside's tilt as its own soil, and a cost charged per part that belonged
   per cell.
+
+- **2026-09-22 — stage 2 on the preview** (merge `9424de9`, V0.25.227),
+  checked through the API with a throwaway garden: model 26.4, the sky,
+  relative light and expected sunshine per cell and per bed, the DWD's credit
+  with its licence link. The page itself has not yet been looked at by the
+  owner.
+
+- **2026-09-28 — stage 3: feature 5 built** (doc 120). *A roof casts as a
+  roof*: a gable, a hip and a surveyed pent cast as the solid under their own
+  planes instead of a block of `RISE_KEPT`'s averaged height — still one part
+  a house, the planes cut against the ray the raster already cuts. The roof
+  the cells stand on, the roof the day's playback draws and the roof that
+  casts are one geometry (`garden.casting`). A point 3 m behind a gabled house
+  gains 1.7 h; a pent leaning towards the beds loses 0.8. `MODEL_VERSION`
+  26.5. Reviewed twice: 18 distinct findings, all fixed, the worst a house on
+  surveyed ground casting a full-ridge block (the roof dropped by
+  `standing_on`), a playback that still drew blocks, a hip drawn at its eaves,
+  and planes priced per cell when they cost per plane.
+
+- **2026-09-28 — stage 3: feature 6 built** (doc 121). *A crown is not a
+  cylinder*: an ellipsoid on a trunk, passing light by the depth a ray
+  crosses — Beer–Lambert, its longest chord passing the old share — for the
+  woody plants planted from the catalogue and, no longer opaque blocks, for
+  the trees and shrubs the gardener draws or takes from the laser; a hedge
+  stays solid. Where a crown starts is the gardener's *Kronenansatz*, the
+  laser's reading, or a third of a tree's height. The foot of a lone 12 m
+  lime goes from 4.37 h to 12.98 h: a crown on a trunk lets all but the high
+  summer sun in beneath it, and its shade falls north — the plan's
+  calibration, and the owner's to revisit (doc 121, known issues).
+  `MODEL_VERSION` 26.6. Three review agents, 18 distinct findings, all fixed:
+  the worst a laser window shared by a street and read on the wrong garden's
+  axes (a neighbour's tree measured as one's own), roofs read as crown bases
+  without the building model, a row of shrubs cast as one ball at its
+  middle, and tests that only ever cast spheres.
+
+- **2026-09-28 — stage 3: feature 7 built** (doc 122). *Mark the shadow
+  edge*: the details of anything that casts arm the plan, and the next click
+  is where the gardener saw its shadow end; the model's shadow of it at that
+  moment is read against the mark — how far, too long or too short, the
+  height that amounts to at an edge a top casts, the turn a sideways miss
+  means — and drawn beside it, dashed. Only the observation is stored; the
+  reading is the model's as it now is. Blender was not installed, so the
+  one independent comparison was made against NREL's SPA and trigonometry:
+  0.4 mm (doc 122). Three review agents, 31 distinct findings, all fixed:
+  the worst a time field that froze at the moment the garden was opened,
+  a mark in a lit courtyard read against its wall, sentences that said
+  "zu kurz" and "zu hoch" at once, and routes that ran the heaviest
+  geometry in the app with no slot or limit.
 
 ## What each one is
 
@@ -252,7 +304,9 @@ shadow edge of their house falls *now* (date and time); the model draws its
 prediction beside it and states the offset. Cheap, honest, and it catches the
 three errors no test can see: a wrong height, a wrong north, a wrong anchor.
 Once, in the feature doc: a synthetic case compared against an independent
-tool (a sun study in Blender), documented rather than automated.
+tool (a sun study in Blender), documented rather than automated. (Built
+against NREL's SPA and trigonometry instead — Blender was not installed; the
+case is in doc 122 for the study.)
 
 ## What the model will still not know
 

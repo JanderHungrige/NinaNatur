@@ -16,6 +16,7 @@ from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden, to_out
 from ninanatur.api.schemas import GardenOut
 from ninanatur.garden.canopies_found import dismiss, mark_accepted, open_suggestions
+from ninanatur.garden.cloud_sync import fill_crown_bases
 from ninanatur.garden.elements import insert_element
 from ninanatur.garden.store import load_garden
 
@@ -60,9 +61,10 @@ def accept_canopy(
 ) -> GardenOut:
     """Turn a suggestion into a tree on the plan.
 
-    Its height is marked `measured`, which is what it is — and its species is
-    nobody's guess, so the canopy model treats it as a broadleaf in leaf, the
-    same default every unidentified woody planting already gets.
+    Its height is marked `measured`, which is what it is, and so is where its
+    crown starts wherever the laser's point cloud has been read here (doc 121).
+    Its species is nobody's guess, so it casts with a broadleaf's shares
+    (`garden.casting`), the default every unidentified woody planting gets.
     """
     garden = require_garden(conn, token)
     for found in open_suggestions(conn, garden.garden_id):
@@ -78,6 +80,7 @@ def accept_canopy(
             (element_id,),
         )
         mark_accepted(conn, garden.garden_id, suggestion_id, element_id)
+        fill_crown_bases(conn, load_garden(conn, garden.garden_id))
         break
     else:
         raise HTTPException(status_code=404, detail="no such suggestion")

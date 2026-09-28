@@ -1,13 +1,12 @@
 """The shape of a roof, as a surface the sun can be asked about.
 
-`roofs.py` answers what a roof does to the shadow a building casts *on other
-things* — one averaged height, because that is all a shadow polygon needs. This
-module answers the other question: what the sun does to the roof itself.
-
-They are different questions and they need different geometry. A gable roof
-shades its neighbours as if it were a block about halfway up its own rise; its
-own two pitches face opposite ways, and at 51°N a north pitch and a south pitch
-are not remotely the same place. One number cannot say that.
+It answers both questions a roof raises: what the sun does to the roof itself,
+and — since Wave 26 (doc 120) — what the roof does to the garden. Both read the
+same planes (`RoofSurface.planes`): a cell on a north pitch stands on the face
+that casts the shadow beside the house, and at 51°N a north pitch and a south
+pitch are not remotely the same place. Until then the shadow came from one
+averaged height (`roofs.RISE_KEPT`), a block about halfway up the rise, which
+now answers only for shapes nobody has identified.
 
 **What is measured, and what is assumed.** Where the survey has said which way
 a roof falls (`fall_deg`, doc 94), the ridge runs at right angles to that and
@@ -40,11 +39,13 @@ MIN_PITCH_DEG = 5.0
 class RoofSurface:
     """One roof, as a height and a slope over every point of its footprint.
 
-    Two pitches falling from a ridge *segment*. The segment is what makes one
-    shape serve both roofs that need it: a gable's ridge runs the full length of
-    the building, so only the two long faces slope; a hip's is shortened by the
-    span at each end, so the ends slope too, at the same pitch. Distance to a
-    segment handles both without a second formula.
+    Planes falling from a ridge at one pitch (doc 120): a gable's ridge runs
+    the full length of the building, so only its two long faces slope; a
+    hip's is shortened by the span at each end, so its ends slope too, down
+    to a point on a square; a pent is one face falling from its upper edge.
+    The roof's height is the lowest of its planes over a point — until Wave 26
+    it was the distance to the ridge *segment*, which curved conically round
+    a hip's ends and dipped below the planes a hip is made of.
     """
 
     #: Where the ridge runs, as its two endpoints in garden metres.
@@ -53,6 +54,16 @@ class RoofSurface:
     span_m: float
     eaves_m: float
     ridge_m: float
+    #: Which way the ridge runs, as a unit vector — kept because a hip whose
+    #: ridge is a point has no direction of its own to read off (doc 120).
+    along: tuple[float, float] = (1.0, 0.0)
+    #: Whether the ends slope too. A gable's ridge runs to the wall and its
+    #: ends are the footprint's own gable walls; a hip's stops short.
+    hipped: bool = False
+    #: Which way a pent falls, as a unit vector: its "ridge" is its upper edge,
+    #: and it has one face, not two (review, 2026-09-28: the second never bore
+    #: on anything, and cost like a wall all the same). None for any other roof.
+    downhill: tuple[float, float] | None = None
 
     @property
     def pitched(self) -> bool:
@@ -64,12 +75,40 @@ class RoofSurface:
             return 0.0
         return math.degrees(math.atan((self.ridge_m - self.eaves_m) / self.span_m))
 
+    def planes(self) -> tuple[tuple[float, float, float, float], ...]:
+        """The roof's faces as half-spaces n·(x, y, z) ≤ d, heights in this
+        surface's own datum (doc 120): two falling from the ridge, and two more
+        from its ends where they slope as well.
+
+        The roof *is* these planes: its height is their lower envelope, the
+        shadow it casts is the solid under them, and the plan draws their
+        edges. A hip's corners once sat lower than its own planes, because the
+        height came from the distance to the ridge *segment*, which curves
+        round its ends; a hip's ends are flat.
+        """
+        if not self.pitched:
+            return ()
+        fall = (self.ridge_m - self.eaves_m) / self.span_m
+        (ax, ay), (bx, by) = self.ridge
+        if self.downhill is not None:
+            wx, wy = self.downhill
+            return ((fall * wx, fall * wy, 1.0, self.ridge_m + fall * (wx * ax + wy * ay)),)
+        ux, uy = self.along
+        vx, vy = uy, -ux
+        faces = [(fall * vx, fall * vy, 1.0, self.ridge_m + fall * (vx * ax + vy * ay)),
+                 (-fall * vx, -fall * vy, 1.0, self.ridge_m - fall * (vx * ax + vy * ay))]
+        if self.hipped:
+            faces.append((fall * ux, fall * uy, 1.0, self.ridge_m + fall * (ux * bx + uy * by)))
+            faces.append((-fall * ux, -fall * uy, 1.0, self.ridge_m - fall * (ux * ax + uy * ay)))
+        return tuple(faces)
+
     def height_at(self, x: float, y: float) -> float:
-        """The roof's height above the same datum the building's height is in."""
+        """The roof's height above the same datum the building's height is in:
+        the lowest of its planes over this point, never below the eaves."""
         if not self.pitched:
             return self.ridge_m
-        share = min(1.0, _distance_to_segment((x, y), *self.ridge) / self.span_m)
-        return self.ridge_m - share * (self.ridge_m - self.eaves_m)
+        under = min(d - nx * x - ny * y for nx, ny, _nz, d in self.planes())
+        return max(self.eaves_m, under)
 
     def slope_aspect_at(self, x: float, y: float) -> tuple[float, float]:
         """The pitch and the direction it climbs, degrees clockwise from north.
@@ -78,16 +117,23 @@ class RoofSurface:
         roof means *towards the ridge*. A point on the north pitch climbs
         southward, so it is the southern sky its own roof stands in front of,
         and that is precisely why a north pitch is darker.
+
+        The plane that is lowest here is the one this point lies on; where two
+        meet — a ridge, a hip's edge — the roof falls away both ways and blocks
+        nothing, and flat is the honest answer at a line.
         """
         if not self.pitched:
             return (0.0, 0.0)
-        nearest = _nearest_on_segment((x, y), *self.ridge)
-        dx, dy = nearest[0] - x, nearest[1] - y
-        if math.hypot(dx, dy) < 1e-9:
-            # Standing on the ridge itself: the roof falls away on both sides
-            # and blocks nothing. Flat is the honest answer at a single line.
+        over = sorted((d - nx * x - ny * y, -nx, -ny) for nx, ny, _nz, d in self.planes())
+        if len(over) > 1 and over[1][0] - over[0][0] < 1e-9:
             return (0.0, 0.0)
-        return (self.pitch_deg, math.degrees(math.atan2(dx, dy)) % 360.0)
+        _height, uphill_x, uphill_y = over[0]
+        if math.hypot(uphill_x, uphill_y) < 1e-9 or self.height_at(x, y) <= self.eaves_m:
+            return (0.0, 0.0)
+        # Snapped: a plane's normal carries the arithmetic's own dust, and due
+        # north came back as 360° rather than 0°.
+        bearing = round(math.degrees(math.atan2(uphill_x, uphill_y)), 9) % 360.0
+        return (self.pitch_deg, bearing)
 
 
 def surface_of(
@@ -131,7 +177,7 @@ def surface_of(
         ridge = ((top[0] - along[0] * long_half, top[1] - along[1] * long_half),
                  (top[0] + along[0] * long_half, top[1] + along[1] * long_half))
         surface = RoofSurface(ridge=ridge, span_m=2.0 * short_half, eaves_m=eaves,
-                              ridge_m=height_m)
+                              ridge_m=height_m, along=along, downhill=down)
     else:
         # A hip's ridge stops one span short of each end, which is what makes
         # its ends slope — down to a point, when the span is the longer way.
@@ -142,7 +188,7 @@ def surface_of(
             (centre[0] + along[0] * half, centre[1] + along[1] * half),
         )
         surface = RoofSurface(ridge=ridge, span_m=short_half, eaves_m=eaves,
-                              ridge_m=height_m)
+                              ridge_m=height_m, along=along, hipped=roof is Roof.HIP)
     return flat if surface.pitch_deg < MIN_PITCH_DEG else surface
 
 
@@ -224,29 +270,6 @@ def _oriented_box(
     if half_w >= half_d:
         return (centre, (ux, uy), half_w, half_d)
     return (centre, (-uy, ux), half_d, half_w)
-
-
-def _nearest_on_segment(
-    point: tuple[float, float],
-    start: tuple[float, float],
-    end: tuple[float, float],
-) -> tuple[float, float]:
-    dx, dy = end[0] - start[0], end[1] - start[1]
-    length_sq = dx * dx + dy * dy
-    if length_sq < 1e-12:
-        return start
-    t = ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / length_sq
-    t = max(0.0, min(1.0, t))
-    return (start[0] + t * dx, start[1] + t * dy)
-
-
-def _distance_to_segment(
-    point: tuple[float, float],
-    start: tuple[float, float],
-    end: tuple[float, float],
-) -> float:
-    near = _nearest_on_segment(point, start, end)
-    return math.hypot(point[0] - near[0], point[1] - near[1])
 
 
 __all__ = ["MIN_PITCH_DEG", "Line", "RoofSurface", "box_for", "pitch_of", "surface_of"]

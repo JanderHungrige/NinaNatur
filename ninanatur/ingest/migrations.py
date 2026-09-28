@@ -79,6 +79,16 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # The owner's check, 2026-09-21. Null on every existing row until the
     # one-time backfill in `outline_provenance` marks what the import left.
     ("element", "outline_source", "TEXT"),
+    # Wave 26, feature 6 (doc 121): where a crown starts. Null on every
+    # existing row, which is what the assumption stands in for.
+    ("element", "crown_base_m", "REAL"),
+    ("element", "crown_base_source", "TEXT"),
+    # Wave 26, feature 6 (doc 121): where a laser window was read, and whether a
+    # building model classified it. Null and 0 on every existing window, which
+    # is read again the next time its place's light is computed.
+    ("cloud_window", "anchor_lat", "REAL"),
+    ("cloud_window", "anchor_lon", "REAL"),
+    ("cloud_window", "classified", "INTEGER NOT NULL DEFAULT 0"),
 )
 
 

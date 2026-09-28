@@ -14,12 +14,11 @@ import pytest
 
 from ninanatur.solar.beam import beam
 from ninanatur.solar.climate import climate_at
+from ninanatur.solar.incidence import Incidence, plane_of
 from ninanatur.solar.position import Location
 from ninanatur.solar.raster import (
-    Incidence,
     moments_for,
     parts_of,
-    plane_of,
     point_sweep,
     sun_directions,
 )

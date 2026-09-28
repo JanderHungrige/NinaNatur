@@ -324,9 +324,10 @@ export interface paths {
          * Accept Canopy
          * @description Turn a suggestion into a tree on the plan.
          *
-         *     Its height is marked `measured`, which is what it is — and its species is
-         *     nobody's guess, so the canopy model treats it as a broadleaf in leaf, the
-         *     same default every unidentified woody planting already gets.
+         *     Its height is marked `measured`, which is what it is, and so is where its
+         *     crown starts wherever the laser's point cloud has been read here (doc 121).
+         *     Its species is nobody's guess, so it casts with a broadleaf's shares
+         *     (`garden.casting`), the default every unidentified woody planting gets.
          */
         post: operations["accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post"];
         /**
@@ -601,6 +602,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/shadow-marks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shadow Marks
+         * @description Every mark of this garden's, each read against the model as it is now.
+         *
+         *     The page asks this of every garden it opens, and most have no marks: only
+         *     reading some takes a heavy slot, as the month view takes one only for a
+         *     month. Taken always, it turned a garden's opening away whenever two
+         *     computations were running (review of stage 3, 2026-09-28).
+         */
+        get: operations["shadow_marks_api_v1_gardens__token__shadow_marks_get"];
+        put?: never;
+        /**
+         * Mark Shadow
+         * @description Keep where a shadow was seen to end, and read the model against it.
+         *
+         *     A mark is an observation: of a thing of this garden's that casts, at a
+         *     moment that has passed, with the sun high enough to cast at all.
+         */
+        post: operations["mark_shadow_api_v1_gardens__token__shadow_marks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/shadow-marks/{mark_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget Mark
+         * @description Forget one mark.
+         */
+        delete: operations["forget_mark_api_v1_gardens__token__shadow_marks__mark_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/shadows": {
         parameters: {
             query?: never;
@@ -642,9 +695,11 @@ export interface paths {
          * Sightlines
          * @description What is visible from a point in the garden.
          *
-         *     The same cylinders the shading model uses, seen from an eye instead of from
-         *     the sun — so a hedge blocks sight exactly as it blocks light, and a raised
-         *     bed stands above both.
+         *     The standing things on the plan as prisms to their full height, seen from
+         *     an eye instead of from the sun — so a hedge blocks sight as it blocks
+         *     light, and a raised bed stands above both. A tree blocks a view whole: the
+         *     light model sees through its crown since doc 121, but a view does not pass
+         *     through leaves the way a fifth of the sun does.
          */
         post: operations["sightlines_api_v1_gardens__token__sightlines_post"];
         delete?: never;
@@ -988,6 +1043,8 @@ export interface components {
             bed_id: number;
             /** Constraint Hint */
             constraint_hint: string | null;
+            /** Crown Fits */
+            crown_fits: boolean;
             /** Ellenberg L */
             ellenberg_l: number | null;
             /** Ellenberg M */
@@ -1550,6 +1607,12 @@ export interface components {
         ObstacleOut: {
             /** Constraint Hint */
             constraint_hint: string | null;
+            /** Crown Base M */
+            crown_base_m: number | null;
+            /** Crown Base Source */
+            crown_base_source: string | null;
+            /** Crown Fits */
+            crown_fits: boolean;
             /** Eaves M */
             eaves_m: number | null;
             /** Eaves Source */
@@ -1598,6 +1661,8 @@ export interface components {
         ObstacleUpdate: {
             /** Constraint Hint */
             constraint_hint?: string | null;
+            /** Crown Base M */
+            crown_base_m?: number | null;
             /** Depth */
             depth?: number | null;
             /** Eaves M */
@@ -1912,6 +1977,68 @@ export interface components {
             minute: number;
             /** Polygons */
             polygons: number[][][];
+        };
+        /**
+         * ShadowMarkIn
+         * @description Where the gardener saw the shadow of one standing thing end, and when.
+         */
+        ShadowMarkIn: {
+            /** Element Id */
+            element_id: number;
+            /**
+             * Seen At
+             * Format: date-time
+             */
+            seen_at: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** ShadowMarkOut */
+        ShadowMarkOut: {
+            /** Element Id */
+            element_id: number;
+            /** Mark Id */
+            mark_id: number;
+            reading: components["schemas"]["ShadowReadingOut"] | null;
+            /** Seen At */
+            seen_at: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
+         * ShadowReadingOut
+         * @description The model's shadow edge against the mark, worked out now.
+         */
+        ShadowReadingOut: {
+            /** Across M */
+            across_m: number;
+            /** Along M */
+            along_m: number;
+            /** Altitude */
+            altitude: number;
+            /** Azimuth */
+            azimuth: number;
+            /**
+             * Edge
+             * @enum {string}
+             */
+            edge: "far" | "near" | "side";
+            /** Height M */
+            height_m: number | null;
+            /** Model Longer */
+            model_longer: boolean;
+            /** Nearest */
+            nearest: number[];
+            /** Offset M */
+            offset_m: number;
+            /** Rings */
+            rings: number[][][];
+            /** Turned Deg */
+            turned_deg: number | null;
         };
         /**
          * Shape
@@ -3039,6 +3166,102 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ScoreOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shadow_marks_api_v1_gardens__token__shadow_marks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShadowMarkOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_shadow_api_v1_gardens__token__shadow_marks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShadowMarkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShadowMarkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_mark_api_v1_gardens__token__shadow_marks__mark_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                mark_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

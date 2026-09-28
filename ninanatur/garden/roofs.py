@@ -3,6 +3,8 @@
 OSM's `height` is the **ridge**, so a building modelled as a prism at that height
 is a building whose gable ends are solid to the ridge. It shades too much,
 everywhere, all season — and the taller the roof, the further the error reaches.
+Where the shape is known a roof now casts as its own planes (doc 120); what is
+here is the answer for a shape nobody has identified.
 
 A roof shape is one of the few things somebody can answer by looking out of the
 window, which is the test this project applies to every question it asks. So it
@@ -38,13 +40,16 @@ class Roof(StrEnum):
     UNKNOWN = "unknown"
 
 
-#: How much of the roof's own rise still shades, as a fraction.
+#: How much of the roof's own rise still shades, as a fraction — for a roof
+#: whose shape the model does not know.
 #:
-#: A flat roof is the whole building at one height. A gable is a wedge: the
-#: ridge is a line and the eaves are the edges, so averaged across the footprint
-#: about half of the rise stands. A hip slopes on all four sides and stands for
-#: less. A pent is a single slope and keeps more than a gable, because one whole
-#: edge is at full height.
+#: Since Wave 26 (doc 120) a gable, a hip and a pent with a surveyed fall cast
+#: as their own planes (`roofshape.RoofSurface.planes`, `garden.casting`), and
+#: none of these ratios applies to them. What is left is the guess for the rest:
+#: a mixed roof, another shape, an unknown one, a pent whose fall nobody has
+#: surveyed. For those a building still casts as a block this share of the way
+#: up its rise. The gable, hip and pent entries remain because an unsurveyed
+#: pent reads its own, and the rest say what the guess was.
 #:
 #: These are ratios of a shape, not measurements of a building. They are here
 #: rather than inline so that somebody who disagrees has one place to argue.

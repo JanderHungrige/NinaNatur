@@ -27,7 +27,7 @@ function bed(overrides: Partial<GardenOut['beds'][number]> = {}): GardenOut['bed
     slope_deg: null,
     aspect_deg: null,
     sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00',
-    height_above_ground: 0,
+    height_above_ground: 0, crown_fits: true,
     label: null,
     plantings: [],
     ...overrides,
@@ -81,7 +81,7 @@ describe('GardenCanvas', () => {
 
   it('names the plan itself so its contents are knowable without seeing it', () => {
     const g = garden({
-      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, roof: 'unknown', roof_source: 'user', eaves_m: null, eaves_source: null,
+      obstacles: [{ obstacle_id: 1, kind: 'wall', label: null, roof: 'unknown', roof_source: 'user', eaves_m: null, eaves_source: null, crown_base_m: null, crown_base_source: null, crown_fits: true,
     roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [], height_source: 'user',
           x: 0, y: -4, shape: 'polygon', width: null, constraint_hint: 'rect',
           points: [[-5, -0.5], [5, -0.5], [5, 0.5], [-5, 0.5]], height: 6,

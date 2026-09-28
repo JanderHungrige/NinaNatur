@@ -18,6 +18,7 @@ source_files:
   - ninanatur/garden/lightgrid.py
   - ninanatur/garden/lightcells.py
   - ninanatur/garden/lightgrid_extent.py
+  - ninanatur/garden/lightgrid_cost.py
   - ninanatur/garden/lightgrid_store.py
   - ninanatur/ingest/schema_computed.py
   - ninanatur/ingest/migrations.py
@@ -45,7 +46,7 @@ test_files:
   - tests/test_concave_ray.py
   - frontend/src/components/ShadeSwitch.model.test.tsx
 data_flow: writes-existing
-last_synced: 2026-09-22
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -86,7 +87,12 @@ feature pays for them first.
 their shadows. So each footprint is split once into convex parts
 (`solar/convex_parts.py`): shapely's constrained Delaunay triangulation, then
 merged back wherever two neighbours stay convex (Hertel–Mehlhorn). An L becomes
-two parts, a 24-corner outline eight. What is split is what the drawn shadow
+two parts, a 24-corner outline eight. The neighbour across an edge is looked
+up by the edge's corners: searching every pair from the start after each join
+grew with the cube of the corners, and a 500-corner outline took 18 s to
+split — in the serving process too, once roofs cast through their parts (doc
+120; review of stage 3, 2026-09-28). Now 0.06 s, the parts within two of the
+old count on every outline compared. What is split is what the drawn shadow
 sweeps too (`solid_of`, doc 116):
 
 - the outline itself if it is simple;
