@@ -80,7 +80,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "Relative illuminance is shown, not matched by: on Ellenberg's thresholds it would put almost every garden spot at L 9 (owner's decision, 2026-09-22, below)."
-  - "The sky floor bites only where a crown is dense, and the model's planted crowns are not: every broadleaf passes 20 % in leaf (`canopies.TRANSMISSION_IN_LEAF`), under which the floor says 6.25 against the hours' 6.5. The dense beech measured below assumed 5 %; crowns on trunks (feature 6) and species' own transmission are where it starts to matter."
+  - "The sky's cap (written 'floor' at first; it is the lower of the two values) bites only where a crown is dense, and the model's planted crowns are not: every broadleaf passes 20 % in leaf (`canopies.TRANSMISSION_IN_LEAF`), under which the floor says 6.25 against the hours' 6.5. The dense beech measured below assumed 5 %; crowns on trunks (feature 6) and species' own transmission are where it starts to matter."
   - "A tree, shrub or hedge the gardener drew — and a crown accepted from the surface model — is still cast as an opaque prism from the ground, whatever `api/canopies.py` says of broadleaves: inside one, hours and sky both read 0, and the value its floor, 2.5. Crowns become crowns in feature 6."
   - "Resolved by doc 119: the direct share was sun hours over open ground's, so a March hour at 8° counted like a June hour at 60°."
   - "Resolved by doc 121 (2026-09-28): a tree or shrub the gardener drew, and a tree taken from the laser, cast as a crown on its trunk with a broadleaf's shares, no longer an opaque prism. A hedge is still solid to the ground, and inside one the value is still its floor, 2.5."
@@ -328,8 +328,11 @@ is right where a crown is dense, and the model does not yet know one that is.
 3. Every climate value carries its source, licence and attribution; a
    borrowed cell says how far it is, and an assumed climate says so. The DWD
    is credited wherever its numbers can be shown.
-4. Hours stay the headline. The light value is the hours', floored by the sky
-   in leaf, by one rule wherever a value is given (`light_value`).
+4. Hours stay the headline. The light value is the hours', capped by the sky
+   in leaf — never brighter than Ellenberg's classes say of it — by one rule
+   wherever a value is given (`light_value`). (Written "floored" until the
+   review of stage 3, 2026-09-28: the rule has always been the lower of the
+   two, a ceiling.)
 
 ## Security
 

@@ -19,7 +19,7 @@ plants the list had just offered. What still differs is only *where* the light
 is read: the list ranks by the bed's average, the warning by the cell a cluster
 stands in — a corner darker than its bed is what this is for. Where a cluster
 has no cell of its own, it is judged by the value the list ranks its bed by
-(`_light_at`). The value is the list's rule too: the hours, floored by the sky
+(`_light_at`). The value is the list's rule too: the hours, capped by the sky
 in leaf (`solar.light.light_value`, doc 118).
 """
 from __future__ import annotations

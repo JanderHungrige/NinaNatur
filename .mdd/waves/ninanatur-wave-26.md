@@ -117,7 +117,7 @@ with a new date. The page says which model version computed a map.
   the plan's first source, is refused by its robots.txt; the DWD's grids ship
   in the image instead, credited in their own wording, the licence linked.
   The owner's decision on the light value, taken on measured suggestion lists:
-  the hours, floored by Ellenberg's classes on the sky in leaf — nothing moves
+  the hours, capped by Ellenberg's classes on the sky in leaf — nothing moves
   in the open, a dense crown reads as woodland floor. 15 findings upheld on
   part 1, 4 on part 2, all fixed; the worst a month map showing a leafy sky
   under a bare March crown, and a floor that took every bed inside a drawn
