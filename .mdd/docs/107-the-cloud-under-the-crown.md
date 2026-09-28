@@ -9,6 +9,7 @@ depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service, 105-every-roof
 relates: [84-canopies-found, 106-which-source-said-so, 07-solar-geometry]
 source_files:
   - ninanatur/geo/pointcloud.py
+  - ninanatur/geo/inside.py
   - ninanatur/geo/cloud_store.py
   - ninanatur/garden/cloud_sync.py
   - ninanatur/ingest/schema_computed.py
@@ -17,8 +18,9 @@ routes: []
 models: [cloud_window]
 test_files:
   - tests/test_pointcloud.py
+  - tests/test_inside_any.py
 data_flow: mixed
-last_synced: 2026-09-20
+last_synced: 2026-09-29
 status: complete
 phase: all
 mdd_version: 11
@@ -120,6 +122,26 @@ the index is 445 MB, and holding it would be the whole budget before a point is
 read. And the reader hands over a quarter of a million points at a time: a
 million cost 226 MB of peak for the same tile, and 250,000 is no slower.
 
+## The roof test, in seconds
+
+**2026-09-29.** The owner's first "Sonne & Schatten" ran for minutes (doc 65),
+and the relight's log, which times each step since then, named this doc: a
+garden in Köln-Ehrenfeld, run in the image against a fresh volume, took
+*terrain 2.5 s, buildings 9.6 s, laser 385.4 s*. Profiled from the cache, 381
+of the laser's 384 seconds were the footprint rule: 721,422 points cast against
+every edge of 4,359 outlines, 34,776 edges in all. The building model covers
+its survey tile, not the window, so most of those outlines were nowhere near a
+point.
+
+A point outside an outline's box cannot be inside the outline. So each outline
+now meets only the points in its box, found by sorting the points once and two
+binary searches (`geo/inside.py`), and the points in a box meet exactly the
+arithmetic they met before. Only 749 of the 4,359 outlines had a point in their
+box. The laser now takes **3.2 s** for that garden, and the rule 0.5 s of it. The
+old cast over every point is kept in `tests/test_inside_any.py` as the reference
+answer: whole-metre points that land on corners and edges have to agree with it,
+and so does each outline's work.
+
 ## What it costs to keep
 
 Three layers of a 300×300 window as 16-bit centimetres, deflated: 66 kB per
@@ -207,3 +229,8 @@ returns is arithmetic over numbers.
   Saarland's comes out of 124 GB of archives that are never fetched (doc 103).
 
 ## Bugs
+
+- **2026-09-29: the footprint rule cast every point against every edge of every
+  outline** in the building model's tile: 381 of 384 seconds in Köln-Ehrenfeld,
+  the minutes behind the owner's report (doc 65). Each outline now meets only
+  the points in its box: 3.2 s, the same answer (above).

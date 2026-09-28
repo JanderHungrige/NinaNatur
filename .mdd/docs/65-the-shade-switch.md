@@ -342,12 +342,20 @@ sweep is a still, faint wash and the ring stands still.
 
 The owner's report of 2026-09-28: the first press ran a long time and ended
 with nothing, and a second press began again. The first relight at a place
-reads the ground, the building model and — in the nine states that publish
+reads the ground, the building model and — in the seven states that publish
 one — the laser before the light: 31 s on a workstation, past 90 s on the
 preview, whose proxy then answered 504. The page took that for the end; the
 server went on and stored the map nobody was waiting for. Wave 26 made every
 garden meet it once, by reading each stored laser window again for the crown
 bases (doc 121).
+
+*Where the minutes went* (2026-09-29): run in the image, a garden in
+Köln-Ehrenfeld logged *laser 385.4 s*, and 381 of those seconds were the test of
+which points stand inside a building — every point against every edge of the
+4,359 outlines the building model brought. Each outline now meets only the
+points in its box, and that laser takes 3.2 s (doc 107). The job below stays:
+a first analysis still fetches tens of megabytes, and a slow portal can still
+outlast a request.
 
 So a relight is a job (`api/relight_jobs.py`; the chain in
 `garden/relight.py`, each run's steps timed in the log). Done within 20 s,

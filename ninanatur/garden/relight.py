@@ -1,13 +1,15 @@
 """Everything a relight reads before the light, and then the light.
 
-The ground, the survey's building model and — in the nine states that publish
+The ground, the survey's building model and — in the seven states that publish
 one — the laser, each read once for a place and stored, and only then the
 light (docs 104, 107, 121). Where they are stored this is seconds. Where they
 are not it is the longest wait in the app: the laser alone took 31 s on a
 workstation and the chain over 90 s on the preview, whose proxy then cut the
 request off (the owner, 2026-09-28). So `api.relight_jobs` runs it off the
 request, and each run says in the log what took how long — the question that
-had no answer from outside the server.
+had no answer from outside the server. Its first answer, in the image: *laser
+385.4 s*, nearly all of it the roof test, which now takes half a second
+(`geo.inside`, doc 107).
 """
 from __future__ import annotations
 
