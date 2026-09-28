@@ -54,13 +54,16 @@ TILTED_CELL_MS = 0.02
 NEAR_PLANE_MS = 17.0
 FAR_PLANE_MS = 10.0
 PLANE_CELL_MS = 0.0007
-#: A crown (doc 121) standing on the grid is priced as the part it is. Its
-#: chord is a quadratic solved at each cell under the ellipse it throws —
-#: fewer cells than a part's square swept from the ground — and it costs less
-#: than a part: measured on 12 and 36 drawn trees on a 94 m plot at forced
-#: cells from 2 m to 0.5 m (2026-09-28), about 71 ms a crown and 0.0008 ms a
-#: cell against a part's 95 and 0.002 — 36 trees took 4.8 s at 0.5 m where the
-#: estimate says 8.4, and 3.2 s at 2 m where it says 4.6.
+#: A crown (doc 121) standing on the grid costs less than a part: its chord
+#: is a quadratic solved at each cell under the ellipse it throws, fewer cells
+#: than a part's square swept from the ground. Measured on 12 and 36 drawn
+#: trees on a 94 m plot at forced cells from 2 m to 0.5 m (2026-09-28), about
+#: 71 ms a crown and 0.0008 ms a cell against a part's 95 and 0.002, and
+#: priced at that, rounded up. It was priced as the part it is at first, "with
+#: room"; with the room the stretch below adds, gardens with trees and a tall
+#: house dropped a rung they could afford (review of 7108fff).
+NEAR_CROWN_MS = 75.0
+CELL_NEAR_CROWN_MS = 0.001
 #:
 #: Off the grid it costs more than a far part: a crown just past the grid's
 #: edge throws its shadow in at most moments, not only while shadows are long.
@@ -82,12 +85,15 @@ FAR_CROWN_MS = 15.0
 #: past the budget (review of 596a89f). Measured by difference — trees and a
 #: house, less the trees, less the house — per crown and metre of height:
 #: 1.4, 4.7 and 17.7 ms at 2, 1 and 0.5 m on a 94 m plot, about a millisecond
-#: plus 4.3/cell². On a 24 × 40 m plot the second part came to 0.56 of that at
+#: plus 4.4/cell². On a 24 × 40 m plot the second part came to 0.56 of that at
 #: every cell: a smaller grid clips the stretched boxes, taken here as its
-#: width over `RELIEF_REACH_M`. Rounded up; `scripts.measure_crown_cost`.
+#: width over `RELIEF_REACH_M`. Measured whole, the sky's sweep included, so
+#: it is added outside the sky's share, not multiplied by it again — it was,
+#: and every crown garden paid a fifth more (review of 7108fff). Rounded up;
+#: `scripts.measure_crown_cost`.
 CROWN_RELIEF_MS = 1.0
 CROWN_RELIEF_M2_MS = 4.5
-RELIEF_REACH_M = 60.0
+RELIEF_REACH_M = 70.0
 #: And a neighbour just off the grid throws its shadow in at most moments,
 #: not only while shadows are long: 36 houses from the map with their near
 #: walls 1 to 9 m outside the grid took 1.8 s at 2 m cells where the far price
@@ -124,17 +130,22 @@ def estimate_ms(cells: float, parts: int, near: int | None = None,
     """
     near = parts if near is None else min(near, parts)
     far = parts - near
+    # The crowns among the near parts are priced as crowns.
+    crowned = min(near_crowns, near)
+    blocks = near - crowned
     sky = SKY_DIRECTIONS + (BARE_SKY_DIRECTIONS if deciduous else 0)
     swept = 1.0 + sky / SEASON_MOMENTS
-    per_cell = CELL_COST_MS + CELL_NEAR_PART_MS * near + CELL_FAR_PART_MS * far
-    raster = NEAR_PART_MS * near + FAR_PART_MS * far + REACH_PART_MS * reaching + cells * per_cell
+    per_cell = (CELL_COST_MS + CELL_NEAR_PART_MS * blocks + CELL_NEAR_CROWN_MS * crowned
+                + CELL_FAR_PART_MS * far)
+    raster = (NEAR_PART_MS * blocks + NEAR_CROWN_MS * crowned + FAR_PART_MS * far
+              + REACH_PART_MS * reaching + cells * per_cell)
     planes = near_planes + far_planes
     roofs = NEAR_PLANE_MS * near_planes + FAR_PLANE_MS * far_planes + cells * PLANE_CELL_MS * planes
+    crowns = FAR_CROWN_MS * far_crowns
     clipped = min(1.0, math.sqrt(cells) * cell_m / RELIEF_REACH_M)
-    stretched = CROWN_RELIEF_MS + CROWN_RELIEF_M2_MS / cell_m**2 * clipped
-    crowns = FAR_CROWN_MS * far_crowns + near_crowns * relief_m * stretched
+    stretch = crowned * relief_m * (CROWN_RELIEF_MS + CROWN_RELIEF_M2_MS / cell_m**2 * clipped)
     ground = cells * TERRAIN_CELL_MS if terrain else 0.0
-    return (GRID_FIXED_MS + swept * (raster + roofs + crowns) + ground
+    return (GRID_FIXED_MS + swept * (raster + roofs + crowns) + stretch + ground
             + (cells * TILTED_CELL_MS if tilted else 0.0))
 
 
@@ -144,7 +155,8 @@ def cost_model() -> str:
             f"{CELL_COST_MS},{CELL_NEAR_PART_MS},{CELL_FAR_PART_MS},{TERRAIN_CELL_MS}"
             f"|sky {SKY_DIRECTIONS},{BARE_SKY_DIRECTIONS}/{SEASON_MOMENTS}|tilt {TILTED_CELL_MS}"
             f"|roof {NEAR_PLANE_MS},{FAR_PLANE_MS},{PLANE_CELL_MS}"
-            f"|crown {FAR_CROWN_MS},{CROWN_RELIEF_MS},{CROWN_RELIEF_M2_MS},{RELIEF_REACH_M}"
+            f"|crown {NEAR_CROWN_MS},{CELL_NEAR_CROWN_MS},{FAR_CROWN_MS},{CROWN_RELIEF_MS},"
+            f"{CROWN_RELIEF_M2_MS},{RELIEF_REACH_M}"
             f"|reach {REACH_PART_MS}")
 
 

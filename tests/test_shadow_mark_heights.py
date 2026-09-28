@@ -242,3 +242,34 @@ def test_a_step_across_the_pitch_the_model_stops_pitching_at_says_no_height() ->
     assert casting(replace(hip, height=3.685)).roof is None, "a metre lower, a block"
 
     assert _as_height(reading, _Cast(hip).moved(reading, sun)).height_m is None
+
+
+def test_a_height_that_would_change_the_roof_s_kind_is_not_said(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A gable under 5° casts as a block at its ridge. Its shadow seen 0.4 m
+    longer, the probe — kept to the flat side — said 0.2 m taller; typed in,
+    that pitched the roof, the given eaves took the edge, and the miss grew
+    to 0.87 m (review of 7108fff). What changes the thing's kind is not a
+    height: none is said. The sun is the review's, set where the read asks."""
+    from ninanatur.garden import shadow_marks
+
+    gable = Element(element_id=7, kind="house", shape="polygon", x=0.0, y=0.0, height=4.18,
+                    points=[[-5.19, -5.22], [5.19, -5.22], [5.19, 5.22], [-5.19, 5.22]],
+                    roof="gable", eaves_m=3.9, eaves_source="user")
+    sun = SunPosition(altitude=29.5, azimuth=250.2)
+    monkeypatch.setattr(shadow_marks, "sun_position", lambda _where, _when: sun)
+    reading = read_edge(casting(gable), sun, 12.55, 4.61)
+    assert reading is not None and reading.edge == "far" and casting(gable).roof is None
+    thing = _Cast(gable)
+    said = _as_height(reading, thing.moved(reading, sun)).height_m
+    assert said is not None and not thing.keeps_shape(said), "the probe alone says one"
+
+    mark = ShadowMark(mark_id=1, element_id=7, x=12.55, y=4.61,
+                      seen_at=datetime(2026, 9, 1, tzinfo=UTC))
+    [found] = readings(_garden_of(gable), [mark])
+    assert found is not None and found.offset_m == pytest.approx(reading.offset_m)
+    assert found.height_m is None
+    assert thing.keeps_shape(-0.1), "0.1 m taller it is still under 5°"
+    assert not thing.keeps_shape(-0.2), "0.2 m taller it pitches"
+    assert not thing.keeps_shape(4.5), "a height that leaves nothing standing"

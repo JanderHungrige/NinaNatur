@@ -178,8 +178,13 @@ are long, so it now adds 28 ms to the far price (`lightgrid_load`,
 `REACH_PART_MS`: 21 measured, rounded up by a third; 35 at first, which moved
 a dense suburban garden off the 1 m rung for nothing); from 11 m out the far
 price held and still stands alone. The same rings, and the crowns' cases, hold now
-(`scripts.measure_neighbour_cost`, `scripts.measure_crown_cost`); a garden
-from the map with its own gable, 30 neighbours and 22 trees still gets 0.5 m.
+(`scripts.measure_neighbour_cost`, `scripts.measure_crown_cost`, which prints
+the cell the ladder picks for each): an ordinary 25 × 40 m garden from the
+map — its own gable, 30 neighbours round it, 22 trees, six of them on the
+plot — gets 0.5 m (estimated 4.7 s, took 2.7); the 94 m plot the map fills
+to its edges, 22 trees on or just off it, gets 3 m, where 2 m took 4.4 s
+against an estimate of 5.2. (This sentence named no plot until the review of
+7108fff, and read as the second garden's.)
 And the parts a many-cornered roof is cast through are found by looking each
 neighbour up, not by searching every pair: a 500-corner gable's day of
 shadows took 18.7 s in the serving process, and takes 0.8 (doc 117).

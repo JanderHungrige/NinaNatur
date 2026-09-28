@@ -89,6 +89,21 @@ def test_a_crown_s_stretch_is_priced_by_its_cell_not_by_the_grid_s_count() -> No
     assert _stretch(69 * 101, 0.5) > 0.5 * wide
 
 
+def test_a_crown_on_the_grid_is_priced_as_a_crown_and_its_stretch_once() -> None:
+    """Measured, a crown on the grid costs about three quarters of a part's
+    fixed price and less than half its price a cell; priced as a part, with
+    the stretch multiplied by the sky's share it already held, gardens with
+    trees and a tall house dropped a rung they could afford (review of
+    7108fff)."""
+    assert estimate_ms(40_000, 1, 1, near_crowns=1) < estimate_ms(40_000, 1, 1)
+    for deciduous in (False, True):
+        stretch = (estimate_ms(40_000, 12, 12, deciduous=deciduous, near_crowns=12,
+                               relief_m=9.0, cell_m=0.5)
+                   - estimate_ms(40_000, 12, 12, deciduous=deciduous, near_crowns=12,
+                                 cell_m=0.5))
+        assert stretch == pytest.approx(12 * 9.0 * (1.0 + 4.5 / 0.25))
+
+
 def test_the_ladder_prices_each_rung_at_its_own_cell(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[float] = []
 

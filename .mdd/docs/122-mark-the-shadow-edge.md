@@ -171,7 +171,13 @@ near end read as a height, the page saying "zu kurz" and "zu hoch" at once.
   eaves, measures that switch between a roof and a block, not a height: it
   is halved, down to 3 cm, until it keeps to one side, and where none does no
   height is said (review of 596a89f: a hip just steeper than 5° read a height
-  that took its miss from 0.18 m to 0.48 m). No point of an edge moves faster
+  that took its miss from 0.18 m to 0.48 m). And the height said must keep
+  the thing what it is: one that, typed in, would pitch a roof cast flat, or
+  flatten one cast pitched, or leave nothing standing, is not said — measured
+  on one side of the switch, it landed on the other (review of 7108fff: a
+  gable under 5° read "0,2 m zu niedrig", and typed in the miss grew from 0.41
+  to 0.87 m). Over 1,500 random far-edge heights, none makes its miss worse.
+  No point of an edge moves faster
   than a block's; one that seems to is a gap between two shadows closing,
   and is taken at a block's rate. Where a metre moves it less than a quarter
   of what it moves a block's, no height is said: the number would be more

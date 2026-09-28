@@ -239,12 +239,16 @@ than cutting its rim; the counted shadow is the exact ellipse
 
 `python -m scripts.measure_crown_cost` prints what follows, on this machine:
 drawn trees 8 m across and 12 m tall on a 94 m plot, at forced cells from
-2 m to 0.5 m. A crown on the grid costs about 71 ms and 0.0008 ms a cell,
-against a part's 95 ms and 0.002 — so it is priced as the part it is, and
-the estimate stays above it with room (36 trees: 4.8 s at 0.5 m against an
-estimate of 8.4 s). Before the grid asked only the cells under the crown's
-ellipse, and before the quadratic lost its redundant branches, the same 36
-trees took 11.3 s — above the estimate, which is how it was found.
+2 m to 0.5 m, and the cell the ladder picks. A crown on the grid costs about
+71 ms and 0.0008 ms a cell, against a part's 95 ms and 0.002. It was priced
+as the part it is at first, with room; with the room the stretch below adds,
+gardens with trees and a tall house dropped a rung they could afford
+(review of 7108fff), so it is priced as a crown now: 75 ms and 0.001 ms a
+cell (`NEAR_CROWN_MS`, `CELL_NEAR_CROWN_MS`) — 36 trees took 4.8 s at 0.5 m
+against an estimate of 5.7, and 12 get 0.5 m. Before the grid asked only the
+cells under the crown's ellipse, and before the quadratic lost its redundant
+branches, the same 36 trees took 11.3 s — above the estimate, which is how
+it was found.
 
 Off the grid a crown costs more than a far part: one just past the grid's
 edge throws its shadow in at most moments, not only while shadows are long.
@@ -272,11 +276,14 @@ house, less the trees, less the house — per crown and metre: 1.4, 4.7 and
 the small plot the second part came to 0.56 of that at every cell, a
 smaller grid clipping the stretched boxes (taken as its width over 60 m).
 Priced at 1 ms + 4.5/cell² ms per crown and metre (`CROWN_RELIEF_MS`,
-`CROWN_RELIEF_M2_MS`, `RELIEF_REACH_M`). Every case in
-`scripts.measure_crown_cost` holds — level surveyed ground back at 0.5 m,
-the small gardens with trees, a tall house and neighbours estimated above
-what they take, so the ladder steps down rather than running past the
-budget.
+`CROWN_RELIEF_M2_MS`, `RELIEF_REACH_M` 70 m), and added whole: the fit is
+of whole runs, the sky's sweep in it, and multiplying it by the sky's share
+again made every crown garden pay a fifth more (review of 7108fff). Every
+case in `scripts.measure_crown_cost` holds, most within a third of what
+they take: level surveyed ground and a flat 9 m house on the 94 m plot get
+0.5 m; the small plot with 16 trees and a 15 m house gets 0.5 m (took 3.9 s,
+estimated 4.8), with 20 trees, the house and neighbours 1 m, where 0.5 m
+would take 5.5 s.
 Narrowing each box to the heights under it was tried and saved nothing;
 `test_crown_heights` holds every cell beside a roof to the point's answer,
 whichever way the box is sized.

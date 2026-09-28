@@ -109,6 +109,8 @@ def readings(garden: Garden, marks: list[ShadowMark]) -> list[Reading | None]:
         reading = read_edge(thing.obstacle, sun, mark.x, mark.y)
         if reading is not None and reading.height_m is not None:
             reading = _as_height(reading, thing.moved(reading, sun))
+            if reading.height_m is not None and not thing.keeps_shape(reading.height_m):
+                reading = replace(reading, height_m=None)
         found.append(reading)
     return found
 
@@ -163,6 +165,21 @@ class _Cast:
                 return reach_past(stepped, sun, reading.nearest, back=lower) / step
             step /= 2
         return 0.0
+
+    def keeps_shape(self, height_m: float) -> bool:
+        """Whether the thing, `height_m` lower as the mark says, still casts
+        as the same kind of thing — a roof on its planes, or a block. Measured
+        on one side of the pitch the model stops pitching a roof at, a height
+        that lands on the other says what the switch does, not the height: a
+        gable cast flat read "0,2 m zu niedrig", and typed in it became a
+        pitched roof whose eaves took the edge, the miss four times what it
+        was (review of 7108fff). And a height that leaves nothing standing is
+        none."""
+        lower = (self.element.height or 0.0) - height_m
+        if lower <= 0:
+            return False
+        shaped = casting(replace(self.element, height=lower))
+        return (shaped.roof is None) == (self.obstacle.roof is None)
 
 
 def _as_height(reading: Reading, moved: float) -> Reading:
