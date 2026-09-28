@@ -1,4 +1,5 @@
 import './theme.css';
+import './ours/controls.css';
 
 import type { DecoratedShape, Decoration, LevelOfDetail, PlanTheme } from '../types';
 import { DraftSketchDefs } from './Defs';

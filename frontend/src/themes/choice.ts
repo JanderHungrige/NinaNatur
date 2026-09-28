@@ -29,10 +29,14 @@ export function offered(): readonly ThemeOnOffer[] {
   return ON_OFFER;
 }
 
+/** Drawn when nobody has chosen: his hand, since the owner made it the
+ *  default on 2026-09-28. Technisch stays what more contrast asks for. */
+export const DEFAULT_THEME = 'draft-sketch';
+
 export function chosenTheme({ search, stored, moreContrast }: Circumstances): string {
   if (moreContrast) return technisch.id;
   const asked = new URLSearchParams(search).get('theme') ?? stored;
-  return offered().find((theme) => theme.id === asked)?.id ?? technisch.id;
+  return offered().find((theme) => theme.id === asked)?.id ?? DEFAULT_THEME;
 }
 
 /** What the browser remembered, or null — including when it refuses to say. */

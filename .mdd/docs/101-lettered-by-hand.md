@@ -11,6 +11,8 @@ source_files:
   - frontend/src/themes/draft-sketch/theme.css
   - frontend/src/themes/draft-sketch/ours/Furniture.tsx
   - THIRD_PARTY.md
+  - frontend/src/themes/draft-sketch/ours/controls.css
+  - frontend/src/App.tsx
 routes: []
 models: []
 test_files:
@@ -78,6 +80,21 @@ which `unicode-range` is for.
 file that exists with its licence beside it — a CDN would simply not load under
 `font-src 'self'`, and a plan lettered in the fallback is a plan in two hands —
 and that exactly those two selectors use it.
+
+## The page's buttons, in his hand (2026-09-28)
+
+The lettering was the drawing's alone: "everything else on the page is a
+control panel and keeps the interface's type". The owner asked for every
+button in his look, and while his style draws the plan the page's buttons are
+slips of his paper — `themes/draft-sketch/ours/controls.css`, *NinaNatur, in
+the style of Draft Sketch*: black ink round a line that is not quite straight,
+Patrick Hand, his grass as the wash of a button that does something, drawn
+heavier when it is pressed. Links stay written, underlined by hand; the brand
+stays the brand. On a dark page they stay paper — his ink turned white would
+be another style (doc 97) — and where more contrast is asked for the plan is
+Technisch and so are the buttons. The rules key on the app's
+`data-plan-theme`, the style actually drawn, so his buttons never stand
+beside a plan in another style.
 
 ## Contrast, measured
 

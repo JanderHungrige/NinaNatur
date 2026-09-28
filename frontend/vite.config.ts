@@ -1,9 +1,9 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-/** Draft Sketch's own folder of the build (doc 97), which the server hands
- *  out on the preview only: nothing of Warren Davison's is served in public
- *  before he has seen it. `ninanatur/web/delivery.py` holds the other half. */
+/** Draft Sketch's own folder of the build (doc 97): his images, kept apart.
+ *  Served everywhere since the owner lifted the preview's gate (2026-09-20);
+ *  `ninanatur/web/delivery.py` holds the other half. */
 const DRAFT_SKETCH = '/themes/draft-sketch/';
 const isDraftSketch = (path: string): boolean => path.replaceAll('\\', '/').includes(DRAFT_SKETCH);
 
@@ -25,6 +25,11 @@ export default defineConfig({
     assetsInlineLimit: 0,
     rollupOptions: {
       output: {
+        // React apart from our code: it changes a few times a year, ours every
+        // day, and one chunk of both grew past 500 kB once Draft Sketch
+        // shipped with the page as its default (2026-09-28).
+        manualChunks: (id) =>
+          /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id) ? 'react' : undefined,
         chunkFileNames: (chunk) =>
           chunk.moduleIds.some(isDraftSketch) ? 'assets/draft-sketch/[name]-[hash].js' : 'assets/[name]-[hash].js',
         assetFileNames: (asset) =>

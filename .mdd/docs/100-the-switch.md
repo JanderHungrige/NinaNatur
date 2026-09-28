@@ -14,13 +14,15 @@ source_files:
   - frontend/src/components/SiteHeader.tsx
   - frontend/src/App.tsx
   - frontend/src/styles.css
+  - frontend/vite.config.ts
 routes: []
 models: []
 test_files:
   - frontend/src/themes/themeChoice.test.ts
   - frontend/src/components/ThemePicker.test.tsx
+  - frontend/src/themes/usePageTheme.test.tsx
 data_flow: greenfield
-last_synced: 2026-09-20
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -52,8 +54,10 @@ Three things, in this order — the last one wins:
 2. **What the address asks for** (`?theme=…`), which still works and is what
    the contact sheet and every probe use.
 3. **What the app knows about.** A remembered id for a style nobody has heard
-   of — renamed, withdrawn — falls back to Technisch rather than to an empty
-   plan. Every style is offered everywhere: his files were the preview's alone
+   of — renamed, withdrawn — falls back to the default rather than to an
+   empty plan. **The default is Draft Sketch** since the owner chose it on
+   2026-09-28; it was Technisch until then. A viewer who picked Technisch keeps
+   it, remembered in their browser. Every style is offered everywhere: his files were the preview's alone
    while he had not seen the plan in his hand, and the owner lifted that gate
    on 2026-09-20 with the switch in place.
 
@@ -63,6 +67,13 @@ whose whole substance is washes, grain and pencil ink is the wrong answer to
 "I need this to be clearer", and patching it — as doc 98 did, by hiding the ink
 — leaves a drawing with its shapes and none of its marks. The picker says so
 where it stands rather than silently disagreeing with the plan.
+
+**Chosen before the first drawing.** The choice used to be read in an effect,
+after the page had drawn once, and Draft Sketch was then fetched as a chunk
+of its own: with it as the default, every load drew the plan and its buttons
+in Technisch and then changed style under the gardener's eyes. The choice is
+made as the page is first drawn now, and his half ships with the page (doc
+97); his images are fetched at once and fill the washes in as they arrive.
 
 ## Where it stands
 
