@@ -9,6 +9,7 @@ depends_on: [115-the-measuring-instrument, 116-no-hull, 118-the-sky-counts, 120-
 relates: [89-three-steps-in, 99-paper-bleed-and-a-real-shadow, 93-where-the-roof-came-from]
 source_files:
   - ninanatur/solar/shadow_edge.py
+  - scripts/blender_shadow_study.py
   - ninanatur/garden/shadow_marks.py
   - ninanatur/api/shadow_marks.py
   - ninanatur/api/schemas_marks.py
@@ -68,7 +69,7 @@ integration_contracts:
 satisfies_contracts: []
 security_read_sites: []
 known_issues:
-  - "The Blender sun study the plan asks for was not made: Blender was not installed where this was built, and installing it is a download the owner has to allow. The independent check was made against NREL's SPA and trigonometry instead (below); the case is written out so the Blender study can be made from it."
+  - "The Blender sun study the plan asks for was not made: Blender was not installed where this was built, and installing it is a download the owner has to allow. The independent check was made against NREL's SPA and trigonometry instead (below); the case is written out so the Blender study can be made from it. *Resolved 2026-09-28: the owner allowed the download, and Blender 5.2.2's Cycles puts the corners within 0.1 mm of the hand's (`scripts/blender_shadow_study.py`, below).*"
   - "The predicted edge falls on level ground at the height of the thing's own ground, as the day's playback draws it (doc 116): on a slope the real edge lies nearer uphill and further downhill, and a mark there reads a height error that is the ground's."
   - "Only the marked thing's own shadow is read. Where another shadow joins it — a neighbour's tree, a hedge — the edge the gardener sees is their union's, and a mark on the other thing's part reads as this thing's error."
   - "The reading's height and angle are first-order: a mark near a corner of the shadow, where the way runs neither along the sun nor across it, reads whichever of the two is larger."
@@ -252,10 +253,18 @@ the model at 52.3801° and 182.8020°. The block's northern corners cast to
 those points, and a mark placed at either reads under a centimetre
 (`test_the_shadow_ends_where_nrels_sun_and_a_hand_put_it`).
 
-For a Blender study of the same case: a sun lamp at that altitude and azimuth
-(or Blender's Sun Position add-on at that place and time), a 10 × 8 × 9 m
-box on a plane, north along +Y; the shadow's far corners should lie at the
-two points above.
+**In Blender.** The owner allowed the download on 2026-09-28, and Blender
+5.2.2 LTS (blender.org, checksum verified, installed for every project) made
+the study: `blender --background --factory-startup --python
+scripts/blender_shadow_study.py`. A 10 × 8 × 9 m box on a plane, north along
++Y, a sun lamp at SPA's altitude and azimuth with no angular size, a black
+world and no bounced light; Cycles renders 20 × 20 m straight down at a
+centimetre a pixel, and the shadow's edges are read off the render to a
+fraction of a pixel. Its far corners: (−4.6611, 10.9281) and (5.3389,
+10.9281) m — **0.1 mm** from the hand's, so the model's drawn shadow is
+within half a millimetre of what Blender renders, the difference being the
+model's own sun against SPA's. Nothing of NinaNatur runs in it: the geometry
+is Cycles', the sun SPA's.
 
 ## Business rules
 
