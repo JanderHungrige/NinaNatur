@@ -84,6 +84,7 @@ BY_TOKEN: dict[tuple[str, str], Body] = {
     ("GET", f"{G}/landcover"): None,
     ("GET", f"{G}/light"): None,
     ("POST", f"{G}/light"): None,
+    ("GET", f"{G}/light/status"): None,
     ("POST", f"{G}/obstacles"): {"kind": "shed", "x": 1.0, "y": 1.0},
     ("POST", f"{G}/recompute"): None,
     ("GET", f"{G}/score"): None,

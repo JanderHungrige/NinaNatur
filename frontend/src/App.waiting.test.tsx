@@ -103,7 +103,8 @@ describe('App — saying that something is happening', () => {
   });
 
   it('lays a sweep over the plan while the shade is computed, and says when it is done', async () => {
-    let finish: (map: ReturnType<typeof lightMap>) => void = () => undefined;
+    let finish: (answer: { map: ReturnType<typeof lightMap>; pending: boolean }) => void =
+      () => undefined;
     const client = fakeClient({
       lightMap: vi.fn(async () => lightMap()),
       rebuildLightMap: vi.fn(() => new Promise((resolve) => { finish = resolve; })),
@@ -113,7 +114,7 @@ describe('App — saying that something is happening', () => {
     expect(screen.getByTestId('plan-working').textContent).toMatch(/Schatten wird berechnet/);
     expect(within(details()).getByRole('button', { name: 'Wird berechnet…' })).toBeDefined();
 
-    finish(lightMap());
+    finish({ map: lightMap(), pending: false });
     expect(await screen.findByText('Schatten berechnet.')).toBeDefined();
     expect(screen.queryByTestId('plan-working')).toBeNull();
   });
@@ -127,7 +128,7 @@ describe('App — saying that something is happening', () => {
       lightMap: vi.fn(async () => lightMap()),
       rebuildLightMap: vi.fn(async () => {
         computed = true;
-        return lightMap();
+        return { map: lightMap(), pending: false };
       }),
       getGarden: vi.fn(async () => garden('tok', computed ? 'Nach dem Schatten' : 'Testgarten')),
     });

@@ -148,6 +148,15 @@ function useSunMap(
    *  for this to move rather than for any new map, which a refresh during the
    *  rebuild also brings (review, 2026-09-21). */
   const [rebuilt, setRebuilt] = useState(0);
+  /** Whether the garden is still open: a relight waited on stops asking once
+   *  it is not. */
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   const rebuild = useCallback(() => {
     // A month still on its way would land on top of the season this stores.
@@ -162,7 +171,19 @@ function useSunMap(
       try {
         // The button computes and stores the season. Coming back to a month
         // view afterwards would show a figure the button did not produce.
-        const season = await client.rebuildLightMap(token);
+        const answer = await client.rebuildLightMap(token);
+        let season = answer.map;
+        if (answer.pending) {
+          // The first time at a place the server reads the ground, the
+          // buildings and the laser first — longer than a request may wait.
+          // It goes on, and says when it is done: the page used to take the
+          // proxy's 504 for the end, and a second press began again (the
+          // owner, 2026-09-28; doc 65).
+          setStatus('Erste Analyse läuft – Gelände, Gebäude und Laserdaten werden geladen. '
+            + 'Das kann einige Minuten dauern…');
+          if (!(await untilRelit(client, token, alive))) return;
+          season = await client.lightMap(token, null);
+        }
         // The Zeitraum is locked while this runs; should a month have been
         // chosen anyway, its map stands, and the season does not cover it.
         if (asked === latestMonth.current) {
@@ -183,4 +204,31 @@ function useSunMap(
   }, [client, token, run, setLightMap, setGarden, setStatus]);
 
   return { mapMonth, changeMonth, monthLoading, rebuild, rebuilding, rebuilt };
+}
+
+/** How often a relight left running is asked after, and for how long at most. */
+export const RELIT_POLL_MS = 3000;
+export const RELIT_PATIENCE_MS = 10 * 60 * 1000;
+
+/**
+ * Wait for a relight the server went on with: true once it is done, false if
+ * the garden was closed meanwhile. Its failure, or a wait past all patience,
+ * is thrown — and said by `run`, never swallowed.
+ */
+async function untilRelit(
+  client: NinaNaturClient,
+  token: string,
+  alive: { current: boolean },
+): Promise<boolean> {
+  for (let waited = 0; waited < RELIT_PATIENCE_MS; waited += RELIT_POLL_MS) {
+    await new Promise((resolve) => setTimeout(resolve, RELIT_POLL_MS));
+    if (!alive.current) return false;
+    const state = await client.lightStatus(token);
+    if (state.failed) throw new Error('die erste Analyse ist fehlgeschlagen');
+    // A restart — a deployment rolling the image — loses a job: "not running"
+    // alone read as done, and said "Schatten berechnet." over no new map.
+    if (!state.known) throw new Error('die Berechnung wurde unterbrochen – bitte noch einmal');
+    if (!state.running) return true;
+  }
+  throw new Error('die erste Analyse dauert ungewöhnlich lange – bitte später noch einmal');
 }

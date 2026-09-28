@@ -48,6 +48,22 @@ describe('NinaNaturClient', () => {
     );
   });
 
+  it('tells a relight still running (202) from one that is done', async () => {
+    // A 202 carries no map: taken as one, the page showed nothing and stopped
+    // waiting for the map the server was still making (doc 65).
+    const running = new NinaNaturClient({ fetch: respondWith(null, 202) });
+    expect(await running.rebuildLightMap('tok')).toEqual({ map: null, pending: true });
+    const done = new NinaNaturClient({ fetch: respondWith({ cell_m: 0.5 }, 200) });
+    expect(await done.rebuildLightMap('tok')).toEqual({ map: { cell_m: 0.5 }, pending: false });
+  });
+
+  it('asks after a relight where the server keeps it', async () => {
+    const fetch = respondWith({ running: true, failed: false, known: true });
+    const client = new NinaNaturClient({ fetch });
+    expect(await client.lightStatus('t o')).toEqual({ running: true, failed: false, known: true });
+    expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe('/api/v1/gardens/t%20o/light/status');
+  });
+
   it('treats an unknown share token as null, not as an error', async () => {
     // A stale share link is a normal thing for a user to hit.
     const client = new NinaNaturClient({ fetch: respondWith({ detail: 'no such garden' }, 404) });

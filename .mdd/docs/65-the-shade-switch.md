@@ -17,8 +17,14 @@ source_files:
   - frontend/src/components/CanvasScene.tsx
   - ninanatur/solar/day.py
   - ninanatur/api/light.py
+  - ninanatur/api/relight_jobs.py
+  - ninanatur/api/ratelimit.py
+  - ninanatur/garden/relight.py
+  - frontend/src/api/client.ts
 routes:
   - GET /api/v1/gardens/{token}/light
+  - POST /api/v1/gardens/{token}/light
+  - GET /api/v1/gardens/{token}/light/status
   - GET /api/v1/gardens/{token}/shadows
 models: [light_grid]
 test_files:
@@ -27,8 +33,11 @@ test_files:
   - frontend/src/components/DayPlayer.test.tsx
   - frontend/src/App.waiting.test.tsx
   - tests/test_light_api.py
+  - tests/test_relight_jobs.py
+  - frontend/src/App.firstlight.test.tsx
+  - frontend/src/api/client.test.ts
 data_flow: reads-existing
-last_synced: 2026-09-21
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -40,6 +49,8 @@ security_read_sites: []
 known_issues:
   - "Fixed 2026-09-21: `ShadowFrame.minute`'s comment (now in `api/schemas_light.py`) called it local solar time; the server counts it from 00:00 UTC (`solar/day.py`), which is what the player reads and shows on a Europe/Berlin clock."
   - "The rebuild's words name its steps (Gelände, Gebäude, Laserdaten, Licht) without saying which one is running: the endpoint is one blocking request with no progress to report. Staged progress would need a job endpoint (decided against on 2026-09-21)."
+  - "Revisited 2026-09-28: the first relight at a place ran past the preview proxy's 90 s, and the owner chose a job — `POST /light` answers 202 after 20 s and `GET /light/status` says when it is done. The status says running or not, still without the step: staged progress is still undone."
+  - "The jobs live in the serving process: a restart while one runs — a deployment rolling the image — loses it. The status then says it knows none (`known`), and the page says the relight was interrupted, to be pressed again; the work already stored (ground, buildings, laser) makes the second press quick. One process serves the app; more would need the jobs in the database."
 ---
 
 # The Shade Switch, and a Day Watched Through
@@ -323,6 +334,27 @@ plan used to sit perfectly still through it. Now, for as long as it runs
 The words name the steps and never claim to know which one is running: the
 request reports nothing until it is done. Under `prefers-reduced-motion` the
 sweep is a still, faint wash and the ring stands still.
+
+### A first analysis longer than a request
+
+The owner's report of 2026-09-28: the first press ran a long time and ended
+with nothing, and a second press began again. The first relight at a place
+reads the ground, the building model and — in the nine states that publish
+one — the laser before the light: 31 s on a workstation, past 90 s on the
+preview, whose proxy then answered 504. The page took that for the end; the
+server went on and stored the map nobody was waiting for. Wave 26 made every
+garden meet it once, by reading each stored laser window again for the crown
+bases (doc 121).
+
+So a relight is a job (`api/relight_jobs.py`; the chain in
+`garden/relight.py`, each run's steps timed in the log). Done within 20 s,
+`POST /light` answers with the map as it always did; not, it answers **202**
+and goes on, holding its heavy slot until it ends. The page then says *Erste
+Analyse läuft – Gelände, Gebäude und Laserdaten werden geladen*, asks `GET
+/light/status` every three seconds, and reads the season's map once the job
+is done — or says it failed, and gives the button back; or that it was
+interrupted, where a restart lost the job and the status knows none. A press
+while the job runs waits for the same job and takes no second slot.
 
 ## A thing that had to be learned twice
 

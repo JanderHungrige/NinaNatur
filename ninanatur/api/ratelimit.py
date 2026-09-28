@@ -16,7 +16,7 @@ from __future__ import annotations
 import sqlite3
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 
 from fastapi import HTTPException, Request, status
@@ -84,13 +84,10 @@ RETRY_AFTER_S = 10
 BUSY = "Gerade wird schon viel gerechnet. Bitte versuch es in ein paar Sekunden noch einmal."
 
 
-@contextmanager
-def heavy() -> Iterator[None]:
-    """A slot for one expensive computation, or a 429 at once rather than a queue.
-
-    Given back however the computation ends — a crash that kept its slot would
-    shrink the house by one each time until it answered nobody.
-    """
+def heavy_now() -> Callable[[], None]:
+    """A slot taken now, and what gives it back — or a 429 at once rather than
+    a queue. For a computation that outlives its request (`relight_jobs`);
+    `heavy` for one that ends with it."""
     if not HEAVY.acquire(blocking=False):
         security_event("busy", slots=HEAVY_SLOTS)
         raise HTTPException(
@@ -98,10 +95,21 @@ def heavy() -> Iterator[None]:
             detail=BUSY,
             headers={"Retry-After": str(RETRY_AFTER_S)},
         )
+    return HEAVY.release
+
+
+@contextmanager
+def heavy() -> Iterator[None]:
+    """A slot for one expensive computation, or a 429 at once rather than a queue.
+
+    Given back however the computation ends — a crash that kept its slot would
+    shrink the house by one each time until it answered nobody.
+    """
+    release = heavy_now()
     try:
         yield
     finally:
-        HEAVY.release()
+        release()
 
 
 def heavy_slot() -> Iterator[None]:
@@ -123,5 +131,5 @@ def heavy_slot() -> Iterator[None]:
 
 __all__ = [
     "BUSY", "HEAVY", "HEAVY_SLOTS", "LIMITS", "REFUSAL", "RETRY_AFTER_S",
-    "check", "client_of", "heavy", "heavy_slot",
+    "check", "client_of", "heavy", "heavy_now", "heavy_slot",
 ]

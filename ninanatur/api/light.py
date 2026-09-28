@@ -9,32 +9,32 @@ from __future__ import annotations
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request, Response, status
 
-from ninanatur.api import ratelimit
+from ninanatur.api import ratelimit, relight_jobs
 from ninanatur.api.deps import get_connection
 from ninanatur.api.gardens import require_garden
 from ninanatur.api.schemas_light import (
     CreditOut,
     LightMap,
     MisplacedOut,
+    RelightStatus,
     ShadowDay,
     ShadowFrame,
     TerrainOut,
 )
 from ninanatur.garden import landcover_sync
-from ninanatur.garden.building_sync import measure_buildings
-from ninanatur.garden.cloud_sync import ensure_cloud, fill_crown_bases
 from ninanatur.garden.credits import credits_for, licence_url
 from ninanatur.garden.elements import now
 from ninanatur.garden.light_state import current_signature
-from ninanatur.garden.light_worker import month_grid, recompute_light
+from ninanatur.garden.light_worker import month_grid
 from ninanatur.garden.lightgrid import extent_of
 from ninanatur.garden.lightgrid_store import load_grid, shows_climate
 from ninanatur.garden.misplaced import misplaced_plantings
 from ninanatur.garden.relief import crop_to, relief_of
+from ninanatur.garden.relight import relight
 from ninanatur.garden.store import load_garden
-from ninanatur.garden.terrain_sync import ensure_terrain, ground_for
+from ninanatur.garden.terrain_sync import ground_for
 from ninanatur.geo.cloud_store import cloud_source
 from ninanatur.geo.landcover_store import draws_landcover, fetched
 from ninanatur.geo.projection import LatLon
@@ -70,46 +70,59 @@ def light_map(
         return _read(conn, garden.garden_id, month)
 
 
-@router.post("/{token}/light", response_model=LightMap | None)
+@router.post("/{token}/light", response_model=LightMap | None,
+             responses={202: {"description": "Still relighting: ask `/light/status`."}})
 def rebuild_light_map(
     token: str,
     request: Request,
+    response: Response,
     background: BackgroundTasks,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> LightMap | None:
-    """Recompute the whole map, now, because somebody asked.
+    """Recompute the whole map, because somebody asked — and 202 with no body
+    where it takes longer than a request should wait (doc 65).
 
     Belt as well as braces. The signature should catch every change that moves a
     shadow, and if it ever does not, this is how somebody fixes their own map
     without knowing why it was wrong.
 
-    It is also where a garden gets its ground for the first time. A state survey
-    takes seconds to answer, which is too long for a page load and perfectly
-    reasonable for a button — and afterwards every recompute reads it for free.
+    It is also where a garden gets its ground, its buildings and its laser for
+    the first time (`garden.relight`) — seconds where a place has been read,
+    a minute and more where it has not, which the preview's proxy cut off at
+    90 s while the server went on (the owner, 2026-09-28). So the relight runs
+    as a job of its own (`relight_jobs`), and this answers with the map if it
+    is done within `WAIT_S`, and 202 if not. A press while one runs waits for
+    the same job, and neither takes a slot nor counts against the visitor.
     """
-    ratelimit.check(conn, request, "light")
     garden = require_garden(conn, token)
-    # The one place the ground is fetched. A survey answers in seconds, which is
-    # too long for a page load and fine for a button somebody pressed.
-    standing = load_garden(conn, garden.garden_id)
-    ensure_terrain(conn, standing)
+    job = relight_jobs.running(garden.garden_id)
+    if job is None:
+        # The slot first, as the other heavy routes take it: a visitor turned
+        # away because the house is full has not used up their own allowance.
+        with relight_jobs.slot() as taken:
+            ratelimit.check(conn, request, "light")
+            job = relight_jobs.start(conn, garden.garden_id, taken, relight)
     # The land around it, for a garden made before it was fetched (doc 114):
     # after this answer has gone out, never while somebody waits for the light.
     # Asked and answered — nothing mapped is an answer too — is not asked again.
     if not fetched(conn, garden.garden_id):
         background.add_task(landcover_sync.fetch_later, garden.share_token)
-    # After the ground, because a raw surface model is only object heights once
-    # the terrain has been taken off it.
-    measured = measure_buildings(conn, load_garden(conn, garden.garden_id))
-    # And after the buildings, because the laser cannot tell a roof from a
-    # crown on its own and the building model is what decides (doc 107). Only
-    # where a state publishes a cloud, which is nine of them. Then where each
-    # tree's crown starts, for the trees nobody has said it of (doc 121).
-    ensure_cloud(conn, load_garden(conn, garden.garden_id), buildings=measured.buildings)
-    fill_crown_bases(conn, load_garden(conn, garden.garden_id))
-    recompute_light(conn, garden.garden_id)
+    if not relight_jobs.wait(job, relight_jobs.WAIT_S):
+        response.status_code = status.HTTP_202_ACCEPTED
+        return None
     return _read(conn, garden.garden_id)
+
+
+@router.get("/{token}/light/status", response_model=RelightStatus)
+def relight_status(
+    token: str,
+    conn: Annotated[sqlite3.Connection, Depends(get_connection)],
+) -> RelightStatus:
+    """Whether this garden is being relit, and whether its last relight failed —
+    what the page asks after a 202 until the map is there (doc 65)."""
+    garden = require_garden(conn, token)
+    running, failed, known = relight_jobs.status(garden.garden_id)
+    return RelightStatus(running=running, failed=failed, known=known)
 
 
 @router.get("/{token}/terrain", response_model=TerrainOut | None)

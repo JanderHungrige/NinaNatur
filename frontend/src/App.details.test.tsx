@@ -187,7 +187,7 @@ describe('App — changing things from the details', () => {
       })),
       rebuildLightMap: vi.fn(async () => {
         computed = true;
-        return lightMap();
+        return { map: lightMap(), pending: false };
       }),
     });
     fireEvent.click(bedOnPlan());

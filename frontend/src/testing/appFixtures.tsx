@@ -32,6 +32,8 @@ export function fakeClient(
     improvements: vi.fn(async () => improvements()),
     bloom: vi.fn(async () => ({ beds: [] }) as unknown as BloomPalette),
     lightMap: vi.fn(async (): Promise<LightMap | null> => null),
+    // A relight the server finished at once (doc 65).
+    lightStatus: vi.fn(async () => ({ running: false, failed: false, known: true })),
     terrain: vi.fn(async () => null),
     // What the garden's numbers rest on (doc 106): nothing, in a fixture.
     sources: vi.fn(async () => []),
