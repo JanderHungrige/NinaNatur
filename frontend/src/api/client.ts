@@ -35,6 +35,7 @@ export type Terrain = components['schemas']['TerrainOut'];
 export type Credit = components['schemas']['CreditOut'];
 export type CanopySuggestion = components['schemas']['CanopyOut'];
 export type Landcover = components['schemas']['LandcoverOut'];
+export type ShadowMark = components['schemas']['ShadowMarkOut'];
 
 /** A non-2xx response, carrying whatever reason the API gave. */
 export class ApiError extends Error {
@@ -537,6 +538,28 @@ export class NinaNaturClient {
     return this.request<SightlinesOut>(
       `/api/v1/gardens/${encodeURIComponent(token)}/sightlines`,
       { method: 'POST', body: JSON.stringify(viewpoint) },
+    );
+  }
+
+  /** Where the gardener saw shadows end, each read against the model now (doc 122). */
+  async shadowMarks(token: string): Promise<ShadowMark[]> {
+    return this.request<ShadowMark[]>(`/api/v1/gardens/${encodeURIComponent(token)}/shadow-marks`);
+  }
+
+  async markShadow(
+    token: string,
+    mark: { element_id: number; x: number; y: number; seen_at: string },
+  ): Promise<ShadowMark> {
+    return this.request<ShadowMark>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/shadow-marks`,
+      { method: 'POST', body: JSON.stringify(mark) },
+    );
+  }
+
+  async forgetShadowMark(token: string, markId: number): Promise<void> {
+    return this.request<void>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/shadow-marks/${markId}`,
+      { method: 'DELETE' },
     );
   }
 

@@ -38,6 +38,9 @@ LIMITS: dict[str, tuple[int, float]] = {
     # A day of shadows is played like a month is looked at: a few months, a few
     # times (doc 116).
     "shadows": (60, 600.0),
+    # A shadow mark is a thing somebody saw, marked a few times at a few hours
+    # (doc 122); each is the first cast of its thing's outline.
+    "shadow-marks": (30, 600.0),
 }
 
 REFUSAL = "Zu viele Anfragen. Bitte warte ein paar Minuten."

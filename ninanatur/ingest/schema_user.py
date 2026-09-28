@@ -155,6 +155,25 @@ CREATE TABLE IF NOT EXISTS planting (
 
 CREATE INDEX IF NOT EXISTS idx_planting_element ON planting(element_id);
 
+-- Where the gardener saw the shadow of one standing thing end, and when
+-- (doc 122). Only the observation: the model's reading of it is worked out on
+-- every read, so a mark keeps measuring the model as it changes. Goes with
+-- the garden, and with the thing whose shadow it marks.
+CREATE TABLE IF NOT EXISTS shadow_mark (
+    mark_id     INTEGER PRIMARY KEY,
+    garden_id   INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    element_id  INTEGER NOT NULL REFERENCES element(element_id) ON DELETE CASCADE,
+    x           REAL    NOT NULL,
+    y           REAL    NOT NULL,
+    -- The moment it was seen, UTC, ISO 8601.
+    seen_at     TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_shadow_mark_garden ON shadow_mark(garden_id);
+-- For the cascade: every element deleted anywhere looks for its marks.
+CREATE INDEX IF NOT EXISTS idx_shadow_mark_element ON shadow_mark(element_id);
+
 -- What the gardener saw, as opposed to what the catalogue says.
 --
 -- Superseded in Wave 15 and kept empty rather than dropped.

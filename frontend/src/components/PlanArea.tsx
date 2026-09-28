@@ -22,7 +22,7 @@ interface Props {
  * canvas, so nothing inside the drawing has to know (doc 65).
  */
 export function PlanArea({ garden, controller }: Props) {
-  const { derived, elements, geometry, light, suggestions, clipboard, ids } = controller;
+  const { derived, elements, geometry, light, marks, suggestions, clipboard, ids } = controller;
   const waiting = light.shadeOn && light.monthLoading;
 
   return (
@@ -50,7 +50,10 @@ export function PlanArea({ garden, controller }: Props) {
         // keeps the heat maps free of obstacle shadows.
         shadows={light.day.shadows?.frames[light.day.frame]?.polygons ?? undefined}
         viewpoint={light.viewpoint}
-        onPlaceViewpoint={light.lookFrom}
+        // One click on the plan places a point: where somebody stands (doc 89),
+        // or where the armed element's shadow was seen to end (doc 122).
+        onPlaceViewpoint={elements.tool === 'shadowmark' ? marks.place : light.lookFrom}
+        shadowMarks={marks.marks}
         canopies={derived.canopies}
         onShowFoundTrees={controller.showFoundTrees}
         tool={elements.tool}

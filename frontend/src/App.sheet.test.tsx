@@ -11,6 +11,7 @@ import {
   stubWideLayout,
   viewHeading,
 } from './testing/appFixtures';
+import { richGarden } from './testing/gardens';
 
 /*
  * Doc 91: below 66rem the workspace is the window — the plan, a bar of tools at
@@ -69,6 +70,19 @@ describe('App — a narrow window: the details as a sheet from below', () => {
     expect(workspace().getAttribute('data-sheet')).toBe('half');
     expect(inert('.site-header')).toBe(false);
     expect(viewHeading()?.textContent).toBe('Südbeet');
+  });
+
+  it('comes down from 90 % when a shadow mark is armed, so the plan can take the click', async () => {
+    // Doc 122: the panel sits under the element's form, so the sheet is often
+    // raised to reach it — and at 90 % the plan is inert (review, 2026-09-28).
+    await openWorkspace(fakeClient({}, { tok: richGarden() }));
+    fireEvent.click(onPlan('polygon[data-element-id="5"]'));
+    splitter().focus();
+    fireEvent.keyDown(splitter(), { key: 'End' });
+    expect(workspace().getAttribute('data-sheet')).toBe('full');
+    fireEvent.click(within(details()).getByRole('button', { name: 'Im Plan markieren' }));
+    expect(workspace().getAttribute('data-sheet')).toBe('peek');
+    expect(inert('.workspace__plan')).toBe(false);
   });
 
   it('keeps the year’s fold for a narrow window apart from the wide one', async () => {

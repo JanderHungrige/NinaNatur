@@ -28,6 +28,7 @@ from ninanatur.api.landcover import router as landcover_router
 from ninanatur.api.light import router as light_router
 from ninanatur.api.planning import router as planning_router
 from ninanatur.api.plants import router as plants_router
+from ninanatur.api.shadow_marks import router as shadow_marks_router
 from ninanatur.api.sightlines import router as sightlines_router
 from ninanatur.api.suggestions import router as suggestions_router
 from ninanatur.garden import light_worker
@@ -126,6 +127,7 @@ app.include_router(accounts_router)
 app.include_router(feedback_router)
 app.include_router(light_router)
 app.include_router(canopies_router)
+app.include_router(shadow_marks_router)
 app.include_router(landcover_router)
 
 

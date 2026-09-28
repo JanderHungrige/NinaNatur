@@ -602,6 +602,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/gardens/{token}/shadow-marks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shadow Marks
+         * @description Every mark of this garden's, each read against the model as it is now.
+         */
+        get: operations["shadow_marks_api_v1_gardens__token__shadow_marks_get"];
+        put?: never;
+        /**
+         * Mark Shadow
+         * @description Keep where a shadow was seen to end, and read the model against it.
+         *
+         *     A mark is an observation: of a thing of this garden's that casts, at a
+         *     moment that has passed, with the sun high enough to cast at all.
+         */
+        post: operations["mark_shadow_api_v1_gardens__token__shadow_marks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/shadow-marks/{mark_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Forget Mark
+         * @description Forget one mark.
+         */
+        delete: operations["forget_mark_api_v1_gardens__token__shadow_marks__mark_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/gardens/{token}/shadows": {
         parameters: {
             query?: never;
@@ -1923,6 +1970,68 @@ export interface components {
             polygons: number[][][];
         };
         /**
+         * ShadowMarkIn
+         * @description Where the gardener saw the shadow of one standing thing end, and when.
+         */
+        ShadowMarkIn: {
+            /** Element Id */
+            element_id: number;
+            /**
+             * Seen At
+             * Format: date-time
+             */
+            seen_at: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** ShadowMarkOut */
+        ShadowMarkOut: {
+            /** Element Id */
+            element_id: number;
+            /** Mark Id */
+            mark_id: number;
+            reading: components["schemas"]["ShadowReadingOut"] | null;
+            /** Seen At */
+            seen_at: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
+         * ShadowReadingOut
+         * @description The model's shadow edge against the mark, worked out now.
+         */
+        ShadowReadingOut: {
+            /** Across M */
+            across_m: number;
+            /** Along M */
+            along_m: number;
+            /** Altitude */
+            altitude: number;
+            /** Azimuth */
+            azimuth: number;
+            /**
+             * Edge
+             * @enum {string}
+             */
+            edge: "far" | "near" | "side";
+            /** Height M */
+            height_m: number | null;
+            /** Model Longer */
+            model_longer: boolean;
+            /** Nearest */
+            nearest: number[];
+            /** Offset M */
+            offset_m: number;
+            /** Rings */
+            rings: number[][][];
+            /** Turned Deg */
+            turned_deg: number | null;
+        };
+        /**
          * Shape
          * @enum {string}
          */
@@ -3048,6 +3157,102 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ScoreOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shadow_marks_api_v1_gardens__token__shadow_marks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShadowMarkOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_shadow_api_v1_gardens__token__shadow_marks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShadowMarkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShadowMarkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_mark_api_v1_gardens__token__shadow_marks__mark_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+                mark_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

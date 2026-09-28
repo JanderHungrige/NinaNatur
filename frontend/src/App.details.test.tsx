@@ -37,6 +37,20 @@ describe('App — what the details show', () => {
     expect(within(details()).getByRole('region', { name: 'Was ist das?' })).toBeDefined();
   });
 
+  it('asks where a standing thing\'s shadow was seen to end', async () => {
+    // Doc 122: the shed stands 2.4 m high and casts a shadow to mark.
+    await open();
+    fireEvent.click(shedOnPlan());
+    expect(within(details()).getByRole('region', { name: 'Schattenkante' })).toBeDefined();
+  });
+
+  it('does not ask it of a lawn, which casts nothing', async () => {
+    await openWorkspace(fakeClient({}, { tok: richGarden({ obstacles: [shed({ kind: 'lawn' })] }) }));
+    fireEvent.click(shedOnPlan());
+    expect(viewHeading()?.textContent).toBe('Gartenhaus');
+    expect(within(details()).queryByRole('region', { name: 'Schattenkante' })).toBeNull();
+  });
+
   it('says what a bed is and what light it gets, with its form folded away', async () => {
     await open();
     fireEvent.click(bedOnPlan());

@@ -1,12 +1,13 @@
 import { memo, useCallback, useMemo } from 'react';
 
-import type { CanopySuggestion, GardenOut, LightMap } from '../api/client';
+import type { CanopySuggestion, GardenOut, LightMap, ShadowMark } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import { usePlanTheme } from '../themes/context';
 import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
 import { InkLayer, beneathOf, useDecorations } from './PlanDecorations';
 import { PlanObjects } from './PlanObjects';
+import { ShadowMarkLayer } from './ShadowMarkLayer';
 import { type MapMode, SunMap } from './SunMap';
 
 export interface WorldProps {
@@ -34,6 +35,8 @@ export interface WorldProps {
   mapMode?: MapMode | undefined;
   shadows?: number[][][] | undefined;
   canopies: CanopySuggestion[];
+  /** Where the gardener saw shadows end, and the model's edges (doc 122). */
+  shadowMarks: ShadowMark[];
 }
 
 /**
@@ -50,7 +53,7 @@ function World({
   garden, scale, spacing, selectedBedId, selectedObstacleId, viewpoint, onSelectBed,
   onSelectObstacle, armed, onAskWhatItIs, onGrabElement, dragOffset, clusters,
   selectedPlantingId, freshPlantingId, onSelectCluster, onGrabCluster, onShowClusterInfo,
-  sunMap, mapMode = 'hours', shadows, canopies,
+  sunMap, mapMode = 'hours', shadows, canopies, shadowMarks,
 }: WorldProps) {
   const theme = usePlanTheme();
   // Each shape asks for itself (doc 99), at the scale the decorations use, so
@@ -104,6 +107,8 @@ function World({
         spacing={spacing}
         onShowInfo={onShowClusterInfo}
       />
+
+      <ShadowMarkLayer marks={shadowMarks} />
 
       {viewpoint !== null && (
         <g className="viewpoint" data-testid="viewpoint">

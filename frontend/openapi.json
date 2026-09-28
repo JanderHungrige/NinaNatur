@@ -3049,6 +3049,179 @@
         "title": "ShadowFrame",
         "type": "object"
       },
+      "ShadowMarkIn": {
+        "description": "Where the gardener saw the shadow of one standing thing end, and when.",
+        "properties": {
+          "element_id": {
+            "title": "Element Id",
+            "type": "integer"
+          },
+          "seen_at": {
+            "format": "date-time",
+            "title": "Seen At",
+            "type": "string"
+          },
+          "x": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "element_id",
+          "x",
+          "y",
+          "seen_at"
+        ],
+        "title": "ShadowMarkIn",
+        "type": "object"
+      },
+      "ShadowMarkOut": {
+        "properties": {
+          "element_id": {
+            "title": "Element Id",
+            "type": "integer"
+          },
+          "mark_id": {
+            "title": "Mark Id",
+            "type": "integer"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShadowReadingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seen_at": {
+            "title": "Seen At",
+            "type": "string"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "mark_id",
+          "element_id",
+          "x",
+          "y",
+          "seen_at",
+          "reading"
+        ],
+        "title": "ShadowMarkOut",
+        "type": "object"
+      },
+      "ShadowReadingOut": {
+        "description": "The model's shadow edge against the mark, worked out now.",
+        "properties": {
+          "across_m": {
+            "title": "Across M",
+            "type": "number"
+          },
+          "along_m": {
+            "title": "Along M",
+            "type": "number"
+          },
+          "altitude": {
+            "title": "Altitude",
+            "type": "number"
+          },
+          "azimuth": {
+            "title": "Azimuth",
+            "type": "number"
+          },
+          "edge": {
+            "enum": [
+              "far",
+              "near",
+              "side"
+            ],
+            "title": "Edge",
+            "type": "string"
+          },
+          "height_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height M"
+          },
+          "model_longer": {
+            "title": "Model Longer",
+            "type": "boolean"
+          },
+          "nearest": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Nearest",
+            "type": "array"
+          },
+          "offset_m": {
+            "title": "Offset M",
+            "type": "number"
+          },
+          "rings": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Rings",
+            "type": "array"
+          },
+          "turned_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turned Deg"
+          }
+        },
+        "required": [
+          "altitude",
+          "azimuth",
+          "rings",
+          "nearest",
+          "offset_m",
+          "edge",
+          "model_longer",
+          "along_m",
+          "across_m",
+          "height_m",
+          "turned_deg"
+        ],
+        "title": "ShadowReadingOut",
+        "type": "object"
+      },
       "Shape": {
         "enum": [
           "circle",
@@ -5025,6 +5198,151 @@
         "summary": "Score",
         "tags": [
           "planning"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/shadow-marks": {
+      "get": {
+        "description": "Every mark of this garden's, each read against the model as it is now.",
+        "operationId": "shadow_marks_api_v1_gardens__token__shadow_marks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShadowMarkOut"
+                  },
+                  "title": "Response Shadow Marks Api V1 Gardens  Token  Shadow Marks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Shadow Marks",
+        "tags": [
+          "shadow marks"
+        ]
+      },
+      "post": {
+        "description": "Keep where a shadow was seen to end, and read the model against it.\n\nA mark is an observation: of a thing of this garden's that casts, at a\nmoment that has passed, with the sun high enough to cast at all.",
+        "operationId": "mark_shadow_api_v1_gardens__token__shadow_marks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShadowMarkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShadowMarkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Shadow",
+        "tags": [
+          "shadow marks"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/shadow-marks/{mark_id}": {
+      "delete": {
+        "description": "Forget one mark.",
+        "operationId": "forget_mark_api_v1_gardens__token__shadow_marks__mark_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "mark_id",
+            "required": true,
+            "schema": {
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Mark Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forget Mark",
+        "tags": [
+          "shadow marks"
         ]
       }
     },

@@ -10,6 +10,7 @@ import { useElements } from './useElements';
 import { useGeometry } from './useGeometry';
 import { useLight } from './useLight';
 import { useSelection } from './useSelection';
+import { useShadowMarks } from './useShadowMarks';
 import { useSuggestions } from './useSuggestions';
 
 /**
@@ -53,6 +54,16 @@ export function useGarden(
     client, garden.share_token, status, derived.setLightMap, selection.kind === 'none', setGarden,
   );
 
+  const marks = useShadowMarks(client, garden, status, elements.setTool);
+  // A mark armed from one thing's details is put down once another thing is
+  // chosen, or none, or the thing is gone: the click placed it against the
+  // wrong thing, or against one deleted (review, 2026-09-28).
+  const { tool } = elements;
+  const { target, disarm } = marks;
+  useEffect(() => {
+    if (tool === 'shadowmark' && ids.elementId !== target) disarm();
+  }, [tool, ids.elementId, target, disarm]);
+
   const computeShade = useComputeShade(light.rebuilt, light.rebuild, suggestions.afterShade);
   // A rebuild is where a garden made before doc 114 first gets its surroundings.
   const { reloadLandcover } = derived;
@@ -89,6 +100,7 @@ export function useGarden(
     clipboard,
     geometry,
     light,
+    marks,
     selection,
     ids,
     selectElement: chosen.selectElement,

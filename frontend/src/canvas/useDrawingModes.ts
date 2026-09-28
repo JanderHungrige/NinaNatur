@@ -37,6 +37,9 @@ export function useDrawingModes({
   // Derived, not stored: the polygon tool *is* the drawing mode, and two
   // places holding the same fact is how they end up disagreeing.
   const drawing = tool === 'polygon';
+  // Read by `cancel`, which stays stable for the Escape listener's sake.
+  const armed = useRef(tool);
+  armed.current = tool;
   const [problem, setProblem] = useState<string | null>(null);
 
   //  Held in refs so `cancel` can stay a stable callback: the Escape handler
@@ -80,10 +83,13 @@ export function useDrawingModes({
    *  the Escape listener depends on it and re-registering that on every render
    *  is how one keypress ends up handled twice. */
   const cancel = useCallback(() => {
+    const marking = armed.current === 'shadowmark';
     onCancelTool?.();
     cancelBand.current();
     cancelStroke.current();
-    onClearSelection?.();
+    // A shadow mark is armed from the thing's own details (doc 122): putting
+    // it down leaves the thing chosen, as its hint promises.
+    if (!marking) onClearSelection?.();
     clearDraft.current();
     setProblem(null);
   }, [onClearSelection]);

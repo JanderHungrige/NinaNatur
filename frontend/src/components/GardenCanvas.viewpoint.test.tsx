@@ -63,3 +63,39 @@ describe('GardenCanvas — Standpunkt is a tool', () => {
     expect(onPlaceViewpoint).not.toHaveBeenCalled();
   });
 });
+
+describe('GardenCanvas — a shadow mark is placed like a viewpoint (doc 122)', () => {
+  it('places the mark where the plan is clicked while an element has armed it', () => {
+    const onPlaceViewpoint = vi.fn();
+    const onCancelTool = vi.fn();
+    render(
+      <GardenCanvas
+        garden={garden('tok', 'G')}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={SIZE}
+        tool="shadowmark"
+        onDrawBed={vi.fn()}
+        onPlaceViewpoint={onPlaceViewpoint}
+        onCancelTool={onCancelTool}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('canvas-surface'), { clientX: 400, clientY: 300 });
+    expect(onPlaceViewpoint).toHaveBeenCalledTimes(1);
+    expect(onCancelTool).toHaveBeenCalled();
+  });
+
+  it('draws the marks it is given', () => {
+    const { container } = render(
+      <GardenCanvas
+        garden={garden('tok', 'G')}
+        selectedBedId={null}
+        onSelectBed={vi.fn()}
+        size={SIZE}
+        shadowMarks={[{ mark_id: 1, element_id: 2, x: 1, y: 2,
+                        seen_at: '2026-06-21T09:30:00+00:00', reading: null }]}
+      />,
+    );
+    expect(container.querySelectorAll('.shadow-mark')).toHaveLength(1);
+  });
+});

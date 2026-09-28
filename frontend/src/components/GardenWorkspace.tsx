@@ -78,6 +78,12 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
   const workspace = useRef<HTMLElement>(null);
   const month = suggestions.filters.floweringMonth ?? null;
 
+  // A shadow mark is placed on the plan (doc 122): a sheet raised over it
+  // leaves the plan inert and the click nowhere to land.
+  useEffect(() => {
+    if (elements.tool === 'shadowmark' && snap === 'full') setSnap('peek');
+  }, [elements.tool, snap]);
+
   // A drag in progress goes straight to the stylesheet, so a moving finger
   // re-renders nothing; the plan waits for the height the drag comes to rest at.
   const onDrag = useCallback((fraction: number | null) => {

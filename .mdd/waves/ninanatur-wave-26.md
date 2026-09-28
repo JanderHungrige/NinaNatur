@@ -75,7 +75,7 @@ term the number becomes a derivation from the definition.
 | 4 | energy-not-hours | 119 | built | 3 |
 | 5 | a-roof-casts-as-a-roof | 120 | built | 1 |
 | 6 | a-crown-is-not-a-cylinder | 121 | built | 1 |
-| 7 | mark-the-shadow-edge | — | planned | 3 |
+| 7 | mark-the-shadow-edge | 122 | built | 3 |
 
 Three stages:
 
@@ -163,6 +163,20 @@ with a new date. The page says which model version computed a map.
   axes (a neighbour's tree measured as one's own), roofs read as crown bases
   without the building model, a row of shrubs cast as one ball at its
   middle, and tests that only ever cast spheres.
+
+- **2026-09-28 — stage 3: feature 7 built** (doc 122). *Mark the shadow
+  edge*: the details of anything that casts arm the plan, and the next click
+  is where the gardener saw its shadow end; the model's shadow of it at that
+  moment is read against the mark — how far, too long or too short, the
+  height that amounts to at an edge a top casts, the turn a sideways miss
+  means — and drawn beside it, dashed. Only the observation is stored; the
+  reading is the model's as it now is. Blender was not installed, so the
+  one independent comparison was made against NREL's SPA and trigonometry:
+  0.4 mm (doc 122). Three review agents, 31 distinct findings, all fixed:
+  the worst a time field that froze at the moment the garden was opened,
+  a mark in a lit courtyard read against its wall, sentences that said
+  "zu kurz" and "zu hoch" at once, and routes that ran the heaviest
+  geometry in the app with no slot or limit.
 
 ## What each one is
 
@@ -280,7 +294,9 @@ shadow edge of their house falls *now* (date and time); the model draws its
 prediction beside it and states the offset. Cheap, honest, and it catches the
 three errors no test can see: a wrong height, a wrong north, a wrong anchor.
 Once, in the feature doc: a synthetic case compared against an independent
-tool (a sun study in Blender), documented rather than automated.
+tool (a sun study in Blender), documented rather than automated. (Built
+against NREL's SPA and trigonometry instead — Blender was not installed; the
+case is in doc 122 for the study.)
 
 ## What the model will still not know
 

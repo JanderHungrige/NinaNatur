@@ -56,7 +56,7 @@ export function GardenCanvas({
   sunMap,
   terrain, landcover,
   shadows,
-  viewpoint = null,
+  viewpoint = null, shadowMarks,
   onPlaceViewpoint,
   canopies,
   onShowFoundTrees,
@@ -80,8 +80,8 @@ export function GardenCanvas({
     onSelectBed, onSelectObstacle, onSelectCluster, onShowClusterInfo, onAskWhatItIs,
   });
 
-  // Placing a viewpoint is the rail's Standpunkt (doc 89), not a mode of the plan's own.
-  const placing = tool === 'viewpoint';
+  // Placing a viewpoint is the rail's Standpunkt (doc 89), a mark an element's (doc 122).
+  const placing = tool === 'viewpoint' || tool === 'shadowmark';
   const spacing = gridSpacing(view);
   const elementDrag = useElementDrag({
     view,
@@ -247,7 +247,7 @@ export function GardenCanvas({
           spacing={spacing}
           selectedBedId={selectedBedId}
           draft={points}
-          viewpoint={viewpoint}
+          viewpoint={viewpoint} shadowMarks={shadowMarks}
           canopies={canopies}
           onSelectBed={handlers.onSelectBed}
           onSelectObstacle={handlers.onSelectObstacle}
