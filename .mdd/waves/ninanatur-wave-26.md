@@ -188,6 +188,24 @@ with a new date. The page says which model version computed a map.
   "zu kurz" and "zu hoch" at once, and routes that ran the heaviest
   geometry in the app with no slot or limit.
 
+- **2026-09-28 — stage 3 reviewed as a whole, and on the preview** (merge
+  `487bcf4`, V0.25.228). Features 5–7 were reviewed together (integration,
+  feature 5's second round, release readiness), and the fixes three rounds
+  more until a verification came back clean. The worst it found: a mark's
+  height probed only upward, across a roof's own switches, so the height a
+  gable's eaves-cast edge said could not be satisfied — now probed the way
+  the mark asks, and never said where it would change the roof's kind; a
+  convex split that grew with the cube of the corners (18 s for a 500-corner
+  house, in the serving process once roofs cast through it; 0.06 s now);
+  crowns priced by what raised the grid's cells rather than by how far they
+  stand apart — level surveyed ground paid for a slope, a tall flat-roofed
+  house for nothing; neighbours just past the grid unpriced; a form that sent
+  a value the server filled back as the gardener's. The owner kept crowns as
+  they are, rewrote the demo-state's second sentence, and allowed Blender:
+  its render of doc 122's case puts the shadow's corners 0.1 mm from the
+  hand's. Checked on the preview: health, the smoke test at both windows, and
+  a throwaway garden computed at model 26.6 in 0.5 m cells.
+
 ## What each one is
 
 ### 0. the-measuring-instrument

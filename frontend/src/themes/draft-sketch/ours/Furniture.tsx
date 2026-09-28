@@ -3,7 +3,9 @@
  *
  * The plan's north arrow, scale bar and title block (doc 98), in his black ink
  * on his paper: a drawing has them, where the plan only ever said "N ↑". The
- * scale bar is exactly as long as the length it names, at every zoom.
+ * scale bar is exactly as long as the length it names, at every zoom. On a
+ * phone only the bar is drawn, and a cross in the same ink puts the whole
+ * block away until the page is loaded again (the owner, 2026-09-28).
  */
 import { scaleBar } from '../../../canvas/scaleBar';
 import type { FurnitureProps } from '../../types';
@@ -50,7 +52,20 @@ function Bar({ metresPerPixel }: { metresPerPixel: number }) {
   );
 }
 
-export function DraftSketchFurniture({ metresPerPixel, title, updatedAt }: FurnitureProps) {
+/** A cross drawn by hand, in his ink: its strokes lean a little, as a pen's do. */
+function Close({ onClose }: { onClose: () => void }) {
+  return (
+    <button type="button" className="plan-furniture__close" aria-label="Legende ausblenden"
+            onClick={onClose}>
+      <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+        <path d="M2.2 2.5 C4.6 4.8 7.2 7.4 9.7 9.8 M9.9 2.2 C7.4 4.7 4.9 7.1 2.4 9.6" fill="none"
+              stroke="#000" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    </button>
+  );
+}
+
+export function DraftSketchFurniture({ metresPerPixel, title, updatedAt, onClose }: FurnitureProps) {
   const date = day(updatedAt);
   return (
     <figure className="plan-furniture plan-furniture--draft-sketch">
@@ -60,6 +75,7 @@ export function DraftSketchFurniture({ metresPerPixel, title, updatedAt }: Furni
         <strong>{title}</strong>
         {date !== null && <span>Stand {date}</span>}
       </figcaption>
+      {onClose !== undefined && <Close onClose={onClose} />}
     </figure>
   );
 }

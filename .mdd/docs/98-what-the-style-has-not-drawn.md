@@ -205,6 +205,14 @@ leaves (`flex: 1`, doc 86's rule intact: the drawing still cannot set its own
 height). Under the controls at the top edge, not at the bottom: the bottom is
 the theme's, and the first try put the hint straight over the title block.
 
+**The block on a phone, and a cross (the owner, 2026-09-28).** Below the
+workspace's 66rem the plan is small, and the block keeps only its scale bar:
+the north arrow and the title, which the page already says, give way. On a
+phone and on a wide screen alike a cross in his ink puts the whole block away
+(`PlanFurniture`), and it is back at the next load of the page — kept in the
+page, never in storage, so nobody is left without a scale bar they forgot
+they had closed. The contact sheet draws no cross.
+
 ## His line symbols along our elements
 
 Fences, walls and hedges are elements with an outline, often drawn as a line

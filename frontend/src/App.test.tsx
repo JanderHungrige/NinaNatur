@@ -61,7 +61,7 @@ describe('App — a garden is a workspace', () => {
     // It was disabled until somebody found the rebuild in the panel, and a
     // disabled button wore the busy cursor: a new garden's shade looked as if
     // it were loading for ever (the owner, 2026-09-21).
-    const client = fakeClient({ rebuildLightMap: vi.fn(async () => lightMap()) });
+    const client = fakeClient({ rebuildLightMap: vi.fn(async () => ({ map: lightMap(), pending: false })) });
     await openWorkspace(client);
     const shade = screen.getByRole('button', { name: 'Sonne & Schatten' }) as HTMLButtonElement;
     expect(shade.disabled).toBe(false);

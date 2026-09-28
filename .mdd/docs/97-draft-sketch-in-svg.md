@@ -135,8 +135,13 @@ symbol would have shipped 34 copies, 2.2 MB, most of it one 274 KB paper
 texture in eight colours; shipping each once is 8 images, 344 KB. A tint is
 drawn as his colour through the image's alpha (`<mask mask-type="alpha">`).
 
-**The theme is its own chunk.** `loadTheme` imports it only when it is drawn,
-so a page that draws Technisch never fetches his half at all. Vite puts the
+**The theme was its own chunk** until it became the default (2026-09-28, doc
+100). `loadTheme` imported it only when it was drawn, so a page that drew
+Technisch never fetched his half at all; once nearly every page drew his
+style, the chunk arrived after the plan had been drawn in Technisch, and every
+load changed style in front of the gardener. It ships with the page now — 17
+kB compressed — and React is a chunk of its own instead, so that neither
+grows past Vite's 500 kB. Vite puts the
 chunk and his images under `assets/draft-sketch/`, which the server hands out
 like the rest of the bundle. It answered 404 there outside the preview until
 2026-09-20, so that a release carrying the code before his look could not serve

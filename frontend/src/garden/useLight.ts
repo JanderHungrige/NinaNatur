@@ -4,6 +4,7 @@ import type { GardenOut, LightMap, NinaNaturClient, SightlinesOut } from '../api
 import type { MapMode } from '../components/SunMap';
 import type { Status } from '../useStatus';
 import { useDay } from './useDay';
+import { useRebuild } from './useRebuild';
 
 /** The month a day is watched in while the Zeitraum is the whole season. */
 const SEASON_DAY_MONTH = 6;
@@ -117,12 +118,21 @@ function useSunMap(
   setLightMap: (map: LightMap | null) => void,
   setGarden: (garden: GardenOut) => void,
 ) {
-  const { run, setStatus } = status;
-  // Null is the whole season, which is the number a plant is placed by.
+  const { expectSeason, ...period } = useMapPeriod(client, token, status.run, setLightMap);
+  return { ...period, ...useRebuild(client, token, status, expectSeason, setGarden) };
+}
+
+/** Which period the map answers for. Null is the whole season, which is the
+ *  number a plant is placed by. */
+function useMapPeriod(
+  client: NinaNaturClient,
+  token: string,
+  run: Status['run'],
+  setLightMap: (map: LightMap | null) => void,
+) {
   const [mapMonth, setMapMonth] = useState<number | null>(null);
   const [monthLoading, setMonthLoading] = useState(false);
-  const [rebuilding, setRebuilding] = useState(false);
-  /** The newest month asked for. Two switches in a second send two requests,
+  /** The newest map asked for. Two switches in a second send two requests,
    *  and only the last one's answer may land or clear the flag. */
   const latestMonth = useRef(0);
 
@@ -144,43 +154,19 @@ function useSunMap(
     [client, token, run, setLightMap],
   );
 
-  /** How many rebuilds have landed: the list's own "Schatten berechnen" waits
-   *  for this to move rather than for any new map, which a refresh during the
-   *  rebuild also brings (review, 2026-09-21). */
-  const [rebuilt, setRebuilt] = useState(0);
-
-  const rebuild = useCallback(() => {
-    // A month still on its way would land on top of the season this stores.
+  /** A rebuild's season: a month still on its way would land on top of it.
+   *  The Zeitraum is locked while a rebuild runs; should a month have been
+   *  chosen anyway, its map stands, and the season does not cover it. */
+  const expectSeason = useCallback(() => {
     latestMonth.current += 1;
     const asked = latestMonth.current;
     setMonthLoading(false);
-    setRebuilding(true);
-    // The longest wait in the garden — terrain, buildings, laser points, then
-    // the light — so it is said when it starts as well as when it ends.
-    setStatus('Schatten wird berechnet…');
-    void run('Schatten neu berechnen', async () => {
-      try {
-        // The button computes and stores the season. Coming back to a month
-        // view afterwards would show a figure the button did not produce.
-        const season = await client.rebuildLightMap(token);
-        // The Zeitraum is locked while this runs; should a month have been
-        // chosen anyway, its map stands, and the season does not cover it.
-        if (asked === latestMonth.current) {
-          setMapMonth(null);
-          setLightMap(season);
-        }
-        // The rebuild wrote every bed's light too. Without reading the garden
-        // again, a bed went on saying "noch nicht berechnet" beside a map that
-        // had just been computed (the owner's check, 2026-09-21).
-        const fresh = await client.getGarden(token);
-        if (fresh !== null) setGarden(fresh);
-        setRebuilt((n) => n + 1);
-        setStatus('Schatten berechnet.');
-      } finally {
-        setRebuilding(false);
-      }
-    });
-  }, [client, token, run, setLightMap, setGarden, setStatus]);
+    return (season: LightMap | null) => {
+      if (asked !== latestMonth.current) return;
+      setMapMonth(null);
+      setLightMap(season);
+    };
+  }, [setLightMap]);
 
-  return { mapMonth, changeMonth, monthLoading, rebuild, rebuilding, rebuilt };
+  return { mapMonth, changeMonth, monthLoading, expectSeason };
 }

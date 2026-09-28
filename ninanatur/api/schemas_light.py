@@ -57,6 +57,19 @@ class LightMap(BaseModel):
     misplaced: list[MisplacedOut]
 
 
+class RelightStatus(BaseModel):
+    """What the page asks after a relight answered 202 (doc 65): whether it
+    still runs, and whether the garden's last one ended in an error — said,
+    never swallowed, so a failed first analysis does not leave the button
+    waiting for a map that will not come."""
+
+    running: bool
+    failed: bool
+    #: Whether this server holds a relight of the garden at all: false once a
+    #: restart — a deployment rolling the image — has lost one.
+    known: bool
+
+
 class MisplacedOut(BaseModel):
     """A planting standing in light it did not ask for.
 

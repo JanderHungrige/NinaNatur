@@ -463,17 +463,43 @@ export interface paths {
         put?: never;
         /**
          * Rebuild Light Map
-         * @description Recompute the whole map, now, because somebody asked.
+         * @description Recompute the whole map, because somebody asked — and 202 with no body
+         *     where it takes longer than a request should wait (doc 65).
          *
          *     Belt as well as braces. The signature should catch every change that moves a
          *     shadow, and if it ever does not, this is how somebody fixes their own map
          *     without knowing why it was wrong.
          *
-         *     It is also where a garden gets its ground for the first time. A state survey
-         *     takes seconds to answer, which is too long for a page load and perfectly
-         *     reasonable for a button — and afterwards every recompute reads it for free.
+         *     It is also where a garden gets its ground, its buildings and its laser for
+         *     the first time (`garden.relight`) — seconds where a place has been read,
+         *     a minute and more where it has not, which the preview's proxy cut off at
+         *     90 s while the server went on (the owner, 2026-09-28). So the relight runs
+         *     as a job of its own (`relight_jobs`), and this answers with the map if it
+         *     is done within `WAIT_S`, and 202 if not. A press while one runs answers
+         *     202 at once, and neither takes a slot nor counts against the visitor.
          */
         post: operations["rebuild_light_map_api_v1_gardens__token__light_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/gardens/{token}/light/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Relight Status
+         * @description Whether this garden is being relit, and whether its last relight failed —
+         *     what the page asks after a 202 until the map is there (doc 65).
+         */
+        get: operations["relight_status_api_v1_gardens__token__light_status_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1925,6 +1951,21 @@ export interface components {
             username: string;
         };
         /**
+         * RelightStatus
+         * @description What the page asks after a relight answered 202 (doc 65): whether it
+         *     still runs, and whether the garden's last one ended in an error — said,
+         *     never swallowed, so a failed first analysis does not leave the button
+         *     waiting for a map that will not come.
+         */
+        RelightStatus: {
+            /** Failed */
+            failed: boolean;
+            /** Known */
+            known: boolean;
+            /** Running */
+            running: boolean;
+        };
+        /**
          * RoofShape
          * @description Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.
          * @enum {string}
@@ -2932,6 +2973,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LightMap"] | null;
+                };
+            };
+            /** @description Still relighting: ask `/light/status`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relight_status_api_v1_gardens__token__light_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelightStatus"];
                 };
             };
             /** @description Validation Error */

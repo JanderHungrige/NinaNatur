@@ -150,6 +150,14 @@ body {
   outline: none;
 }
 
+/* And on every focus, not only the keyboard's: Safari draws its own ring on
+   `:focus` — 5px of it, which on the plan are 5 metres — so a click on a shape
+   put a wide blue band round it once more (the owner, 2026-09-28). The
+   keyboard's ring is the shape's own stroke (below), and stays. */
+:where(.bed, .obstacle, .cluster, .cluster-tag__info):focus {
+  outline: none;
+}
+
 .site-header {
   position: relative;
   display: flex; align-items: center; justify-content: space-between;

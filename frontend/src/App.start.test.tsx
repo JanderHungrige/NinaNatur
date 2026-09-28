@@ -39,7 +39,7 @@ describe('App — three steps in', () => {
   });
 
   it('computes the shade from the second step, ticks it, and shows the sun panel', async () => {
-    const client = fakeClient({ rebuildLightMap: vi.fn(async () => lightMap()) }, { tok: fresh() });
+    const client = fakeClient({ rebuildLightMap: vi.fn(async () => ({ map: lightMap(), pending: false })) }, { tok: fresh() });
     await openWorkspace(client, 'Neuer Garten');
     fireEvent.click(within(details()).getByRole('button', { name: 'Schatten berechnen' }));
     await within(details()).findByRole('heading', { name: 'Sonne und Schatten' });

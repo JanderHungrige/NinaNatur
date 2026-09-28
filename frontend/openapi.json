@@ -2928,6 +2928,30 @@
         "title": "Registration",
         "type": "object"
       },
+      "RelightStatus": {
+        "description": "What the page asks after a relight answered 202 (doc 65): whether it\nstill runs, and whether the garden's last one ended in an error \u2014 said,\nnever swallowed, so a failed first analysis does not leave the button\nwaiting for a map that will not come.",
+        "properties": {
+          "failed": {
+            "title": "Failed",
+            "type": "boolean"
+          },
+          "known": {
+            "title": "Known",
+            "type": "boolean"
+          },
+          "running": {
+            "title": "Running",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "running",
+          "failed",
+          "known"
+        ],
+        "title": "RelightStatus",
+        "type": "object"
+      },
       "RoofShape": {
         "description": "Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.",
         "enum": [
@@ -4800,7 +4824,7 @@
         ]
       },
       "post": {
-        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.\n\nIt is also where a garden gets its ground for the first time. A state survey\ntakes seconds to answer, which is too long for a page load and perfectly\nreasonable for a button \u2014 and afterwards every recompute reads it for free.",
+        "description": "Recompute the whole map, because somebody asked \u2014 and 202 with no body\nwhere it takes longer than a request should wait (doc 65).\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.\n\nIt is also where a garden gets its ground, its buildings and its laser for\nthe first time (`garden.relight`) \u2014 seconds where a place has been read,\na minute and more where it has not, which the preview's proxy cut off at\n90 s while the server went on (the owner, 2026-09-28). So the relight runs\nas a job of its own (`relight_jobs`), and this answers with the map if it\nis done within `WAIT_S`, and 202 if not. A press while one runs answers\n202 at once, and neither takes a slot nor counts against the visitor.",
         "operationId": "rebuild_light_map_api_v1_gardens__token__light_post",
         "parameters": [
           {
@@ -4832,6 +4856,9 @@
             },
             "description": "Successful Response"
           },
+          "202": {
+            "description": "Still relighting: ask `/light/status`."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -4844,6 +4871,49 @@
           }
         },
         "summary": "Rebuild Light Map",
+        "tags": [
+          "light"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/light/status": {
+      "get": {
+        "description": "Whether this garden is being relit, and whether its last relight failed \u2014\nwhat the page asks after a 202 until the map is there (doc 65).",
+        "operationId": "relight_status_api_v1_gardens__token__light_status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelightStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relight Status",
         "tags": [
           "light"
         ]

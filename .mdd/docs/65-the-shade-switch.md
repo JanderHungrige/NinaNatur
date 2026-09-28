@@ -12,13 +12,20 @@ source_files:
   - frontend/src/components/PlanArea.tsx
   - frontend/src/garden/useDay.ts
   - frontend/src/garden/useLight.ts
+  - frontend/src/garden/useRebuild.ts
   - frontend/src/components/SunMap.tsx
   - ninanatur/api/schemas_light.py
   - frontend/src/components/CanvasScene.tsx
   - ninanatur/solar/day.py
   - ninanatur/api/light.py
+  - ninanatur/api/relight_jobs.py
+  - ninanatur/api/ratelimit.py
+  - ninanatur/garden/relight.py
+  - frontend/src/api/client.ts
 routes:
   - GET /api/v1/gardens/{token}/light
+  - POST /api/v1/gardens/{token}/light
+  - GET /api/v1/gardens/{token}/light/status
   - GET /api/v1/gardens/{token}/shadows
 models: [light_grid]
 test_files:
@@ -27,8 +34,12 @@ test_files:
   - frontend/src/components/DayPlayer.test.tsx
   - frontend/src/App.waiting.test.tsx
   - tests/test_light_api.py
+  - tests/test_relight_jobs.py
+  - frontend/src/App.firstlight.test.tsx
+  - frontend/src/garden/useRebuild.test.ts
+  - frontend/src/api/client.test.ts
 data_flow: reads-existing
-last_synced: 2026-09-21
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -40,6 +51,9 @@ security_read_sites: []
 known_issues:
   - "Fixed 2026-09-21: `ShadowFrame.minute`'s comment (now in `api/schemas_light.py`) called it local solar time; the server counts it from 00:00 UTC (`solar/day.py`), which is what the player reads and shows on a Europe/Berlin clock."
   - "The rebuild's words name its steps (Gelände, Gebäude, Laserdaten, Licht) without saying which one is running: the endpoint is one blocking request with no progress to report. Staged progress would need a job endpoint (decided against on 2026-09-21)."
+  - "Revisited 2026-09-28: the first relight at a place ran past the preview proxy's 90 s, and the owner chose a job — `POST /light` answers 202 after 20 s and `GET /light/status` says when it is done. The status says running or not, still without the step: staged progress is still undone."
+  - "`frontend/src/api/client.ts` was 636 lines before the relight job and is 655 after it; the length hook asks for a split of the client, which is not this feature's to make (as doc 114 recorded at 609)."
+  - "The jobs live in the serving process: a restart while one runs — a deployment rolling the image — loses it. The status then says it knows none (`known`), and the page says the relight was interrupted, to be pressed again; the work already stored (ground, buildings, laser) makes the second press quick. One process serves the app; more would need the jobs in the database."
 ---
 
 # The Shade Switch, and a Day Watched Through
@@ -323,6 +337,61 @@ plan used to sit perfectly still through it. Now, for as long as it runs
 The words name the steps and never claim to know which one is running: the
 request reports nothing until it is done. Under `prefers-reduced-motion` the
 sweep is a still, faint wash and the ring stands still.
+
+### A first analysis longer than a request
+
+The owner's report of 2026-09-28: the first press ran a long time and ended
+with nothing, and a second press began again. The first relight at a place
+reads the ground, the building model and — in the seven states that publish
+one — the laser before the light: 31 s on a workstation, past 90 s on the
+preview, whose proxy then answered 504. The page took that for the end; the
+server went on and stored the map nobody was waiting for. Wave 26 made every
+garden meet it once, by reading each stored laser window again for the crown
+bases (doc 121).
+
+*Where the minutes went* (2026-09-29): run in the image, a garden in
+Köln-Ehrenfeld logged *laser 385.4 s*, and 381 of those seconds were the test of
+which points stand inside a building — every point against every edge of the
+4,359 outlines the building model brought. Each outline now meets only the
+points in its box, and that laser takes 3.2 s (doc 107). The job below stays:
+a first analysis still fetches tens of megabytes, and a slow portal can still
+outlast a request.
+
+So a relight is a job (`api/relight_jobs.py`; the chain in
+`garden/relight.py`, each run's steps timed in the log). Done within 20 s,
+`POST /light` answers with the map as it always did; not, it answers **202**
+and goes on, holding its heavy slot until it ends. The page then says *Erste
+Analyse läuft – Gelände, Gebäude und Laserdaten werden geladen*, asks `GET
+/light/status` every three seconds, and reads the season's map once the job
+is done — or says it failed, and gives the button back; or that it was
+interrupted, where a restart lost the job and the status knows none.
+
+The review of the job (c2ec593) found where the first version of it hurt:
+
+- **A press while the job runs is answered 202 at once**, and joins by asking
+  the status. It waited for the running job at first, holding one of the
+  server's forty threads for twenty seconds with no slot and no count: 45 such
+  presses took a plain garden read from 2 ms to 4.5 s while `/healthz` stayed
+  green. It is decided under a lock, before the visitor's allowance is
+  counted, so two presses at once start one job and count once.
+- **The slot is given back whatever ends the job**, a connection that will
+  not open included; it was taken before the `try`, and two such failures
+  answered every heavy route with 429 until a restart.
+- **Jobs are kept by share token.** SQLite gives a deleted garden's id to the
+  next one, and a new garden joined the job of the one deleted before it.
+- **The page waits outside `run`.** `run` is what makes the page busy, and
+  waiting inside it stood every drawing tool and undo disabled for up to ten
+  minutes. The requests go through it; the wait sets only the rebuild's own
+  flag, which its buttons and the Zeitraum read (`garden/useRebuild.ts`). A
+  second press while one runs starts nothing and says it still runs.
+- **What it says is its own**, in the problem tone: failed, interrupted, or
+  that it takes unusually long *and goes on* — `run` would have called the
+  last one "fehlgeschlagen". Four unanswered status requests in a row are
+  ridden out, as a deployment answers 502 for a few seconds and then that the
+  job is gone; the fifth ends the wait with *Der Server antwortet nicht*.
+- **Nothing lands in a garden that was left.** Every answer is checked
+  against the workspace still being open: the garden, set again after the
+  gardener had gone home, opened itself over the front page.
 
 ## A thing that had to be learned twice
 

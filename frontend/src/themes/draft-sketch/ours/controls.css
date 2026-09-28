@@ -1,0 +1,82 @@
+/*
+ * Provenance: NinaNatur, in the style of Draft Sketch
+ *
+ * The page's buttons in his hand, while his style draws the plan (the owner,
+ * 2026-09-28): black ink, a line that is not quite straight, his lettering,
+ * and his grass as the wash of the button that does something. Slips of his
+ * paper, on a light page and on a dark desk alike — his ink turned white
+ * would be another style (doc 97). More contrast draws the plan in Technisch
+ * (doc 100), and these rules then do not apply.
+ *
+ * Loaded with his theme, and keyed on the app's `data-plan-theme`, which
+ * names the style actually drawn — so a page never shows his buttons beside
+ * a plan still in Technisch.
+ */
+.app[data-plan-theme='draft-sketch'] {
+  --ds-ink: #1c2419;
+  --ds-paper: #fbfaf6;
+  --ds-wash: color-mix(in srgb, #8fbf6a 34%, var(--ds-paper));
+  --ds-wash-deep: color-mix(in srgb, #6fa24f 52%, var(--ds-paper));
+  --ds-edge: 255px 14px 225px 16px / 16px 225px 14px 255px;
+}
+
+.app[data-plan-theme='draft-sketch'] button:not(.link-button, .plan-furniture__close, .sheet-handle, .brand) {
+  border: 1.5px solid var(--ds-ink);
+  border-radius: var(--ds-edge);
+  background: var(--ds-wash);
+  color: var(--ds-ink);
+  font-family: 'Patrick Hand', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--ds-ink) 40%, transparent);
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+/* A second line drawn over the first, as a pen goes round twice. */
+.app[data-plan-theme='draft-sketch'] button:not(.link-button, .plan-furniture__close, .sheet-handle, .brand):hover:not([disabled]) {
+  background: var(--ds-wash-deep);
+  transform: rotate(-0.6deg);
+}
+
+.app[data-plan-theme='draft-sketch'] button:not(.link-button, .plan-furniture__close, .sheet-handle, .brand):active:not([disabled]) {
+  box-shadow: none;
+  transform: translate(1px, 2px);
+}
+
+/* Pressed — a tool in hand, a switch that is on — is filled in with his wash
+   and drawn heavier. */
+.app[data-plan-theme='draft-sketch'] button[aria-pressed='true']:not(.link-button, .plan-furniture__close, .sheet-handle, .brand) {
+  border-width: 2.5px;
+  background: var(--ds-wash-deep);
+}
+
+/* The garden's fold in the header is drawn as a button and answers like one:
+   it is drawn like one here too. The brand stays the brand. */
+.app[data-plan-theme='draft-sketch'] .site-header .garden-id__summary {
+  border: 1.5px solid var(--ds-ink);
+  border-radius: var(--ds-edge);
+  background: var(--ds-paper);
+  color: var(--ds-ink);
+  font-family: 'Patrick Hand', system-ui, sans-serif;
+  box-shadow: 1px 2px 0 color-mix(in srgb, var(--ds-ink) 40%, transparent);
+}
+
+/* What only says where to go is written, not drawn round: his lettering in
+   his ink, underlined by hand. */
+.app[data-plan-theme='draft-sketch'] .link-button {
+  color: currentColor;
+  font-family: 'Patrick Hand', system-ui, sans-serif;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app[data-plan-theme='draft-sketch'] button:not(.link-button, .plan-furniture__close, .sheet-handle, .brand) {
+    transition: none;
+  }
+
+  .app[data-plan-theme='draft-sketch'] button:not(.link-button, .plan-furniture__close, .sheet-handle, .brand):hover:not([disabled]),
+  .app[data-plan-theme='draft-sketch'] button:not(.link-button, .plan-furniture__close, .sheet-handle, .brand):active:not([disabled]) {
+    transform: none;
+  }
+}

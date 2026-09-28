@@ -108,6 +108,10 @@ says it (docs 83, 93, 94).
   as the gardener's word on it, so a form that sends its pre-filled fields back
   turns a measurement into an entry on every save — which is how renaming a
   surveyed house once made it the user's (Wave 21).
+- **A field over a stored value follows the store until the gardener touches
+  it** (`useStoredField`), so a value the server fills while the form is open —
+  a crown base the laser read, a survey's height — is never sent back as theirs
+  (Wave 26).
 
 ## The plan's look
 

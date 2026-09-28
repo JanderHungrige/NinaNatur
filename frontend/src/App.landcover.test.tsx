@@ -58,7 +58,7 @@ describe('App — the land around the garden', () => {
 
   it('asks again once a shade rebuild has landed — where an older garden first gets it', async () => {
     const landcover = vi.fn(async () => WOOD);
-    const client = fakeClient({ landcover, rebuildLightMap: vi.fn(async () => lightMap()) });
+    const client = fakeClient({ landcover, rebuildLightMap: vi.fn(async () => ({ map: lightMap(), pending: false })) });
     await openWorkspace(client);
     expect(landcover).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Sonne & Schatten' }));

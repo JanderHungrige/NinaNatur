@@ -36,6 +36,7 @@ export type Credit = components['schemas']['CreditOut'];
 export type CanopySuggestion = components['schemas']['CanopyOut'];
 export type Landcover = components['schemas']['LandcoverOut'];
 export type ShadowMark = components['schemas']['ShadowMarkOut'];
+export type RelightStatus = components['schemas']['RelightStatus'];
 
 /** A non-2xx response, carrying whatever reason the API gave — and, from a
  *  server too busy to compute now, how many seconds it asked to be left. */
@@ -112,6 +113,12 @@ export class NinaNaturClient {
    * success. A silently ignored 422 is how a form ends up looking like it worked.
    */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    return (await this.answered<T>(path, init)).body;
+  }
+
+  /** `request`, and the status it came with: for the one route whose 202
+   *  means "still working", not "done" (doc 65). */
+  private async answered<T>(path: string, init?: RequestInit): Promise<{ code: number; body: T }> {
     const response = await this.doFetch(`${this.baseUrl}${path}`, {
       headers: { 'content-type': 'application/json' },
       // Stated rather than inherited. It happens to be fetch's default, and the
@@ -127,9 +134,9 @@ export class NinaNaturClient {
                          Number.isFinite(wait) && wait > 0 ? wait : null);
     }
     if (response.status === 204) {
-      return undefined as T;
+      return { code: 204, body: undefined as T };
     }
-    return (await response.json()) as T;
+    return { code: response.status, body: (await response.json()) as T };
   }
 
   /**
@@ -252,7 +259,6 @@ export class NinaNaturClient {
     );
   }
 
-  /** The stored sun map, or null when nothing has been drawn yet. */
   /** The stored season map, or one month of it computed on the spot.
    *
    * A month is never stored: the season is what the button computes and keeps,
@@ -264,11 +270,24 @@ export class NinaNaturClient {
     );
   }
 
-  /** Recompute the whole map now, because somebody asked. */
-  async rebuildLightMap(token: string): Promise<LightMap | null> {
-    return this.request<LightMap | null>(
+  /**
+   * Relight the garden. `pending` when the server is still at it — the first
+   * time at a place it reads the ground, the buildings and the laser first,
+   * longer than a request may wait — and `lightStatus` then says when it is
+   * done (doc 65).
+   */
+  async rebuildLightMap(token: string): Promise<{ map: LightMap | null; pending: boolean }> {
+    const { code, body } = await this.answered<LightMap | null>(
       `/api/v1/gardens/${encodeURIComponent(token)}/light`,
       { method: 'POST' },
+    );
+    return code === 202 ? { map: null, pending: true } : { map: body, pending: false };
+  }
+
+  /** Whether a relight is still running, and whether the last one failed. */
+  async lightStatus(token: string): Promise<RelightStatus> {
+    return this.request<RelightStatus>(
+      `/api/v1/gardens/${encodeURIComponent(token)}/light/status`,
     );
   }
 

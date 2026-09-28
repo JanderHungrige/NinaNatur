@@ -17,7 +17,7 @@ interface Props {
   onMonth: (month: number | null) => void;
   onRebuild: () => void;
   busy: boolean;
-  /** The shade is being computed: the button says so while it waits. */
+  /** The shade is being computed: the button says so, and waits. */
   rebuilding?: boolean | undefined;
   /** A month's map is on its way. */
   monthWorking?: boolean | undefined;
@@ -93,7 +93,9 @@ export function ShadeSwitch({
           been computed is exactly the garden that needs this button, and the
           old panel hid it behind "nothing drawn yet". */}
       <div className="shade-switch__rebuild">
-        <button type="button" disabled={busy} onClick={onRebuild}>
+        {/* A first analysis waits outside `busy` (doc 65), so the button
+            reads its own flag as well. */}
+        <button type="button" disabled={busy || rebuilding} onClick={onRebuild}>
           {rebuilding ? <Working label="Wird berechnet…" /> : 'Schatten neu berechnen'}
         </button>
         <p className="hint">

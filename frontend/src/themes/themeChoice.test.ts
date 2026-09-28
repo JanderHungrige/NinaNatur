@@ -26,8 +26,9 @@ describe('what is on offer', () => {
 });
 
 describe('which one is drawn', () => {
-  it('is Technisch until somebody says otherwise', () => {
-    expect(chosenTheme(plain)).toBe(technisch.id);
+  it('is Draft Sketch until somebody says otherwise', () => {
+    // The owner's default since 2026-09-28; Technisch until then.
+    expect(chosenTheme(plain)).toBe(DRAFT);
   });
 
   it('is what the viewer chose before, in their own browser', () => {
@@ -39,7 +40,11 @@ describe('which one is drawn', () => {
   });
 
   it('and never a style nobody has heard of', () => {
-    expect(chosenTheme({ ...plain, stored: 'verschollen' })).toBe(technisch.id);
+    expect(chosenTheme({ ...plain, stored: 'verschollen' })).toBe(DRAFT);
+  });
+
+  it('is Technisch where the viewer chose it, default or not', () => {
+    expect(chosenTheme({ ...plain, stored: technisch.id })).toBe(technisch.id);
   });
 
   it('is Technisch when the viewer asks for more contrast, whatever they chose', () => {
@@ -62,6 +67,6 @@ describe('remembering it', () => {
       setItem: () => { throw new Error('denied'); },
     });
     expect(() => remember(DRAFT)).not.toThrow();
-    expect(chosenTheme(plain)).toBe(technisch.id);
+    expect(chosenTheme(plain)).toBe(DRAFT);
   });
 });
