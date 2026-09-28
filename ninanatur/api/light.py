@@ -91,17 +91,25 @@ def rebuild_light_map(
     a minute and more where it has not, which the preview's proxy cut off at
     90 s while the server went on (the owner, 2026-09-28). So the relight runs
     as a job of its own (`relight_jobs`), and this answers with the map if it
-    is done within `WAIT_S`, and 202 if not. A press while one runs waits for
-    the same job, and neither takes a slot nor counts against the visitor.
+    is done within `WAIT_S`, and 202 if not. A press while one runs answers
+    202 at once, and neither takes a slot nor counts against the visitor.
     """
     garden = require_garden(conn, token)
-    job = relight_jobs.running(garden.garden_id)
+    job = relight_jobs.claim(garden.share_token)
     if job is None:
+        # One is running: said at once. Waiting for it here held a server
+        # thread with no slot and no count (review of c2ec593).
+        response.status_code = status.HTTP_202_ACCEPTED
+        return None
+    try:
         # The slot first, as the other heavy routes take it: a visitor turned
         # away because the house is full has not used up their own allowance.
         with relight_jobs.slot() as taken:
             ratelimit.check(conn, request, "light")
-            job = relight_jobs.start(conn, garden.garden_id, taken, relight)
+            relight_jobs.start(conn, job, garden.garden_id, taken, relight)
+    except BaseException:
+        relight_jobs.abandon(garden.share_token, job)
+        raise
     # The land around it, for a garden made before it was fetched (doc 114):
     # after this answer has gone out, never while somebody waits for the light.
     # Asked and answered — nothing mapped is an answer too — is not asked again.
@@ -121,7 +129,7 @@ def relight_status(
     """Whether this garden is being relit, and whether its last relight failed —
     what the page asks after a 202 until the map is there (doc 65)."""
     garden = require_garden(conn, token)
-    running, failed, known = relight_jobs.status(garden.garden_id)
+    running, failed, known = relight_jobs.status(garden.share_token)
     return RelightStatus(running=running, failed=failed, known=known)
 
 

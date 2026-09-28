@@ -1,7 +1,8 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RELIT_POLL_MS } from './garden/useLight';
+import type { LightMap } from './api/client';
+import { RELIT_ENDINGS, RELIT_POLL_MS } from './garden/useRebuild';
 import { details, fakeClient, openWorkspace, resetApp, stubMatchMedia } from './testing/appFixtures';
 import { lightMap } from './testing/gardens';
 
@@ -9,7 +10,7 @@ import { lightMap } from './testing/gardens';
    for a long time and ended with nothing, and a second press began again. The
    server reads the ground, the buildings and the laser first — past the
    proxy's 90 s — and went on after the page had given up. It answers 202 now,
-   and the page waits for it (doc 65). */
+   and the page waits for it (doc 65), without holding the rest of the page. */
 
 beforeEach(stubMatchMedia);
 afterEach(() => {
@@ -35,9 +36,8 @@ async function pressRebuild(overrides: Record<string, unknown>) {
 
 async function waitOnePoll() {
   await act(async () => {
-    vi.advanceTimersByTime(RELIT_POLL_MS);
+    await vi.advanceTimersByTimeAsync(RELIT_POLL_MS);
   });
-  await act(async () => Promise.resolve());
 }
 
 describe('App — the first analysis at a place', () => {
@@ -54,11 +54,26 @@ describe('App — the first analysis at a place', () => {
     expect(screen.queryByText('Schatten berechnet.')).toBeNull();
 
     await waitOnePoll();
-    await act(async () => Promise.resolve());
     expect(lightStatus).toHaveBeenCalledTimes(2);
     expect(client.lightMap).toHaveBeenLastCalledWith('tok', null);
     expect(screen.getByText('Schatten berechnet.')).toBeDefined();
     expect(client.rebuildLightMap).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the rest of the page free while it waits', async () => {
+    // It waited inside `run`, which makes the page busy: for up to ten
+    // minutes every drawing tool and undo stood disabled (review of c2ec593).
+    await pressRebuild({
+      lightStatus: vi.fn(async () => ({ running: true, failed: false, known: true })),
+    });
+    await waitOnePoll();
+
+    const tools = screen.getAllByRole('button', { name: 'Rechteck' });
+    expect(tools.length).toBeGreaterThan(0);
+    for (const tool of tools) expect(tool.getAttribute('aria-disabled')).toBeNull();
+    // Only the rebuild itself waits, and cannot be pressed twice.
+    expect(within(details()).getByRole('button', { name: 'Wird berechnet…' })
+      .hasAttribute('disabled')).toBe(true);
   });
 
   it('says so when the first analysis failed, and gives the button back', async () => {
@@ -66,11 +81,11 @@ describe('App — the first analysis at a place', () => {
     await pressRebuild({ lightStatus });
 
     await waitOnePoll();
-    await act(async () => Promise.resolve());
 
-    expect(screen.getByText(/die erste Analyse ist fehlgeschlagen/)).toBeDefined();
-    expect(within(details()).getByRole('button', { name: 'Schatten neu berechnen' }))
-      .toBeDefined();
+    expect(screen.getByText(RELIT_ENDINGS.failed)).toBeDefined();
+    expect(screen.queryByText(/fehlgeschlagen: /)).toBeNull();
+    expect(within(details()).getByRole('button', { name: 'Schatten neu berechnen' })
+      .hasAttribute('disabled')).toBe(false);
   });
 });
 
@@ -82,10 +97,39 @@ describe('App — a first analysis the server lost', () => {
     const client = await pressRebuild({ lightStatus });
 
     await waitOnePoll();
-    await act(async () => Promise.resolve());
 
-    expect(screen.getByText(/die Berechnung wurde unterbrochen/)).toBeDefined();
+    expect(screen.getByText(RELIT_ENDINGS.lost)).toBeDefined();
     expect(screen.queryByText('Schatten berechnet.')).toBeNull();
     expect(client.lightMap).not.toHaveBeenCalledWith('tok', null);
+  });
+});
+
+describe('App — a garden left while its first analysis ends', () => {
+  it('lands nothing in it, and does not open it again', async () => {
+    // Its map arrived after the gardener had gone home, and the garden, set
+    // again with every bed's light, opened itself over the front page
+    // (review of c2ec593).
+    let deliver: (map: LightMap) => void = () => {};
+    const season = new Promise<LightMap>((resolve) => {
+      deliver = resolve;
+    });
+    const client = await pressRebuild({
+      lightMap: vi.fn(async (_token: string, month?: number | null) =>
+        (month === null ? season : lightMap())),
+      lightStatus: vi.fn(async () => ({ running: false, failed: false, known: true })),
+    });
+    await waitOnePoll();
+    expect(client.lightMap).toHaveBeenLastCalledWith('tok', null);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zur Startseite' }));
+    const reads = client.getGarden.mock.calls.length;
+    await act(async () => {
+      deliver(lightMap());
+      await Promise.resolve();
+    });
+
+    expect(client.getGarden.mock.calls.length).toBe(reads);
+    expect(screen.getByLabelText('Garten-ID')).toBeDefined();
+    expect(screen.queryByRole('complementary', { name: 'Details' })).toBeNull();
   });
 });

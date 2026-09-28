@@ -259,7 +259,6 @@ export class NinaNaturClient {
     );
   }
 
-  /** The stored sun map, or null when nothing has been drawn yet. */
   /** The stored season map, or one month of it computed on the spot.
    *
    * A month is never stored: the season is what the button computes and keeps,
@@ -271,7 +270,6 @@ export class NinaNaturClient {
     );
   }
 
-  /** Recompute the whole map now, because somebody asked. */
   /**
    * Relight the garden. `pending` when the server is still at it — the first
    * time at a place it reads the ground, the buildings and the laser first,

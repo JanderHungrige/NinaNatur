@@ -9,14 +9,18 @@ stored laser window once more for the crown bases (doc 121), so every garden
 met it once.
 
 So a relight runs in a thread of its own, holding one of the heavy slots
-(`ratelimit`) until it ends, and the request waits for it only `WAIT_S`: done
-by then, it answers with the map as before; not, it answers 202 and the page
-asks `status` until it is. One job per garden — a second press while one runs
-waits for the same job, and takes no second slot.
+(`ratelimit`) until it ends, and the request that started it waits for it
+only `WAIT_S`: done by then, it answers with the map as before; not, it
+answers 202 and the page asks `status` until it is. A press while a job runs
+answers 202 at once: it waited for the job at first, holding a server thread
+for twenty seconds with no slot and no count, and forty such presses stalled
+every page while the health check stayed green (review of c2ec593).
 
-An in-memory database — every API test's — has no file for a second thread to
-open, and is relit in the request, as before. One process serves the app, so
-the jobs are this module's to keep.
+Jobs are kept by share token, not by garden id: SQLite gives a deleted
+garden's id to the next one, and a new garden once joined the job of the one
+deleted before it. An in-memory database — every API test's — has no file
+for a second thread to open, and is relit in the request, as before. One
+process serves the app, so the jobs are this module's to keep.
 """
 from __future__ import annotations
 
@@ -25,7 +29,7 @@ import sqlite3
 import threading
 from collections.abc import Callable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
-from concurrent.futures import TimeoutError as NotYet
+from concurrent.futures import wait as waited
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
@@ -35,11 +39,22 @@ from ninanatur.ingest.db import connect
 
 log = logging.getLogger(__name__)
 
-#: How long a request waits for its relight: well inside the proxy's 90 s,
-#: and longer than a relight whose ground, buildings and laser are stored.
+#: How long a request waits for the relight it started: well inside the
+#: proxy's 90 s, and longer than a relight whose ground, buildings and laser
+#: are stored.
 WAIT_S = 20.0
 
 Relight = Callable[[sqlite3.Connection, int], None]
+
+
+class RelightFailed(Exception):
+    """A relight ended in an error — logged, with its traceback, where it did.
+    What the job keeps is this, not the error: a kept error holds its frames
+    for as long as the process runs."""
+
+
+class RelightAbandoned(Exception):
+    """A relight claimed and never started: the press was turned away."""
 
 
 @dataclass
@@ -58,13 +73,11 @@ class Slot:
 
 @dataclass
 class Job:
-    future: Future[None]
-    #: Whether it ended in an error, once it has ended.
-    failed: bool = False
+    future: Future[None] = field(default_factory=Future)
 
 
 _lock = threading.Lock()
-_jobs: dict[int, Job] = {}
+_jobs: dict[str, Job] = {}
 _pool = ThreadPoolExecutor(max_workers=HEAVY_SLOTS, thread_name_prefix="relight")
 
 
@@ -80,83 +93,96 @@ def slot() -> Iterator[Slot]:
             taken.give_back()
 
 
-def running(garden_id: int) -> Job | None:
-    """The job relighting this garden now, if there is one."""
+def claim(token: str) -> Job | None:
+    """This garden, for a new relight — or None where one is running, which a
+    press joins by asking its status. Decided under the lock, so two presses
+    at once start one job."""
     with _lock:
-        job = _jobs.get(garden_id)
-    return job if job is not None and not job.future.done() else None
+        current = _jobs.get(token)
+        if current is not None and not current.future.done():
+            return None
+        job = Job()
+        _jobs[token] = job
+        return job
 
 
-def start(conn: sqlite3.Connection, garden_id: int, taken: Slot, work: Relight) -> Job:
-    """Relight this garden with the slot taken for it, which the job gives back
-    — or the job already relighting it, leaving the slot to be given back.
+def abandon(token: str, job: Job) -> None:
+    """A claim the press never started — turned away for the house or the
+    visitor's allowance. A press that joined it hears it ended."""
+    with _lock:
+        if _jobs.get(token) is job:
+            del _jobs[token]
+    if not job.future.done():
+        job.future.set_exception(RelightAbandoned())
+
+
+def start(conn: sqlite3.Connection, job: Job, garden_id: int, taken: Slot, work: Relight) -> None:
+    """Run a claimed job with the slot taken for it, which the job gives back.
 
     In a thread with a connection of its own; in this one where the database
     has no file (tests), and the job is then done when this returns. What was
     written on this connection is committed first, or the thread would not
-    see it."""
+    see it. The slot is the job's only once the thread has it."""
     path = database_file(conn)
     if path is None:
         taken.handed = True
-        future: Future[None] = Future()
-        try:
-            work(conn, garden_id)
-            future.set_result(None)
-        except Exception as error:  # noqa: BLE001 - held by the future, raised by `wait`
-            future.set_exception(error)
-        finally:
-            taken.give_back()
-        job = Job(future=future, failed=future.exception() is not None)
-        with _lock:
-            _jobs[garden_id] = job
-        return job
+        _finish(job, taken, lambda: work(conn, garden_id), garden_id)
+        return
     conn.commit()
-    with _lock:
-        current = _jobs.get(garden_id)
-        if current is not None and not current.future.done():
-            return current
-        taken.handed = True
-        job = Job(future=_pool.submit(_in_thread, path, garden_id, taken, work))
-        _jobs[garden_id] = job
-    job.future.add_done_callback(lambda done: _ended(job, done))
-    return job
+    _pool.submit(_in_thread, path, job, garden_id, taken, work)
+    taken.handed = True
 
 
 def wait(job: Job, seconds: float) -> bool:
     """Whether the job ended within `seconds`. An error it ended in is raised,
     as the request raised it before a relight left it."""
-    try:
-        job.future.result(timeout=seconds)
-    except NotYet:
+    waited([job.future], timeout=seconds)
+    if not job.future.done():
         return False
+    job.future.result()
     return True
 
 
-def status(garden_id: int) -> tuple[bool, bool, bool]:
+def status(token: str) -> tuple[bool, bool, bool]:
     """(running, failed, known) for the garden's latest relight — known false
     where this process holds none: a restart, a deployment among them, loses
-    a job, and the page must not take that for one that ended well."""
+    a job, and the page must not take that for one that ended well. Read off
+    the job itself, never a flag a callback sets later."""
     with _lock:
-        job = _jobs.get(garden_id)
+        job = _jobs.get(token)
     if job is None:
         return False, False, False
-    return not job.future.done(), job.failed, True
+    done = job.future.done()
+    return not done, done and job.future.exception() is not None, True
 
 
-def _in_thread(path: str, garden_id: int, taken: Slot, work: Relight) -> None:
-    conn = connect(path, same_thread=False)
+def _in_thread(path: str, job: Job, garden_id: int, taken: Slot, work: Relight) -> None:
+    def relit() -> None:
+        conn = connect(path, same_thread=False)
+        try:
+            work(conn, garden_id)
+        finally:
+            conn.close()
+
+    _finish(job, taken, relit, garden_id)
+
+
+def _finish(job: Job, taken: Slot, run: Callable[[], None], garden_id: int) -> None:
+    """Run the relight, give its slot back whatever happens — a connection
+    that will not open included — and only then say how it ended."""
+    failed = False
     try:
-        work(conn, garden_id)
+        run()
     except Exception:
         log.exception("relighting garden %d failed", garden_id)
-        raise
+        failed = True
     finally:
-        conn.close()
         taken.give_back()
+    if failed:
+        job.future.set_exception(RelightFailed(f"relighting garden {garden_id} failed"))
+    else:
+        job.future.set_result(None)
 
 
-def _ended(job: Job, done: Future[None]) -> None:
-    job.failed = done.exception() is not None
-
-
-__all__ = ["WAIT_S", "Job", "Slot", "running", "slot", "start", "status", "wait"]
+__all__ = ["WAIT_S", "Job", "RelightAbandoned", "RelightFailed", "Slot", "abandon", "claim",
+           "slot", "start", "status", "wait"]

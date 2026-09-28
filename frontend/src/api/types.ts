@@ -475,8 +475,8 @@ export interface paths {
          *     a minute and more where it has not, which the preview's proxy cut off at
          *     90 s while the server went on (the owner, 2026-09-28). So the relight runs
          *     as a job of its own (`relight_jobs`), and this answers with the map if it
-         *     is done within `WAIT_S`, and 202 if not. A press while one runs waits for
-         *     the same job, and neither takes a slot nor counts against the visitor.
+         *     is done within `WAIT_S`, and 202 if not. A press while one runs answers
+         *     202 at once, and neither takes a slot nor counts against the visitor.
          */
         post: operations["rebuild_light_map_api_v1_gardens__token__light_post"];
         delete?: never;

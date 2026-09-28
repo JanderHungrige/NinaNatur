@@ -44,13 +44,18 @@ def relight(conn: sqlite3.Connection, garden_id: int) -> None:
         took.append(f"{name} {time.perf_counter() - start:.1f} s")
         return result
 
-    timed("terrain", lambda: ensure_terrain(conn, load_garden(conn, garden_id)))
-    measured = timed("buildings", lambda: measure_buildings(conn, load_garden(conn, garden_id)))
-    timed("laser", lambda: ensure_cloud(conn, load_garden(conn, garden_id),
-                                        buildings=measured.buildings))
-    timed("crown bases", lambda: fill_crown_bases(conn, load_garden(conn, garden_id)))
-    timed("light", lambda: recompute_light(conn, garden_id))
-    log.info("relit garden %d: %s", garden_id, ", ".join(took))
+    try:
+        timed("terrain", lambda: ensure_terrain(conn, load_garden(conn, garden_id)))
+        measured = timed("buildings",
+                         lambda: measure_buildings(conn, load_garden(conn, garden_id)))
+        timed("laser", lambda: ensure_cloud(conn, load_garden(conn, garden_id),
+                                            buildings=measured.buildings))
+        timed("crown bases", lambda: fill_crown_bases(conn, load_garden(conn, garden_id)))
+        timed("light", lambda: recompute_light(conn, garden_id))
+    finally:
+        # A run that fails says the steps it got through too: which was slow
+        # is the question, and a failure is where it is asked.
+        log.info("relit garden %d: %s", garden_id, ", ".join(took) or "nothing")
 
 
 __all__ = ["relight"]

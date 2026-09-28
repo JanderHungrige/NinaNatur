@@ -6,7 +6,8 @@ the laser before the light; on the preview that ran past its proxy's 90 s,
 the page got a 504 and showed nothing while the server went on, and a second
 press started it all again. The relight runs as a job now: done within the
 wait, the answer is the map; not, it is 202, and `/light/status` says when it
-is done — or that it failed. A second press waits for the same job.
+is done — or that it failed. A second press while it runs is answered 202 at
+once, and asks the status like the first.
 
 Against a database file, because the job opens one of its own: the in-memory
 database every other API test uses is relit in the request, as before.
@@ -37,13 +38,28 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClie
     init_schema(made)
     made.commit()
     app.dependency_overrides[get_connection] = lambda: made
-    monkeypatch.setattr(relight_jobs, "WAIT_S", 0.3)
-    # The jobs are the process's, by garden id — which every test's database
-    # starts again at 1.
+    # Long, so no test depends on how fast this machine relights a garden: a
+    # test that wants a 202 holds its job at a gate and shortens the wait.
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 30.0)
+    # The jobs are the process's, by share token.
     monkeypatch.setattr(relight_jobs, "_jobs", {})
-    yield TestClient(app)
+    yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
     made.close()
+
+
+@pytest.fixture()
+def gate() -> Iterator[threading.Event]:
+    """A relight held until the test lets it go — and let go however the test
+    ends: a failed test once left its job parked, holding a heavy slot, and
+    every test after it failed for that."""
+    held = threading.Event()
+    yield held
+    held.set()
+    for _ in range(200):
+        if _free_slots() == ratelimit.HEAVY_SLOTS:
+            return
+        time.sleep(0.05)
 
 
 def _garden(client: TestClient) -> str:
@@ -89,11 +105,12 @@ def _settled(client: TestClient, token: str) -> dict[str, bool]:
 
 
 def test_a_long_relight_answers_202_goes_on_and_lands(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch,
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, gate: threading.Event,
 ) -> None:
     token = _garden(client)
-    gate, calls = threading.Event(), []
+    calls: list[int] = []
     monkeypatch.setattr(routes, "relight", _relight(gate, calls))
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 0.3)
 
     first = client.post(f"/api/v1/gardens/{token}/light")
     assert first.status_code == 202 and first.json() is None
@@ -101,23 +118,45 @@ def test_a_long_relight_answers_202_goes_on_and_lands(
         "running": True, "failed": False, "known": True}
     assert _free_slots() == ratelimit.HEAVY_SLOTS - 1, "the job holds its slot"
 
-    again = client.post(f"/api/v1/gardens/{token}/light")
-    assert again.status_code == 202
-    assert len(calls) == 1, "a second press waits for the same job"
-    assert _free_slots() == ratelimit.HEAVY_SLOTS - 1, "and takes no second slot"
-
     gate.set()
     assert _settled(client, token) == {"running": False, "failed": False, "known": True}
     assert client.get(f"/api/v1/gardens/{token}/light").json() is not None
     assert _free_slots() == ratelimit.HEAVY_SLOTS
 
 
+def test_a_press_while_one_runs_is_answered_at_once_and_holds_nothing(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, gate: threading.Event,
+) -> None:
+    """It waited for the running job at first: a server thread held for 20 s
+    with no slot and no count, and forty such presses stalled every page
+    while the health check stayed green (review of c2ec593)."""
+    token = _garden(client)
+    calls: list[int] = []
+    monkeypatch.setattr(routes, "relight", _relight(gate, calls))
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 0.3)
+    assert client.post(f"/api/v1/gardens/{token}/light").status_code == 202
+    counted, slots = [], []
+    monkeypatch.setattr(routes.ratelimit, "check", lambda *a: counted.append(a))
+    real_slot = relight_jobs.heavy_now
+    monkeypatch.setattr(relight_jobs, "heavy_now", lambda: slots.append(1) or real_slot())
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 30.0)
+
+    began = time.perf_counter()
+    again = client.post(f"/api/v1/gardens/{token}/light")
+
+    assert again.status_code == 202 and time.perf_counter() - began < 5
+    assert (calls, counted, slots) == ([calls[0]], [], []), "no second job, count or slot"
+    gate.set()
+    assert _settled(client, token)["failed"] is False
+
+
 def test_a_relight_that_fails_says_so_and_gives_its_slot_back(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch,
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, gate: threading.Event,
 ) -> None:
     token = _garden(client)
-    gate, calls = threading.Event(), []
+    calls: list[int] = []
     monkeypatch.setattr(routes, "relight", _relight(gate, calls, fail=True))
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 0.3)
 
     assert client.post(f"/api/v1/gardens/{token}/light").status_code == 202
     gate.set()
@@ -127,6 +166,7 @@ def test_a_relight_that_fails_says_so_and_gives_its_slot_back(
 
     # Pressed again, it starts afresh — and a relight that works clears it.
     monkeypatch.setattr(routes, "relight", _relight(None, calls))
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 30.0)
     assert client.post(f"/api/v1/gardens/{token}/light").status_code == 200
     assert client.get(f"/api/v1/gardens/{token}/light/status").json() == {
         "running": False, "failed": False, "known": True}
@@ -139,6 +179,44 @@ def test_a_garden_this_server_holds_no_relight_of_says_so(client: TestClient) ->
     token = _garden(client)
     assert client.get(f"/api/v1/gardens/{token}/light/status").json() == {
         "running": False, "failed": False, "known": False}
+
+
+def test_a_job_whose_connection_will_not_open_still_gives_its_slot_back(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Opened before its `try`, a connection that failed kept the slot for
+    good: two such failures and every heavy route answered 429 (review of
+    c2ec593)."""
+    token = _garden(client)
+    monkeypatch.setattr(routes, "relight", _relight(None, []))
+
+    def refuse(*args: object, **kwargs: object) -> sqlite3.Connection:
+        raise sqlite3.OperationalError("unable to open database file")
+
+    monkeypatch.setattr(relight_jobs, "connect", refuse)
+    assert client.post(f"/api/v1/gardens/{token}/light").status_code == 500
+    assert _free_slots() == ratelimit.HEAVY_SLOTS
+    assert client.get(f"/api/v1/gardens/{token}/light/status").json()["failed"] is True
+
+
+def test_a_new_garden_never_joins_the_job_of_one_deleted_before_it(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, gate: threading.Event,
+) -> None:
+    """SQLite gives a deleted garden's id to the next one; keyed by it, a new
+    garden's first press joined the dead garden's job (review of c2ec593)."""
+    calls: list[int] = []
+    monkeypatch.setattr(routes, "relight", _relight(gate, calls))
+    monkeypatch.setattr(relight_jobs, "WAIT_S", 0.3)
+    gone = _garden(client)
+    assert client.post(f"/api/v1/gardens/{gone}/light").status_code == 202
+    assert client.delete(f"/api/v1/gardens/{gone}").status_code == 204
+
+    fresh = _garden(client)
+    assert client.get(f"/api/v1/gardens/{fresh}/light/status").json()["known"] is False
+    assert client.post(f"/api/v1/gardens/{fresh}/light").status_code == 202
+    assert len(calls) == 2, "its press starts its own job"
+    gate.set()
+    _settled(client, fresh)
 
 
 def test_a_quick_relight_answers_with_the_map_as_before(
