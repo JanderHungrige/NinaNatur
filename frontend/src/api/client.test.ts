@@ -35,6 +35,19 @@ describe('NinaNaturClient', () => {
     );
   });
 
+  it('carries how long a busy server asked to be left, and nothing where it did not', async () => {
+    const busy = vi.fn(async () => new Response(JSON.stringify({ detail: 'busy' }), {
+      status: 429, headers: { 'content-type': 'application/json', 'retry-after': '10' },
+    })) as unknown as typeof globalThis.fetch;
+    await expect(new NinaNaturClient({ fetch: busy }).shadowMarks('tok')).rejects.toSatisfy(
+      (error: unknown) => error instanceof ApiError && error.retryAfterS === 10,
+    );
+    const plain = new NinaNaturClient({ fetch: respondWith({ detail: 'nope' }, 500) });
+    await expect(plain.shadowMarks('tok')).rejects.toSatisfy(
+      (error: unknown) => error instanceof ApiError && error.retryAfterS === null,
+    );
+  });
+
   it('treats an unknown share token as null, not as an error', async () => {
     // A stale share link is a normal thing for a user to hit.
     const client = new NinaNaturClient({ fetch: respondWith({ detail: 'no such garden' }, 404) });

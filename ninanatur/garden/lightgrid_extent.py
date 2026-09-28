@@ -84,7 +84,7 @@ def check_extent(
     min_x: float, min_y: float, max_x: float, max_y: float, parts: int = 0,
     near: int | None = None, terrain: bool = False, deciduous: bool = False,
     tilted: bool = False, near_planes: int = 0, far_planes: int = 0,
-    *, far_crowns: int = 0,
+    *, far_crowns: int = 0, near_crowns: int = 0, reaching: int = 0,
 ) -> None:
     """Refuse a garden whose grid would take far longer than the budget allows.
 
@@ -104,7 +104,7 @@ def check_extent(
     depth = max(max_y - min_y, 1.0)
     cells = cells_at(width, depth, CELL_LADDER_M[-1])
     spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted, near_planes, far_planes,
-                        far_crowns=far_crowns)
+                        far_crowns=far_crowns, near_crowns=near_crowns, reaching=reaching)
     if cells > MAX_CELLS or spent / 1000 > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
         raise GardenTooLarge(
             f"Garten zu groß: {width:.0f} × {depth:.0f} m lassen sich nicht in "
@@ -115,7 +115,8 @@ def check_extent(
 def cell_size_for(width_m: float, depth_m: float, parts: int = 0,
                   near: int | None = None, terrain: bool = False,
                   deciduous: bool = False, tilted: bool = False,
-                  near_planes: int = 0, far_planes: int = 0, *, far_crowns: int = 0) -> float:
+                  near_planes: int = 0, far_planes: int = 0, *, far_crowns: int = 0,
+                  near_crowns: int = 0, reaching: int = 0) -> float:
     """The finest cell that keeps the recompute inside `GRID_BUDGET_S`.
 
     Since the raster (doc 117) nearly every garden gets 0.5 m: forty
@@ -129,7 +130,8 @@ def cell_size_for(width_m: float, depth_m: float, parts: int = 0,
         # list kept and sent, and cheap cells let a plain 500 m plot reach a
         # million of them (review, 2026-09-22).
         spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted,
-                            near_planes, far_planes, far_crowns=far_crowns)
+                            near_planes, far_planes, far_crowns=far_crowns,
+                            near_crowns=near_crowns, reaching=reaching)
         if cells <= MAX_CELLS and spent <= GRID_BUDGET_S * 1000:
             return cell
     return CELL_LADDER_M[-1]

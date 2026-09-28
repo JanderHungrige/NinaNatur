@@ -250,3 +250,22 @@ def test_a_window_is_read_again_until_it_is_anchored_and_classified(
     assert reads == [False, True]
     stored = stored_cloud(conn, key)
     assert stored is not None and stored.anchored and stored.classified
+
+
+def test_a_base_typed_while_the_laser_was_read_is_kept(conn: sqlite3.Connection) -> None:
+    """The fill decides from a garden read before the laser was; a base the
+    gardener typed in between is theirs (review of stage 3, 2026-09-28)."""
+    client = TestClient(app)
+    token = _garden(client, HOME)
+    save_cloud(conn, cache_key(HOME), _cloud([(0.0, 0.0, 3.4)]), HOME, classified=True)
+    tree = client.post(f"/api/v1/gardens/{token}/obstacles", json={
+        "kind": "tree", "shape": "circle", "x": 0.0, "y": 0.0, "width": 6,
+        "height": 12}).json()["obstacles"][-1]["obstacle_id"]
+    read_before = garden_by_token(conn, token)
+    assert read_before is not None
+    client.patch(f"/api/v1/gardens/{token}/obstacles/{tree}", json={"crown_base_m": 2.0})
+
+    assert fill_crown_bases(conn, read_before) == 0
+    row = conn.execute("SELECT crown_base_m, crown_base_source FROM element WHERE element_id = ?",
+                       (tree,)).fetchone()
+    assert (row[0], row[1]) == (2.0, "user")

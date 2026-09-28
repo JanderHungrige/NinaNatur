@@ -136,17 +136,23 @@ with a new date. The page says which model version computed a map.
   hillside's tilt as its own soil, and a cost charged per part that belonged
   per cell.
 
+- **2026-09-22 — stage 2 on the preview** (merge `9424de9`, V0.25.227),
+  checked through the API with a throwaway garden: model 26.4, the sky,
+  relative light and expected sunshine per cell and per bed, the DWD's credit
+  with its licence link. The page itself has not yet been looked at by the
+  owner.
+
 - **2026-09-28 — stage 3: feature 5 built** (doc 120). *A roof casts as a
   roof*: a gable, a hip and a surveyed pent cast as the solid under their own
   planes instead of a block of `RISE_KEPT`'s averaged height — still one part
   a house, the planes cut against the ray the raster already cuts. The roof
   the cells stand on, the roof the day's playback draws and the roof that
   casts are one geometry (`garden.casting`). A point 3 m behind a gabled house
-  gains 1.7 h; a pent leaning towards the beds loses 0.8. Reviewed twice:
-  18 distinct findings, all fixed, the worst a house on surveyed ground casting a
-  full-ridge block (the roof dropped by `standing_on`), a playback that still
-  drew blocks, a hip drawn at its eaves, and planes priced per cell when they
-  cost per plane.
+  gains 1.7 h; a pent leaning towards the beds loses 0.8. `MODEL_VERSION`
+  26.5. Reviewed twice: 18 distinct findings, all fixed, the worst a house on
+  surveyed ground casting a full-ridge block (the roof dropped by
+  `standing_on`), a playback that still drew blocks, a hip drawn at its eaves,
+  and planes priced per cell when they cost per plane.
 
 - **2026-09-28 — stage 3: feature 6 built** (doc 121). *A crown is not a
   cylinder*: an ellipsoid on a trunk, passing light by the depth a ray

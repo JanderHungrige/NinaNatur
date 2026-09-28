@@ -204,7 +204,8 @@ Neigung 34°*.
 
 - The shadow a house throws on the garden is still the `RISE_KEPT` prism, which
   does not depend on the ridge's direction. Casting it from the real planes is
-  Wave 26, feature 5.
+  Wave 26, feature 5. *Resolved by doc 120 (2026-09-28): a gable, a hip and a
+  surveyed pent cast as the solid under their own planes.*
 
 ## Bugs
 

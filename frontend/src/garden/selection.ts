@@ -46,6 +46,9 @@ export interface FormValues {
   crownBaseM: number | null;
   /** Who gave it: 'user' | 'measured'; null is nobody. */
   crownBaseSource: string | null;
+  /** Whether a tree or shrub casts as a crown on a trunk; false where the
+   *  outline is too long or thin for one, and a base changes nothing (doc 121). */
+  crownFits: boolean | null;
   height: number | null;
   width: number | null;
   soilType: string | null;
@@ -126,6 +129,7 @@ export function formValues(item: Bed | Obstacle): FormValues {
       eavesSource: null,
       crownBaseM: null,
       crownBaseSource: null,
+      crownFits: null,
       height: null,
       width: item.width,
       soilType: item.soil_type,
@@ -146,6 +150,7 @@ export function formValues(item: Bed | Obstacle): FormValues {
     eavesSource: item.eaves_source,
     crownBaseM: item.crown_base_m,
     crownBaseSource: item.crown_base_source,
+    crownFits: item.crown_fits,
     height: item.height,
     width: item.width,
     soilType: null,

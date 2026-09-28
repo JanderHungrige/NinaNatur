@@ -21,6 +21,7 @@ from ninanatur.api.origin import same_origin
 from ninanatur.api.schemas import BedOut, GardenCreated, GardenOut, ObstacleOut, PlantingOut
 from ninanatur.api.schemas_garden_in import GardenCreate, GardenSoil
 from ninanatur.auth.sessions import Account
+from ninanatur.garden.casting import crown_fits
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
@@ -119,6 +120,7 @@ def _obstacle_out(o: Element, sun: SunPosition) -> ObstacleOut:
         eaves_source=o.eaves_source, outline_source=o.outline_source,
         roof_fall_deg=o.roof_fall_deg,
         crown_base_m=o.crown_base_m, crown_base_source=o.crown_base_source,
+        crown_fits=crown_fits(o),
         roof_pitch_deg=pitch_of(o.footprint, Roof(o.roof), o.height,
                                 o.eaves_m, o.roof_fall_deg),
         roof_lines=[

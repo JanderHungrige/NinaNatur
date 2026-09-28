@@ -37,6 +37,7 @@ source_files:
   - ninanatur/api/schemas_garden_in.py
   - frontend/src/components/ElementForm.tsx
   - frontend/src/components/CrownBaseField.tsx
+  - frontend/src/components/useStoredField.ts
   - frontend/src/garden/selection.ts
   - frontend/src/heights.ts
   - frontend/src/api/types.ts
@@ -50,6 +51,8 @@ routes:
   - POST /api/v1/gardens/{token}/light
 models: [element, cloud_window]
 test_files:
+  - tests/test_crown_heights.py
+  - frontend/src/components/ElementForm.stored.test.tsx
   - tests/test_crown.py
   - tests/test_crown_casting.py
   - tests/test_crown_laser.py
@@ -212,6 +215,16 @@ says, under the field, what the model reckons with when nobody has said
 or that the laser measured it. The assumption is mirrored in `heights.ts`
 and held to the server's by `test_kind_vocabulary`.
 
+Two corrections from the review of stage 3 (2026-09-28). Where no crown fits
+what was drawn — a band, an L — the thing casts as the solid a row is, from
+the ground, and a base changes nothing: the answer says so (`crown_fits`,
+false; null for anything that is no crown), and the form says why instead of
+asking. And the laser fills a base when the light is computed, often while
+the form is open: a field that kept the value it opened with then sent the
+old one back on the next save, as the gardener's. An untouched field follows
+the store now, and a touched one keeps what was typed (`useStoredField`) —
+the height, the roof and the eaves as well.
+
 ## What the plan draws
 
 A crown's shadow on the ground is an ellipse — the ellipsoid is a sphere
@@ -238,6 +251,18 @@ edge throws its shadow in at most moments, not only while shadows are long.
 24 laser trees 12 m outside the plot took 0.96 s at 2 m cells where the far
 price said 0.75 (review, 2026-09-28); each far crown now adds
 `FAR_CROWN_MS`, 15 ms, and the estimate holds from 6 m out to 30.
+
+And a crown on uneven ground asks about many more cells: the grid sizes each
+crown's box of cells from the grid's lowest cell to its highest, so a slope,
+or a roof on the plot, stretches every box towards the sun by the height
+between them. The review of stage 3 found a garden from the map (its own
+gable, 30 neighbours, 22 trees) at 6.6 s on a slope where the estimate said
+4.8. Each crown on the grid now adds 0.014 ms a cell on a slope and 0.010 on
+the level beside a roof (`CROWN_SLOPE_CELL_MS`, `CROWN_ROOF_CELL_MS`), and
+every case holds: 12 trees beside a gabled house took 4.9 s at 0.5 m against
+10.7, on a slope 5.0 against 13.3. Narrowing each box to the heights under it
+was tried and saved nothing; `test_crown_heights` holds every cell beside a
+roof to the point's answer, whichever way the box is sized.
 
 ## What moved
 

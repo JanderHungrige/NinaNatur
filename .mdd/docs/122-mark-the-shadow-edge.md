@@ -26,6 +26,7 @@ source_files:
   - frontend/src/components/GardenCanvasProps.ts
   - frontend/src/components/CanvasScene.tsx
   - frontend/src/components/SceneWorld.tsx
+  - frontend/src/components/ClusterLayer.tsx
   - frontend/src/components/ToolRail.tsx
   - frontend/src/components/GardenWorkspace.tsx
   - frontend/src/canvas/shapes.ts
@@ -41,6 +42,7 @@ models: [shadow_mark]
 test_files:
   - tests/test_shadow_edge.py
   - tests/test_shadow_marks_api.py
+  - tests/test_shadow_mark_heights.py
   - tests/test_security_matrix.py
   - frontend/src/shadowMarks.test.ts
   - frontend/src/garden/useShadowMarks.test.ts
@@ -73,6 +75,7 @@ known_issues:
   - "The time field is the browser's clock and time zone: a device set to another zone marks another moment."
   - "A mark can only be placed with a pointer: a click or a tap on the plan, as the rail's Standpunkt is placed (doc 89). There is no keyboard way to put a point on the plan yet."
   - "Where a shadow begins — a crown's near end, cast by where the crown starts — the page says how much earlier or later the model begins it, and names no cause: a crown base, a crown's width and a crown's height all move it."
+  - "The height a far edge amounts to is what one more metre of the thing moves it: where that metre changes which part casts the edge — a gable's eaves giving way to its ridge — the height said is the metre's average, and a correction by it lands near the mark rather than on it. Where no metre of height moves the edge (eaves the gardener gave), no height is said, and the page does not say which other number would."
 sister_projects: []
 ---
 
@@ -145,10 +148,18 @@ near end read as a height, the page saying "zu kurz" and "zu hoch" at once.
 
 ## What the offset says
 
-- **Along the sun, at a far edge**: the shadow is too long or too short. A
-  length error δ at sun altitude h is a height error of about δ·tan h — the
-  page says it in metres of height ("als stünde es 0,6 m zu niedrig"), and
-  not at all under 5 cm.
+- **Along the sun, at a far edge**: the shadow is too long or too short, and
+  the page says it in metres of height ("als stünde es 0,6 m zu niedrig"),
+  not at all under 5 cm. For a block a length error δ at sun altitude h is a
+  height error of δ·tan h. But since roofs cast as roofs (doc 120) a far edge
+  is often a gable's eaves', which the ridge hardly moves: at a 62° sun a
+  mark behind such an edge read "a metre too low", a height no correction
+  could satisfy (review of stage 3, 2026-09-28). So the height said is what
+  one more metre of the thing, as the model would make it — eaves the
+  gardener gave staying where they are, eaves and a crown base it assumes
+  rising with it — moves that very point of the edge, measured from it along
+  the sun (`shadow_edge.reach_past`). Where a metre moves it less than a
+  tenth of what it moves a block's, no height is said.
 - **At a near edge**: the model begins the shadow earlier or later ("Im
   Modell beginnt der Schatten 0,8 m früher") — no height.
 - **Across the sun**: the shadow points the wrong way — the plan's north, or
@@ -191,7 +202,14 @@ already can.
 - The marks are read when the garden opens and again with each change to a
   garden that has any, since every reading is the model's as it now is; a
   garden without marks costs no request per edit. Only the newest answer
-  counts, and none from before a mark was placed or forgotten.
+  counts, and none from before a mark was placed or forgotten. Opening reads
+  once — the marks the first read brought were a reason to read again — and
+  a read a busy server turns away (the heavy slot, 429) is asked again after
+  the seconds it names, three times, before the page says the marks could
+  not be read (review of stage 3, 2026-09-28).
+- While a mark is armed the plan takes the click wherever it lands, a
+  planted patch included: the patches kept their clicks, and a mark aimed at
+  a planted bed chose the planting instead.
 
 ## What it costs
 
@@ -199,8 +217,9 @@ Reading casts the thing's shadow — for a many-cornered roof the dearest
 geometry the app has (a 480-corner concave house: 25.6 s for its first
 decomposition, measured in the review). Both routes that read take a heavy
 slot, as the day's playback does; marking counts against its own allowance
-(30 in ten minutes); each thing is cast once per read, however many marks it
-has. The fifty-mark limit is counted in the insert itself, so two requests
+(30 in ten minutes); each thing is cast once per read however many marks it
+has — twice, with the copy a metre taller that says what a height moves, and
+the two share one outline and so one decomposition. The fifty-mark limit is counted in the insert itself, so two requests
 at once cannot both slip under it.
 
 ## The independent check

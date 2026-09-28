@@ -612,6 +612,11 @@ export interface paths {
         /**
          * Shadow Marks
          * @description Every mark of this garden's, each read against the model as it is now.
+         *
+         *     The page asks this of every garden it opens, and most have no marks: only
+         *     reading some takes a heavy slot, as the month view takes one only for a
+         *     month. Taken always, it turned a garden's opening away whenever two
+         *     computations were running (review of stage 3, 2026-09-28).
          */
         get: operations["shadow_marks_api_v1_gardens__token__shadow_marks_get"];
         put?: never;
@@ -1604,6 +1609,8 @@ export interface components {
             crown_base_m: number | null;
             /** Crown Base Source */
             crown_base_source: string | null;
+            /** Crown Fits */
+            crown_fits: boolean | null;
             /** Eaves M */
             eaves_m: number | null;
             /** Eaves Source */

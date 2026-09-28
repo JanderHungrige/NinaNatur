@@ -24,7 +24,7 @@ function obstacle(
     roof: 'unknown',
     roof_source: 'user',
     eaves_m: null,
-    eaves_source: null, crown_base_m: null, crown_base_source: null,
+    eaves_source: null, crown_base_m: null, crown_base_source: null, crown_fits: null,
     roof_fall_deg: null,
     roof_pitch_deg: null,
     roof_lines: [],

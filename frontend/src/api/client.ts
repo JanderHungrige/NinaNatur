@@ -37,11 +37,13 @@ export type CanopySuggestion = components['schemas']['CanopyOut'];
 export type Landcover = components['schemas']['LandcoverOut'];
 export type ShadowMark = components['schemas']['ShadowMarkOut'];
 
-/** A non-2xx response, carrying whatever reason the API gave. */
+/** A non-2xx response, carrying whatever reason the API gave — and, from a
+ *  server too busy to compute now, how many seconds it asked to be left. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly detail: string,
+    readonly retryAfterS: number | null = null,
   ) {
     super(`${status}: ${detail}`);
     this.name = 'ApiError';
@@ -120,7 +122,9 @@ export class NinaNaturClient {
       ...init,
     });
     if (!response.ok) {
-      throw new ApiError(response.status, await readDetail(response));
+      const wait = Number(response.headers.get('retry-after') ?? '');
+      throw new ApiError(response.status, await readDetail(response),
+                         Number.isFinite(wait) && wait > 0 ? wait : null);
     }
     if (response.status === 204) {
       return undefined as T;

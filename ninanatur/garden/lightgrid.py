@@ -23,7 +23,9 @@ from ninanatur.garden.lightgrid_extent import GardenTooLarge as GardenTooLarge
 from ninanatur.garden.lightgrid_extent import cell_size_for as cell_size_for
 from ninanatur.garden.lightgrid_extent import check_extent as check_extent
 from ninanatur.garden.lightgrid_extent import extent_of as extent_of
-from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model, stands_in
+from ninanatur.garden.lightgrid_extent import grid_extent_of, grid_model
+from ninanatur.garden.lightgrid_load import grid_cost as grid_cost
+from ninanatur.garden.lightgrid_load import load_of
 from ninanatur.garden.lightgrid_model import LightGrid as LightGrid
 from ninanatur.garden.models import Garden
 from ninanatur.geo.terrain import TerrainWindow
@@ -75,7 +77,7 @@ def compute_grid(
         return None
     min_x, min_y, max_x, max_y = box
     parts = parts_of(standing_on(obstacles, ground))
-    cell = _cell_for(parts, box, terrain=ground is not None)
+    cell = _cell_for(parts, box, ground)
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
     cols = max(1, int(width / cell) + 1)
@@ -109,32 +111,21 @@ def compute_grid(
     )
 
 
-def _cell_for(parts: list[Part], box: tuple[float, float, float, float], *,
-              terrain: bool) -> float:
+def _cell_for(parts: list[Part], box: tuple[float, float, float, float],
+              ground: TerrainWindow | None) -> float:
     """The finest cell the budget buys over this box, once a box no cell could
     make affordable has been refused. What the raster pays for is parts, not
-    obstacles (review, 2026-09-22); a crown that drops its leaves makes it
-    sweep the sky twice (doc 118); cells with surfaces of their own — a
-    hillside's or a roof's — make it weigh every moment per cell (doc 119);
-    and a roof's own planes are cut against every cell (doc 120). A crown on
-    the grid is priced as the part it is, which costs more than it does; one
-    off it costs more than a far part (doc 121)."""
+    obstacles (review, 2026-09-22), and what they are: `lightgrid_load`."""
     min_x, min_y, max_x, max_y = box
-    standing = [stands_in([(float(x), float(y)) for x, y in p.corners], box) for p in parts]
-    near = sum(standing)
-    far_crowns = sum(1 for p, on in zip(parts, standing, strict=True)
-                     if not on and p.crown is not None)
-    deciduous = any(p.bare_transmission is not None for p in parts)
-    near_planes = sum(len(p.roof) for p, on in zip(parts, standing, strict=True) if on)
-    far_planes = sum(len(p.roof) for p in parts) - near_planes
-    # A cell has a surface of its own on surveyed ground, or on a roof whose
-    # planes stand on the grid — a far neighbour's roof has no cell in it.
-    tilted = terrain or near_planes > 0
-    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain, deciduous, tilted,
-                 near_planes, far_planes, far_crowns=far_crowns)
-    return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), len(parts),
-                         near, terrain, deciduous, tilted, near_planes, far_planes,
-                         far_crowns=far_crowns)
+    load = load_of(parts, box, ground)
+    check_extent(min_x, min_y, max_x, max_y, load.parts, load.near, load.terrain,
+                 load.deciduous, load.tilted, load.near_planes, load.far_planes,
+                 far_crowns=load.far_crowns, near_crowns=load.near_crowns,
+                 reaching=load.reaching)
+    return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), load.parts,
+                         load.near, load.terrain, load.deciduous, load.tilted,
+                         load.near_planes, load.far_planes, far_crowns=load.far_crowns,
+                         near_crowns=load.near_crowns, reaching=load.reaching)
 
 
 def _exact(element: object) -> str:

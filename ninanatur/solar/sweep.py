@@ -50,8 +50,10 @@ class RoofSolid:
     datum, the base being zero: the planes it falls on, where their ridge
     runs, and the eaves below which the walls carry the shadow.
 
-    `garden.roofshape.RoofSurface` builds it; the light model, the drawn
-    shadow and the roof's own cells all read this one shape.
+    `garden.roofshape.RoofSurface` builds it; the light model and the drawn
+    shadow read this one shape. The roof's own cells stand on the surface it
+    was built from (`lightcells.surface_at`), whose height is the same lower
+    envelope — `test_roof_cells` holds the two to each other.
     """
 
     planes: tuple[tuple[float, float, float, float], ...]

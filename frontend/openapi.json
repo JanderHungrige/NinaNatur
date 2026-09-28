@@ -1778,6 +1778,17 @@
             ],
             "title": "Crown Base Source"
           },
+          "crown_fits": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Fits"
+          },
           "eaves_m": {
             "anyOf": [
               {
@@ -1963,6 +1974,7 @@
           "roof_fall_deg",
           "crown_base_m",
           "crown_base_source",
+          "crown_fits",
           "roof_pitch_deg",
           "roof_lines",
           "label",
@@ -5203,7 +5215,7 @@
     },
     "/api/v1/gardens/{token}/shadow-marks": {
       "get": {
-        "description": "Every mark of this garden's, each read against the model as it is now.",
+        "description": "Every mark of this garden's, each read against the model as it is now.\n\nThe page asks this of every garden it opens, and most have no marks: only\nreading some takes a heavy slot, as the month view takes one only for a\nmonth. Taken always, it turned a garden's opening away whenever two\ncomputations were running (review of stage 3, 2026-09-28).",
         "operationId": "shadow_marks_api_v1_gardens__token__shadow_marks_get",
         "parameters": [
           {

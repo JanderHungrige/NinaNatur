@@ -7,9 +7,9 @@ garden is not a thing in it, and the light routes are about what the model
 answers, not about what the gardener saw.
 
 Both routes that read cast a thing's shadow — the dearest geometry the app
-has, for a many-cornered roof — so they take a heavy slot, as the day's
-playback does, and marking counts against its own allowance (review,
-2026-09-28).
+has, for a many-cornered roof — so they take a heavy slot when they cast, as
+the day's playback does, and marking counts against its own allowance
+(review, 2026-09-28).
 """
 from __future__ import annotations
 
@@ -67,13 +67,22 @@ def _out(mark: ShadowMark, found: Reading | None) -> ShadowMarkOut:
 @router.get("/{token}/shadow-marks", response_model=list[ShadowMarkOut])
 def shadow_marks(
     token: str,
-    _slot: Annotated[None, Depends(ratelimit.heavy_slot, scope="function")],
     conn: Annotated[sqlite3.Connection, Depends(get_connection)],
 ) -> list[ShadowMarkOut]:
-    """Every mark of this garden's, each read against the model as it is now."""
+    """Every mark of this garden's, each read against the model as it is now.
+
+    The page asks this of every garden it opens, and most have no marks: only
+    reading some takes a heavy slot, as the month view takes one only for a
+    month. Taken always, it turned a garden's opening away whenever two
+    computations were running (review of stage 3, 2026-09-28).
+    """
     garden = require_garden(conn, token)
     marks = marks_of(conn, garden.garden_id)
-    return [_out(mark, found) for mark, found in zip(marks, readings(garden, marks), strict=True)]
+    if not marks:
+        return []
+    with ratelimit.heavy():
+        found = readings(garden, marks)
+    return [_out(mark, reading) for mark, reading in zip(marks, found, strict=True)]
 
 
 @router.post("/{token}/shadow-marks", response_model=ShadowMarkOut,

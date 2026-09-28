@@ -3,11 +3,14 @@
     python -m scripts.measure_crown_cost
 
 Drawn trees 8 m across and 12 m tall, in Wuppertal: 12 and 36 of them on a
-94 m plot, at forced cells from 2 m to 0.5 m; and 24 round the plot, 6 to
-30 m outside it, where a crown throws its shadow in at most moments. Each line
-gives the estimate (`lightgrid_cost.estimate_ms`) and the best of two runs.
-Timings are this machine's; what must hold anywhere is that the estimate is
-the larger. A few minutes.
+94 m plot, at forced cells from 2 m to 0.5 m; 24 round the plot, 6 to 30 m
+outside it, where a crown throws its shadow in at most moments; and 12 beside
+a gabled house, and 12 on a slope, where every crown's box of cells is
+stretched by the height between the grid's lowest cell and its highest
+(review of stage 3, 2026-09-28). Each line gives the estimate
+(`lightgrid_cost.estimate_ms`) and the best of two runs. Timings are this
+machine's; what must hold anywhere is that the estimate is the larger. A few
+minutes.
 """
 from __future__ import annotations
 
@@ -16,12 +19,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from ninanatur.garden import lightgrid, lightview
-from ninanatur.garden.ground import standing_on
-from ninanatur.garden.lightgrid import compute_grid
-from ninanatur.garden.lightgrid_cost import estimate_ms
-from ninanatur.garden.lightgrid_extent import cells_at, grid_extent_of, stands_in
+from ninanatur.garden.lightgrid import compute_grid, grid_cost
 from ninanatur.garden.models import Element, Garden
-from ninanatur.solar.raster import parts_of
+from ninanatur.geo.terrain import TerrainWindow
 
 LAT, LON = 51.2562, 7.1508
 PLOT = [[-47.0, -47.0], [47.0, -47.0], [47.0, 47.0], [-47.0, 47.0]]
@@ -59,7 +59,26 @@ def forced(cell: float) -> Iterator[None]:
         lightgrid.cell_size_for, lightgrid.check_extent = chosen, checked
 
 
-def measure(trees: list[Element], cell: float) -> tuple[float, float]:
+def beside_a_house() -> list[Element]:
+    """12 trees, and a gabled house 10 × 8 m with a 9 m ridge north of them."""
+    house = Element(element_id=9, kind="house", shape="polygon", x=0.0, y=0.0, height=9.0,
+                    points=[[-5.0, 10.0], [5.0, 10.0], [5.0, 18.0], [-5.0, 18.0]],
+                    roof="gable", eaves_m=5.5)
+    return [house, *on_the_plot(12)]
+
+
+def slope() -> TerrainWindow:
+    """Ground rising 8 cm a metre to the north and 3 cm to the east."""
+    size = 200
+    return TerrainWindow(
+        min_x=-100.0, min_y=-100.0, cell_m=1.0, cols=size, rows=size,
+        heights=[100.0 + (r - size / 2) * 0.08 + (c - size / 2) * 0.03
+                 for r in range(size) for c in range(size)],
+        source="Test", licence="-", attribution="-", vertical_step_m=0.01)
+
+
+def measure(trees: list[Element], cell: float,
+            ground: TerrainWindow | None = None) -> tuple[float, float]:
     """(estimate, measured) in milliseconds."""
     plot = Element(element_id=1, kind="garden", shape="polygon", x=0.0, y=0.0, points=PLOT)
     garden = Garden(garden_id=1, share_token="t", owner_id=None, name="g", latitude=LAT,
@@ -69,25 +88,21 @@ def measure(trees: list[Element], cell: float) -> tuple[float, float]:
     with forced(cell):
         for _ in range(2):
             start = time.perf_counter()
-            compute_grid(garden, obstacles)
+            compute_grid(garden, obstacles, ground=ground)
             best = min(best, (time.perf_counter() - start) * 1000)
-    box = grid_extent_of(garden)
-    assert box is not None
-    parts = parts_of(standing_on(obstacles, None))
-    on = [stands_in([(float(x), float(y)) for x, y in p.corners], box) for p in parts]
-    far_crowns = sum(1 for p, o in zip(parts, on, strict=True) if not o and p.crown is not None)
-    cells = cells_at(max(box[2] - box[0], 1.0), max(box[3] - box[1], 1.0), cell)
-    return estimate_ms(cells, len(parts), sum(on), False, True, False,
-                       far_crowns=far_crowns), best
+    return grid_cost(garden, obstacles, cell, ground), best
 
 
 def main() -> None:
-    cases = [(f"{n} trees on the plot", on_the_plot(n)) for n in (12, 36)]
-    cases += [(f"24 trees {out:.0f} m outside it", round_the_plot(out))
+    cases: list[tuple[str, list[Element], TerrainWindow | None]] = [
+        (f"{n} trees on the plot", on_the_plot(n), None) for n in (12, 36)]
+    cases += [(f"24 trees {out:.0f} m outside it", round_the_plot(out), None)
               for out in (6.0, 12.0, 20.0, 30.0)]
-    for name, trees in cases:
+    cases += [("12 trees beside a gabled house", beside_a_house(), None),
+              ("12 trees on a slope", on_the_plot(12), slope())]
+    for name, trees, ground in cases:
         for cell in (2.0, 1.0, 0.5):
-            estimate, took = measure(trees, cell)
+            estimate, took = measure(trees, cell, ground)
             verdict = "held" if estimate >= took else "UNDER THE ESTIMATE"
             print(f"{name}, {cell} m cells: estimate {estimate:6.0f} ms, "
                   f"took {took:6.0f} ms — {verdict}", flush=True)

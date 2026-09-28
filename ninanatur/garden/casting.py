@@ -105,6 +105,15 @@ def _crown(element: Element) -> Obstacle:
     )
 
 
+def crown_fits(element: Element) -> bool | None:
+    """Whether a tree or shrub casts as a crown on a trunk, whose base then
+    counts — or as the solid a row of them is, where no crown fits what was
+    drawn and a crown base changes nothing. None for anything else."""
+    if ObjectKind(element.kind) not in _CROWNS:
+        return None
+    return crown_disc(element) is not None
+
+
 def crown_disc(element: Element) -> tuple[float, float, float] | None:
     """Where a drawn crown stands and how far it reaches, or None where no
     crown fits what was drawn.

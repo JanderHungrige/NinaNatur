@@ -55,8 +55,10 @@ class Reading:
     #: and across it (positive: to its left, looking along the shadow).
     along_m: float
     across_m: float
-    #: For a far edge the way runs along: the height it amounts to — δ·tan h,
-    #: positive where the model's thing stands as though taller. None otherwise.
+    #: For a far edge the way runs along: the height it amounts to, positive
+    #: where the model's thing stands as though taller. None otherwise. Here
+    #: δ·tan h, a block's; `garden.shadow_marks` asks what a metre of the thing
+    #: actually moves this edge, which for eaves may be nothing (doc 122).
     height_m: float | None
     #: For a miss across the sun that is a turn about the thing: the angle,
     #: positive anticlockwise. None otherwise — a miss beside the thing that
@@ -72,15 +74,20 @@ def read_edge(obstacle: Obstacle, sun: SunPosition, x: float, y: float) -> Readi
         return None
     outline = list(obstacle.footprint)
     edges = [edge for edge in _edges(rings) if not _on(outline, edge)] or _edges(rings)
-    (a, b), nearest, offset = _nearest(edges, x, y)
+    tied, nearest, offset = _nearest(edges, x, y)
     away = math.radians(sun.azimuth)
     # The direction the shadow falls: away from the sun.
     fall_x, fall_y = -math.sin(away), -math.cos(away)
     dx, dy = nearest[0] - x, nearest[1] - y
     along = dx * fall_x + dy * fall_y
     across = fall_x * dy - fall_y * dx
-    facing = _facing(a, b, fall_x, fall_y)
     lengthwise = abs(along) >= abs(across)
+    # At a corner two edges are equally near; the way the miss runs says which
+    # it is about — ring order said it for a miss mostly along the sun
+    # (review of stage 3, 2026-09-28).
+    facings = [_facing(a, b, fall_x, fall_y) for a, b in tied]
+    wanted = [f for f in facings if (f != "side") == lengthwise]
+    facing = (wanted or facings)[0]
     return Reading(
         altitude=sun.altitude, azimuth=sun.azimuth, rings=rings, nearest=nearest,
         offset_m=offset, edge=facing, model_longer=_inside(rings, x, y),
@@ -89,6 +96,39 @@ def read_edge(obstacle: Obstacle, sun: SunPosition, x: float, y: float) -> Readi
         if facing == "far" and lengthwise else None,
         turned_deg=None if lengthwise else _turned(_centre(outline), (x, y), nearest, offset),
     )
+
+
+def reach_past(obstacle: Obstacle, sun: SunPosition, point: tuple[float, float]) -> float:
+    """How far past `point`, straight away from the sun, the obstacle's shadow
+    ends: the nearest edge the way leaves the shadow by. 0 where the shadow
+    ends at the point, or before it.
+
+    What a change to the thing moves one point of an edge by: the way from a
+    point on the old edge to the new one, measured along the shadow — which a
+    fresh nearest point is not, once the new shadow covers the mark it was
+    measured from."""
+    away = math.radians(sun.azimuth)
+    fall_x, fall_y = -math.sin(away), -math.cos(away)
+    rings = [ring for ring in shadow_rings([obstacle], sun) if len(ring) >= 3]
+    found = [t for a, b in _edges(rings)
+             if _outward(a, b, fall_x, fall_y) > 0
+             and (t := _crossing(point, (fall_x, fall_y), a, b)) is not None]
+    return max(0.0, min(found, default=0.0))
+
+
+def _crossing(p: tuple[float, float], d: tuple[float, float], a: tuple[float, float],
+              b: tuple[float, float]) -> float | None:
+    """Where the way from p along d crosses the segment a–b, as a distance
+    along d — or None where it does not, or runs along it. A crossing a hair
+    behind p counts: p lies on an edge the change left where it was."""
+    ex, ey = b[0] - a[0], b[1] - a[1]
+    denominator = d[0] * ey - d[1] * ex
+    if abs(denominator) < 1e-12:
+        return None
+    wx, wy = a[0] - p[0], a[1] - p[1]
+    t = (wx * ey - wy * ex) / denominator
+    u = (wx * d[1] - wy * d[0]) / denominator
+    return t if t >= -TIE_M and -TIE_M <= u <= 1 + TIE_M else None
 
 
 Segment = tuple[tuple[float, float], tuple[float, float]]
@@ -114,19 +154,24 @@ def _on(outline: Ring, edge: Segment) -> bool:
     return all(min(_distance(p, u, v) for u, v in walls) < ON_OUTLINE_M for p in (a, middle, b))
 
 
+#: How close two edges' nearest points must be to be the same point: a corner.
+TIE_M = 1e-6
+
+
 def _nearest(edges: list[Segment], x: float, y: float,
-             ) -> tuple[Segment, tuple[float, float], float]:
-    """The edge nearest (x, y), its nearest point, and the distance."""
-    best: tuple[Segment, tuple[float, float], float] = (edges[0], edges[0][0], math.inf)
+             ) -> tuple[list[Segment], tuple[float, float], float]:
+    """The edges nearest (x, y) — two where the nearest point is a corner —
+    the nearest point, and the distance."""
+    found: list[tuple[float, Segment, tuple[float, float]]] = []
     for a, b in edges:
         ex, ey = b[0] - a[0], b[1] - a[1]
         span = ex * ex + ey * ey
         t = 0.0 if span == 0 else min(max(((x - a[0]) * ex + (y - a[1]) * ey) / span, 0.0), 1.0)
         px, py = a[0] + t * ex, a[1] + t * ey
-        d = math.hypot(px - x, py - y)
-        if d < best[2]:
-            best = ((a, b), (px, py), d)
-    return best
+        found.append((math.hypot(px - x, py - y), (a, b), (px, py)))
+    distance, _edge, point = min(found, key=lambda f: f[0])
+    tied = [edge for d, edge, _p in found if d - distance <= TIE_M]
+    return tied, point, distance
 
 
 def _facing(a: tuple[float, float], b: tuple[float, float], fall_x: float,
@@ -134,12 +179,16 @@ def _facing(a: tuple[float, float], b: tuple[float, float], fall_x: float,
     """Which way an edge faces. Outlines run anticlockwise and holes clockwise,
     so the shadow lies on the left of every edge and its outward normal is on
     the right."""
+    out = _outward(a, b, fall_x, fall_y)
+    return "far" if out > 0.5 else "near" if out < -0.5 else "side"
+
+
+def _outward(a: tuple[float, float], b: tuple[float, float], fall_x: float,
+             fall_y: float) -> float:
+    """How far an edge's outward normal points along the fall, -1 to 1."""
     ex, ey = b[0] - a[0], b[1] - a[1]
     length = math.hypot(ex, ey)
-    if length == 0:
-        return "side"
-    out = (ey * fall_x - ex * fall_y) / length
-    return "far" if out > 0.5 else "near" if out < -0.5 else "side"
+    return 0.0 if length == 0 else (ey * fall_x - ex * fall_y) / length
 
 
 def _inside(rings: list[Ring], x: float, y: float) -> bool:
@@ -173,4 +222,4 @@ def _turned(centre: tuple[float, float], mark: tuple[float, float],
     return math.degrees(angle) if abs(angle) >= 0.5 * offset / reach else None
 
 
-__all__ = ["Edge", "Reading", "read_edge"]
+__all__ = ["Edge", "Reading", "reach_past", "read_edge"]

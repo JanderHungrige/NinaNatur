@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { GardenOut, NinaNaturClient, ShadowMark } from '../api/client';
+import { ApiError, type GardenOut, type NinaNaturClient, type ShadowMark } from '../api/client';
 import { garden } from '../testing/gardens';
 import type { Status } from '../useStatus';
 import { useShadowMarks } from './useShadowMarks';
@@ -157,6 +157,45 @@ describe('useShadowMarks', () => {
     });
     await waitFor(() => expect(setStatus).toHaveBeenCalledWith(
       'Schattenmarkierungen konnten nicht gelesen werden.', 'problem'));
+  });
+
+  it('reads once on opening, though the answer brings marks', async () => {
+    // The marks it brought were a dependency of the read, and asked again.
+    const { result, client } = setup([seen(1), seen(2)]);
+    await waitFor(() => expect(result.current.marks).toHaveLength(2));
+    await act(async () => Promise.resolve());
+    expect(client.shadowMarks).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks a busy server again when it said to, and says nothing meanwhile', async () => {
+    vi.useFakeTimers();
+    const { result, client, setStatus } = setup([seen(1)], (fake) => {
+      fake.shadowMarks.mockRejectedValueOnce(new ApiError(429, 'busy', 10));
+    });
+    await act(async () => Promise.resolve());
+    expect(client.shadowMarks).toHaveBeenCalledTimes(1);
+    expect(result.current.marks).toHaveLength(0);
+
+    await act(async () => vi.advanceTimersByTime(10_000));
+    await act(async () => Promise.resolve());
+    expect(client.shadowMarks).toHaveBeenCalledTimes(2);
+    expect(result.current.marks).toHaveLength(1);
+    expect(setStatus).not.toHaveBeenCalled();
+  });
+
+  it('says so once a busy server has turned it away three times more', async () => {
+    vi.useFakeTimers();
+    const busy = new ApiError(429, 'busy', 10);
+    const { client, setStatus } = setup([], (fake) => {
+      fake.shadowMarks.mockRejectedValue(busy);
+    });
+    for (let wait = 0; wait < 4; wait += 1) {
+      await act(async () => Promise.resolve());
+      await act(async () => vi.advanceTimersByTime(10_000));
+    }
+    expect(client.shadowMarks).toHaveBeenCalledTimes(4);
+    expect(setStatus).toHaveBeenCalledWith(
+      'Schattenmarkierungen konnten nicht gelesen werden.', 'problem');
   });
 
   it('re-reads with every change of a garden that has marks, and not one without', async () => {

@@ -185,3 +185,21 @@ def test_a_changed_crown_base_makes_the_map_stale(client: TestClient,
     _patch(client, token, tree, crown_base_m=4.0)
     after = garden_by_token(conn, token)
     assert after is not None and signature_of(after) != before
+
+
+def test_the_page_is_told_where_no_crown_fits_and_a_base_would_change_nothing(
+    client: TestClient,
+) -> None:
+    """A tree drawn as a long band casts as the solid a row is, from the
+    ground: the form asked for its crown base anyway, and a base typed there
+    changed nothing (review of stage 3, 2026-09-28). The answer says which
+    crowns fit; a house is no crown at all."""
+    token, tree = _garden_with_a_tree(client)
+    assert _patch(client, token, tree, label="Linde")["crown_fits"] is True
+    band = _patch(client, token, tree, shape="polygon",
+                  points=[[0, 0], [12, 0], [12, 1], [0, 1]])
+    assert band["crown_fits"] is False
+    house = client.post(f"/api/v1/gardens/{token}/obstacles", json={
+        "kind": "house", "shape": "rect", "x": 20, "y": 0, "width": 8, "depth": 6,
+        "height": 7}).json()["obstacles"][-1]
+    assert house["crown_fits"] is None

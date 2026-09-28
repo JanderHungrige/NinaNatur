@@ -118,7 +118,13 @@ ANSWERS: dict[str, tuple[tuple[float, ...], ...]] = {
              (4.35, 0.56, 0.404, 1.84, 6.47), (5.8, 0.731, 0.493, 2.51, 7.38),
              (11.75, 0.933, 0.918, 5.0, 9.0), (12.98, 0.8, 0.908, 5.42, 9.0),
              (11.77, 0.93, 0.88, 4.9, 9.0), (12.29, 0.958, 0.929, 5.13, 9.0),
-             (11.04, 0.883, 0.831, 4.62, 9.0)),
+             (11.04, 0.883, 0.831, 4.62, 9.0),
+             # And the roofs the gable alone left free to change unnoticed
+             # (review of feature 5, 2026-09-28): the house hipped, asked
+             # beside its western end, and pent, surveyed falling north (its
+             # eaves over the spot) and falling south (its top).
+             (9.79, 0.901, 0.81, 4.14, 9.0), (5.8, 0.731, 0.493, 2.51, 7.38),
+             (5.71, 0.665, 0.454, 2.47, 7.32)),
 }
 #: 26.2 to 26.4 answered three spots; 26.5 pins roofed ones beside them, and
 #: 26.6 a crowned one.
@@ -136,6 +142,14 @@ BED_ANSWERS: dict[str, tuple[float, ...]] = {
 #: it, through the crown's own path in the grid (doc 121).
 TREE_BED_ANSWERS: dict[str, tuple[float, ...]] = {
     "26.6": (11.73, 0.903, 0.853, 5.5, 9.0),
+}
+#: A bed 2 m north of a gabled house, Berlin, through the grid's roof path
+#: (doc 120) — the bed as stored, then a cell on each pitch: hours, sky,
+#: relative light, sunshine to expect. And on ground rising 5 % northwards,
+#: the bed's middle cell and the north pitch: hours and sky.
+ROOF_ANSWERS: dict[str, tuple[tuple[float, ...], ...]] = {
+    "26.6": ((8.78, 0.829, 0.699, 4.29, 9.0), (6.95, 0.789, 0.442, 3.53),
+             (11.4, 0.789, 0.959, 5.33), (9.57, 0.848), (6.95, 0.789)),
 }
 #: How near: hours and values to two places, shares of sky and light to three.
 TOLERANCE = (0.02, 0.002, 0.002, 0.02, 0.02)
@@ -184,9 +198,14 @@ def test_the_model_answers_what_its_version_says() -> None:
                              width=6.0, height=15.0, crown_base_m=2.0))]
     shrub = [casting(Element(element_id=4, kind="shrub", shape="circle", x=0.0, y=-3.0,
                              width=3.0, height=2.5))]
+    roofed = [[casting(Element(element_id=5, kind="house", shape="polygon", x=0.0, y=0.0,
+                               points=[[-5, -13], [5, -13], [5, -8], [-5, -8]], height=9.0,
+                               roof=roof, eaves_m=5.0, roof_fall_deg=fall))]
+              for roof, fall in (("hip", None), ("pent", 0.0), ("pent", 180.0))]
     spots = (([], 0.0, 0.0), (house, 0.0, -6.0), (ell, 7.5, 7.5), (gabled, 0.0, -6.0),
              (gabled, 0.0, -1.0), (lime, 0.0, -8.0), (lime, 0.0, -1.0), (typed, 0.0, -1.0),
-             (shrub, 0.0, -1.0))
+             (shrub, 0.0, -1.0), (roofed[0], -6.5, -6.0), (roofed[1], 0.0, -6.0),
+             (roofed[2], 0.0, -6.0))
     for (obstacles, x, y), pinned in zip(spots, ANSWERS[light.MODEL_VERSION], strict=True):
         got = point_sky_light(parts_of(obstacles), moments, climate, x, y)
         hours, sky = float(got.morning[0] + got.afternoon[0]), float(got.sky[0])
@@ -218,3 +237,54 @@ def test_the_app_stores_what_its_version_says_under_a_tree(conn: sqlite3.Connect
                                  "ellenberg_l"))
     assert light.MODEL_VERSION in TREE_BED_ANSWERS, "a new version pins its answers here"
     assert _near(got, TREE_BED_ANSWERS[light.MODEL_VERSION]), got
+
+
+def test_the_app_stores_what_its_version_says_behind_a_roof(conn: sqlite3.Connection) -> None:
+    """The point path pins the roofs; this pins the grid's roof path — the
+    cut in `raster.covered`, the cells on the planes — and the same garden on
+    rising ground, where the roof stands on its base (review of feature 5,
+    2026-09-28: each could change with the point pins still green)."""
+    from ninanatur.garden.lightgrid import compute_grid
+    from ninanatur.garden.lightview import shading_obstacles
+    from ninanatur.geo.terrain import TerrainWindow
+
+    client = TestClient(app)
+    token = _drawn(client, with_wall=False)
+    house = client.post(f"/api/v1/gardens/{token}/obstacles", json={
+        "kind": "house", "x": 2.0, "y": -4.5, "shape": "rect", "width": 10.0, "depth": 5.0,
+        "height": 9.0}).json()["obstacles"][-1]["obstacle_id"]
+    client.patch(f"/api/v1/gardens/{token}/obstacles/{house}",
+                 json={"roof": "gable", "eaves_m": 5.0})
+    client.post(f"/api/v1/gardens/{token}/light")
+    bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    grid = client.get(f"/api/v1/gardens/{token}/light").json()
+
+    def cell(x: float, y: float) -> tuple[float, ...]:
+        i = (int((y - grid["min_y"]) // grid["cell_m"]) * grid["cols"]
+             + int((x - grid["min_x"]) // grid["cell_m"]))
+        assert grid["roof"][i]
+        return tuple(grid[k][i] for k in ("hours", "sky", "relative", "expected"))
+
+    assert light.MODEL_VERSION in ROOF_ANSWERS, "a new version pins its answers here"
+    pinned = ROOF_ANSWERS[light.MODEL_VERSION]
+    stored = tuple(bed[k] for k in ("sun_hours", "sky_view", "relative_light",
+                                    "expected_sun_h", "ellenberg_l"))
+    assert _near(stored, pinned[0]), stored
+    assert _near(cell(2.0, -3.0), pinned[1]) and _near(cell(2.0, -6.0), pinned[2])
+
+    garden_id = int(conn.execute("SELECT garden_id FROM garden WHERE share_token = ?",
+                                 (token,)).fetchone()[0])
+    garden = load_garden(conn, garden_id)
+    rising = TerrainWindow(min_x=-100.0, min_y=-100.0, cell_m=1.0, cols=200, rows=200,
+                           heights=[100.0 + (row - 100) * 0.05 for row in range(200)
+                                    for _ in range(200)],
+                           source="Test", licence="-", attribution="-", vertical_step_m=0.01)
+    sloped = compute_grid(garden, shading_obstacles(conn, garden), ground=rising)
+    assert sloped is not None
+
+    def sloped_at(x: float, y: float) -> tuple[float, ...]:
+        i = (int((y - sloped.min_y) // sloped.cell_m) * sloped.cols
+             + int((x - sloped.min_x) // sloped.cell_m))
+        return (float(sloped.hours[i] or 0.0), float(sloped.sky[i] or 0.0))
+
+    assert _near(sloped_at(2.0, 1.5), pinned[3]) and _near(sloped_at(2.0, -3.0), pinned[4])

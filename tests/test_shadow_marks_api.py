@@ -242,3 +242,23 @@ def test_marks_go_with_their_thing_and_their_garden(conn: sqlite3.Connection) ->
     _mark(client, _token, other, 2.0, 5.0)
     client.delete(f"/api/v1/gardens/{_token}")
     assert conn.execute("SELECT COUNT(*) FROM shadow_mark").fetchone()[0] == 0
+
+
+def test_opening_a_garden_without_marks_is_never_turned_away(conn: sqlite3.Connection) -> None:
+    """The page reads the marks of every garden it opens. Only reading some
+    takes one of the two heavy slots; with both taken, a garden without marks
+    still opens, and one with marks is asked to wait (review, 2026-09-28)."""
+    from ninanatur.api import ratelimit
+
+    client = TestClient(app)
+    empty, _ = _garden(client)
+    marked, shed = _garden(client)
+    _mark(client, marked, shed, 2.0, 5.0)
+    held = [ratelimit.HEAVY.acquire(blocking=False) for _ in range(ratelimit.HEAVY_SLOTS)]
+    try:
+        assert all(held)
+        assert client.get(f"/api/v1/gardens/{empty}/shadow-marks").json() == []
+        assert client.get(f"/api/v1/gardens/{marked}/shadow-marks").status_code == 429
+    finally:
+        for _ in held:
+            ratelimit.HEAVY.release()

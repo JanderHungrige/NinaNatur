@@ -62,7 +62,7 @@ test_files:
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
 data_flow: reads-existing
-last_synced: 2026-09-21
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -133,7 +133,11 @@ the roof the model knows, in garden metres.
 - **gable** — the ridge, wall to wall along the model's axis.
 - **hip** — the shortened ridge, and a hip from each of its ends towards the
   two corners of the roof's rectangle at that end — ending on the house's own
-  corner nearest to each.
+  corner nearest to each. Where a survey runs the ridge the shorter way, the
+  ridge is a point and the model's planes crease on the end walls, half the
+  wall's length either side of the middle, so the hips end there (review of
+  feature 5, 2026-09-28: they were drawn to the corners, a metre from the
+  model's creases on a 10 × 12 m house).
 - **pent** (surveyed) — the upper edge, where the one plane is highest: the
   house's own walls that face uphill, in its upper half (`uphill_walls`). The
   model's edge is its rectangle's, across the surveyed fall; a surveyed fall is

@@ -54,13 +54,29 @@ def roof_lines(
     lines: list[Line] = [] if math.dist(start, end) < 1e-9 else [surface.ridge]
     box = box_for(footprint, True, fall_deg)
     if roof is Roof.HIP and box is not None:
-        (cx, cy), (ux, uy), long_half, short_half = box
-        for tip, way in ((start, -1.0), (end, 1.0)):
-            for side in (-1.0, 1.0):
-                corner = (cx + way * ux * long_half - side * uy * short_half,
-                          cy + way * uy * long_half + side * ux * short_half)
-                lines.append((tip, _nearest_corner(footprint, corner)))
+        lines += _hips(footprint, box, (start, end))
     return [piece for line in lines for piece in inside_parts(line, footprint)]
+
+
+def _hips(footprint: list[Point],
+          box: tuple[Point, tuple[float, float], float, float],
+          ridge: Line) -> list[Line]:
+    """From each end of the ridge, where the model's planes crease: to the
+    rectangle's corner when the ridge runs the longer way — drawn to the
+    house's own nearest corner (doc 98). When a survey runs it the shorter
+    way the ridge is a point and the planes crease on the end walls, a
+    half-length either side of the middle; drawn to the corners, the hips
+    were not the model's (review of feature 5, 2026-09-28)."""
+    (cx, cy), (ux, uy), long_half, short_half = box
+    reach = min(short_half, long_half)
+    lines: list[Line] = []
+    for tip, way in ((ridge[0], -1.0), (ridge[1], 1.0)):
+        for side in (-1.0, 1.0):
+            crease = (cx + way * ux * long_half - side * uy * reach,
+                      cy + way * uy * long_half + side * ux * reach)
+            on_wall = reach < short_half and _inside_or_on(crease, footprint)
+            lines.append((tip, crease if on_wall else _nearest_corner(footprint, crease)))
+    return lines
 
 
 #: A wall faces uphill when its outward side is within 45° of straight uphill.

@@ -191,6 +191,9 @@ returns is arithmetic over numbers.
   445 MB a tile, fetching the other three is not the trade the terrain's is.
 - **Nothing reads the crown base yet.** It is stored, credited and tested; the
   shading model starts using it in Wave 26, which is what it was asked for.
+  *Resolved by doc 121 (2026-09-28): every tree nobody has given a base takes
+  the laser's, from a window that now keeps the garden it was read around and
+  whether a building model classified it.*
 - **Bayern's own classification is not used** (above): the footprint rule
   covers it, and a second rule would only differ at the seam.
 - A zipped cloud costs the volume twice for a while — the archive and the

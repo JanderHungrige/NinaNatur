@@ -204,10 +204,14 @@ def fill_crown_bases(conn: sqlite3.Connection, garden: Garden) -> int:
         base = crown_base_under(window, disc[0], disc[1], disc[2], built)
         if base is None:
             continue
-        conn.execute(
+        # Asked again of the row itself: the garden was read before the laser
+        # was, and a base typed in between is the gardener's (review of stage
+        # 3, 2026-09-28) — the survey guards its own writes the same way.
+        written = conn.execute(
             "UPDATE element SET crown_base_m = ?, crown_base_source = 'measured'"
-            " WHERE element_id = ?", (base, tree.element_id))
-        filled += 1
+            " WHERE element_id = ? AND crown_base_m IS NULL AND crown_base_source IS NULL",
+            (base, tree.element_id))
+        filled += written.rowcount
     conn.commit()
     return filled
 

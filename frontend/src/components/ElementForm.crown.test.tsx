@@ -16,6 +16,14 @@ describe('ElementForm — the crown base', () => {
     expect(screen.queryByLabelText('Kronenansatz (m)')).toBeNull();
   });
 
+  it('does not ask where no crown fits the outline, and says why', () => {
+    // A long band casts as a row, from the ground: a base typed there changed
+    // nothing (review of stage 3, 2026-09-28).
+    open({ kind: 'tree', height: 12, crownFits: false });
+    expect(screen.queryByLabelText('Kronenansatz (m)')).toBeNull();
+    expect(screen.getByText(/Zu lang oder zu schmal für eine Krone/)).not.toBeNull();
+  });
+
   it('says what is assumed when nobody gave it: a third of a tree, the ground under a shrub', () => {
     open({ kind: 'tree', height: 12 });
     expect(noteFor(screen.getByLabelText('Kronenansatz (m)'))).toBe(

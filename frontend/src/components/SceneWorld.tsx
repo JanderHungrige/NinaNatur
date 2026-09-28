@@ -98,14 +98,17 @@ function World({
         </g>
       )}
 
+      {/* A tool armed, the plan takes the click, not a patch on it, as the
+          shapes let it through: a mark aimed at a planted bed chose the
+          planting instead (review of stage 3, 2026-09-28). */}
       <ClusterLayer
         clusters={clusters}
         selectedPlantingId={selectedPlantingId}
         freshPlantingId={freshPlantingId}
-        onSelectCluster={onSelectCluster}
-        onGrabCluster={onGrabCluster}
+        onSelectCluster={armed ? undefined : onSelectCluster}
+        onGrabCluster={armed ? undefined : onGrabCluster}
         spacing={spacing}
-        onShowInfo={onShowClusterInfo}
+        onShowInfo={armed ? undefined : onShowClusterInfo}
       />
 
       <ShadowMarkLayer marks={shadowMarks} />

@@ -91,35 +91,69 @@ def _triangles(polygon: Polygon) -> list[Polygon]:
 
 
 def _merged(pieces: list[Ring]) -> list[Ring]:
-    """Neighbours joined wherever the join stays convex, until none can be."""
-    pieces = list(pieces)
-    joined = True
-    while joined:
-        joined = False
-        for i in range(len(pieces)):
-            for j in range(i + 1, len(pieces)):
-                both = _join(pieces[i], pieces[j])
-                if both is not None:
-                    pieces[i] = both
-                    del pieces[j]
-                    joined = True
-                    break
-            if joined:
-                break
-    return pieces
+    """Neighbours joined wherever the join stays convex, until none can be.
+
+    A shared edge is looked up by its corners, not searched for: a search of
+    every pair from the start after every join grew with the cube of the
+    corners, and a 500-corner outline took 18 s to split — in the serving
+    process too, once roofs cast through their parts (review of stage 3,
+    2026-09-28)."""
+    alive = dict(enumerate(pieces))
+    owner: dict[tuple[Key, Key], int] = {}
+    for index, ring in alive.items():
+        _own(owner, ring, index)
+    waiting = sorted(alive, reverse=True)
+    while waiting:
+        index = waiting.pop()
+        part = alive.get(index)
+        if part is None:
+            continue
+        for k in range(len(part)):
+            p, q = part[k], part[(k + 1) % len(part)]
+            other = owner.get((_key(q), _key(p)))
+            if other is None or other == index:
+                continue
+            both = _join(part, k, alive[other])
+            if both is None:
+                continue
+            _own(owner, part, None)
+            _own(owner, alive.pop(other), None)
+            alive[index] = both
+            _own(owner, both, index)
+            waiting.append(index)
+            break
+    return list(alive.values())
 
 
-def _join(a: Ring, b: Ring) -> Ring | None:
-    """The two parts as one, if they share an edge and the result is convex."""
-    for i in range(len(a)):
-        p, q = a[i], a[(i + 1) % len(a)]
-        for j in range(len(b)):
-            if _same(b[j], q) and _same(b[(j + 1) % len(b)], p):
-                # Walk a from q round to p, then b from p round to q.
-                ring = [a[(i + 1 + k) % len(a)] for k in range(len(a))]
-                ring += [b[(j + 2 + k) % len(b)] for k in range(len(b) - 2)]
-                merged = tuple(_without_straight(ring))
-                return merged if is_convex(list(merged)) else None
+Key = tuple[float, float]
+
+
+def _key(point: tuple[float, float]) -> Key:
+    """A corner as the index knows it: to the nanometre `_same` compares at."""
+    return (round(point[0], 9), round(point[1], 9))
+
+
+def _own(owner: dict[tuple[Key, Key], int], ring: Ring, index: int | None) -> None:
+    """Enter a part's edges in the index — or, with None, take them out."""
+    for k in range(len(ring)):
+        edge = (_key(ring[k]), _key(ring[(k + 1) % len(ring)]))
+        if index is None:
+            owner.pop(edge, None)
+        else:
+            owner[edge] = index
+
+
+def _join(a: Ring, i: int, b: Ring) -> Ring | None:
+    """The two parts as one across a's edge i, which b shares the other way
+    round, if the result is convex."""
+    p, q = a[i], a[(i + 1) % len(a)]
+    for j in range(len(b)):
+        if _same(b[j], q) and _same(b[(j + 1) % len(b)], p):
+            # Walk a from q round to p, then b from p round to q.
+            ring = [a[(i + 1 + k) % len(a)] for k in range(len(a))]
+            ring += [b[(j + 2 + k) % len(b)] for k in range(len(b) - 2)]
+            merged = tuple(_without_straight(ring))
+            return merged if is_convex(list(merged)) else None
     return None
 
 

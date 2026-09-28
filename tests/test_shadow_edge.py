@@ -86,6 +86,22 @@ def test_a_mark_beside_the_shadow_reads_a_turn_about_the_thing() -> None:
         assert reading.turned_deg == pytest.approx(expected)
 
 
+def test_at_a_corner_the_way_the_miss_runs_says_which_edge_it_is() -> None:
+    """Nearest a corner of the shadow, two edges are equally near. A miss
+    that runs mostly along the sun is about the far edge, and reads a height;
+    one mostly across it is about the side (review of stage 3: ring order
+    decided, and a miss along the sun read "seitlich")."""
+    block = Obstacle(footprint=[(-5.0, -4.0), (5.0, -4.0), (5.0, 4.0), (-5.0, 4.0)],
+                     height=9.0)
+    sun = SunPosition(altitude=40.0, azimuth=180.0)
+    corner_y = 4.0 + 9.0 / math.tan(math.radians(40.0))
+    along = read_edge(block, sun, 5.8, corner_y + 1.8)
+    across = read_edge(block, sun, 7.0, corner_y + 0.5)
+    assert along is not None and across is not None
+    assert (along.edge, along.height_m is not None) == ("far", True)
+    assert (across.edge, across.height_m) == ("side", None)
+
+
 def test_a_miss_straight_towards_the_thing_is_no_turn() -> None:
     """An evening sun from the west: the shadow runs east. A mark 4 m north of
     the box, beside its shadow, reads a miss that points at the box — which a

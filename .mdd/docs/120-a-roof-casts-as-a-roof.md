@@ -6,14 +6,16 @@ initiative: ninanatur
 wave: ninanatur-wave-26
 wave_status: active
 depends_on: [116-no-hull, 117-room-to-compute, 94-which-way-the-ridge-runs]
-relates: [93-where-the-roof-came-from, 98-what-the-style-has-not-drawn, 119-energy-not-hours]
+relates: [93-where-the-roof-came-from, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow, 119-energy-not-hours]
 source_files:
   - ninanatur/garden/casting.py
   - ninanatur/solar/day.py
   - ninanatur/solar/field.py
   - ninanatur/garden/ground.py
   - ninanatur/garden/lightgrid_cost.py
+  - ninanatur/garden/lightgrid_load.py
   - scripts/measure_roofs.py
+  - scripts/measure_neighbour_cost.py
   - ninanatur/solar/raster.py
   - ninanatur/solar/convex_parts.py
   - ninanatur/garden/roofshape.py
@@ -28,11 +30,13 @@ routes: []
 models: []
 test_files:
   - tests/test_roof_shadow.py
+  - tests/test_roof_cells.py
+  - tests/test_roof_lines.py
   - tests/test_light_model_version.py
   - tests/test_light_grid_cost.py
   - tests/test_roof_direction.py
 data_flow: writes-existing
-last_synced: 2026-09-22
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -46,7 +50,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "The plan's decorative drop shadow is one offset per object (`api/gardens.py`), so it still uses the block's averaged height; a roof cannot be an offset. The day's playback (`/shadows`) draws the roof exactly — it did not until the review of 2026-09-28 made it cast through `garden.casting`, as the light model does."
-  - "A roof's planes come from the smallest enclosing rectangle of the whole footprint (doc 94), so an L-shaped house has one ridge over both wings, not a roof per wing: the short wing's wall stands up to the roof above it (8.2 m on the tests' L), and cells in the corner the wings enclose lose up to 0.71 h a season against the block. Never below the eaves: over the footprint the rectangle's planes cannot fall that low, which is why no eaves 'skirt' is needed."
+  - "A roof's planes come from the smallest enclosing rectangle of the whole footprint (doc 94), so an L-shaped house has one ridge over both wings, not a roof per wing: the walls facing the corner the wings enclose stand up to the roof above them — on the tests' L 9 m along the one under the ridge, falling from 9 m to the eaves along the other — and cells in that corner lose up to 0.84 h a season against the 7 m block (0.5 m cells; the 0.71 h first written here did not reproduce, review of 2026-09-28). Never below the eaves: over the footprint the rectangle's planes cannot fall that low, which is why no eaves 'skirt' is needed."
   - "On a hipped house that is not a rectangle the plan draws each hip to the house's own nearest corner (doc 98, at the owner's request of 2026-09-21), while the model's planes are the rectangle's: there the drawn hip and the crease the light model uses are up to a couple of metres apart. On every rectangle they are the same line."
   - "`RISE_KEPT` still answers for mixed, other and unknown roofs and for a pent whose fall nobody has surveyed — every shape the model cannot place. Their cells stand on a flat roof at the ridge while their shadow keeps the guess, as before this feature."
   - "A garden of many roofed houses drawn *on* its plot can run past the 5 s budget whatever the cell: a plane costs per plane, not per cell (36 hipped houses: 6.6 s at 5 m). The estimate says so rather than promising; houses round the plot, the common case from the map, stay within it."
@@ -158,10 +162,24 @@ per plane, not per cell: 17 ms a plane on the plot and 10 round it, and
 0.0007 ms a cell a plane beside (`lightgrid_cost`), fitted at forced cells from
 5 m to 0.5 m on 36 houses as blocks against the same houses as gables and
 hips. The first version priced the planes per cell alone, and 36 hipped houses
-were estimated at 4.7 s and took 7.1. Now the estimate bounds every garden
-measured; on houses round the plot — the map's neighbours — 36 gables take
-3.9 s at 0.5 m. Cutting a part's planes all at once was tried and was slower:
-with two to four planes, the masks cost more than the calls they saved.
+were estimated at 4.7 s and took 7.1. On houses round the plot — the map's
+neighbours — 36 gables take 3.9 s at 0.5 m. Cutting a part's planes all at
+once was tried and was slower: with two to four planes, the masks cost more
+than the calls they saved.
+
+The claim that the estimate bounded every garden measured did not survive the
+review of 2026-09-28: 36 neighbours with their near walls 1 to 9 m past the
+grid's edge — blocks as much as gables, a price older than this feature — took
+1.8 s at 2 m cells where the far price said 1.0. A neighbour within its own
+height of the grid throws its shadow in whenever the sun is below 45°, not
+only while shadows are long, so it now adds 35 ms to the far price
+(`lightgrid_load`, `REACH_PART_MS`); from 11 m out the far price held and still
+stands alone. The same rings, and the crowns' cases, hold now
+(`scripts.measure_neighbour_cost`, `scripts.measure_crown_cost`); a garden
+from the map with its own gable, 30 neighbours and 22 trees still gets 0.5 m.
+And the parts a many-cornered roof is cast through are found by looking each
+neighbour up, not by searching every pair: a 500-corner gable's day of
+shadows took 18.7 s in the serving process, and takes 0.8 (doc 117).
 
 **The model's older pinned answers do not move** — their houses have no roofs
 — and two were added behind the same house with a gable on it, one where its
