@@ -82,7 +82,8 @@ def to_out(garden: Garden) -> GardenOut:
                 aspect_deg=b.aspect_deg, light_computed_at=b.light_computed_at,
                 sky_view=b.sky_view, relative_light=b.relative_light,
                 expected_sun_h=b.expected_sun_h,
-                height_above_ground=b.height_above_ground, label=b.label,
+                height_above_ground=b.height_above_ground, crown_fits=crown_fits(b),
+                label=b.label,
                 plantings=[
                     PlantingOut(
                         planting_id=p.planting_id, taxon_id=p.taxon_id,

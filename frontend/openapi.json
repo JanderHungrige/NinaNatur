@@ -183,6 +183,10 @@
             ],
             "title": "Constraint Hint"
           },
+          "crown_fits": {
+            "title": "Crown Fits",
+            "type": "boolean"
+          },
           "ellenberg_l": {
             "anyOf": [
               {
@@ -421,6 +425,7 @@
           "expected_sun_h",
           "light_computed_at",
           "height_above_ground",
+          "crown_fits",
           "label",
           "plantings"
         ],

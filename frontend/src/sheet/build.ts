@@ -122,7 +122,7 @@ export function bed(
     constraint_hint: null, name, polygon: corners.map(([cx, cy]) => [(cx ?? 0) + x, (cy ?? 0) + y]),
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: 7.5, ellenberg_m: 5, ellenberg_n: 5,
     ellenberg_r: 6, sun_hours: 6, slope_deg: null, aspect_deg: null, sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: null,
-    height_above_ground: 0, label: null, plantings,
+    height_above_ground: 0, crown_fits: true, label: null, plantings,
     ...extra,
   };
 }

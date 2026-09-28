@@ -103,7 +103,7 @@ describe('formValues — where the element form starts', () => {
     expect(formValues(raised)).toEqual({
       kind: 'bed', label: 'Hochbeet', plantings: 1, shape: 'polygon', roof: 'unknown',
       roofSource: 'user', roofFallDeg: null, roofPitchDeg: null, eavesM: null, eavesSource: null,
-      crownBaseM: null, crownBaseSource: null, crownFits: null, height: null, width: null,
+      crownBaseM: null, crownBaseSource: null, crownFits: true, height: null, width: null,
       soilType: 'sand', moisture: 'dry', heightAboveGround: 0.4,
     });
   });
@@ -115,6 +115,12 @@ describe('formValues — where the element form starts', () => {
       crownBaseM: null, crownBaseSource: null, crownFits: true, height: 2.4, width: null,
       soilType: null, moisture: null, heightAboveGround: 0,
     });
+  });
+
+  it('says whether a crown fits a bed, for a form that turns it into a tree', () => {
+    // A bed turned into a tree was asked for a crown base whatever its
+    // outline: only obstacles said whether a crown fits (review of 596a89f).
+    expect(formValues(bed({ crown_fits: false })).crownFits).toBe(false);
   });
 
   it('reads where a crown starts and who said so (doc 121)', () => {

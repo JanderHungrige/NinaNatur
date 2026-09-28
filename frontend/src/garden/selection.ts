@@ -129,7 +129,7 @@ export function formValues(item: Bed | Obstacle): FormValues {
       eavesSource: null,
       crownBaseM: null,
       crownBaseSource: null,
-      crownFits: null,
+      crownFits: item.crown_fits,
       height: null,
       width: item.width,
       soilType: item.soil_type,

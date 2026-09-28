@@ -46,11 +46,11 @@ class Load:
     #: over the box and the tallest roof on it (`relief_of`).
     relief_m: float
 
-    def estimate_ms(self, cells: float) -> float:
+    def estimate_ms(self, cells: float, cell_m: float) -> float:
         return estimate_ms(cells, self.parts, self.near, self.terrain, self.deciduous,
                            self.tilted, self.near_planes, self.far_planes,
                            far_crowns=self.far_crowns, near_crowns=self.near_crowns,
-                           reaching=self.reaching, relief_m=self.relief_m)
+                           reaching=self.reaching, relief_m=self.relief_m, cell_m=cell_m)
 
 
 def load_of(parts: list[Part], box: Box, ground: TerrainWindow | None,
@@ -128,7 +128,8 @@ def grid_cost(garden: Garden, obstacles: list[Obstacle], cell: float,
         return 0.0
     load = load_of(parts_of(standing_on(obstacles, ground)), box, ground,
                    roofs_of(garden, ground))
-    return load.estimate_ms(cells_at(max(box[2] - box[0], 1.0), max(box[3] - box[1], 1.0), cell))
+    return load.estimate_ms(cells_at(max(box[2] - box[0], 1.0), max(box[3] - box[1], 1.0), cell),
+                            cell)
 
 
 __all__ = ["REACH_ALTITUDE_DEG", "Load", "grid_cost", "load_of", "relief_of"]

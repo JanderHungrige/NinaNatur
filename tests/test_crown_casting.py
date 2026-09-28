@@ -204,3 +204,6 @@ def test_the_page_is_told_where_no_crown_fits_and_a_base_would_change_nothing(
         "kind": "hedge", "shape": "line", "x": 20, "y": 0, "width": 1,
         "points": [[0, 0], [10, 0]], "height": 2}).json()["obstacles"][-1]
     assert hedge["crown_fits"] is False
+    beds = client.post(f"/api/v1/gardens/{token}/beds", json={
+        "name": "Band", "polygon": [[0, -10], [12, -10], [12, -9], [0, -9]]}).json()["beds"]
+    assert beds[-1]["crown_fits"] is False, "a bed a form may turn into a tree, too"

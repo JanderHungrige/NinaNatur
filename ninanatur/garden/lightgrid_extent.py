@@ -105,7 +105,7 @@ def check_extent(
     cells = cells_at(width, depth, CELL_LADDER_M[-1])
     spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted, near_planes, far_planes,
                         far_crowns=far_crowns, near_crowns=near_crowns, reaching=reaching,
-                        relief_m=relief_m)
+                        relief_m=relief_m, cell_m=CELL_LADDER_M[-1])
     if cells > MAX_CELLS or spent / 1000 > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
         raise GardenTooLarge(
             f"Garten zu groß: {width:.0f} × {depth:.0f} m lassen sich nicht in "
@@ -132,7 +132,8 @@ def cell_size_for(width_m: float, depth_m: float, parts: int = 0,
         # million of them (review, 2026-09-22).
         spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted,
                             near_planes, far_planes, far_crowns=far_crowns,
-                            near_crowns=near_crowns, reaching=reaching, relief_m=relief_m)
+                            near_crowns=near_crowns, reaching=reaching, relief_m=relief_m,
+                            cell_m=cell)
         if cells <= MAX_CELLS and spent <= GRID_BUDGET_S * 1000:
             return cell
     return CELL_LADDER_M[-1]

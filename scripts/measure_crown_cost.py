@@ -8,8 +8,10 @@ outside it, where a crown throws its shadow in at most moments; and 12 beside
 a gabled house, and 12 on a slope, where every crown's box of cells is
 stretched by the height between the grid's lowest cell and its highest
 (review of stage 3, 2026-09-28) — as it is beside a flat or unshaped roof,
-and not on level surveyed ground (review of 45eb56a); and a garden as the
-map makes it, on the level and on a slope. Each line gives the estimate
+and not on level surveyed ground (review of 45eb56a); a garden as the map
+makes it, on the level and on a slope; and an ordinary 24 × 40 m garden with
+trees, a tall house and neighbours, where a price per cell of the grid fell
+short (review of 596a89f). Each line gives the estimate
 (`lightgrid_cost.estimate_ms`) and the best of two runs. Timings are this
 machine's; what must hold anywhere is that the estimate is the larger. A few
 minutes.
@@ -111,10 +113,34 @@ def slope() -> TerrainWindow:
         source="Test", licence="-", attribution="-", vertical_step_m=0.01)
 
 
-def measure(trees: list[Element], cell: float,
-            ground: TerrainWindow | None = None) -> tuple[float, float]:
+#: An ordinary garden: 24 × 40 m, a 34 × 50 m grid (review of 596a89f).
+SMALL = [[-12.0, -20.0], [12.0, -20.0], [12.0, 20.0], [-12.0, 20.0]]
+
+
+def small_garden(trees: int, roof: str, height: float, neighbours: int) -> list[Element]:
+    """Trees 6 m across and 10 m tall on the small plot, a house at its north
+    end, and neighbours from the map round it, 3 to 15 m past the grid."""
+    rng = random.Random(trees + neighbours)
+    found = [Element(element_id=9, kind="house", shape="polygon", x=0.0, y=0.0, height=height,
+                     points=[[-5.0, 12.0], [5.0, 12.0], [5.0, 19.0], [-5.0, 19.0]], roof=roof)]
+    found += [Element(element_id=50 + i, kind="tree", shape="circle", x=-8 + 5.3 * (i % 4),
+                      y=-14 + 7 * (i // 4), width=6.0, height=10.0) for i in range(trees)]
+    for i in range(neighbours):
+        gap = rng.uniform(3.0, 15.0) + 4.0
+        side = [(rng.uniform(-17, 17), 25 + gap), (rng.uniform(-17, 17), -25 - gap),
+                (17 + gap, rng.uniform(-25, 25)), (-17 - gap, rng.uniform(-25, 25))][i % 4]
+        found.append(Element(element_id=100 + i, kind="house", shape="polygon", x=side[0],
+                             y=side[1], points=[[-4, -4], [4, -4], [4, 4], [-4, 4]],
+                             height=rng.uniform(6, 11), height_source="osm", roof="gable",
+                             roof_source="osm", eaves_m=5.0, outline_source="osm"))
+    return found
+
+
+def measure(trees: list[Element], cell: float, ground: TerrainWindow | None = None,
+            outline: list[list[float]] | None = None) -> tuple[float, float]:
     """(estimate, measured) in milliseconds."""
-    plot = Element(element_id=1, kind="garden", shape="polygon", x=0.0, y=0.0, points=PLOT)
+    plot = Element(element_id=1, kind="garden", shape="polygon", x=0.0, y=0.0,
+                   points=outline or PLOT)
     garden = Garden(garden_id=1, share_token="t", owner_id=None, name="g", latitude=LAT,
                     longitude=LON, created_at="", updated_at="", elements=[plot, *trees])
     obstacles = lightview.shading_obstacles(None, garden)  # type: ignore[arg-type]
@@ -140,9 +166,19 @@ def main() -> None:
               ("12 trees on level surveyed ground", on_the_plot(12), level()),
               ("a garden from the map", from_the_map(), None),
               ("a garden from the map on a slope", from_the_map(), slope())]
-    for name, trees, ground in cases:
+    small = [("24 × 40 m: 10 trees, a flat 9 m house", small_garden(10, "flat", 9.0, 0)),
+             ("24 × 40 m: 16 trees, a 15 m house of no known shape",
+              small_garden(16, "unknown", 15.0, 0)),
+             ("24 × 40 m: 20 trees, a 15 m house, 15 neighbours",
+              small_garden(20, "unknown", 15.0, 15)),
+             ("24 × 40 m: 20 trees, an 18 m house, 20 neighbours",
+              small_garden(20, "unknown", 18.0, 20))]
+    runs: list[tuple[str, list[Element], TerrainWindow | None, list[list[float]] | None]] = [
+        (name, trees, ground, None) for name, trees, ground in cases]
+    runs += [(name, trees, None, SMALL) for name, trees in small]
+    for name, trees, ground, outline in runs:
         for cell in (2.0, 1.0, 0.5):
-            estimate, took = measure(trees, cell, ground)
+            estimate, took = measure(trees, cell, ground, outline)
             verdict = "held" if estimate >= took else "UNDER THE ESTIMATE"
             print(f"{name}, {cell} m cells: estimate {estimate:6.0f} ms, "
                   f"took {took:6.0f} ms — {verdict}", flush=True)

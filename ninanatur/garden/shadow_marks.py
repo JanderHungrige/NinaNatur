@@ -116,6 +116,9 @@ def readings(garden: Garden, marks: list[ShadowMark]) -> list[Reading | None]:
 #: How far a height is changed to see what it moves, in metres: a metre, or
 #: half a low thing's height.
 STEP_M = 1.0
+#: How often a step that crosses a roof's pitch switch is halved before no
+#: height is said: down to 3 cm.
+HALVINGS = 6
 #: Below this share of what a height moves a block's edge, no height is said:
 #: the number would be more than four times a block's, and say more about the
 #: shape than about the height.
@@ -144,12 +147,22 @@ class _Cast:
         height = self.element.height or 0.0
         lower = reading.along_m > 0
         step = min(STEP_M, height / 2) if lower else STEP_M
-        if step <= 0:
-            return 0.0
-        key = -step if lower else step
-        if key not in self._stepped:
-            self._stepped[key] = casting(replace(self.element, height=height + key))
-        return reach_past(self._stepped[key], sun, reading.nearest, back=lower) / step
+        for _ in range(HALVINGS):
+            if step <= 0:
+                return 0.0
+            key = -step if lower else step
+            if key not in self._stepped:
+                self._stepped[key] = casting(replace(self.element, height=height + key))
+            stepped = self._stepped[key]
+            # A step across the pitch the model stops pitching a roof at (or
+            # eaves clamped to the ridge) measures the switch between a roof
+            # and a block, not a height: a hip of 7.54 m over 7 m eaves read a
+            # height that doubled the miss (review of 596a89f). Shorter steps,
+            # until one keeps to one side of it.
+            if (stepped.roof is None) == (self.obstacle.roof is None):
+                return reach_past(stepped, sun, reading.nearest, back=lower) / step
+            step /= 2
+        return 0.0
 
 
 def _as_height(reading: Reading, moved: float) -> Reading:

@@ -22,9 +22,10 @@ from fastapi.testclient import TestClient
 
 from ninanatur.api import shadow_marks as routes
 from ninanatur.api.deps import get_connection
+from ninanatur.garden.casting import casting
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.roofs import DEFAULT_EAVES_FRACTION
-from ninanatur.garden.shadow_marks import ShadowMark, _as_height, readings
+from ninanatur.garden.shadow_marks import ShadowMark, _as_height, _Cast, readings
 from ninanatur.ingest.db import connect, init_schema
 from ninanatur.solar.position import Location, SunPosition, sun_position
 from ninanatur.solar.shading import Obstacle
@@ -224,3 +225,20 @@ def test_a_lower_block_s_edge_lies_behind_by_cot_h() -> None:
 
     assert reach_past(_block(1.4), sun, edge, back=True) == pytest.approx(cot)
     assert reach_past(_block(2.4), sun, edge, back=True) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_step_across_the_pitch_the_model_stops_pitching_at_says_no_height() -> None:
+    """A hip barely steeper than 5°: a metre lower it is no roof at all but a
+    block at its ridge, and that switch — not the height — moved the edge.
+    Measured across it, the height said, typed in, took the miss from 0.18 m
+    to 0.48 m (review of 596a89f). Shorter steps keep to the pitched side,
+    where the eaves the gardener gave decide the edge: no height is said."""
+    hip = Element(element_id=6, kind="house", shape="polygon", x=0.0, y=0.0, height=4.685,
+                  points=[[-5.735, -4.995], [5.735, -4.995], [5.735, 4.995], [-5.735, 4.995]],
+                  roof="hip", eaves_m=4.15, eaves_source="user")
+    sun = SunPosition(altitude=38.01, azimuth=214.43)
+    reading = read_edge(casting(hip), sun, 8.25, 9.193)
+    assert reading is not None and reading.edge == "far" and reading.along_m > 0
+    assert casting(replace(hip, height=3.685)).roof is None, "a metre lower, a block"
+
+    assert _as_height(reading, _Cast(hip).moved(reading, sun)).height_m is None

@@ -166,7 +166,12 @@ near end read as a height, the page saying "zu kurz" and "zu hoch" at once.
   switches answered for the wrong direction: a gable cast flat said no
   height, eaves just above the ridge said 2.5 m where 0.75 was right, and
   eaves that only just cast the edge said "0,4 m zu hoch" of a ridge no
-  lowering could help (review of 45eb56a). No point of an edge moves faster
+  lowering could help (review of 45eb56a). A step that crosses the pitch the
+  model stops pitching a roof at (5°), or brings the ridge down to given
+  eaves, measures that switch between a roof and a block, not a height: it
+  is halved, down to 3 cm, until it keeps to one side, and where none does no
+  height is said (review of 596a89f: a hip just steeper than 5° read a height
+  that took its miss from 0.18 m to 0.48 m). No point of an edge moves faster
   than a block's; one that seems to is a gap between two shadows closing,
   and is taken at a block's rate. Where a metre moves it less than a quarter
   of what it moves a block's, no height is said: the number would be more

@@ -1043,6 +1043,8 @@ export interface components {
             bed_id: number;
             /** Constraint Hint */
             constraint_hint: string | null;
+            /** Crown Fits */
+            crown_fits: boolean;
             /** Ellenberg L */
             ellenberg_l: number | null;
             /** Ellenberg M */

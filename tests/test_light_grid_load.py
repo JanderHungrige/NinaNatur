@@ -10,10 +10,19 @@ under its own corners — and level surveyed ground paid for a slope while a
 """
 from __future__ import annotations
 
+import pytest
+
+from ninanatur.garden import lightgrid_extent
 from ninanatur.garden.casting import casting
 from ninanatur.garden.ground import standing_on
 from ninanatur.garden.lightcells import roofs_of
 from ninanatur.garden.lightgrid_cost import estimate_ms
+from ninanatur.garden.lightgrid_extent import (
+    CELL_LADDER_M,
+    GardenTooLarge,
+    cell_size_for,
+    check_extent,
+)
 from ninanatur.garden.lightgrid_load import load_of
 from ninanatur.garden.models import Element, Garden
 from ninanatur.geo.terrain import TerrainWindow
@@ -57,9 +66,43 @@ def test_the_height_the_cells_span_is_the_ground_s_and_every_roof_s_on_the_grid(
 
 
 def test_crowns_on_the_grid_cost_more_the_further_its_cells_stand_apart() -> None:
-    flat = estimate_ms(40_000, 12, 12, near_crowns=12)
-    assert estimate_ms(40_000, 12, 12, near_crowns=12, relief_m=9.0) > flat
-    assert estimate_ms(40_000, 12, 12, near_crowns=12, relief_m=0.1) < flat * 1.05
+    flat = estimate_ms(40_000, 12, 12, near_crowns=12, cell_m=0.5)
+    assert estimate_ms(40_000, 12, 12, near_crowns=12, relief_m=9.0, cell_m=0.5) > flat
+    assert estimate_ms(40_000, 12, 12, near_crowns=12, relief_m=0.1, cell_m=0.5) < flat * 1.05
+
+
+def _stretch(cells: int, cell: float) -> float:
+    """What 9 m between the grid's cells adds for 12 crowns."""
+    return (estimate_ms(cells, 12, 12, near_crowns=12, relief_m=9.0, cell_m=cell)
+            - estimate_ms(cells, 12, 12, near_crowns=12, cell_m=cell))
+
+
+def test_a_crown_s_stretch_is_priced_by_its_cell_not_by_the_grid_s_count() -> None:
+    """A crown's box stretches by metres, so the cells it adds go with the
+    cell's size and not with how many the grid holds: priced per cell of the
+    grid, a 24 × 40 m garden was estimated under what it took, two past the
+    budget (review of 596a89f). A grid narrower than the stretch clips it."""
+    wide, wider = _stretch(200 ** 2, 0.5), _stretch(400 ** 2, 0.5)
+    assert wide == pytest.approx(wider), "100 m and 200 m wide: the same stretch"
+    assert _stretch(400 ** 2, 0.5) > 3 * _stretch(200 ** 2, 1.0), "a quarter the cell"
+    assert _stretch(69 * 101, 0.5) < wide, "a 34 × 50 m grid clips it"
+    assert _stretch(69 * 101, 0.5) > 0.5 * wide
+
+
+def test_the_ladder_prices_each_rung_at_its_own_cell(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[float] = []
+
+    def unaffordable(cells: float, *args: object, cell_m: float = 1.0, **more: object) -> float:
+        seen.append(cell_m)
+        return 1e9
+
+    monkeypatch.setattr(lightgrid_extent, "estimate_ms", unaffordable)
+    cell_size_for(50.0, 50.0, 1)
+    assert seen == list(CELL_LADDER_M)
+    seen.clear()
+    with pytest.raises(GardenTooLarge):
+        check_extent(0.0, 0.0, 50.0, 50.0, 1)
+    assert seen == [CELL_LADDER_M[-1]]
 
 
 def test_a_neighbour_reaches_in_by_its_height_above_the_grid_s_lowest_cell() -> None:

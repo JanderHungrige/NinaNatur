@@ -26,7 +26,7 @@ export function bed(overrides: Partial<Bed> = {}): Bed {
     constraint_hint: null, name: 'Südbeet', polygon: [[0, 0], [3, 0], [3, 2], [0, 2]],
     soil_type: 'loam', moisture: 'fresh', ellenberg_l: 7.8, ellenberg_m: 5, ellenberg_n: 5.5,
     ellenberg_r: 6.5, sun_hours: 6.4, slope_deg: null, aspect_deg: null,
-    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, label: null,
+    sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: '2026-08-28T10:00:00+00:00', height_above_ground: 0, crown_fits: true, label: null,
     plantings: [],
     ...overrides,
   };

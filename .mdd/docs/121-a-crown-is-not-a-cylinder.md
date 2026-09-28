@@ -218,8 +218,8 @@ and held to the server's by `test_kind_vocabulary`.
 Two corrections from the review of stage 3 (2026-09-28). Where no crown fits
 what was drawn — a line, a band, an L — the thing casts as the solid a row
 is, from the ground, and a base changes nothing: the answer says so for every
-outline (`crown_fits`), so a form that turns a hedge into a tree knows it
-too, and the form says why instead of asking. And the laser fills a base when the light is computed, often while
+outline, beds included (`crown_fits`), so a form that turns a hedge or a bed
+into a tree knows it too, and the form says why instead of asking. And the laser fills a base when the light is computed, often while
 the form is open: a field that kept the value it opened with then sent the
 old one back on the next save, as the gardener's. An untouched field follows
 the store now, and a touched one keeps what was typed (`useStoredField`) —
@@ -263,10 +263,20 @@ and the review of its fix found level surveyed ground paying for a slope
 15 m house of no known shape paid nothing (took 5.3 s where 3.5 was said).
 It is keyed on the height itself now (`lightgrid_load.relief_of`: the
 ground's range over the box and the ridge of every roof on it, of any
-shape): 0.00035 ms per crown, per metre, per cell (`CROWN_RELIEF_CELL_MS`),
-measured against the same trees without the house — 195 ms a metre for 12
-crowns at 0.5 m, beside a 9 m house and a 15 m one alike. Every case in
-`scripts.measure_crown_cost` holds, level surveyed ground back at 0.5 m.
+shape), and priced per crown by the cell's size: the stretch is in metres,
+so the cells it adds go with 1/cell², and priced per cell of the whole grid
+an ordinary 24 × 40 m garden was estimated under what it took, two of them
+past the budget (review of 596a89f). Measured by difference — trees and a
+house, less the trees, less the house — per crown and metre: 1.4, 4.7 and
+17.7 ms at 2, 1 and 0.5 m on the 94 m plot, a millisecond and 4.3/cell²; on
+the small plot the second part came to 0.56 of that at every cell, a
+smaller grid clipping the stretched boxes (taken as its width over 60 m).
+Priced at 1 ms + 4.5/cell² ms per crown and metre (`CROWN_RELIEF_MS`,
+`CROWN_RELIEF_M2_MS`, `RELIEF_REACH_M`). Every case in
+`scripts.measure_crown_cost` holds — level surveyed ground back at 0.5 m,
+the small gardens with trees, a tall house and neighbours estimated above
+what they take, so the ladder steps down rather than running past the
+budget.
 Narrowing each box to the heights under it was tried and saved nothing;
 `test_crown_heights` holds every cell beside a roof to the point's answer,
 whichever way the box is sized.

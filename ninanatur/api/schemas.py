@@ -77,6 +77,9 @@ class BedOut(BaseModel):
     # Required, not defaulted: the response always carries both, and a default
     # here makes them optional in the generated client for no reason.
     height_above_ground: float
+    #: Whether one crown fits the outline (as `ObstacleOut.crown_fits`), so a
+    #: form that turns a bed into a tree knows whether to ask for a crown base.
+    crown_fits: bool
     label: str | None
     plantings: list[PlantingOut]
 
