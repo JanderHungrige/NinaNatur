@@ -67,34 +67,36 @@ PLANE_CELL_MS = 0.0007
 #: to its part's, rounded up; from 20 m out the far price held alone.
 #: `python -m scripts.measure_crown_cost` prints both.
 FAR_CROWN_MS = 15.0
-#: And a crown on uneven ground asks about many more cells than one on the
-#: level: the grid sizes each crown's box from its lowest cell to its highest,
-#: so a slope, or a roof on the plot, stretches every crown's box towards the
-#: sun by the height between them — at a low sun across much of the grid. The
-#: review of stage 3 (2026-09-28) measured it: a typical garden from the map
-#: (its own gable, 30 neighbours, 22 crowns) took 6.6 s at 0.5 m on a slope
-#: where the estimate said 4.8, and 6.2 s on the level where it said 5.6; 12
-#: trees beside one house on the level took 2.8 s where it said 2.2. About
-#: 0.011 ms a cell for every crown on the grid on a slope and 0.009 on the
-#: level with a roof, rounded up here. Narrowing each box to the heights
-#: under it was tried, and cost as much as it saved.
-CROWN_SLOPE_CELL_MS = 0.014
-CROWN_ROOF_CELL_MS = 0.010
+#: And a crown asks about more cells the further the grid's cells stand apart
+#: in height: the grid sizes each crown's box from the lowest cell to the
+#: highest, so a slope — or a roof on the plot, of any shape — stretches every
+#: crown's box towards the sun by the height between them. Priced by that
+#: height (`lightgrid_load.relief_of`), not by what raises it: keyed on
+#: "terrain" and "pitched planes", level surveyed ground paid for a slope and
+#: a 15 m house of no known shape paid nothing (review of 45eb56a). Measured
+#: against the same trees with no house, on the level: 195 ms a metre for 12
+#: crowns at 0.5 m cells, beside a 9 m house and a 15 m one alike, a quarter
+#: of that at 1 m — per crown, per metre, per cell, about 0.0003 ms, rounded
+#: up. `python -m scripts.measure_crown_cost` prints every case.
+CROWN_RELIEF_CELL_MS = 0.00035
 #: And a neighbour just off the grid throws its shadow in at most moments,
 #: not only while shadows are long: 36 houses from the map with their near
 #: walls 1 to 9 m outside the grid took 1.8 s at 2 m cells where the far price
-#: said 1.0, and the review of feature 5 (2026-09-28) measured up to 2.3; from
-#: 11 m out the far price held with room. A part standing within its own
-#: height of the grid (`lightgrid_load.REACH_ALTITUDE_DEG`) adds this to the
-#: far price, rounded up to cover both runs: about 21 ms a house here, 32 in
-#: the review's. `python -m scripts.measure_neighbour_cost` prints them.
-REACH_PART_MS = 35.0
+#: said 1.0; from 11 m out the far price held with room. A part standing
+#: within its own height of the grid (`lightgrid_load.REACH_ALTITUDE_DEG`),
+#: measured from its lowest cell as the raster measures it, adds this to the
+#: far price: 21 ms a house measured, rounded up by a third. (35 at first,
+#: sized to a review's run of 2.3 s taken while other runs shared the
+#: machine; it moved a dense suburban garden from 1 m cells to 2 m for
+#: nothing — review of 45eb56a.) `python -m scripts.measure_neighbour_cost`.
+REACH_PART_MS = 28.0
 
 
 def estimate_ms(cells: float, parts: int, near: int | None = None,
                 terrain: bool = False, deciduous: bool = False,
                 tilted: bool = False, near_planes: int = 0, far_planes: int = 0,
-                *, far_crowns: int = 0, near_crowns: int = 0, reaching: int = 0) -> float:
+                *, far_crowns: int = 0, near_crowns: int = 0, reaching: int = 0,
+                relief_m: float = 0.0) -> float:
     """What a grid of this many cells is expected to cost, in milliseconds.
 
     `parts` counts the convex parts of everything that casts, which is what
@@ -105,9 +107,10 @@ def estimate_ms(cells: float, parts: int, near: int | None = None,
     leaves, and the sky is swept a second time, bare. `tilted`: the cells have
     surfaces of their own — terrain, or a pitched roof — so every moment's
     beam is worked out per cell (doc 119). `near_planes` and `far_planes`
-    count the roof planes the near and the far parts carry (doc 120), and
+    count the roof planes the near and the far parts carry (doc 120),
     `far_crowns` and `near_crowns` the parts off and on the grid that are
-    crowns (doc 121).
+    crowns (doc 121), `relief_m` how far the grid's cells stand apart in
+    height, and `reaching` the neighbours within their height of the grid.
     """
     near = parts if near is None else min(near, parts)
     far = parts - near
@@ -117,8 +120,7 @@ def estimate_ms(cells: float, parts: int, near: int | None = None,
     raster = NEAR_PART_MS * near + FAR_PART_MS * far + REACH_PART_MS * reaching + cells * per_cell
     planes = near_planes + far_planes
     roofs = NEAR_PLANE_MS * near_planes + FAR_PLANE_MS * far_planes + cells * PLANE_CELL_MS * planes
-    uneven = CROWN_SLOPE_CELL_MS if terrain else CROWN_ROOF_CELL_MS if near_planes else 0.0
-    crowns = FAR_CROWN_MS * far_crowns + cells * uneven * near_crowns
+    crowns = FAR_CROWN_MS * far_crowns + near_crowns * relief_m * cells * CROWN_RELIEF_CELL_MS
     ground = cells * TERRAIN_CELL_MS if terrain else 0.0
     return (GRID_FIXED_MS + swept * (raster + roofs + crowns) + ground
             + (cells * TILTED_CELL_MS if tilted else 0.0))
@@ -130,7 +132,7 @@ def cost_model() -> str:
             f"{CELL_COST_MS},{CELL_NEAR_PART_MS},{CELL_FAR_PART_MS},{TERRAIN_CELL_MS}"
             f"|sky {SKY_DIRECTIONS},{BARE_SKY_DIRECTIONS}/{SEASON_MOMENTS}|tilt {TILTED_CELL_MS}"
             f"|roof {NEAR_PLANE_MS},{FAR_PLANE_MS},{PLANE_CELL_MS}"
-            f"|crown {FAR_CROWN_MS},{CROWN_SLOPE_CELL_MS},{CROWN_ROOF_CELL_MS}"
+            f"|crown {FAR_CROWN_MS},{CROWN_RELIEF_CELL_MS}"
             f"|reach {REACH_PART_MS}")
 
 

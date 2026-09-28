@@ -75,7 +75,7 @@ known_issues:
   - "The time field is the browser's clock and time zone: a device set to another zone marks another moment."
   - "A mark can only be placed with a pointer: a click or a tap on the plan, as the rail's Standpunkt is placed (doc 89). There is no keyboard way to put a point on the plan yet."
   - "Where a shadow begins — a crown's near end, cast by where the crown starts — the page says how much earlier or later the model begins it, and names no cause: a crown base, a crown's width and a crown's height all move it."
-  - "The height a far edge amounts to is what one more metre of the thing moves it: where that metre changes which part casts the edge — a gable's eaves giving way to its ridge — the height said is the metre's average, and a correction by it lands near the mark rather than on it. Where no metre of height moves the edge (eaves the gardener gave), no height is said, and the page does not say which other number would."
+  - "The height a far edge amounts to is what a metre of the thing — lower or taller, as the mark asks — moves it: where that metre changes which part casts the edge — a gable's eaves giving way to its ridge — the height said is the metre's average, and a correction by it lands near the mark rather than on it. Where no metre of height moves the edge (eaves the gardener gave), no height is said, and the page does not say which other number would."
 sister_projects: []
 ---
 
@@ -155,11 +155,21 @@ near end read as a height, the page saying "zu kurz" and "zu hoch" at once.
   is often a gable's eaves', which the ridge hardly moves: at a 62° sun a
   mark behind such an edge read "a metre too low", a height no correction
   could satisfy (review of stage 3, 2026-09-28). So the height said is what
-  one more metre of the thing, as the model would make it — eaves the
-  gardener gave staying where they are, eaves and a crown base it assumes
-  rising with it — moves that very point of the edge, measured from it along
-  the sun (`shadow_edge.reach_past`). Where a metre moves it less than a
-  tenth of what it moves a block's, no height is said.
+  a metre of the thing, as the model would make it — eaves the gardener gave
+  staying where they are, eaves and a crown base it assumes moving with it,
+  eaves above a lowered ridge coming down to it — moves that very point of
+  the edge, measured from it along the sun (`shadow_edge.reach_past`), and
+  in the direction the mark asks for: a metre lower where the model's shadow
+  reaches past the mark, a metre taller where it stops short (half a low
+  thing's height, where that is less). Probed upward only, the roof's own
+  switches answered for the wrong direction: a gable cast flat said no
+  height, eaves just above the ridge said 2.5 m where 0.75 was right, and
+  eaves that only just cast the edge said "0,4 m zu hoch" of a ridge no
+  lowering could help (review of 45eb56a). No point of an edge moves faster
+  than a block's; one that seems to is a gap between two shadows closing,
+  and is taken at a block's rate. Where a metre moves it less than a quarter
+  of what it moves a block's, no height is said: the number would be more
+  than four times a block's.
 - **At a near edge**: the model begins the shadow earlier or later ("Im
   Modell beginnt der Schatten 0,8 m früher") — no height.
 - **Across the sun**: the shadow points the wrong way — the plan's north, or
@@ -206,7 +216,10 @@ already can.
   once — the marks the first read brought were a reason to read again — and
   a read a busy server turns away (the heavy slot, 429) is asked again after
   the seconds it names, three times, before the page says the marks could
-  not be read (review of stage 3, 2026-09-28).
+  not be read (review of stage 3, 2026-09-28). A mark placed or forgotten
+  while a read is under way, or after one failed, asks again: it drops that
+  read's answer, and the marks it would have brought stayed hidden until the
+  next edit (review of 45eb56a).
 - While a mark is armed the plan takes the click wherever it lands, a
   planted patch included: the patches kept their clicks, and a mark aimed at
   a planted bed chose the planting instead.

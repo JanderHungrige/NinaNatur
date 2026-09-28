@@ -98,21 +98,24 @@ def read_edge(obstacle: Obstacle, sun: SunPosition, x: float, y: float) -> Readi
     )
 
 
-def reach_past(obstacle: Obstacle, sun: SunPosition, point: tuple[float, float]) -> float:
+def reach_past(obstacle: Obstacle, sun: SunPosition, point: tuple[float, float], *,
+               back: bool = False) -> float:
     """How far past `point`, straight away from the sun, the obstacle's shadow
-    ends: the nearest edge the way leaves the shadow by. 0 where the shadow
-    ends at the point, or before it.
+    ends: the nearest edge facing away from the sun that the way crosses. 0
+    where the shadow ends at the point, or before it. `back`: the same, the
+    other way — how far towards the sun from `point` the shadow ends.
 
     What a change to the thing moves one point of an edge by: the way from a
     point on the old edge to the new one, measured along the shadow — which a
     fresh nearest point is not, once the new shadow covers the mark it was
-    measured from."""
+    measured from. Taller, the new edge lies ahead; lower, behind."""
     away = math.radians(sun.azimuth)
     fall_x, fall_y = -math.sin(away), -math.cos(away)
+    way = (-fall_x, -fall_y) if back else (fall_x, fall_y)
     rings = [ring for ring in shadow_rings([obstacle], sun) if len(ring) >= 3]
     found = [t for a, b in _edges(rings)
              if _outward(a, b, fall_x, fall_y) > 0
-             and (t := _crossing(point, (fall_x, fall_y), a, b)) is not None]
+             and (t := _crossing(point, way, a, b)) is not None]
     return max(0.0, min(found, default=0.0))
 
 

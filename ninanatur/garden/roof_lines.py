@@ -64,9 +64,12 @@ def _hips(footprint: list[Point],
     """From each end of the ridge, where the model's planes crease: to the
     rectangle's corner when the ridge runs the longer way — drawn to the
     house's own nearest corner (doc 98). When a survey runs it the shorter
-    way the ridge is a point and the planes crease on the end walls, a
+    way the ridge is a point and the planes crease on the rectangle's ends, a
     half-length either side of the middle; drawn to the corners, the hips
-    were not the model's (review of feature 5, 2026-09-28)."""
+    were not the model's (review of feature 5, 2026-09-28). There the crease
+    is drawn as it is and cut to the outline: a surveyed fall is never
+    exactly square to the walls, and waiting for its end to lie on one drew
+    the corners again on every real house (review of 45eb56a)."""
     (cx, cy), (ux, uy), long_half, short_half = box
     reach = min(short_half, long_half)
     lines: list[Line] = []
@@ -74,8 +77,8 @@ def _hips(footprint: list[Point],
         for side in (-1.0, 1.0):
             crease = (cx + way * ux * long_half - side * uy * reach,
                       cy + way * uy * long_half + side * ux * reach)
-            on_wall = reach < short_half and _inside_or_on(crease, footprint)
-            lines.append((tip, crease if on_wall else _nearest_corner(footprint, crease)))
+            lines.append((tip, crease if reach < short_half
+                          else _nearest_corner(footprint, crease)))
     return lines
 
 

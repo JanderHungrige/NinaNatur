@@ -112,7 +112,7 @@ describe('formValues — where the element form starts', () => {
     expect(formValues(shed({ roof: 'gable', eaves_m: 1.9 }))).toEqual({
       kind: 'shed', label: 'Gartenhaus', plantings: 0, shape: 'polygon', roof: 'gable',
       roofSource: 'user', roofFallDeg: null, roofPitchDeg: null, eavesM: 1.9, eavesSource: null,
-      crownBaseM: null, crownBaseSource: null, crownFits: null, height: 2.4, width: null,
+      crownBaseM: null, crownBaseSource: null, crownFits: true, height: 2.4, width: null,
       soilType: null, moisture: null, heightAboveGround: 0,
     });
   });

@@ -3,7 +3,7 @@
 The grid asks a crown about the cells under the ellipse it throws, a box
 sized from the grid's lowest cell to its highest: one roof on the plot
 stretches every crown's box towards the sun by the ridge's height, which the
-estimate prices (`CROWN_ROOF_CELL_MS`). Narrowing each box to the heights of
+estimate prices (`CROWN_RELIEF_CELL_MS`). Narrowing each box to the heights of
 the cells it covers was tried and saved nothing (review of stage 3,
 2026-09-28). Whichever way the box is sized, it must keep every cell the
 crown's shadow reaches, and it is checked the way every crown path is: each

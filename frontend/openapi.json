@@ -1779,15 +1779,8 @@
             "title": "Crown Base Source"
           },
           "crown_fits": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Crown Fits"
+            "title": "Crown Fits",
+            "type": "boolean"
           },
           "eaves_m": {
             "anyOf": [

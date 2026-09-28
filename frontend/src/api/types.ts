@@ -1610,7 +1610,7 @@ export interface components {
             /** Crown Base Source */
             crown_base_source: string | null;
             /** Crown Fits */
-            crown_fits: boolean | null;
+            crown_fits: boolean;
             /** Eaves M */
             eaves_m: number | null;
             /** Eaves Source */

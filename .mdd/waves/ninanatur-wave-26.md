@@ -5,7 +5,7 @@ initiative: ninanatur
 initiative_version: 23
 status: in_progress
 depends_on: ninanatur-wave-25
-demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
+demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und unter einer dichten Krone sagt die Stufe, was Ellenberg dort misst. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
 created: 2026-09-07
 hash: 699125da
 ---
@@ -15,11 +15,15 @@ hash: 699125da
 ## Demo-State
 
 Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt
-keiner. Ein offenes Nordbeet zeigt, dass es sechzig Prozent des Himmels sieht
-und deshalb Halbschatten ist, nicht Schatten — die Stufe folgt Ellenbergs
-Definition der relativen Beleuchtung, die Bewölkung kommt aus der Klimatologie
-des Orts, nicht aus einer Annahme. Und wer die Schattenkante seines Hauses im
-Plan markiert, sieht, wie weit das Modell danebenliegt.
+keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des
+Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und
+unter einer dichten Krone sagt die Stufe, was Ellenberg dort misst. Und wer
+die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell
+danebenliegt.
+
+(The second sentence was rewritten at the owner's word on 2026-09-28: it said
+the level follows Ellenberg's relative illuminance, which the owner's
+decision of 2026-09-22 replaced — the hours lead, capped by the sky in leaf.)
 
 *(This wave is not complete until this can be manually demonstrated.)*
 

@@ -24,6 +24,15 @@ describe('ElementForm — the crown base', () => {
     expect(screen.getByText(/Zu lang oder zu schmal für eine Krone/)).not.toBeNull();
   });
 
+  it('does not ask a hedge drawn as a line that is turned into a tree', () => {
+    // The form asked it: whether a crown fits was said of trees only, and the
+    // stored kind was a hedge (review of 45eb56a).
+    open({ kind: 'hedge', shape: 'line', height: 2, crownFits: false });
+    fireEvent.change(screen.getByLabelText('Art'), { target: { value: 'tree' } });
+    expect(screen.queryByLabelText('Kronenansatz (m)')).toBeNull();
+    expect(screen.getByText(/Zu lang oder zu schmal für eine Krone/)).not.toBeNull();
+  });
+
   it('says what is assumed when nobody gave it: a third of a tree, the ground under a shrub', () => {
     open({ kind: 'tree', height: 12 });
     expect(noteFor(screen.getByLabelText('Kronenansatz (m)'))).toBe(

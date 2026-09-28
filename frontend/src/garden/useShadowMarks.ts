@@ -45,19 +45,24 @@ export function useShadowMarks(
   useEffect(() => {
     hasMarks.current = marks.length > 0;
   }, [marks]);
-  /** A read the server turned away while busy, asked again when it said to. */
+  /** Bumped to read again: a busy server's refusal, or a read a mark superseded. */
   const [retry, setRetry] = useState(0);
   const tries = useRef(0);
+  /** A read under way, or the last one failed: a mark placed or forgotten
+   *  then drops its answer, so it must ask again (review of 45eb56a). */
+  const unanswered = useRef(false);
   useEffect(() => {
     // A garden without marks is read once; one with marks on every change.
     if (read.current && !hasMarks.current) return;
     read.current = true;
     const ask = ++asked.current;
+    unanswered.current = true;
     let again: ReturnType<typeof setTimeout> | undefined;
     client
       .shadowMarks(token)
       .then((found) => {
         if (ask !== asked.current) return;
+        unanswered.current = false;
         tries.current = 0;
         setMarks(found);
       })
@@ -100,6 +105,12 @@ export function useShadowMarks(
     setTool(null);
   }, [setTool]);
 
+  /** Drop every answer asked for before now; ask again if one was owed. */
+  const supersede = useCallback(() => {
+    asked.current += 1;
+    if (unanswered.current) setRetry((n) => n + 1);
+  }, []);
+
   /** Keep the mark the click placed, read against the model, and say what it found. */
   const place = useCallback(
     (x: number, y: number) => {
@@ -107,23 +118,23 @@ export function useShadowMarks(
       const seen = (seenAt === null ? null : localToIso(seenAt)) ?? new Date().toISOString();
       void run('Schattenkante markieren', async () => {
         const made = await client.markShadow(token, { element_id: target, x, y, seen_at: seen });
-        asked.current += 1;
+        supersede();
         setMarks((list) => [...list, made]);
         setStatus(readingWords(made));
       });
     },
-    [client, token, target, seenAt, run, setStatus],
+    [client, token, target, seenAt, run, setStatus, supersede],
   );
 
   const remove = useCallback(
     (markId: number) => {
       void run('Markierung löschen', async () => {
         await client.forgetShadowMark(token, markId);
-        asked.current += 1;
+        supersede();
         setMarks((list) => list.filter((mark) => mark.mark_id !== markId));
       });
     },
-    [client, token, run],
+    [client, token, run, supersede],
   );
 
   return { marks, target, seenAt, setSeenAt, arm, disarm, place, remove };

@@ -108,11 +108,12 @@ class ObstacleOut(BaseModel):
     #: for the reason `BedOut.height_above_ground` gives.
     crown_base_m: float | None
     crown_base_source: str | None
-    #: Whether a tree or shrub casts as a crown on a trunk (doc 121): false
-    #: where no crown fits what was drawn — a long or thin outline casts as the
-    #: solid a row is — and a crown base would change nothing, so the form does
-    #: not ask for one. Null for anything that is no crown. Required, as above.
-    crown_fits: bool | None
+    #: Whether one crown fits what was drawn (doc 121): a tree or shrub on it
+    #: casts as a crown on a trunk. False for a line, or an outline too long or
+    #: thin — it casts as the solid a row is, a crown base would change
+    #: nothing, and the form does not ask for one. Said of every outline, so a
+    #: form that turns a hedge into a tree knows. Required, as above.
+    crown_fits: bool
     #: The pitch the model uses, from eaves, ridge and the span across the
     #: ridge; null where it models the roof unpitched.
     roof_pitch_deg: float | None

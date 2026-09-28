@@ -34,6 +34,7 @@ test_files:
   - tests/test_roof_lines.py
   - tests/test_light_model_version.py
   - tests/test_light_grid_cost.py
+  - tests/test_light_grid_load.py
   - tests/test_roof_direction.py
 data_flow: writes-existing
 last_synced: 2026-09-28
@@ -171,10 +172,12 @@ The claim that the estimate bounded every garden measured did not survive the
 review of 2026-09-28: 36 neighbours with their near walls 1 to 9 m past the
 grid's edge — blocks as much as gables, a price older than this feature — took
 1.8 s at 2 m cells where the far price said 1.0. A neighbour within its own
-height of the grid throws its shadow in whenever the sun is below 45°, not
-only while shadows are long, so it now adds 35 ms to the far price
-(`lightgrid_load`, `REACH_PART_MS`); from 11 m out the far price held and still
-stands alone. The same rings, and the crowns' cases, hold now
+height of the grid — above its lowest cell, as the raster measures it —
+throws its shadow in whenever the sun is below 45°, not only while shadows
+are long, so it now adds 28 ms to the far price (`lightgrid_load`,
+`REACH_PART_MS`: 21 measured, rounded up by a third; 35 at first, which moved
+a dense suburban garden off the 1 m rung for nothing); from 11 m out the far
+price held and still stands alone. The same rings, and the crowns' cases, hold now
 (`scripts.measure_neighbour_cost`, `scripts.measure_crown_cost`); a garden
 from the map with its own gable, 30 neighbours and 22 trees still gets 0.5 m.
 And the parts a many-cornered roof is cast through are found by looking each

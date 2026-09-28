@@ -183,6 +183,43 @@ describe('useShadowMarks', () => {
     expect(setStatus).not.toHaveBeenCalled();
   });
 
+  it('waits as long as a busy server asks, and forgets the wait when the garden changes', async () => {
+    vi.useFakeTimers();
+    const { client, rerender } = setup([seen(1)], (fake) => {
+      fake.shadowMarks.mockRejectedValueOnce(new ApiError(429, 'busy', 3));
+      fake.shadowMarks.mockRejectedValueOnce(new ApiError(429, 'busy', 3));
+    });
+    await act(async () => Promise.resolve());
+    await act(async () => vi.advanceTimersByTime(2_900));
+    expect(client.shadowMarks).toHaveBeenCalledTimes(1);
+    await act(async () => vi.advanceTimersByTime(200));
+    await act(async () => Promise.resolve());
+    expect(client.shadowMarks).toHaveBeenCalledTimes(2);
+
+    // Turned away again, and the garden changes while it waits: read now,
+    // and the old wait must not ask a second time.
+    rerender({ plan: garden('tok', 'G, geändert') });
+    await act(async () => Promise.resolve());
+    expect(client.shadowMarks).toHaveBeenCalledTimes(3);
+    await act(async () => vi.advanceTimersByTime(10_000));
+    expect(client.shadowMarks).toHaveBeenCalledTimes(3);
+  });
+
+  it('shows the garden\'s marks when one is placed while the first read is under way', async () => {
+    // The mark dropped that read's answer as stale, and nothing asked again:
+    // the page showed the new mark alone until the next edit (review of 45eb56a).
+    const first = later<ShadowMark[]>();
+    const { result, client } = setup([seen(1), seen(2)], (fake) => {
+      fake.shadowMarks.mockImplementationOnce(() => first.promise);
+    });
+    act(() => result.current.arm(7));
+    await act(async () => result.current.place(1, 1));
+    await act(async () => first.answer([seen(1), seen(2)]));
+    await waitFor(() => expect(result.current.marks.map((m) => m.mark_id).sort())
+      .toEqual([1, 2, 99]));
+    expect(client.shadowMarks).toHaveBeenCalledTimes(2);
+  });
+
   it('says so once a busy server has turned it away three times more', async () => {
     vi.useFakeTimers();
     const busy = new ApiError(429, 'busy', 10);

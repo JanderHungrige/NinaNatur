@@ -7,16 +7,20 @@ Drawn trees 8 m across and 12 m tall, in Wuppertal: 12 and 36 of them on a
 outside it, where a crown throws its shadow in at most moments; and 12 beside
 a gabled house, and 12 on a slope, where every crown's box of cells is
 stretched by the height between the grid's lowest cell and its highest
-(review of stage 3, 2026-09-28). Each line gives the estimate
+(review of stage 3, 2026-09-28) — as it is beside a flat or unshaped roof,
+and not on level surveyed ground (review of 45eb56a); and a garden as the
+map makes it, on the level and on a slope. Each line gives the estimate
 (`lightgrid_cost.estimate_ms`) and the best of two runs. Timings are this
 machine's; what must hold anywhere is that the estimate is the larger. A few
 minutes.
 """
 from __future__ import annotations
 
+import random
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 
 from ninanatur.garden import lightgrid, lightview
 from ninanatur.garden.lightgrid import compute_grid, grid_cost
@@ -59,12 +63,42 @@ def forced(cell: float) -> Iterator[None]:
         lightgrid.cell_size_for, lightgrid.check_extent = chosen, checked
 
 
-def beside_a_house() -> list[Element]:
-    """12 trees, and a gabled house 10 × 8 m with a 9 m ridge north of them."""
-    house = Element(element_id=9, kind="house", shape="polygon", x=0.0, y=0.0, height=9.0,
+def beside_a_house(roof: str = "gable", height: float = 9.0) -> list[Element]:
+    """12 trees, and a house 10 × 8 m north of them: gabled with a 9 m ridge,
+    or flat or of no known shape — whose roof raises the grid's highest cell
+    as much as a gable's does (review of 45eb56a)."""
+    house = Element(element_id=9, kind="house", shape="polygon", x=0.0, y=0.0, height=height,
                     points=[[-5.0, 10.0], [5.0, 10.0], [5.0, 18.0], [-5.0, 18.0]],
-                    roof="gable", eaves_m=5.5)
+                    roof=roof, eaves_m=5.5 if roof == "gable" else None)
     return [house, *on_the_plot(12)]
+
+
+def from_the_map() -> list[Element]:
+    """A garden as the map makes it: its own gabled house on the plot, 30
+    neighbours round it, 6 trees on the plot and 16 found round it."""
+    rng = random.Random(4)
+    own = Element(element_id=2, kind="house", shape="polygon", x=0.0, y=30.0, height=9.0,
+                  points=[[-6, -4], [6, -4], [6, 4], [-6, 4]], roof="gable", eaves_m=5.5)
+    found: list[Element] = [own]
+    for i in range(30):
+        x, y = rng.choice([(rng.uniform(-60, 60), rng.choice([-1, 1]) * rng.uniform(55, 70)),
+                           (rng.choice([-1, 1]) * rng.uniform(55, 70), rng.uniform(-60, 60))])
+        found.append(Element(element_id=100 + i, kind="house", shape="polygon", x=x, y=y,
+                             points=[[-5, -4], [5, -4], [5, 4], [-5, 4]],
+                             height=rng.uniform(6, 11), height_source="osm",
+                             roof=rng.choice(["gable", "hip", "unknown"]), roof_source="osm",
+                             eaves_m=5.0, outline_source="osm"))
+    trees = on_the_plot(6) + round_the_plot(8.0)[:16]
+    return found + [replace(tree, element_id=300 + i) for i, tree in enumerate(trees)]
+
+
+def level() -> TerrainWindow:
+    """Surveyed ground that is level, give or take 10 cm."""
+    size, rng = 200, random.Random(2)
+    return TerrainWindow(
+        min_x=-100.0, min_y=-100.0, cell_m=1.0, cols=size, rows=size,
+        heights=[100.0 + rng.uniform(-0.1, 0.1) for _ in range(size * size)],
+        source="Test", licence="-", attribution="-", vertical_step_m=0.01)
 
 
 def slope() -> TerrainWindow:
@@ -99,7 +133,13 @@ def main() -> None:
     cases += [(f"24 trees {out:.0f} m outside it", round_the_plot(out), None)
               for out in (6.0, 12.0, 20.0, 30.0)]
     cases += [("12 trees beside a gabled house", beside_a_house(), None),
-              ("12 trees on a slope", on_the_plot(12), slope())]
+              ("12 trees beside a flat 9 m house", beside_a_house("flat"), None),
+              ("12 trees beside a 15 m house of no known shape",
+               beside_a_house("unknown", 15.0), None),
+              ("12 trees on a slope", on_the_plot(12), slope()),
+              ("12 trees on level surveyed ground", on_the_plot(12), level()),
+              ("a garden from the map", from_the_map(), None),
+              ("a garden from the map on a slope", from_the_map(), slope())]
     for name, trees, ground in cases:
         for cell in (2.0, 1.0, 0.5):
             estimate, took = measure(trees, cell, ground)

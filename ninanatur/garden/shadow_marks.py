@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from ninanatur.garden.casting import casting, casts
 from ninanatur.garden.elements import now
 from ninanatur.garden.models import Element, Garden
-from ninanatur.solar.position import Location, sun_position
+from ninanatur.solar.position import Location, SunPosition, sun_position
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle
 from ninanatur.solar.shadow_edge import Reading, reach_past, read_edge
 
@@ -92,45 +92,79 @@ def readings(garden: Garden, marks: list[ShadowMark]) -> list[Reading | None]:
     """Each mark read against the model as it is now — None where there is
     nothing to read: the thing no longer casts, or the sun, by the model's own
     sampling, was too low. Each thing is cast once, however many marks it has:
-    casting a many-cornered roof is the dear part (review, 2026-09-28) — once
-    as it is and once a metre taller, for what a height would move."""
+    casting a many-cornered roof is the dear part (review, 2026-09-28) — and
+    once more a step taller or lower, for what a height would move."""
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
-    cast: dict[int, tuple[Obstacle, Obstacle] | None] = {}
+    cast: dict[int, _Cast | None] = {}
     found: list[Reading | None] = []
     for mark in marks:
         if mark.element_id not in cast:
             element = caster(garden, mark.element_id)
-            cast[mark.element_id] = None if element is None else (
-                casting(element), casting(_taller(element)))
-        pair = cast[mark.element_id]
+            cast[mark.element_id] = None if element is None else _Cast(element)
+        thing = cast[mark.element_id]
         sun = sun_position(location, mark.seen_at)
-        if pair is None or sun.altitude <= MIN_ALTITUDE:
+        if thing is None or sun.altitude <= MIN_ALTITUDE:
             found.append(None)
             continue
-        reading = read_edge(pair[0], sun, mark.x, mark.y)
+        reading = read_edge(thing.obstacle, sun, mark.x, mark.y)
         if reading is not None and reading.height_m is not None:
-            reading = _as_height(reading, reach_past(pair[1], sun, reading.nearest))
+            reading = _as_height(reading, thing.moved(reading, sun))
         found.append(reading)
     return found
 
 
-def _taller(element: Element) -> Element:
-    """The thing a metre taller, as the gardener's correction of its height
-    makes it: eaves they gave stay where they are; eaves and a crown base the
-    model assumes rise with it."""
-    return replace(element, height=(element.height or 0.0) + 1.0)
+#: How far a height is changed to see what it moves, in metres: a metre, or
+#: half a low thing's height.
+STEP_M = 1.0
+#: Below this share of what a height moves a block's edge, no height is said:
+#: the number would be more than four times a block's, and say more about the
+#: shape than about the height.
+ENOUGH = 0.25
+
+
+class _Cast:
+    """A thing as the model casts it and, when asked, as it would cast a step
+    taller or lower — as the gardener's correction of its height makes it:
+    eaves they gave stay where they are, eaves and a crown base the model
+    assumes move with it, and eaves above a lowered ridge come down to it."""
+
+    def __init__(self, element: Element) -> None:
+        self.element = element
+        self.obstacle = casting(element)
+        self._stepped: dict[float, Obstacle] = {}
+
+    def moved(self, reading: Reading, sun: SunPosition) -> float:
+        """How far a metre of height carries this very point of the edge, in
+        the direction the mark asks for: lower where the model's shadow
+        reaches past it, taller where it stops short. Probed upward only, a
+        roof's own switches — eaves clamped to the ridge, the shallowest pitch
+        that counts, eaves or ridge deciding the edge — answered for the wrong
+        direction: a flat-cast gable said no height, or 2.5 m where 0.75 was
+        right (review of 45eb56a)."""
+        height = self.element.height or 0.0
+        lower = reading.along_m > 0
+        step = min(STEP_M, height / 2) if lower else STEP_M
+        if step <= 0:
+            return 0.0
+        key = -step if lower else step
+        if key not in self._stepped:
+            self._stepped[key] = casting(replace(self.element, height=height + key))
+        return reach_past(self._stepped[key], sun, reading.nearest, back=lower) / step
 
 
 def _as_height(reading: Reading, moved: float) -> Reading:
     """The height the way along the sun amounts to: `moved` is how far a
-    metre more of the thing carries this very point of the edge, where cot h
-    was assumed. Since roofs cast as roofs (doc 120), a gable's far edge is
-    often its eaves' at a high sun, which the ridge's height hardly moves —
-    and "as though a metre lower" was then a height no correction could
-    satisfy (review of stage 3, 2026-09-28). Where a metre moves the edge
-    less than a tenth of what it moves a block's, no height is said."""
+    metre of the thing carries this point of the edge, where cot h was
+    assumed. Since roofs cast as roofs (doc 120), a gable's far edge is often
+    its eaves', which the ridge's height hardly moves — and "as though a metre
+    lower" was then a height no correction could satisfy (review of stage 3,
+    2026-09-28). No point of an edge moves faster than a block's; one that
+    seems to is a gap between two shadows closing, and is taken at a block's
+    rate. Where a metre moves it less than `ENOUGH` of a block's, no height is
+    said."""
     block = 1.0 / math.tan(math.radians(reading.altitude))
-    if moved < 0.1 * block:
+    moved = min(moved, block)
+    if moved < ENOUGH * block:
         return replace(reading, height_m=None)
     return replace(reading, height_m=reading.along_m / moved)
 

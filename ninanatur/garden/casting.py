@@ -105,12 +105,12 @@ def _crown(element: Element) -> Obstacle:
     )
 
 
-def crown_fits(element: Element) -> bool | None:
-    """Whether a tree or shrub casts as a crown on a trunk, whose base then
-    counts — or as the solid a row of them is, where no crown fits what was
-    drawn and a crown base changes nothing. None for anything else."""
-    if ObjectKind(element.kind) not in _CROWNS:
-        return None
+def crown_fits(element: Element) -> bool:
+    """Whether one crown fits what was drawn: a tree or shrub on it casts as a
+    crown on a trunk, whose base counts, where otherwise it casts as the solid
+    a row is and a crown base changes nothing. Said of every outline, not only
+    a tree's, so a form that turns a hedge into a tree knows it too (review
+    of 45eb56a)."""
     return crown_disc(element) is not None
 
 

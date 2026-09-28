@@ -17,7 +17,7 @@ function shape(obstacle_id: number, kind: string, footprint: number[][]): Obstac
   return {
     obstacle_id, kind, x: 0, y: 0, shape: 'polygon', width: null, points: footprint,
     constraint_hint: null, height: kind === 'house' ? 8 : null, label: null, roof: 'unknown',
-    roof_source: 'user', eaves_m: null, eaves_source: null, crown_base_m: null, crown_base_source: null, crown_fits: null, roof_fall_deg: null,
+    roof_source: 'user', eaves_m: null, eaves_source: null, crown_base_m: null, crown_base_source: null, crown_fits: true, roof_fall_deg: null,
     roof_pitch_deg: null, roof_lines: [], height_source: 'user', footprint,
   };
 }

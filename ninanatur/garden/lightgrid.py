@@ -16,7 +16,7 @@ import hashlib
 import numpy as np
 
 from ninanatur.garden.ground import lowest_ground, standing_on
-from ninanatur.garden.lightcells import cells_of, roofs_of, surfaces_of
+from ninanatur.garden.lightcells import Roofed, cells_of, roofs_of, surfaces_of
 from ninanatur.garden.lightgrid_extent import CELL_LADDER_M as CELL_LADDER_M
 from ninanatur.garden.lightgrid_extent import GRID_BUDGET_S as GRID_BUDGET_S
 from ninanatur.garden.lightgrid_extent import GardenTooLarge as GardenTooLarge
@@ -77,7 +77,8 @@ def compute_grid(
         return None
     min_x, min_y, max_x, max_y = box
     parts = parts_of(standing_on(obstacles, ground))
-    cell = _cell_for(parts, box, ground)
+    roofs = roofs_of(garden, ground)
+    cell = _cell_for(parts, box, ground, roofs)
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
     cols = max(1, int(width / cell) + 1)
@@ -87,7 +88,6 @@ def compute_grid(
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
-    roofs = roofs_of(garden, ground)
     xs = [grid.centre_of(col, 0)[0] for col in range(cols)]
     ys = [grid.centre_of(0, row)[1] for row in range(rows)]
     surfaces = surfaces_of(xs, ys, ground, horizon, floor, roofs, height_above_ground)
@@ -112,20 +112,21 @@ def compute_grid(
 
 
 def _cell_for(parts: list[Part], box: tuple[float, float, float, float],
-              ground: TerrainWindow | None) -> float:
+              ground: TerrainWindow | None, roofs: list[Roofed]) -> float:
     """The finest cell the budget buys over this box, once a box no cell could
     make affordable has been refused. What the raster pays for is parts, not
     obstacles (review, 2026-09-22), and what they are: `lightgrid_load`."""
     min_x, min_y, max_x, max_y = box
-    load = load_of(parts, box, ground)
+    load = load_of(parts, box, ground, roofs)
     check_extent(min_x, min_y, max_x, max_y, load.parts, load.near, load.terrain,
                  load.deciduous, load.tilted, load.near_planes, load.far_planes,
                  far_crowns=load.far_crowns, near_crowns=load.near_crowns,
-                 reaching=load.reaching)
+                 reaching=load.reaching, relief_m=load.relief_m)
     return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), load.parts,
                          load.near, load.terrain, load.deciduous, load.tilted,
                          load.near_planes, load.far_planes, far_crowns=load.far_crowns,
-                         near_crowns=load.near_crowns, reaching=load.reaching)
+                         near_crowns=load.near_crowns, reaching=load.reaching,
+                         relief_m=load.relief_m)
 
 
 def _exact(element: object) -> str:

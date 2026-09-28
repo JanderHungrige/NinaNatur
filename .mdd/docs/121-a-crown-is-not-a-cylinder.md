@@ -216,10 +216,10 @@ or that the laser measured it. The assumption is mirrored in `heights.ts`
 and held to the server's by `test_kind_vocabulary`.
 
 Two corrections from the review of stage 3 (2026-09-28). Where no crown fits
-what was drawn — a band, an L — the thing casts as the solid a row is, from
-the ground, and a base changes nothing: the answer says so (`crown_fits`,
-false; null for anything that is no crown), and the form says why instead of
-asking. And the laser fills a base when the light is computed, often while
+what was drawn — a line, a band, an L — the thing casts as the solid a row
+is, from the ground, and a base changes nothing: the answer says so for every
+outline (`crown_fits`), so a form that turns a hedge into a tree knows it
+too, and the form says why instead of asking. And the laser fills a base when the light is computed, often while
 the form is open: a field that kept the value it opened with then sent the
 old one back on the next save, as the gardener's. An untouched field follows
 the store now, and a touched one keeps what was typed (`useStoredField`) —
@@ -252,17 +252,24 @@ edge throws its shadow in at most moments, not only while shadows are long.
 price said 0.75 (review, 2026-09-28); each far crown now adds
 `FAR_CROWN_MS`, 15 ms, and the estimate holds from 6 m out to 30.
 
-And a crown on uneven ground asks about many more cells: the grid sizes each
-crown's box of cells from the grid's lowest cell to its highest, so a slope,
-or a roof on the plot, stretches every box towards the sun by the height
-between them. The review of stage 3 found a garden from the map (its own
-gable, 30 neighbours, 22 trees) at 6.6 s on a slope where the estimate said
-4.8. Each crown on the grid now adds 0.014 ms a cell on a slope and 0.010 on
-the level beside a roof (`CROWN_SLOPE_CELL_MS`, `CROWN_ROOF_CELL_MS`), and
-every case holds: 12 trees beside a gabled house took 4.9 s at 0.5 m against
-10.7, on a slope 5.0 against 13.3. Narrowing each box to the heights under it
-was tried and saved nothing; `test_crown_heights` holds every cell beside a
-roof to the point's answer, whichever way the box is sized.
+And a crown asks about more cells the further the grid's cells stand apart
+in height: the grid sizes each crown's box of cells from the grid's lowest
+cell to its highest, so a slope, or a roof on the plot, stretches every box
+towards the sun by the height between them. The review of stage 3 found a
+garden from the map at 6.6 s on a slope where the estimate said 4.8. The
+first price was keyed on what raises the cells — terrain, pitched planes —
+and the review of its fix found level surveyed ground paying for a slope
+(12 trees: estimated 13.3 s, took 2.8, pushed off the 0.5 m rung) while a
+15 m house of no known shape paid nothing (took 5.3 s where 3.5 was said).
+It is keyed on the height itself now (`lightgrid_load.relief_of`: the
+ground's range over the box and the ridge of every roof on it, of any
+shape): 0.00035 ms per crown, per metre, per cell (`CROWN_RELIEF_CELL_MS`),
+measured against the same trees without the house — 195 ms a metre for 12
+crowns at 0.5 m, beside a 9 m house and a 15 m one alike. Every case in
+`scripts.measure_crown_cost` holds, level surveyed ground back at 0.5 m.
+Narrowing each box to the heights under it was tried and saved nothing;
+`test_crown_heights` holds every cell beside a roof to the point's answer,
+whichever way the box is sized.
 
 ## What moved
 
@@ -275,6 +282,11 @@ A lime of 12 m, its crown 8 m across from 4 m, in Wuppertal over the season
 | 3 m | 0.00 h, sky 0.00, L 2.5 | 4.37 h, sky 0.20, L 6.25 | 11.80 h, sky 0.85, L 9 |
 | 6 m | 9.08 h, sky 0.78, L 9 | 10.52 h, sky 0.82, L 9 | 11.64 h, sky 0.91, L 9 |
 | 10 m | 11.09 h, sky 0.92, L 9 | 11.83 h, sky 0.93, L 9 | 12.51 h, sky 0.96, L 9 |
+
+**Decided, 2026-09-28.** The owner kept crowns as they are, rather than
+denser leaves, a lower assumed base or wider planted crowns: the geometry is
+checked, and density is better tuned later against shadow marks under real
+trees (doc 122).
 
 Open ground reads 13.08 h. From its foot, this crown fills the sky within
 30° of the zenith — sin⁻¹(4/8) — which the sun at 51° N passes only around
