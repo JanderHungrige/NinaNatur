@@ -82,3 +82,42 @@ export function eavesNote(
   if (source === null) return 'Herkunft nicht vermerkt';
   return heightNote(source);
 }
+
+/**
+ * Where a tree's crown starts when nobody has said: a third of the way up
+ * (doc 121). A shrub branches from the ground.
+ *
+ * Mirrors `ninanatur/garden/canopy.py::TREE_CROWN_BASE_SHARE`, and a pytest
+ * guard holds the two together, as it does the eaves.
+ */
+export const TREE_CROWN_BASE_SHARE = 1 / 3;
+
+/** The kinds that are crowns (doc 121); a hedge is leaves to the ground.
+ *  Mirrors `ninanatur/garden/casting.py::_CROWNS`. */
+export const CROWNED = new Set(['tree', 'shrub']);
+
+/** The kinds whose crown stands on a trunk; a shrub's starts at the ground.
+ *  Mirrors `ninanatur/garden/canopy.py::TRUNKED`. */
+export const TRUNKED = new Set(['tree']);
+
+/**
+ * The words for where a crown's base came from (doc 121).
+ *
+ * The base decides whether a low sun passes under the crown, so the assumption
+ * the model makes when nobody gave it is said, with its number when the height
+ * is known — the same rule as the eaves.
+ */
+export function crownBaseNote(
+  kind: string,
+  baseM: number | null,
+  source: string | null,
+  heightM: number | null,
+): string | null {
+  if (baseM === null) {
+    if (!TRUNKED.has(kind)) return 'Nicht bekannt: gerechnet wird ab dem Boden';
+    const assumed = 'Nicht bekannt: gerechnet wird mit einem Drittel der Höhe';
+    return heightM === null ? assumed : `${assumed}, ${metres(TREE_CROWN_BASE_SHARE * heightM)}`;
+  }
+  if (source === null) return 'Herkunft nicht vermerkt';
+  return heightNote(source);
+}

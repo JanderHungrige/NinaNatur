@@ -31,6 +31,7 @@ satisfies_contracts: []
 security_read_sites: []
 known_issues:
   - "The ray instrument knows vertical prisms only. Roof planes (feature 5) and ellipsoid crowns (feature 6) are to be added to it by the features that bring them, before their model code."
+  - "Features 5 and 6 kept that promise beside their geometry rather than in `test_concave_ray.py`: roofs are marched through their own solid in `test_roof_shadow.py` (doc 120), crowns through the ellipsoid in `test_crown.py` (doc 121) — the same instrument, centimetre steps along the sun's ray with none of the model's arithmetic in it (2026-09-28)."
   - "The reference table was made with pvlib 0.15.2. SPA does not change between releases, so it is not refreshed with them; `python -m scripts.sun_reference` remakes it byte for byte if it ever has to be."
   - "The convergence suite measures one place (Wuppertal) and five scenes. Most of the sampling error is the days skipped, which depends on the season's shape and the obstacles more than on the place; the bars are the same everywhere."
   - "The marched ray is refined to 2 mm only where it disagrees with the model. A spike thinner than 5 cm that the model also missed would pass unseen; the random stars make such spikes, real outlines rarely do."

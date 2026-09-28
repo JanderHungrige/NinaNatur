@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 import type { FormValues } from '../garden/selection';
-import { eavesNote, roofNote } from '../heights';
+import { CROWNED, eavesNote, roofNote } from '../heights';
 import { KINDS, PLANTING_KIND } from '../kinds';
+import { CrownBaseField } from './CrownBaseField';
 import { ROOFED, ROOFS, ridgeNote } from '../roofs';
 
 interface Props extends FormValues {
@@ -45,6 +46,8 @@ export function ElementForm({
   roofPitchDeg,
   eavesM,
   eavesSource,
+  crownBaseM,
+  crownBaseSource,
   height,
   width,
   soilType,
@@ -65,9 +68,11 @@ export function ElementForm({
   // What the fields opened with, so that only what changed is sent (doc 93).
   const tallAtStart = height === null ? '' : String(height);
   const eavesAtStart = eavesM === null ? '' : String(eavesM);
+  const baseAtStart = crownBaseM === null ? '' : String(crownBaseM);
   const [tall, setTall] = useState(tallAtStart);
   const [roofShape, setRoofShape] = useState(roof);
   const [eaves, setEaves] = useState(eavesAtStart);
+  const [crownBase, setCrownBase] = useState(baseAtStart);
   const [band, setBand] = useState(width === null ? '' : String(width));
   const [soil, setSoil] = useState(soilType ?? '');
   const [wet, setWet] = useState(moisture ?? '');
@@ -106,6 +111,10 @@ export function ElementForm({
       // Empty is "nobody has said", which is a value: it puts the building back
       // on the assumed eaves rather than on zero.
       changes.eaves_m = eaves === '' ? null : Number(eaves);
+    }
+    if (CROWNED.has(chosen) && crownBase !== baseAtStart) {
+      // Empty is "nobody has said": back on the assumption, not on the ground.
+      changes.crown_base_m = crownBase === '' ? null : Number(crownBase);
     }
     if (shape === 'line' && band !== '') changes.width = Number(band);
     onSave(changes);
@@ -172,6 +181,12 @@ export function ElementForm({
             nicht weniger Sonne als die Südseite.
           </p>
         </>
+      )}
+
+      {CROWNED.has(chosen) && (
+        <CrownBaseField id={id} kind={chosen} storedKind={kind} storedM={crownBaseM}
+                        storedSource={crownBaseSource} heightM={ridge} value={crownBase}
+                        onChange={setCrownBase} />
       )}
 
       {shape === 'line' && (

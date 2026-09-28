@@ -34,6 +34,15 @@ MIN_SHADING_HEIGHT_M = 1.5
 
 WOODY_FORMS = frozenset({"tree", "shrub", "subshrub"})
 
+#: Where a tree's crown starts, as a share of its height, when nobody has
+#: measured it (doc 121): the plan's rule of thumb for a tree grown in the
+#: open. Only a tree has a trunk under its crown. A shrub branches from the
+#: ground, and a third would leave a gap under it that no shrub has.
+TREE_CROWN_BASE_SHARE = 1 / 3
+#: The forms — and the drawn kinds, which share the word — whose crown stands
+#: on a trunk. Mirrored in the page's `heights.ts::TRUNKED`.
+TRUNKED = frozenset({"tree"})
+
 
 @dataclass(frozen=True)
 class Canopy:
@@ -45,12 +54,20 @@ class Canopy:
     area_m2: float
     height_m: float
     estimated: bool = True
+    #: Where the crown starts, above the ground (doc 121). Estimated too.
+    base_m: float = 0.0
 
 
 def crown_radius(height_m: float, growth_form: str | None) -> float:
     """Estimated crown radius in metres."""
     ratio = CROWN_RATIO.get((growth_form or "").lower(), DEFAULT_CROWN_RATIO)
     return max(height_m * ratio, 0.05)
+
+
+def crown_base(height_m: float, growth_form: str | None) -> float:
+    """Where the crown starts when nobody has said: a third of the way up a
+    tree, the ground for anything else (doc 121)."""
+    return height_m * TREE_CROWN_BASE_SHARE if (growth_form or "").lower() in TRUNKED else 0.0
 
 
 def canopy_of(height_m: float | None, growth_form: str | None) -> Canopy | None:
@@ -67,6 +84,7 @@ def canopy_of(height_m: float | None, growth_form: str | None) -> Canopy | None:
         radius_m=round(radius, 2),
         area_m2=round(3.141592653589793 * radius * radius, 2),
         height_m=height_m,
+        base_m=round(crown_base(height_m, growth_form), 2),
     )
 
 

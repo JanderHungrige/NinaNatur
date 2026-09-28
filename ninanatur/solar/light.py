@@ -47,7 +47,11 @@ MONTH_DAY_STEP = 2
 #: - "26.5" — a roof casts as a roof: the solid under its own planes rather
 #:   than a block of `RISE_KEPT`'s averaged height, and a hip's corners sit on
 #:   its planes rather than in the dip a distance to its ridge left (doc 120).
-MODEL_VERSION = "26.5"
+#: - "26.6" — a crown is an ellipsoid on a trunk, passing light by the depth a
+#:   ray crosses, not a cylinder from the ground passing a fixed share; and a
+#:   tree or shrub the gardener drew is a crown too, not an opaque block
+#:   (doc 121).
+MODEL_VERSION = "26.6"
 
 # Mean daily direct sun (hours) -> light value on EIVE's own 0–10 scale, as
 # anchors joined by straight lines, darkest first.
@@ -108,10 +112,10 @@ SUN_HOUR_ANCHORS: tuple[tuple[float, float], ...] = (
 # whose bare months the hours count as sun — they say what it is.
 #
 # **Not below 2.5, as the hours are not.** Classic 1–2 is a closed forest
-# floor. And inside a tree, shrub or hedge the gardener drew — which the model
-# still casts as opaque, until crowns are crowns (Wave 26, feature 6) — the
-# sky reads 0: with classes 1 and 2 kept, every bed there fell from 2.5 to 0.0
-# (review, 2026-09-22).
+# floor. And inside a hedge the gardener drew, which the model casts solid to
+# the ground, the sky reads 0: with classes 1 and 2 kept, every bed there fell
+# from 2.5 to 0.0 (review, 2026-09-22). A drawn tree or shrub was such a solid
+# too until it became a crown on a trunk (doc 121).
 SKY_ANCHORS: tuple[tuple[float, float], ...] = (
     (0.05, 2.5),    # classic 3 — mostly below 5 %; the hours' floor too
     (0.075, 3.75),  # classic 4

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { HEIGHT_SOURCES, eavesNote, heightNote, isMeasured, roofNote } from './heights';
+import {
+  HEIGHT_SOURCES, crownBaseNote, eavesNote, heightNote, isMeasured, roofNote,
+} from './heights';
 
 describe('heightNote', () => {
   it('says how a height was arrived at', () => {
@@ -80,5 +82,21 @@ describe('eavesNote — where an eaves height came from (doc 93)', () => {
 
   it('owns up to a number whose origin nobody kept', () => {
     expect(eavesNote(6.2, null, 9)).toBe('Herkunft nicht vermerkt');
+  });
+});
+
+describe('crownBaseNote — where a crown starts (doc 121)', () => {
+  it('says what the model assumes for a tree, with its number when the height is known', () => {
+    expect(crownBaseNote('tree', null, null, 9)).toBe(
+      'Nicht bekannt: gerechnet wird mit einem Drittel der Höhe, 3,0 m');
+    expect(crownBaseNote('tree', null, null, null)).toBe(
+      'Nicht bekannt: gerechnet wird mit einem Drittel der Höhe');
+    expect(crownBaseNote('shrub', null, null, 2)).toBe('Nicht bekannt: gerechnet wird ab dem Boden');
+  });
+
+  it('names the laser, and says nothing about the gardener\'s own number', () => {
+    expect(crownBaseNote('tree', 4.2, 'measured', 18)).toBe('aus Laserdaten gemessen');
+    expect(crownBaseNote('tree', 4.2, 'user', 18)).toBeNull();
+    expect(crownBaseNote('tree', 4.2, null, 18)).toBe('Herkunft nicht vermerkt');
   });
 });

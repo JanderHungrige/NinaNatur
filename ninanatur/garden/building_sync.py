@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import sqlite3
+from dataclasses import dataclass
 
 from geokachel.addressing import INSIDE, addressed
 from geokachel.surface_sources import by_state, measures_buildings
@@ -49,8 +50,20 @@ log = logging.getLogger(__name__)
 #: roof shape stays whatever it was.
 
 
-def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
-    """Measure this garden's buildings. Returns how many changed.
+@dataclass(frozen=True)
+class Measured:
+    """What measuring a garden's buildings did, and what it read to do it."""
+
+    #: How many buildings changed.
+    changed: int
+    #: The survey's building model on the garden's axes, or None where none
+    #: was read — what tells the laser's roofs from its crowns (doc 121).
+    buildings: list[Lod2Building] | None = None
+
+
+def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> Measured:
+    """Measure this garden's buildings. Returns how many changed, and the
+    building model it read.
 
     Zero is an ordinary answer: no service for this state, nothing surveyed near
     enough to match, or every building already spoken for by the user.
@@ -59,16 +72,16 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
     if not is_precise(anchor):
         # Same check as the terrain: a surface window and a building tile
         # fetched six kilometres away measure somebody else's houses.
-        return 0
+        return Measured(0)
 
     state = state_at(anchor.lat, anchor.lon)
     if state is None:
-        return 0
+        return Measured(0)
 
     surveyed = _surveyed(anchor, state)
     surface = _surface(conn, anchor, state)
     if surveyed is None and surface is None:
-        return 0
+        return Measured(0)
     changed = apply(conn, measure(garden, surveyed, surface))
     if surface is not None:
         # Trees are proposed, never applied — so this counts separately and does
@@ -76,7 +89,7 @@ def measure_buildings(conn: sqlite3.Connection, garden: Garden) -> int:
         # crown from a marquee.
         remember(conn, garden.garden_id,
                  canopies_in(surface, [list(o.footprint) for o in garden.obstacles]))
-    return changed
+    return Measured(changed, surveyed)
 
 
 def _surface_from_tiles(anchor: LatLon, state: str,
@@ -152,4 +165,4 @@ def _surface(
         return None
 
 
-__all__ = ["measure_buildings"]
+__all__ = ["Measured", "measure_buildings"]

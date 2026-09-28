@@ -116,10 +116,14 @@ def _cell_for(parts: list[Part], box: tuple[float, float, float, float], *,
     obstacles (review, 2026-09-22); a crown that drops its leaves makes it
     sweep the sky twice (doc 118); cells with surfaces of their own — a
     hillside's or a roof's — make it weigh every moment per cell (doc 119);
-    and a roof's own planes are cut against every cell (doc 120)."""
+    and a roof's own planes are cut against every cell (doc 120). A crown on
+    the grid is priced as the part it is, which costs more than it does; one
+    off it costs more than a far part (doc 121)."""
     min_x, min_y, max_x, max_y = box
     standing = [stands_in([(float(x), float(y)) for x, y in p.corners], box) for p in parts]
     near = sum(standing)
+    far_crowns = sum(1 for p, on in zip(parts, standing, strict=True)
+                     if not on and p.crown is not None)
     deciduous = any(p.bare_transmission is not None for p in parts)
     near_planes = sum(len(p.roof) for p, on in zip(parts, standing, strict=True) if on)
     far_planes = sum(len(p.roof) for p in parts) - near_planes
@@ -127,9 +131,10 @@ def _cell_for(parts: list[Part], box: tuple[float, float, float, float], *,
     # planes stand on the grid — a far neighbour's roof has no cell in it.
     tilted = terrain or near_planes > 0
     check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain, deciduous, tilted,
-                 near_planes, far_planes)
+                 near_planes, far_planes, far_crowns=far_crowns)
     return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), len(parts),
-                         near, terrain, deciduous, tilted, near_planes, far_planes)
+                         near, terrain, deciduous, tilted, near_planes, far_planes,
+                         far_crowns=far_crowns)
 
 
 def _exact(element: object) -> str:
@@ -154,8 +159,9 @@ def signature_of(
     looks right. This is a fact about the inputs instead, so a new feature
     cannot forget to declare itself.
 
-    What is in it: where the garden is, and every obstacle's kind, height, roof
-    and outline, and every planting that casts a shadow, by species and position
+    What is in it: where the garden is, and every obstacle's kind, height, roof,
+    crown base (doc 121) and outline, and every planting that casts a shadow,
+    by species and position
     (`shading_taxa`; without it, every planting) — and **what the
     ground and the horizon were measured from** (Wave 25, doc 106). A state that
     gains a source is the case this last part is for: Bayern had no terrain at
@@ -192,7 +198,7 @@ def signature_of(
         parts.append(
             f"{element.element_id}|{element.kind}|{element.height}"
             f"|{element.roof}|{element.eaves_m}|{element.roof_fall_deg}"
-            f"|{element.height_above_ground}|{outline}"
+            f"|{element.crown_base_m}|{element.height_above_ground}|{outline}"
         )
         for planting in element.plantings:
             if shading_taxa is not None and planting.taxon_id not in shading_taxa:

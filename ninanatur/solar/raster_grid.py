@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ninanatur.solar.crown import CrownSolid, chord, passing
 from ninanatur.solar.incidence import Incidence, cos_incidence
 from ninanatur.solar.raster import (
     Directions,
@@ -74,6 +75,7 @@ def grid_sweep(parts: list[Part], directions: Directions, cells: Cells,
     boxes = _boxes(parts)
     tops = np.array([part.top for part in parts])
     lowest = float(cells.z.min()) if cells.z.size else 0.0
+    highest = float(cells.z.max()) if cells.z.size else 0.0
     for k in range(len(directions.azimuth)):
         az = math.radians(float(directions.azimuth[k]))
         sun_x, sun_y = math.sin(az), math.cos(az)
@@ -81,7 +83,12 @@ def grid_sweep(parts: list[Part], directions: Directions, cells: Cells,
         through = np.ones((rows, cols))
         month = int(directions.month[k])
         for j in _reaching(boxes, tops, lowest, sun_x, sun_y, cot, cells):
-            _shade(parts[j], cells, through, sun_x, sun_y, cot, month, lowest)
+            part = parts[j]
+            if part.crown is not None:
+                _shade_crown(part, part.crown, cells, through, (sun_x, sun_y, cot), month,
+                             (lowest, highest))
+            else:
+                _shade(part, cells, through, sun_x, sun_y, cot, month, lowest)
         if seen is not None:
             open_sky = np.append(seen[k], True)  # index -1: no ring, always open
             through *= open_sky[cells.sky]
@@ -152,6 +159,35 @@ def _shade(part: Part, cells: Cells, through: np.ndarray, sun_x: float, sun_y: f
         hit &= cells.owner[r0:r1, c0:c1] != part.owner
     if hit.any():
         through[r0:r1, c0:c1][hit] *= part.through(month)
+
+
+def _shade_crown(part: Part, crown: CrownSolid, cells: Cells, through: np.ndarray,
+                 sun: tuple[float, float, float], month: int,
+                 levels: tuple[float, float]) -> None:
+    """Multiply what passes through a crown into the cells its shadow can reach
+    (doc 121), by the depth each ray crosses.
+
+    The cells asked are those under the ellipse the crown throws — centred
+    where the ray through its middle meets a cell, at any height from the
+    grid's highest to its lowest — not those under the square round it swept
+    from the ground: the trunk casts nothing, and most of that sweep is lit.
+    """
+    sun_x, sun_y, cot = sun
+    lowest, highest = levels
+    near, far = (crown.cz - highest) * cot, (crown.cz - lowest) * cot
+    half_x = math.sqrt(crown.rh ** 2 + (sun_x * cot * crown.rv) ** 2)
+    half_y = math.sqrt(crown.rh ** 2 + (sun_y * cot * crown.rv) ** 2)
+    xs = (crown.cx - sun_x * near, crown.cx - sun_x * far)
+    ys = (crown.cy - sun_y * near, crown.cy - sun_y * far)
+    c0, c1 = _span(cells.xs, cells.cell_m, min(xs) - half_x, max(xs) + half_x)
+    r0, r1 = _span(cells.ys, cells.cell_m, min(ys) - half_y, max(ys) + half_y)
+    if c0 >= c1 or r0 >= r1:
+        return
+    depth = chord(crown, cells.xs[None, c0:c1], cells.ys[r0:r1, None],
+                  cells.z[r0:r1, c0:c1], sun_x, sun_y, cot)
+    if part.owner is not None:
+        depth = np.where(cells.owner[r0:r1, c0:c1] != part.owner, depth, 0.0)
+    through[r0:r1, c0:c1] *= passing(part.through(month), crown, depth)
 
 
 def _span(centres: np.ndarray, cell: float, lo: float, hi: float) -> tuple[int, int]:

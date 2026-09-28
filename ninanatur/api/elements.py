@@ -143,6 +143,8 @@ def edit_obstacle(
         changes["roof_fall_deg"] = None
     if "eaves_m" in changes:
         changes["eaves_source"] = None if changes["eaves_m"] is None else "user"
+    if "crown_base_m" in changes:
+        changes["crown_base_source"] = None if changes["crown_base_m"] is None else "user"
     update_obstacle(conn, obstacle_id, **changes)
     return to_out(load_garden(conn, garden.garden_id))
 

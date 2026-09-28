@@ -131,8 +131,12 @@ def test_a_spruce_takes_more_light_than_an_oak(conn: sqlite3.Connection) -> None
 
 
 def test_a_tree_is_no_longer_a_wall(conn: sqlite3.Connection) -> None:
-    """The change stated as a number. A crown that passes a fifth of the light
-    is a different thing from masonry, and the bed underneath says so."""
+    """The change stated as a number. Leaves that pass a fifth of the light
+    are a different thing from masonry, and the bed behind them says so.
+
+    Asked of the slow field, which casts prisms: a solid of leaves, as crowns
+    were cast until doc 121. A crown on its trunk is the raster's, and
+    `test_crown.py`'s."""
     from ninanatur.solar.field import shadow_field
     from ninanatur.solar.position import Location
 

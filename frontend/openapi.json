@@ -1756,6 +1756,28 @@
             ],
             "title": "Constraint Hint"
           },
+          "crown_base_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Base M"
+          },
+          "crown_base_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Base Source"
+          },
           "eaves_m": {
             "anyOf": [
               {
@@ -1939,6 +1961,8 @@
           "roof_source",
           "eaves_source",
           "roof_fall_deg",
+          "crown_base_m",
+          "crown_base_source",
           "roof_pitch_deg",
           "roof_lines",
           "label",
@@ -1968,6 +1992,19 @@
               }
             ],
             "title": "Constraint Hint"
+          },
+          "crown_base_m": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Base M"
           },
           "depth": {
             "anyOf": [
@@ -4270,7 +4307,7 @@
         ]
       },
       "post": {
-        "description": "Turn a suggestion into a tree on the plan.\n\nIts height is marked `measured`, which is what it is \u2014 and its species is\nnobody's guess, so the canopy model treats it as a broadleaf in leaf, the\nsame default every unidentified woody planting already gets.",
+        "description": "Turn a suggestion into a tree on the plan.\n\nIts height is marked `measured`, which is what it is, and so is where its\ncrown starts wherever the laser's point cloud has been read here (doc 121).\nIts species is nobody's guess, so it casts with a broadleaf's shares\n(`garden.casting`), the default every unidentified woody planting gets.",
         "operationId": "accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post",
         "parameters": [
           {
@@ -5048,7 +5085,7 @@
     },
     "/api/v1/gardens/{token}/sightlines": {
       "post": {
-        "description": "What is visible from a point in the garden.\n\nThe same cylinders the shading model uses, seen from an eye instead of from\nthe sun \u2014 so a hedge blocks sight exactly as it blocks light, and a raised\nbed stands above both.",
+        "description": "What is visible from a point in the garden.\n\nThe standing things on the plan as prisms to their full height, seen from\nan eye instead of from the sun \u2014 so a hedge blocks sight as it blocks\nlight, and a raised bed stands above both. A tree blocks a view whole: the\nlight model sees through its crown since doc 121, but a view does not pass\nthrough leaves the way a fifth of the sun does.",
         "operationId": "sightlines_api_v1_gardens__token__sightlines_post",
         "parameters": [
           {

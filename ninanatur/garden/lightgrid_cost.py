@@ -52,11 +52,27 @@ TILTED_CELL_MS = 0.02
 NEAR_PLANE_MS = 17.0
 FAR_PLANE_MS = 10.0
 PLANE_CELL_MS = 0.0007
+#: A crown (doc 121) standing on the grid is priced as the part it is. Its
+#: chord is a quadratic solved at each cell under the ellipse it throws —
+#: fewer cells than a part's square swept from the ground — and it costs less
+#: than a part: measured on 12 and 36 drawn trees on a 94 m plot at forced
+#: cells from 2 m to 0.5 m (2026-09-28), about 71 ms a crown and 0.0008 ms a
+#: cell against a part's 95 and 0.002 — 36 trees took 4.8 s at 0.5 m where the
+#: estimate says 8.4, and 3.2 s at 2 m where it says 4.6.
+#:
+#: Off the grid it costs more than a far part: a crown just past the grid's
+#: edge throws its shadow in at most moments, not only while shadows are long.
+#: 24 trees 12 m outside the plot took 0.96 s at 2 m where the far price said
+#: 0.75 (review, 2026-09-28) — about 24 ms a crown, so a far crown adds this
+#: to its part's, rounded up; from 20 m out the far price held alone.
+#: `python -m scripts.measure_crown_cost` prints both.
+FAR_CROWN_MS = 15.0
 
 
 def estimate_ms(cells: float, parts: int, near: int | None = None,
                 terrain: bool = False, deciduous: bool = False,
-                tilted: bool = False, near_planes: int = 0, far_planes: int = 0) -> float:
+                tilted: bool = False, near_planes: int = 0, far_planes: int = 0,
+                *, far_crowns: int = 0) -> float:
     """What a grid of this many cells is expected to cost, in milliseconds.
 
     `parts` counts the convex parts of everything that casts, which is what
@@ -67,7 +83,8 @@ def estimate_ms(cells: float, parts: int, near: int | None = None,
     leaves, and the sky is swept a second time, bare. `tilted`: the cells have
     surfaces of their own — terrain, or a pitched roof — so every moment's
     beam is worked out per cell (doc 119). `near_planes` and `far_planes`
-    count the roof planes the near and the far parts carry (doc 120).
+    count the roof planes the near and the far parts carry (doc 120), and
+    `far_crowns` the far parts that are crowns (doc 121).
     """
     near = parts if near is None else min(near, parts)
     far = parts - near
@@ -77,8 +94,9 @@ def estimate_ms(cells: float, parts: int, near: int | None = None,
     raster = NEAR_PART_MS * near + FAR_PART_MS * far + cells * per_cell
     planes = near_planes + far_planes
     roofs = NEAR_PLANE_MS * near_planes + FAR_PLANE_MS * far_planes + cells * PLANE_CELL_MS * planes
+    crowns = FAR_CROWN_MS * far_crowns
     ground = cells * TERRAIN_CELL_MS if terrain else 0.0
-    return (GRID_FIXED_MS + swept * (raster + roofs) + ground
+    return (GRID_FIXED_MS + swept * (raster + roofs + crowns) + ground
             + (cells * TILTED_CELL_MS if tilted else 0.0))
 
 
@@ -87,7 +105,7 @@ def cost_model() -> str:
     return (f"cost {GRID_FIXED_MS},{NEAR_PART_MS},{FAR_PART_MS},"
             f"{CELL_COST_MS},{CELL_NEAR_PART_MS},{CELL_FAR_PART_MS},{TERRAIN_CELL_MS}"
             f"|sky {SKY_DIRECTIONS},{BARE_SKY_DIRECTIONS}/{SEASON_MOMENTS}|tilt {TILTED_CELL_MS}"
-            f"|roof {NEAR_PLANE_MS},{FAR_PLANE_MS},{PLANE_CELL_MS}")
+            f"|roof {NEAR_PLANE_MS},{FAR_PLANE_MS},{PLANE_CELL_MS}|crown {FAR_CROWN_MS}")
 
 
 __all__ = ["cost_model", "estimate_ms"]

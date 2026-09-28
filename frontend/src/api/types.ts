@@ -324,9 +324,10 @@ export interface paths {
          * Accept Canopy
          * @description Turn a suggestion into a tree on the plan.
          *
-         *     Its height is marked `measured`, which is what it is — and its species is
-         *     nobody's guess, so the canopy model treats it as a broadleaf in leaf, the
-         *     same default every unidentified woody planting already gets.
+         *     Its height is marked `measured`, which is what it is, and so is where its
+         *     crown starts wherever the laser's point cloud has been read here (doc 121).
+         *     Its species is nobody's guess, so it casts with a broadleaf's shares
+         *     (`garden.casting`), the default every unidentified woody planting gets.
          */
         post: operations["accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post"];
         /**
@@ -642,9 +643,11 @@ export interface paths {
          * Sightlines
          * @description What is visible from a point in the garden.
          *
-         *     The same cylinders the shading model uses, seen from an eye instead of from
-         *     the sun — so a hedge blocks sight exactly as it blocks light, and a raised
-         *     bed stands above both.
+         *     The standing things on the plan as prisms to their full height, seen from
+         *     an eye instead of from the sun — so a hedge blocks sight as it blocks
+         *     light, and a raised bed stands above both. A tree blocks a view whole: the
+         *     light model sees through its crown since doc 121, but a view does not pass
+         *     through leaves the way a fifth of the sun does.
          */
         post: operations["sightlines_api_v1_gardens__token__sightlines_post"];
         delete?: never;
@@ -1550,6 +1553,10 @@ export interface components {
         ObstacleOut: {
             /** Constraint Hint */
             constraint_hint: string | null;
+            /** Crown Base M */
+            crown_base_m: number | null;
+            /** Crown Base Source */
+            crown_base_source: string | null;
             /** Eaves M */
             eaves_m: number | null;
             /** Eaves Source */
@@ -1598,6 +1605,8 @@ export interface components {
         ObstacleUpdate: {
             /** Constraint Hint */
             constraint_hint?: string | null;
+            /** Crown Base M */
+            crown_base_m?: number | null;
             /** Depth */
             depth?: number | null;
             /** Eaves M */

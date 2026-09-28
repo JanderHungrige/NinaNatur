@@ -1,8 +1,9 @@
 """Does an obstacle put a point in shadow?
 
-Obstacles are vertical cylinders — a position, a radius and a height. That covers
-the walls, hedges, trees and sheds a garden actually contains, and keeps the
-question to a line-distance check.
+Obstacles are footprints standing to a height: the walls, hedges and sheds a
+garden contains. A roof the model knows casts as its planes (doc 120), and a
+tree's or shrub's crown as an ellipsoid on its trunk that passes light by the
+depth a ray crosses (doc 121).
 
 Garden coordinates are metres with x east and y north, matching `position.py`.
 """
@@ -12,6 +13,7 @@ import math
 from dataclasses import dataclass
 
 from ninanatur.garden.footprint import covers
+from ninanatur.solar.crown import Crown, chord, outline, standing
 from ninanatur.solar.position import SunPosition
 from ninanatur.solar.reach import is_convex, near_edge
 from ninanatur.solar.sweep import RoofSolid, convex_hull, roof_shadow, shadow_shape
@@ -60,9 +62,13 @@ class Obstacle:
     #: and every conifer.
     transmission: float = 0.0
     bare_transmission: float | None = None
-    #: The roof over it (doc 120). None for anything that casts as a block: a
-    #: flat roof, a shape nobody has identified, a crown, a wall.
+    #: The roof over it (doc 120). None for anything whose top is not a roof
+    #: the model knows the planes of: a flat roof, a shape nobody has
+    #: identified, a wall, a hedge — or a crown, which has its own field.
     roof: RoofSolid | None = None
+    #: The crown it is (doc 121): an ellipsoid on a trunk that passes light by
+    #: the depth of the crossing. None for anything that is not a tree's crown.
+    crown: Crown | None = None
     #: Which drawn element this is, where the caller needs to tell one shadow
     #: from another. Only the roof query does: a building's own footprint is
     #: inside its own shadow at every moment of every day, so asking about a
@@ -166,6 +172,11 @@ def shadow_rings(obstacles: list[Obstacle], sun: SunPosition) -> list[list[tuple
             # A roof casts as a roof (doc 120): each corner by its own height.
             rings.extend(roof_shadow(list(obstacle.footprint), obstacle.roof, per_metre))
             continue
+        if obstacle.crown is not None:
+            # A crown throws the ellipse its ellipsoid does (doc 121).
+            rings.append(outline(standing(obstacle.crown, obstacle.base), obstacle.base,
+                                 per_metre))
+            continue
         rings.extend(shadow_shape(list(obstacle.footprint),
                                   per_metre[0] * obstacle.height,
                                   per_metre[1] * obstacle.height))
@@ -239,6 +250,11 @@ def is_shaded(
 
     if obstacle.roof is not None:
         return _meets_solid(point, obstacle, sun, height_above_ground)
+    if obstacle.crown is not None:
+        azimuth = math.radians(sun.azimuth)
+        return bool(chord(standing(obstacle.crown, obstacle.base), point.x, point.y,
+                          obstacle.base + height_above_ground, math.sin(azimuth),
+                          math.cos(azimuth), 1.0 / math.tan(math.radians(sun.altitude))) > 0)
 
     effective = obstacle.height - height_above_ground
     if effective <= 0:

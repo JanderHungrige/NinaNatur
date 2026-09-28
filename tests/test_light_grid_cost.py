@@ -111,7 +111,7 @@ def test_a_pitched_roof_alone_buys_the_tilted_cell(conn: sqlite3.Connection,
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
             terrain: bool = False, deciduous: bool = False, tilted: bool = False,
-            near_planes: int = 0, far_planes: int = 0) -> float:
+            near_planes: int = 0, far_planes: int = 0, *, far_crowns: int = 0) -> float:
         asked.append((tilted, near_planes, far_planes))
         return 1.0
 
@@ -187,8 +187,8 @@ def test_the_grid_counts_the_parts_standing_on_it(
     asked: list[tuple[int, int | None]] = []
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
-            *what: object) -> float:
-        asked.append((parts, near))  # the rest is terrain, leaves and tilt
+            *what: object, **more: object) -> float:
+        asked.append((parts, near))  # the rest is terrain, leaves, tilt and crowns
         return 1.0
 
     monkeypatch.setattr(lightgrid, "cell_size_for", spy)
@@ -208,3 +208,32 @@ def test_a_roof_nobody_measured_stands_on_the_lowest_ground() -> None:
     rows = surfaces_of([-1.0, 0.0, 1.0, 5.0], [0.0], None, None, 150.0, [roof])
     unanswered = [s for s in rows[0] if not s.answered]
     assert len(unanswered) == 3 and all(s.z == 150.0 for s in unanswered)
+
+
+def test_a_crown_off_the_grid_is_priced_above_a_far_part(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A crown just past the grid's edge throws its shadow in at most moments,
+    and cost more than the far price said (doc 121, review 2026-09-28): the
+    grid counts the crowns that stand off it, and each is priced above a far
+    part — one on the grid is priced as the part it is."""
+    garden_id = create_garden(conn, name="G", latitude=51.25, longitude=7.15)
+    add_obstacle(conn, garden_id, ObstacleInput(kind="garden", x=0, y=0, shape="rect",
+                                                width=20, depth=20, label="Garten"))
+    for x in (0.0, 40.0):
+        add_obstacle(conn, garden_id, ObstacleInput(kind="tree", x=x, y=0, shape="circle",
+                                                    width=6, height=10, label="Linde"))
+    conn.execute("UPDATE element SET height_source = 'measured' WHERE kind = 'tree' AND x > 20")
+    conn.commit()
+    garden = load_garden(conn, garden_id)
+    asked: list[tuple[int | None, int]] = []
+
+    def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
+            *what: object, far_crowns: int = 0) -> float:
+        asked.append((near, far_crowns))
+        return 1.0
+
+    monkeypatch.setattr(lightgrid, "cell_size_for", spy)
+    compute_grid(garden, shading_obstacles(conn, garden))
+    assert asked == [(1, 1)], "the tree on the plot is near; the laser's, 40 m out, is not"
+    assert estimate_ms(10_000, 1, 0, far_crowns=1) > estimate_ms(10_000, 1, 0)

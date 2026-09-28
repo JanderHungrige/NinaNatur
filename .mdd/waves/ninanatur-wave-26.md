@@ -74,7 +74,7 @@ term the number becomes a derivation from the definition.
 | 3 | the-sky-counts | 118 | built | 2 |
 | 4 | energy-not-hours | 119 | built | 3 |
 | 5 | a-roof-casts-as-a-roof | 120 | built | 1 |
-| 6 | a-crown-is-not-a-cylinder | — | planned | 1 |
+| 6 | a-crown-is-not-a-cylinder | 121 | built | 1 |
 | 7 | mark-the-shadow-edge | — | planned | 3 |
 
 Three stages:
@@ -147,6 +147,22 @@ with a new date. The page says which model version computed a map.
   full-ridge block (the roof dropped by `standing_on`), a playback that still
   drew blocks, a hip drawn at its eaves, and planes priced per cell when they
   cost per plane.
+
+- **2026-09-28 — stage 3: feature 6 built** (doc 121). *A crown is not a
+  cylinder*: an ellipsoid on a trunk, passing light by the depth a ray
+  crosses — Beer–Lambert, its longest chord passing the old share — for the
+  woody plants planted from the catalogue and, no longer opaque blocks, for
+  the trees and shrubs the gardener draws or takes from the laser; a hedge
+  stays solid. Where a crown starts is the gardener's *Kronenansatz*, the
+  laser's reading, or a third of a tree's height. The foot of a lone 12 m
+  lime goes from 4.37 h to 12.98 h: a crown on a trunk lets all but the high
+  summer sun in beneath it, and its shade falls north — the plan's
+  calibration, and the owner's to revisit (doc 121, known issues).
+  `MODEL_VERSION` 26.6. Three review agents, 18 distinct findings, all fixed:
+  the worst a laser window shared by a street and read on the wrong garden's
+  axes (a neighbour's tree measured as one's own), roofs read as crown bases
+  without the building model, a row of shrubs cast as one ball at its
+  middle, and tests that only ever cast spheres.
 
 ## What each one is
 

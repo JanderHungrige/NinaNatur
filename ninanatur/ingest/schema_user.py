@@ -92,6 +92,11 @@ CREATE TABLE IF NOT EXISTS element (
     -- in [0, 360) for a pent. Null: not surveyed, and the ridge is assumed to
     -- run along the long side.
     roof_fall_deg REAL,
+    -- Where a tree's or shrub's crown starts, in metres above its ground
+    -- (doc 121), and who said: 'user' | 'measured'. Null is nobody, and the
+    -- model assumes a third of a tree's height and the ground under a shrub.
+    crown_base_m  REAL,
+    crown_base_source TEXT,
     label       TEXT,
     -- Below here: what a planting site needs. All null on a paving slab, and
     -- that is the point — one table, and being a bed is a property.

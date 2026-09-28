@@ -30,9 +30,11 @@ def sightlines(
 ) -> SightlinesOut:
     """What is visible from a point in the garden.
 
-    The same cylinders the shading model uses, seen from an eye instead of from
-    the sun — so a hedge blocks sight exactly as it blocks light, and a raised
-    bed stands above both.
+    The standing things on the plan as prisms to their full height, seen from
+    an eye instead of from the sun — so a hedge blocks sight as it blocks
+    light, and a raised bed stands above both. A tree blocks a view whole: the
+    light model sees through its crown since doc 121, but a view does not pass
+    through leaves the way a fifth of the sun does.
     """
     garden = require_garden(conn, token)
     eye = Viewpoint(x=viewpoint.x, y=viewpoint.y, eye_height_m=viewpoint.eye_height_m)

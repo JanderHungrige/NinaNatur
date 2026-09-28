@@ -274,8 +274,8 @@ def shadow_field(
 def _prisms_only(obstacles: list[Obstacle]) -> None:
     """The reference for prisms; a roof's is `shading.is_shaded` (review,
     2026-09-28: rebuilt here field by field, a roof was cast as a block)."""
-    if any(o.roof is not None for o in obstacles):
-        raise ValueError("the field casts prisms; ask shading.is_shaded about a roof")
+    if any(o.roof is not None or o.crown is not None for o in obstacles):
+        raise ValueError("the field casts prisms; ask the raster about a roof or a crown")
 
 
 def _shadow_at(obstacle: Obstacle, sun: SunPosition, month: int) -> ShadowAt:

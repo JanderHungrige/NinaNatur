@@ -53,7 +53,7 @@ export function element(
     points: corners, footprint: corners.map(([cx, cy]) => [(cx ?? 0) + x, (cy ?? 0) + y]),
     height: heightOf(kind), height_source: 'user', roof: 'unknown', roof_source: 'user',
     shadow: castBy(heightOf(kind)),
-    eaves_m: null, eaves_source: null, roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [], label: null,
+    eaves_m: null, eaves_source: null, crown_base_m: null, crown_base_source: null, roof_fall_deg: null, roof_pitch_deg: null, roof_lines: [], label: null,
     ...extra,
   };
 }

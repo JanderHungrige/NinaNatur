@@ -76,3 +76,29 @@ def test_frontend_assumes_the_eaves_where_the_model_does() -> None:
     entry = re.search(r"export const EAVES_FRACTION = ([\d.]+);", source)
     assert entry is not None, "roofs.ts no longer says where it puts the eaves"
     assert float(entry.group(1)) == DEFAULT_EAVES_FRACTION
+
+
+HEIGHTS_TS = ROOFS_TS.with_name("heights.ts")
+
+
+def test_frontend_assumes_the_crown_base_where_the_model_does() -> None:
+    """The form says where the model starts a crown nobody measured (doc 121),
+    and asks only the kinds the model casts as crowns."""
+    from fractions import Fraction
+
+    from ninanatur.garden.canopy import TREE_CROWN_BASE_SHARE, TRUNKED, crown_base
+    from ninanatur.garden.casting import _CROWNS
+
+    source = HEIGHTS_TS.read_text(encoding="utf-8")
+    entry = re.search(r"export const TREE_CROWN_BASE_SHARE = (\d+) / (\d+);", source)
+    assert entry is not None, "heights.ts no longer says where it starts a crown"
+    assert Fraction(int(entry.group(1)), int(entry.group(2))) == Fraction(TREE_CROWN_BASE_SHARE)\
+        .limit_denominator(100)
+    for name, server in (("CROWNED", {k.value for k in _CROWNS}), ("TRUNKED", TRUNKED)):
+        kinds = re.search(rf"export const {name} = new Set\(\[([^\]]*)\]\);", source)
+        assert kinds is not None, f"heights.ts no longer says which kinds are {name}"
+        assert set(re.findall(r"'([a-z]+)'", kinds.group(1))) == set(server), name
+    # And the server's rule is the set: a trunk under a tree, the ground under
+    # anything else.
+    assert abs(crown_base(9.0, "tree") - 3.0) < 1e-9
+    assert crown_base(9.0, "shrub") == 0.0
