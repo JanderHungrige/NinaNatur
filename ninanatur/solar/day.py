@@ -12,9 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from ninanatur.garden.casting import casting, casts
 from ninanatur.garden.models import Garden
-from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.garden.roofs import Roof, shading_height
 from ninanatur.solar.position import Location, sun_position
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_rings
 
@@ -84,19 +83,8 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
 
 
 def _casting(garden: Garden) -> list[Obstacle]:
-    """Everything in the garden that throws a shadow, at its shading height.
-
-    The same rule the light model applies, and deliberately not a second copy of
-    it: a height of None is an element nobody has measured, and treating it as
-    zero would be a claim.
-    """
-    return [
-        Obstacle(
-            footprint=element.footprint,
-            height=shading_height(
-                element.height, Roof(element.roof), element.eaves_m
-            ),
-        )
-        for element in garden.obstacles
-        if element.height is not None and casts_shadow(ObjectKind(element.kind))
-    ]
+    """Everything in the garden that throws a shadow, cast as the light model
+    casts it (`garden.casting`) — a roof as its planes, not as the block of an
+    averaged height it once kept here after the model had moved on (review,
+    2026-09-28)."""
+    return [casting(element) for element in garden.obstacles if casts(element)]

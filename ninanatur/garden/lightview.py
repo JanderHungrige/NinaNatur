@@ -18,12 +18,11 @@ from ninanatur.garden.canopies import (
     transmission,
 )
 from ninanatur.garden.canopy import Canopy, canopy_of, shades
+from ninanatur.garden.casting import casting, casts
 from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
 from ninanatur.garden.footprint import Shape, footprint_of
 from ninanatur.garden.lightgrid import LightGrid, compute_grid
 from ninanatur.garden.models import Garden
-from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.garden.roofs import Roof, shading_height
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.shading import Obstacle as ShadingObstacle
@@ -176,21 +175,7 @@ def shading_obstacles(
     plantings is gone — see `_planted_obstacles` for why it existed and why it
     no longer has to.
     """
-    built = [
-        ShadingObstacle(
-            footprint=o.footprint,
-            # The ridge is a line, not a wall. Without a roof shape this is the
-            # recorded height, exactly as before.
-            height=shading_height(o.height, Roof(o.roof), o.eaves_m),
-            # So a point on this building's own roof can leave it out.
-            owner=o.element_id,
-        )
-        for o in garden.obstacles
-        # A height of None is an element nobody has said the height of. Treating
-        # it as zero would be a claim; skipping it is the same answer Wave 8
-        # gave for a building with no recorded height.
-        if o.height is not None and casts_shadow(ObjectKind(o.kind))
-    ]
+    built = [casting(o) for o in garden.obstacles if casts(o)]
     return built + [o for _owner, o in _planted_obstacles(conn, garden)]
 
 

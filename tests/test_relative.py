@@ -15,10 +15,10 @@ import pytest
 
 from ninanatur.solar.beam import beam
 from ninanatur.solar.climate import climate_at
+from ninanatur.solar.incidence import Incidence
 from ninanatur.solar.position import Location
 from ninanatur.solar.raster import (
     Directions,
-    Incidence,
     Moments,
     Part,
     moments_for,

@@ -75,11 +75,7 @@ def compute_grid(
         return None
     min_x, min_y, max_x, max_y = box
     parts = parts_of(standing_on(obstacles, ground))
-    roofs = roofs_of(garden, ground)
-    cell = _cell_for(parts, box, terrain=ground is not None,
-                     tilted=ground is not None or any(
-                         roofed.surface is not None and roofed.surface.pitched
-                         for roofed in roofs))
+    cell = _cell_for(parts, box, terrain=ground is not None)
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
     cols = max(1, int(width / cell) + 1)
@@ -89,6 +85,7 @@ def compute_grid(
     grid = LightGrid(
         min_x=min_x, min_y=min_y, cell_m=cell, cols=cols, rows=rows, hours=[]
     )
+    roofs = roofs_of(garden, ground)
     xs = [grid.centre_of(col, 0)[0] for col in range(cols)]
     ys = [grid.centre_of(0, row)[1] for row in range(rows)]
     surfaces = surfaces_of(xs, ys, ground, horizon, floor, roofs, height_above_ground)
@@ -113,18 +110,26 @@ def compute_grid(
 
 
 def _cell_for(parts: list[Part], box: tuple[float, float, float, float], *,
-              terrain: bool, tilted: bool) -> float:
+              terrain: bool) -> float:
     """The finest cell the budget buys over this box, once a box no cell could
     make affordable has been refused. What the raster pays for is parts, not
     obstacles (review, 2026-09-22); a crown that drops its leaves makes it
-    sweep the sky twice (doc 118); and cells with surfaces of their own — a
-    hillside's or a roof's — make it weigh every moment per cell (doc 119)."""
+    sweep the sky twice (doc 118); cells with surfaces of their own — a
+    hillside's or a roof's — make it weigh every moment per cell (doc 119);
+    and a roof's own planes are cut against every cell (doc 120)."""
     min_x, min_y, max_x, max_y = box
-    near = sum(1 for p in parts if stands_in([(float(x), float(y)) for x, y in p.corners], box))
+    standing = [stands_in([(float(x), float(y)) for x, y in p.corners], box) for p in parts]
+    near = sum(standing)
     deciduous = any(p.bare_transmission is not None for p in parts)
-    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain, deciduous, tilted)
+    near_planes = sum(len(p.roof) for p, on in zip(parts, standing, strict=True) if on)
+    far_planes = sum(len(p.roof) for p in parts) - near_planes
+    # A cell has a surface of its own on surveyed ground, or on a roof whose
+    # planes stand on the grid — a far neighbour's roof has no cell in it.
+    tilted = terrain or near_planes > 0
+    check_extent(min_x, min_y, max_x, max_y, len(parts), near, terrain, deciduous, tilted,
+                 near_planes, far_planes)
     return cell_size_for(max(max_x - min_x, 1.0), max(max_y - min_y, 1.0), len(parts),
-                         near, terrain, deciduous, tilted)
+                         near, terrain, deciduous, tilted, near_planes, far_planes)
 
 
 def _exact(element: object) -> str:

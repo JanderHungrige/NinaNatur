@@ -16,6 +16,8 @@ the plan can show what the sun map counts.
 from __future__ import annotations
 
 import logging
+import math
+from dataclasses import dataclass
 from functools import lru_cache
 
 import numpy as np
@@ -25,7 +27,7 @@ from shapely.errors import GEOSException
 from shapely.geometry import Polygon
 from shapely.geometry.base import BaseGeometry
 
-from ninanatur.solar.convex_parts import solid_of
+from ninanatur.solar.convex_parts import convex_parts, solid_of
 from ninanatur.solar.reach import is_convex
 
 log = logging.getLogger(__name__)
@@ -40,6 +42,27 @@ Ring = list[tuple[float, float]]
 GRIDS_M = (1e-6, 1e-3)
 #: A ring smaller than a square centimetre is a sliver, not a shadow or a hole.
 SLIVER_M2 = 1e-4
+
+
+@dataclass(frozen=True)
+class RoofSolid:
+    """A roof as the shadow model needs it (doc 120), in its building's own
+    datum, the base being zero: the planes it falls on, where their ridge
+    runs, and the eaves below which the walls carry the shadow.
+
+    `garden.roofshape.RoofSurface` builds it; the light model, the drawn
+    shadow and the roof's own cells all read this one shape.
+    """
+
+    planes: tuple[tuple[float, float, float, float], ...]
+    ridge: tuple[tuple[float, float], tuple[float, float]]
+    eaves: float
+
+    def height_at(self, x: float, y: float) -> float:
+        """The roof over this point, never below the eaves — the lower
+        envelope of its planes, as `RoofSurface.height_at` reads it."""
+        under = min(d - nx * x - ny * y for nx, ny, _nz, d in self.planes)
+        return max(self.eaves, under)
 
 
 def convex_hull(points: Ring) -> Ring:
@@ -81,6 +104,113 @@ def shadow_shape(footprint: Ring, dx: float, dy: float) -> list[Ring]:
         pieces += [part, translate(part, dx, dy)]
         pieces += _bands(part, dx, dy)
     return _rings(_union(pieces))
+
+
+def roof_shadow(footprint: Ring, roof: RoofSolid,
+                per_metre: tuple[float, float]) -> list[Ring]:
+    """The ground a roofed building shades, drawn as the model counts it
+    (doc 120): the solid under the roof's planes, cast by the sun.
+
+    Over each of the footprint's **convex parts** — the very pieces the light
+    model casts from (`convex_parts`) — the solid is convex, so its shadow is
+    the hull of its corners' own shadows, and each corner casts by its own
+    height: the eaves where the roof has come down, the ridge where it has
+    not. The ridge is cut to the part it crosses; a wing that has none is
+    shaded by its eaves alone. Taken over the whole outline instead, an L's
+    hull filled the open corner the sun still reaches — the defect feature 1
+    removed for blocks (review, 2026-09-22).
+
+    `per_metre` is how far a metre of height throws at this moment. Outlines
+    anticlockwise, holes clockwise, as `shadow_shape` returns them, so both
+    draw into one path.
+    """
+    ox, oy = per_metre
+    rings: list[Ring] = []
+    for ring in convex_parts(list(footprint)):
+        ground = [(float(x), float(y)) for x, y in ring]
+        if len(ground) < 3:
+            continue
+        over = [_cast(x, y, roof, ox, oy) for x, y in ground]
+        crest = [_cast(x, y, roof, ox, oy) for x, y in _crests(ring, roof)]
+        rings.append(convex_hull(ground + over + crest))
+    if len(rings) < 2:
+        return rings
+    return _rings(_union([Polygon(r) for r in rings]))
+
+
+def _cast(x: float, y: float, roof: RoofSolid, ox: float, oy: float) -> tuple[float, float]:
+    """Where this point of the roof throws its own shadow."""
+    height = roof.height_at(x, y)
+    return (x + height * ox, y + height * oy)
+
+
+def _crests(ring: tuple[tuple[float, float], ...], roof: RoofSolid,
+            ) -> list[tuple[float, float]]:
+    """Every line where two of the roof's planes meet, cut to this part, as
+    the points its shadow turns at — its ridge and its hips.
+
+    Over a wall the roof's height is the lowest of its planes, which bends
+    where the governing plane changes: a hip line crossing the wall stands
+    higher than either corner beside it, and a hull of the corners alone left
+    it out (review, 2026-09-22). A point that is not really on the roof there
+    is harmless: it is cast at the roof's own height, so it lies inside the
+    solid whose shadow this is.
+    """
+    points: list[tuple[float, float]] = []
+    planes = roof.planes
+    for first in range(len(planes)):
+        for second in range(first + 1, len(planes)):
+            ax, ay, _az, ad = planes[first]
+            bx, by, _bz, bd = planes[second]
+            # Equal heights: (bx − ax)·x + (by − ay)·y = bd − ad.
+            nx, ny, offset = bx - ax, by - ay, bd - ad
+            length = math.hypot(nx, ny)
+            if length <= 1e-12:
+                continue
+            on = (nx * offset / length**2, ny * offset / length**2)
+            points += _line_across(ring, on, (-ny / length, nx / length))
+    # The ridge itself, cut to the part: a hip's ridge ends — where three of
+    # its planes meet — lie inside the walls, and they are the highest points
+    # the part has. Cast only where lines cross the walls, every hip was drawn
+    # at its eaves, a sixth of its shadow short (review, 2026-09-28). A ridge
+    # that is a point, a pyramid's apex, is its own segment.
+    (rx, ry), (sx, sy) = roof.ridge
+    run = math.hypot(sx - rx, sy - ry)
+    way = ((sx - rx) / run, (sy - ry) / run) if run > 1e-12 else (1.0, 0.0)
+    points += _line_across(ring, (rx, ry), way, 0.0, run)
+    return points
+
+
+def _line_across(ring: tuple[tuple[float, float], ...], through: tuple[float, float],
+                 direction: tuple[float, float], start: float = -math.inf,
+                 end: float = math.inf) -> list[tuple[float, float]]:
+    """Where a line — or its stretch from `start` to `end` along `direction`
+    — lies in this convex part, as its two ends there; empty if it misses.
+
+    Cut to the part rather than asked whether its ends are inside it: a
+    ridge's ends are the roof's *rectangle's*, so they sit on the wall or a
+    millionth of a metre outside, and an oblique surveyed fall (doc 94) then
+    dropped the ridge and six metres of a house's shadow with it.
+    """
+    (ax, ay), (dx, dy) = through, direction
+    low, high = start, end
+    for (px, py), (qx, qy) in zip(ring, ring[1:] + ring[:1], strict=True):
+        # Each wall of an anticlockwise part, inside being to its left.
+        nx, ny = (qy - py), -(qx - px)
+        along = nx * dx + ny * dy
+        room = nx * (px - ax) + ny * (py - ay)
+        if abs(along) <= 1e-12:
+            if room < 0:
+                return []
+            continue
+        cut = room / along
+        if along > 0:
+            high = min(high, cut)
+        else:
+            low = max(low, cut)
+    if low > high or not math.isfinite(low) or not math.isfinite(high):
+        return []
+    return [(ax + dx * low, ay + dy * low), (ax + dx * high, ay + dy * high)]
 
 
 @lru_cache(maxsize=4096)
@@ -164,4 +294,4 @@ def _turn(o: tuple[float, float], a: tuple[float, float], b: tuple[float, float]
     return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
 
-__all__ = ["convex_hull", "shadow_shape"]
+__all__ = ["RoofSolid", "convex_hull", "roof_shadow", "shadow_shape"]

@@ -15,12 +15,13 @@ the raster is tested against (`tests/test_raster.py`).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 import numpy as np
 
 from ninanatur.solar.convex_parts import SAME_M, convex_parts
+from ninanatur.solar.incidence import LEVEL, Incidence, Plane, cos_incidence
 from ninanatur.solar.light import MINUTE_STEP, season_days
 from ninanatur.solar.position import Location, sun_position
 from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, passes
@@ -63,42 +64,6 @@ class Directions:
     groups: int
 
 
-@dataclass(frozen=True)
-class Incidence:
-    """What each direction's beam brings, beside what it is worth (doc 119):
-    for the sun, the clear-sky beam at its altitude (`solar.beam`), added —
-    times what passes and the cosine of its incidence on each cell's surface —
-    to the energy sum named by `group`."""
-
-    beam: np.ndarray
-    group: np.ndarray
-    groups: int
-
-
-#: A surface as the sweep reads it: (cos s, −sin s·cos a, −sin s·sin a), which
-#: dotted with the sun's (sin h, cos h·cos A, cos h·sin A) is the cosine of
-#: incidence. Level ground is (1, 0, 0).
-Plane = tuple[float, float, float]
-LEVEL: Plane = (1.0, 0.0, 0.0)
-
-
-def plane_of(slope_deg: float, aspect_deg: float) -> Plane:
-    """A surface of this slope, its aspect uphill clockwise from north as every
-    aspect here is (`slopes.slope_at`): it faces the other way, downhill."""
-    s, a = np.radians(slope_deg), np.radians(aspect_deg)
-    return (float(np.cos(s)), float(-np.sin(s) * np.cos(a)), float(-np.sin(s) * np.sin(a)))
-
-
-def cos_incidence(altitude_deg: np.ndarray, azimuth_deg: np.ndarray,
-                  plane: tuple[np.ndarray | float, ...]) -> np.ndarray:
-    """The cosine of each direction's incidence on a surface (`Plane`), which
-    may be a cell's arrays: sin h cos s − cos h sin s cos(A − a)."""
-    h, az = np.radians(altitude_deg), np.radians(azimuth_deg)
-    cos_i: np.ndarray = (np.sin(h) * plane[0] + np.cos(h) * np.cos(az) * plane[1]
-                         + np.cos(h) * np.sin(az) * plane[2])
-    return cos_i
-
-
 def sun_directions(moments: Moments) -> Directions:
     """The sun's moments as directions: each a sample's share of a daily mean
     hour, in the morning sum or the afternoon one."""
@@ -132,7 +97,14 @@ def moments_from(found: list[tuple[float, float, int, bool]], days: int,
 @dataclass(frozen=True)
 class Part:
     """One convex part of something that casts: its corners anticlockwise, its
-    walls' outward normals, and each wall's offset along its normal."""
+    walls' outward normals, each wall's offset along its normal, and the roof
+    planes over it, if it has any (doc 120).
+
+    A convex solid, cut against the ray by the same interval either way: a
+    wall bounds it sideways, the flat top at `top` bounds it above, and a
+    roof's plane leans between the two. `roof` holds those as rows of
+    (n_x, n_y, n_z, d) in absolute heights, inside being n·X ≤ d.
+    """
 
     corners: np.ndarray
     normals: np.ndarray
@@ -141,6 +113,7 @@ class Part:
     transmission: float
     bare_transmission: float | None
     owner: int | None
+    roof: np.ndarray = field(default_factory=lambda: np.empty((0, 4)))
 
     def through(self, month: int) -> float:
         return passes(self.transmission, self.bare_transmission, month)
@@ -161,11 +134,18 @@ def parts_of(obstacles: list[Obstacle]) -> list[Part]:
             if len(corners) < 3:
                 continue
             normals = np.column_stack([edges[:, 1], -edges[:, 0]]) / lengths[:, None]
+            # The roof's planes are given in the obstacle's own datum, its
+            # base being zero, and stand where the obstacle stands (doc 120).
+            roof = np.array([[nx, ny, nz, d + nz * obstacle.base]
+                             for nx, ny, nz, d in
+                             (obstacle.roof.planes if obstacle.roof else ())],
+                            dtype=float).reshape(-1, 4)
             parts.append(Part(
                 corners=corners, normals=normals,
                 offsets=np.einsum("ij,ij->i", normals, corners), top=obstacle.top,
                 transmission=obstacle.transmission,
                 bare_transmission=obstacle.bare_transmission, owner=obstacle.owner,
+                roof=roof,
             ))
     return parts
 
@@ -192,6 +172,20 @@ def covered(part: Part, x: np.ndarray, y: np.ndarray, z: np.ndarray,
             np.minimum(t_hi, along, out=t_hi)
         else:
             np.maximum(t_lo, along, out=t_lo)
+    for nx, ny, nz, d in part.roof.tolist():
+        # The same interval, cut by a plane that leans: along the ray the
+        # height rises by 1/cot for every metre travelled (doc 120). One plane
+        # at a time, as floats: cut all at once or read as numpy's scalars, a
+        # plane cost more than the arithmetic (review, 2026-09-28).
+        along = nx * sun_x + ny * sun_y + nz / cot
+        room = d - (nx * x + ny * y + nz * z)
+        if abs(along) <= PARALLEL:
+            t_hi = np.where(room >= 0, t_hi, -1.0)
+            continue
+        if along > 0:
+            np.minimum(t_hi, room / along, out=t_hi)
+        else:
+            np.maximum(t_lo, room / along, out=t_lo)
     covering: np.ndarray = t_lo <= t_hi
     return covering
 
@@ -214,6 +208,14 @@ def covered_over_moments(part: Part, x: float, y: float, z: float,
             t_lo = np.where(toward < -PARALLEL, np.maximum(t_lo, limit), t_lo)
             if room < 0:
                 t_hi = np.where(np.abs(toward) <= PARALLEL, -1.0, t_hi)
+        for nx, ny, nz, d in part.roof.tolist():
+            room = d - (nx * x + ny * y + nz * z)
+            along = nx * sun_x + ny * sun_y + nz / cot
+            limit = room / along
+            t_hi = np.where(along > PARALLEL, np.minimum(t_hi, limit), t_hi)
+            t_lo = np.where(along < -PARALLEL, np.maximum(t_lo, limit), t_lo)
+            if room < 0:
+                t_hi = np.where(np.abs(along) <= PARALLEL, -1.0, t_hi)
     covering: np.ndarray = t_lo <= t_hi
     return covering
 
@@ -286,6 +288,6 @@ def _through_by_month(part: Part, months: np.ndarray) -> np.ndarray:
     return through
 
 
-__all__ = ["LEVEL", "Directions", "Incidence", "Moments", "Part", "Plane", "cos_incidence",
-           "covered", "covered_over_moments", "moments_for", "moments_from", "parts_of",
-           "plane_of", "point_hours", "point_sums", "point_sweep", "sun_directions", "visible"]
+__all__ = ["Directions", "Moments", "Part", "covered", "covered_over_moments", "moments_for",
+           "moments_from", "parts_of", "point_hours", "point_sums", "point_sweep",
+           "sun_directions", "visible"]

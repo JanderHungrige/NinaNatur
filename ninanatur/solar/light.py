@@ -44,7 +44,10 @@ MONTH_DAY_STEP = 2
 #:   own surface, not its hours: a March sun at 8° counts for less than a June
 #:   sun at 60°, and a slope takes the light at its own angle (doc 119). The
 #:   hours, the sky and the light value are 26.3's.
-MODEL_VERSION = "26.4"
+#: - "26.5" — a roof casts as a roof: the solid under its own planes rather
+#:   than a block of `RISE_KEPT`'s averaged height, and a hip's corners sit on
+#:   its planes rather than in the dip a distance to its ridge left (doc 120).
+MODEL_VERSION = "26.5"
 
 # Mean daily direct sun (hours) -> light value on EIVE's own 0–10 scale, as
 # anchors joined by straight lines, darkest first.

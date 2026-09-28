@@ -24,7 +24,7 @@ from ninanatur.garden.roofs import Roof
 from ninanatur.garden.roofshape import RoofSurface, surface_of
 from ninanatur.garden.slopes import ASPECT_STEP_DEG, SLOPE_STEP_DEG, ring_for, slope_at
 from ninanatur.geo.terrain import TerrainWindow
-from ninanatur.solar.raster import plane_of
+from ninanatur.solar.incidence import plane_of
 from ninanatur.solar.raster_grid import Cells
 
 #: A ring gives the land's height in each degree of azimuth.

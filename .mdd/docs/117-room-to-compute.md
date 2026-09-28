@@ -18,6 +18,7 @@ source_files:
   - ninanatur/garden/lightgrid.py
   - ninanatur/garden/lightcells.py
   - ninanatur/garden/lightgrid_extent.py
+  - ninanatur/garden/lightgrid_cost.py
   - ninanatur/garden/lightgrid_store.py
   - ninanatur/ingest/schema_computed.py
   - ninanatur/ingest/migrations.py

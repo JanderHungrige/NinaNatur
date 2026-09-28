@@ -15,7 +15,8 @@ import pytest
 from ninanatur.garden import lightgrid
 from ninanatur.garden.lightcells import Roofed, surfaces_of
 from ninanatur.garden.lightgrid import GRID_BUDGET_S, cell_size_for, compute_grid
-from ninanatur.garden.lightgrid_extent import MAX_CELLS, cells_at, estimate_ms, stands_in
+from ninanatur.garden.lightgrid_cost import estimate_ms
+from ninanatur.garden.lightgrid_extent import MAX_CELLS, cells_at, stands_in
 from ninanatur.garden.lightview import shading_obstacles
 from ninanatur.garden.models import ObstacleInput
 from ninanatur.garden.store import add_obstacle, create_garden, load_garden
@@ -88,7 +89,7 @@ def test_a_cell_with_a_surface_of_its_own_is_priced_by_the_cell() -> None:
     """Weighing every moment on each cell's own surface (doc 119) costs per
     cell, not per part — and it is the cells' surfaces that turn it on, so a
     pitched roof does even where nothing was surveyed (review, 2026-09-22)."""
-    from ninanatur.garden.lightgrid_extent import TILTED_CELL_MS
+    from ninanatur.garden.lightgrid_cost import TILTED_CELL_MS
 
     for parts, near in ((1, 1), (40, 5)):
         level = estimate_ms(10_000, parts, near)
@@ -106,23 +107,44 @@ def test_a_pitched_roof_alone_buys_the_tilted_cell(conn: sqlite3.Connection,
                                                 label="H"))
     conn.commit()
     garden = load_garden(conn, garden_id)
-    asked: list[bool] = []
+    asked: list[tuple[bool, int, int]] = []
 
     def spy(width: float, depth: float, parts: int = 0, near: int | None = None,
-            terrain: bool = False, deciduous: bool = False, tilted: bool = False) -> float:
-        asked.append(tilted)
+            terrain: bool = False, deciduous: bool = False, tilted: bool = False,
+            near_planes: int = 0, far_planes: int = 0) -> float:
+        asked.append((tilted, near_planes, far_planes))
         return 1.0
 
     monkeypatch.setattr(lightgrid, "cell_size_for", spy)
     compute_grid(garden, shading_obstacles(conn, garden))
-    assert asked == [True]
+    # Its two pitch planes stand on the grid, and are priced as near planes.
+    assert asked == [(True, 2, 0)]
+
+
+def test_a_roofs_planes_are_priced_per_plane_like_the_walls_they_resemble() -> None:
+    """A plane is one more cut of the ray at every moment its part is asked
+    about, so it costs per plane — near dearer than far, like parts — and only
+    a little per cell. Priced per cell alone, 36 hipped houses were estimated
+    at 4.7 s and took 7.1 (review, 2026-09-28)."""
+    from ninanatur.garden import lightgrid_cost as cost
+
+    swept = 1.0 + cost.SKY_DIRECTIONS / cost.SEASON_MOMENTS
+    plain = estimate_ms(10_000, 5, 5)
+    for near, far in ((10, 0), (0, 10), (6, 4)):
+        roofed = estimate_ms(10_000, 5, 5, near_planes=near, far_planes=far)
+        per_plane = cost.NEAR_PLANE_MS * near + cost.FAR_PLANE_MS * far
+        per_cell = 10_000 * cost.PLANE_CELL_MS * (near + far)
+        assert roofed - plain == pytest.approx(swept * (per_plane + per_cell))
+    assert cost.NEAR_PLANE_MS > cost.FAR_PLANE_MS
+    # A small grid still pays for its planes: they do not cost by the cell.
+    assert estimate_ms(100, 5, 5, near_planes=72) - estimate_ms(100, 5, 5) > 1_000
 
 
 def test_the_sky_is_priced_by_the_directions_it_sweeps() -> None:
     """The estimate's constants were fitted to the sun alone; the sky adds its
     patches to every part and cell (doc 118). Its counts are the sky's and the
     season's as they are, not numbers copied once."""
-    from ninanatur.garden import lightgrid_extent as extent
+    from ninanatur.garden import lightgrid_cost as extent
     from ninanatur.solar.position import Location
     from ninanatur.solar.raster import moments_for
     from ninanatur.solar.sky import TREGENZA, sky_directions

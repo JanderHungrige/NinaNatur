@@ -73,7 +73,7 @@ term the number becomes a derivation from the definition.
 | 2 | room-to-compute | 117 | built | 0 |
 | 3 | the-sky-counts | 118 | built | 2 |
 | 4 | energy-not-hours | 119 | built | 3 |
-| 5 | a-roof-casts-as-a-roof | — | planned | 1 |
+| 5 | a-roof-casts-as-a-roof | 120 | built | 1 |
 | 6 | a-crown-is-not-a-cylinder | — | planned | 1 |
 | 7 | mark-the-shadow-edge | — | planned | 3 |
 
@@ -135,6 +135,18 @@ with a new date. The page says which model version computed a map.
   `MODEL_VERSION` 26.4. 12 findings upheld, among them a raised bed given the
   hillside's tilt as its own soil, and a cost charged per part that belonged
   per cell.
+
+- **2026-09-28 — stage 3: feature 5 built** (doc 120). *A roof casts as a
+  roof*: a gable, a hip and a surveyed pent cast as the solid under their own
+  planes instead of a block of `RISE_KEPT`'s averaged height — still one part
+  a house, the planes cut against the ray the raster already cuts. The roof
+  the cells stand on, the roof the day's playback draws and the roof that
+  casts are one geometry (`garden.casting`). A point 3 m behind a gabled house
+  gains 1.7 h; a pent leaning towards the beds loses 0.8. Reviewed twice:
+  18 distinct findings, all fixed, the worst a house on surveyed ground casting a
+  full-ridge block (the roof dropped by `standing_on`), a playback that still
+  drew blocks, a hip drawn at its eaves, and planes priced per cell when they
+  cost per plane.
 
 ## What each one is
 

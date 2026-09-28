@@ -14,12 +14,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ninanatur.solar.incidence import Incidence, cos_incidence
 from ninanatur.solar.raster import (
     Directions,
-    Incidence,
     Moments,
     Part,
-    cos_incidence,
     covered,
     sun_directions,
     visible,

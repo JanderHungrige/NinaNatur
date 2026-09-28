@@ -9,6 +9,7 @@ depends_on: [118-the-sky-counts, 117-room-to-compute, 72-the-hill-that-eats-the-
 relates: [71-buildings-stand-on-the-ground, 70-the-horizon-ring, 07-solar-geometry]
 source_files:
   - ninanatur/solar/beam.py
+  - ninanatur/solar/incidence.py
   - ninanatur/solar/raster.py
   - ninanatur/solar/raster_grid.py
   - ninanatur/solar/relative.py

@@ -104,12 +104,19 @@ ANSWERS: dict[str, tuple[tuple[float, ...], ...]] = {
     # south takes the noon sun, and the light behind it falls with it.
     "26.4": ((13.08, 1.0, 1.0, 5.47, 9.0), (5.71, 0.665, 0.454, 2.47, 7.32),
              (4.35, 0.56, 0.404, 1.84, 6.47)),
+    # 26.5 adds two spots behind the same house with a gable on it (doc 120).
+    "26.5": ((13.08, 1.0, 1.0, 5.47, 9.0), (5.71, 0.665, 0.454, 2.47, 7.32),
+             (4.35, 0.56, 0.404, 1.84, 6.47), (5.8, 0.731, 0.493, 2.51, 7.38),
+             (11.75, 0.933, 0.918, 5.0, 9.0)),
 }
+#: 26.2 to 26.4 answered three spots; 26.5 pins a roofed one beside them.
 #: The bed of `_drawn`, Berlin, behind its wall: what the app stores for it —
 #: the grid's path, end to end.
 BED_ANSWERS: dict[str, tuple[float, ...]] = {
     "26.3": (11.6, 0.93, 0.927, 5.6, 9.0),
     "26.4": (11.6, 0.93, 0.911, 5.6, 9.0),
+    # The garden's only obstacle is a wall, which no roof changes (doc 120).
+    "26.5": (11.6, 0.93, 0.911, 5.6, 9.0),
 }
 #: How near: hours and values to two places, shares of sky and light to three.
 TOLERANCE = (0.02, 0.002, 0.002, 0.02, 0.02)
@@ -123,6 +130,8 @@ def test_the_model_answers_what_its_version_says() -> None:
     """The review of 2026-09-22 found this pinned a function nothing in the app
     called any more, and none of the sky's answers: the hour weight and the
     overcast sky could both change unnoticed."""
+    from ninanatur.garden.casting import casting
+    from ninanatur.garden.models import Element
     from ninanatur.solar.climate import climate_at
     from ninanatur.solar.position import Location
     from ninanatur.solar.raster import moments_for, parts_of
@@ -135,8 +144,16 @@ def test_the_model_answers_what_its_version_says() -> None:
     house = [Obstacle(footprint=[(-5, -13), (5, -13), (5, -8), (-5, -8)], height=9.0)]
     ell = [Obstacle(footprint=[(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)],
                     height=9.0)]
-    for (obstacles, x, y), pinned in zip((([], 0.0, 0.0), (house, 0.0, -6.0), (ell, 7.5, 7.5)),
-                                         ANSWERS[light.MODEL_VERSION], strict=True):
+    # The same house with the gable it would really have (doc 120), asked 2 m
+    # north of it, where the eaves decide, and 7 m north, where the ridge
+    # does — at the first alone a roof whose planes were wrong still passed,
+    # for it answers as a 5 m block would (review, 2026-09-28).
+    gabled = [casting(Element(element_id=1, kind="house", shape="polygon", x=0.0, y=0.0,
+                              points=[[-5, -13], [5, -13], [5, -8], [-5, -8]], height=9.0,
+                              roof="gable", eaves_m=5.0))]
+    spots = (([], 0.0, 0.0), (house, 0.0, -6.0), (ell, 7.5, 7.5), (gabled, 0.0, -6.0),
+             (gabled, 0.0, -1.0))
+    for (obstacles, x, y), pinned in zip(spots, ANSWERS[light.MODEL_VERSION], strict=True):
         got = point_sky_light(parts_of(obstacles), moments, climate, x, y)
         hours, sky = float(got.morning[0] + got.afternoon[0]), float(got.sky[0])
         answer = (hours, sky, float(got.relative[0]), float(got.expected[0]),

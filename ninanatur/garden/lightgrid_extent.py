@@ -8,6 +8,7 @@ the cells the same wait can buy.
 """
 from __future__ import annotations
 
+from ninanatur.garden.lightgrid_cost import cost_model, estimate_ms
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind
 
@@ -31,40 +32,6 @@ CELL_LADDER_M: tuple[float, ...] = (0.5, 1.0, 2.0, 3.0, 5.0)
 #: number has to be wrong about at one end or the other. At 600 cells a small
 #: garden waited 0.16 s for a 1 m grid it did not need to be that coarse.
 GRID_BUDGET_S = 5.0
-
-#: What a grid costs since the raster (Wave 26, doc 117), fitted to end-to-end
-#: measurements on 2026-09-22 and rounded up so the estimate stays above them.
-#: What costs is each convex part (`solar.convex_parts`) asked about at every
-#: moment — a part standing on the grid at all of them, a neighbour's outside
-#: it only while its long shadows reach in — and, far less, the cells under
-#: its shadow. Forty rectangular neighbours round a 35 x 50 m plot: 1.1 s at
-#: 0.5 m, where the field took five for 1 m. Forty of twenty-four corners
-#: (358 parts): 7.8 s at any cell, which is what the estimate says too.
-#: Until Wave 26: 0.1 ms a cell plus 0.05 ms a cell for each obstacle.
-GRID_FIXED_MS = 230.0
-NEAR_PART_MS = 95.0
-FAR_PART_MS = 15.0
-CELL_COST_MS = 0.008
-CELL_NEAR_PART_MS = 0.002
-CELL_FAR_PART_MS = 0.0008
-#: What terrain adds to each cell: its height, its slope and the ring they
-#: give, worked out in Python before the raster starts (0.006 ms measured,
-#: with the rings shared).
-TERRAIN_CELL_MS = 0.01
-#: The sky beside the sun (doc 118). The part and cell terms above were fitted
-#: to the sun's moments alone — 3,846 in a Wuppertal season — and grow with
-#: what is swept: Reinhart's 577 patches for the sky a map shows, and where a
-#: crown drops its leaves Tregenza's 145 for the season's bare months.
-SEASON_MOMENTS = 3846
-SKY_DIRECTIONS = 577
-BARE_SKY_DIRECTIONS = 145
-#: What weighing each moment by what its beam brings costs (doc 119): nothing
-#: worth counting where every cell is level, since the beam is then one number
-#: a moment. Where a cell has a surface of its own — the ground's fall, or a
-#: roof's pitch — the cosine is worked out per cell at every moment, and that
-#: is a cost per cell and not per part: 0.018 ms measured at 4,800 cells (88 ms)
-#: and at 48,841 (840 ms), rounded up like the rest.
-TILTED_CELL_MS = 0.02
 
 #: Metres of ground shown past the garden itself. Enough for the strip along
 #: the fence and the shadow a hedge throws over it; not the neighbours' land.
@@ -98,31 +65,6 @@ REFUSE_AT_BUDGET_MULTIPLE = 4.0
 MAX_CELLS = 100_000
 
 
-def estimate_ms(cells: float, parts: int, near: int | None = None,
-                terrain: bool = False, deciduous: bool = False,
-                tilted: bool = False) -> float:
-    """What a grid of this many cells is expected to cost, in milliseconds.
-
-    `parts` counts the convex parts of everything that casts, which is what
-    the raster pays for: a neighbour of twenty-four corners is eight of them
-    (review, 2026-09-22 — it counted obstacles until then). `near` counts the
-    parts standing on the grid; the rest stand outside it. Unknown, every one
-    is taken to stand on it — the dearer guess. `deciduous`: a crown drops its
-    leaves, and the sky is swept a second time, bare. `tilted`: the cells have
-    surfaces of their own — terrain, or a pitched roof — so every moment's
-    beam is worked out per cell (doc 119).
-    """
-    near = parts if near is None else min(near, parts)
-    far = parts - near
-    sky = SKY_DIRECTIONS + (BARE_SKY_DIRECTIONS if deciduous else 0)
-    swept = 1.0 + sky / SEASON_MOMENTS
-    per_cell = CELL_COST_MS + CELL_NEAR_PART_MS * near + CELL_FAR_PART_MS * far
-    raster = NEAR_PART_MS * near + FAR_PART_MS * far + cells * per_cell
-    ground = cells * TERRAIN_CELL_MS if terrain else 0.0
-    return (GRID_FIXED_MS + swept * raster + ground
-            + (cells * TILTED_CELL_MS if tilted else 0.0))
-
-
 def stands_in(footprint: list[tuple[float, float]],
               box: tuple[float, float, float, float]) -> bool:
     """Whether a footprint reaches into the grid's box: its shadow is then on
@@ -141,7 +83,7 @@ def cells_at(width_m: float, depth_m: float, cell: float) -> float:
 def check_extent(
     min_x: float, min_y: float, max_x: float, max_y: float, parts: int = 0,
     near: int | None = None, terrain: bool = False, deciduous: bool = False,
-    tilted: bool = False,
+    tilted: bool = False, near_planes: int = 0, far_planes: int = 0,
 ) -> None:
     """Refuse a garden whose grid would take far longer than the budget allows.
 
@@ -160,8 +102,8 @@ def check_extent(
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
     cells = cells_at(width, depth, CELL_LADDER_M[-1])
-    if cells > MAX_CELLS or (estimate_ms(cells, parts, near, terrain, deciduous, tilted) / 1000
-                             > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE):
+    spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted, near_planes, far_planes)
+    if cells > MAX_CELLS or spent / 1000 > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
         raise GardenTooLarge(
             f"Garten zu groß: {width:.0f} × {depth:.0f} m lassen sich nicht in "
             f"vertretbarer Zeit berechnen"
@@ -170,7 +112,8 @@ def check_extent(
 
 def cell_size_for(width_m: float, depth_m: float, parts: int = 0,
                   near: int | None = None, terrain: bool = False,
-                  deciduous: bool = False, tilted: bool = False) -> float:
+                  deciduous: bool = False, tilted: bool = False,
+                  near_planes: int = 0, far_planes: int = 0) -> float:
     """The finest cell that keeps the recompute inside `GRID_BUDGET_S`.
 
     Since the raster (doc 117) nearly every garden gets 0.5 m: forty
@@ -183,8 +126,9 @@ def cell_size_for(width_m: float, depth_m: float, parts: int = 0,
         # The cap on the grid that is built, not only the coarsest: a map is a
         # list kept and sent, and cheap cells let a plain 500 m plot reach a
         # million of them (review, 2026-09-22).
-        if cells <= MAX_CELLS and estimate_ms(cells, parts, near, terrain, deciduous, tilted) \
-                <= GRID_BUDGET_S * 1000:
+        spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted,
+                            near_planes, far_planes)
+        if cells <= MAX_CELLS and spent <= GRID_BUDGET_S * 1000:
             return cell
     return CELL_LADDER_M[-1]
 
@@ -286,8 +230,6 @@ def grid_model() -> str:
 
     return (
         f"grid|rule {EXTENT_RULE}|margin {GRID_MARGIN_M}|ladder {CELL_LADDER_M}"
-        f"|budget {GRID_BUDGET_S}|cost {GRID_FIXED_MS},{NEAR_PART_MS},{FAR_PART_MS},"
-        f"{CELL_COST_MS},{CELL_NEAR_PART_MS},{CELL_FAR_PART_MS},{TERRAIN_CELL_MS}"
-        f"|sky {SKY_DIRECTIONS},{BARE_SKY_DIRECTIONS}/{SEASON_MOMENTS}|tilt {TILTED_CELL_MS}"
+        f"|budget {GRID_BUDGET_S}|{cost_model()}"
         f"|model {MODEL_VERSION}"
     )
