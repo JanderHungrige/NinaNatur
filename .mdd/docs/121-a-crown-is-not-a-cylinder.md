@@ -89,6 +89,7 @@ known_issues:
   - "The plan's decorative drop shadow (Draft Sketch, doc 99) still sweeps a tree's outline by the offset of its top, from the ground: one offset per object cannot be an ellipse, as doc 120 says of a roof. The day's playback draws the crown's shadow exactly."
   - "The API takes a crown base above the tree's height; casting keeps it inside the tree (a crown two centimetres deep at its top) rather than refusing it, since the height may change afterwards."
   - "Sightlines still see a tree as a prism to its full height (`api/sightlines.py`): a crown on a trunk hides a view whole, where the light model sees under and through it."
+  - "A crown is priced the same whatever its size, fitted on crowns 6–8 m across: a garden of small crowns is estimated high and drops a rung it could afford. Sixty drawn shrubs 1.5 m across on a 24 × 40 m plot get 5 m cells, where 3 m took 3.4 s against an estimate of 5.6, and a garden of crowns 3–7 m across gets 1 m where 0.5 m took 3.8 s (estimated 5.6). The estimate stays above what they take, so no budget is broken (review of 8040ffc); a price by a crown's size would give them their rung back."
 sister_projects: []
 ---
 
