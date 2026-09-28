@@ -205,6 +205,15 @@ leaves (`flex: 1`, doc 86's rule intact: the drawing still cannot set its own
 height). Under the controls at the top edge, not at the bottom: the bottom is
 the theme's, and the first try put the hint straight over the title block.
 
+**The caption has room of its own (2026-09-29).** Taken out of the drawing,
+the caption cost the plan its acceptance as soon as Draft Sketch became the
+default: the release's smoke test measured the drawing at 37.7 % of a
+1280 × 720 window with the dock full, 34.9 % where the caption wraps to two
+lines, against the 40 % doc 87 holds it to. The drawing now keeps its floor of
+40vh itself, its size contained so nothing drawn inside can raise it, and the
+workspace's row keeps room for the caption on top; the dock gives way by the
+caption's height instead. Technisch, with no caption, lays out as before.
+
 **The block on a phone, and a cross (the owner, 2026-09-28).** Below the
 workspace's 66rem the plan is small, and the block keeps only its scale bar:
 the north arrow and the title, which the page already says, give way. On a

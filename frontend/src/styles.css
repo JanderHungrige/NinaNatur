@@ -424,12 +424,16 @@ body {
     padding: 0.45rem 1rem;
     border-bottom: 1px solid var(--line);
   }
-  /* The plan's row keeps 40 % of the window and its padding — or the whole
-     tool rail, if that is more — however full the dock is. It grows from
-     nothing rather than from its content, and the dock gives way below it. */
+  /* The plan's row keeps what its contents need, however full the dock is:
+     the drawing's 40 % of the window with the caption beneath it and the
+     padding, or the whole tool rail, if that is more. It grows from nothing,
+     and the dock gives way below it. The floor was the row's own,
+     `max(40vh + 1rem, 20rem)`, and his credit, a caption inside the row
+     (doc 98), then came out of the drawing: 37.7 % at 1280 × 720 once Draft
+     Sketch was the default, and 34.9 % where the caption wraps (2026-09-29). */
   .workspace {
     flex: 1 1 0;
-    min-height: max(calc(40vh + 1rem), 20rem);
+    min-height: auto;
     gap: 0;
     grid-template-columns: 3.5rem minmax(0, 1fr) 22rem;
   }
@@ -442,10 +446,14 @@ body {
     position: relative;
     height: 100%;
   }
+  /* The drawing's floor is the wave's acceptance, 40 % of the window, and its
+     size is contained: what is drawn inside can never make it taller, nor the
+     row that keeps room for it (doc 86). */
   .workspace .canvas-stage {
     flex: 1;
-    min-height: 0;
+    min-height: 40vh;
     height: auto;
+    contain: size;
   }
   .workspace .canvas-controls {
     position: absolute;

@@ -11,7 +11,6 @@ import pytest
 
 STYLESHEET = Path("frontend/src/styles.css")
 SRC = Path("frontend/src")
-TOOL_RAIL = SRC / "components" / "ToolRail.tsx"
 
 RAIL_REM = 3.5
 INSPECTOR_REM = 22.0
@@ -81,11 +80,12 @@ def test_the_workspace_is_the_window_and_only_panels_scroll(css: str) -> None:
 def test_the_stage_fills_the_plan_cell_in_the_workspace(css: str) -> None:
     """The plan's height still comes from the page and never from the drawing
     (doc 86) — in the workspace, from the grid row it is given, less whatever
-    caption sits under the drawing (a theme's credit, doc 98). `flex: 1` with
-    `min-height: 0` is that: the stage takes the room left in the cell, and the
-    drawing inside it cannot push it taller."""
+    caption sits under the drawing (a theme's credit, doc 98). `flex: 1` is
+    that: the stage takes the room left in the cell. Its size is contained, so
+    the drawing inside it cannot push it taller, nor the row it stands in."""
     _, stage = _where(css, ".workspace .canvas-stage")
-    assert "flex: 1" in stage and "min-height: 0" in stage
+    assert "flex: 1" in stage
+    assert "contain: size" in stage, "the drawing could set its own height"
     _, wrap = _where(css, ".workspace .canvas-wrap")
     assert "height: 100%" in wrap, "the cell's height has to reach the stage"
 
@@ -112,21 +112,6 @@ def test_the_dock_leaves_the_plan_its_share(css: str) -> None:
     assert "overflow-y: auto" in dock
 
 
-def _rail_height_rem(css: str) -> tuple[int, float]:
-    """How many tools the rail holds, and the height it needs to show them all."""
-    source = TOOL_RAIL.read_text(encoding="utf-8")
-    listing = source.split("export const RAIL_TOOLS", 1)[1].split("];", 1)[0]
-    tools = len(re.findall(r"label: '", listing))
-    tool = re.search(r"^\.tool-rail__tool\s*\{[^}]*?\bheight:\s*([\d.]+)rem", css, re.M)
-    assert tool is not None, "the rail's tools have no height in rem"
-    gap = re.search(r"^\.tool-rail\s*\{[^}]*?\bgap:\s*([\d.]+)rem", css, re.M)
-    _, rail = _where(css, ".tool-rail")
-    padding = re.search(r"padding:\s*([\d.]+)rem", rail)
-    step = float(gap.group(1)) if gap else 0.0
-    edge = float(padding.group(1)) if padding else 0.0
-    return tools, tools * float(tool.group(1)) + (tools - 1) * step + 2 * edge
-
-
 def test_the_plan_keeps_its_share_when_the_dock_is_full(css: str) -> None:
     """The plan is never under 40 % of the window: the wave's acceptance.
 
@@ -136,16 +121,25 @@ def test_the_plan_keeps_its_share_when_the_dock_is_full(css: str) -> None:
     260 px of 720, 36 %, and at 600 px the plan's row — held up by the tool
     rail — ran 94 px under the dock. So the row grows from nothing, keeps 40vh
     and its padding or the whole rail, and the dock gives way.
+
+    The floor was the row's, `max(40vh + 1rem, 20rem)`, and Draft Sketch's
+    credit is a caption inside the row: once it was the default the drawing
+    was 37.7 % of 720 px, 34.9 % where the caption wraps, and the smoke test
+    failed on the preview (2026-09-29). The floor is the drawing's now, and the
+    row keeps what its contents need: the drawing, the caption and the padding,
+    or the whole rail.
     """
     _, workspace = _where(css, ".workspace")
     assert re.search(r"flex:\s*1 1 0;", workspace), "the plan's row must grow from nothing"
-    floor = re.search(
-        r"min-height:\s*max\(calc\(([\d.]+)vh \+ 1rem\),\s*([\d.]+)rem\)", workspace
-    )
-    assert floor is not None, "the plan's row has no floor"
+    assert re.search(r"min-height:\s*auto;", workspace), "the row must keep what its contents need"
+    _, stage = _where(css, ".workspace .canvas-stage")
+    floor = re.search(r"min-height:\s*([\d.]+)vh;", stage)
+    assert floor is not None, "the drawing has no floor"
     assert float(floor.group(1)) >= 40
-    tools, needed = _rail_height_rem(css)
-    assert float(floor.group(2)) >= needed, f"{tools} tools need {needed}rem of rail"
+    # The row's floor is its contents', so the rail counts only while all of
+    # it is laid out: a rail that wrapped or scrolled would hold up nothing.
+    _, rail = _where(css, ".tool-rail")
+    assert "flex-wrap: nowrap" in rail and "overflow" not in rail
     _, dock = _where(css, ".timeline-dock")
     assert "min-height: 0" in dock, "the dock cannot give way"
     _, body = _where(css, ".timeline-dock__body")

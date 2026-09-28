@@ -225,9 +225,12 @@ None. The same client calls, from new places.
     *Blühjahr*, which is already the heading of the table inside it. The body is
     at most 40vh and scrolls itself. What keeps the plan at least 40 % of the
     window is its own row, not the dock: the row grows from nothing and keeps
-    `max(40vh + 1rem, 18rem)` — 40vh and its padding, or the whole tool rail —
-    and the dock gives way beneath it. Open by default, and the choice is
-    remembered.
+    what its contents need — the drawing's own floor of 40vh with any caption
+    beneath it and the padding, or the whole tool rail — and the dock gives way
+    beneath it. The floor was the row's until 2026-09-29, `max(40vh + 1rem,
+    18rem)` and then 20rem, and Draft Sketch's credit, a caption inside the row
+    (doc 98), came out of the drawing: 37.7 % at 1280 × 720 once that style was
+    the default. Open by default, and the choice is remembered.
 11. **The front door does not change:** no workspace, the landing in its own
     `main`, the film behind it.
 12. **No new file is over 300 lines,** and `App.tsx` drops from 1,459 lines to
