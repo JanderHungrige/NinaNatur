@@ -61,6 +61,14 @@
   box-shadow: 1px 2px 0 color-mix(in srgb, var(--ds-ink) 40%, transparent);
 }
 
+/* OpenStreetMap's credit in the drawing's corner (doc 98) stands on his
+   paper, which stays light on a dark page: in his ink, softened, rather than
+   the page's muted grey, which turns light with the page and left the credit
+   at 2:1 against the paper. */
+.app[data-plan-theme='draft-sketch'] .plan-map-corner {
+  color: color-mix(in srgb, var(--ds-ink) 72%, var(--ds-paper));
+}
+
 /* What only says where to go is written, not drawn round: his lettering in
    his ink, underlined by hand. */
 .app[data-plan-theme='draft-sketch'] .link-button {

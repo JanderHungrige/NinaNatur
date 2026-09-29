@@ -36,9 +36,10 @@ export interface GardenCanvasProps {
   /** The land around the garden, from OpenStreetMap (doc 114): decoration,
    *  drawn whether the shade is on or not, and credited under the plan. */
   landcover?: Landcover | null | undefined;
-  /** Whether the style's credit stands beneath the drawing (doc 98). On a
-   *  phone the workspace puts it at the foot of the details instead. */
-  styleCredit?: boolean | undefined;
+  /** Whether the plan's credits stand beneath the drawing (doc 98). On a
+   *  phone they close the details instead, and the map's is marked in the
+   *  drawing's corner. */
+  creditsBelow?: boolean | undefined;
   shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;

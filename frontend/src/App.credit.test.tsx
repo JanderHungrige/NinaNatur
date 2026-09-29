@@ -1,3 +1,4 @@
+import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -6,9 +7,11 @@ import {
 import { garden, shed } from './testing/gardens';
 
 /* Where the plan's credits stand (doc 98). The owner, 2026-09-29: on a phone
-   his credit goes all the way down. Three lines of it under the drawing took
-   the room the plan has least of, so it closes the details there. The map's
-   line stays under the plan, where ODbL asks for it. */
+   the credits go all the way down. Three lines of his under the drawing took
+   the room the plan has least of. The map keeps a mark in the drawing's
+   corner, where OpenStreetMap's guidelines ask for its credit to be seen
+   without scrolling, and its full line joins his at the foot of the details
+   (the owner chose both). */
 
 const STYLE = /Zeichenstil nach Draft Sketch/;
 const MAP = 'Karte: © OpenStreetMap-Mitwirkende';
@@ -16,6 +19,9 @@ const MAP = 'Karte: © OpenStreetMap-Mitwirkende';
 const credits = (within: Element | null) =>
   [...(within?.querySelectorAll('.plan-credit') ?? [])].map((line) => line.textContent ?? '');
 const plan = () => document.querySelector('.workspace__plan');
+const corner = () => screen.queryByRole('link', { name: '© OpenStreetMap' });
+const street = shed({ obstacle_id: 7, kind: 'street', label: 'Hauptstraße', height: null });
+const mapped = () => fakeClient({}, { tok: garden('tok', 'Testgarten', { obstacles: [street] }) });
 
 beforeEach(() => {
   try {
@@ -32,28 +38,36 @@ describe('App — the credits on a phone', () => {
   it('closes the details with his credit, and leaves none of it under the plan', async () => {
     await openWorkspace(fakeClient());
 
-    expect(credits(plan()).some((line) => STYLE.test(line))).toBe(false);
+    expect(credits(plan())).toEqual([]);
     const last = details().lastElementChild;
     expect(last?.classList.contains('plan-credit')).toBe(true);
     expect(last?.textContent).toMatch(STYLE);
+    expect(corner()).toBeNull();
   });
 
-  it('keeps the map\'s line under the plan that draws the map', async () => {
-    const street = shed({ obstacle_id: 7, kind: 'street', label: 'Hauptstraße', height: null });
-    await openWorkspace(fakeClient({}, { tok: garden('tok', 'Testgarten', { obstacles: [street] }) }));
+  it('marks the map in the drawing\'s corner and gives its full line at the foot of the details', async () => {
+    await openWorkspace(mapped());
 
-    expect(credits(plan())).toEqual([MAP]);
-    expect(credits(details())).not.toContain(MAP);
+    expect(credits(plan())).toEqual([]);
+    expect(document.querySelector('.canvas-stage')?.contains(corner())).toBe(true);
+    const [his, map] = credits(details()).slice(-2);
+    expect(his).toMatch(STYLE);
+    expect(map).toBe(MAP);
+    expect(details().lastElementChild?.textContent).toBe(MAP);
   });
 });
 
 describe('App — the credits on a wide window', () => {
   beforeEach(stubWideLayout);
 
-  it('gives his credit beneath the plan, and none in the details', async () => {
-    await openWorkspace(fakeClient());
+  it('gives both captions beneath the plan, none in the details, and marks no corner', async () => {
+    await openWorkspace(mapped());
 
-    expect(credits(plan()).some((line) => STYLE.test(line))).toBe(true);
+    const below = credits(plan());
+    expect(below).toHaveLength(2);
+    expect(below[0]).toMatch(STYLE);
+    expect(below[1]).toBe(MAP);
     expect(credits(details())).toEqual([]);
+    expect(corner()).toBeNull();
   });
 });

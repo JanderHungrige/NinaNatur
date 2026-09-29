@@ -22,24 +22,24 @@ interface Props {
   garden: Pick<GardenOut, 'obstacles'>;
   /** Whether the plan draws OpenStreetMap's land around it (doc 114). */
   landcover?: boolean;
-  /** Whether the style's credit stands here too. On a phone it closes the
-   *  details instead, where it takes nothing of the plan (the owner, 2026-09-29). */
-  style?: boolean;
 }
 
 /**
  * The plan's captions, beneath it rather than on the drawing: in full, one
- * would cover a third of a phone's plan (doc 98).
+ * would cover a third of a phone's plan (doc 98). On a phone they close the
+ * details instead (the owner, 2026-09-29), and `MapCorner` marks the map.
  *
- * Whose drawing style the plan is in (`StyleCredit`). And whose map
+ * Whose drawing style the plan is in, in the words its author agreed to
+ * (doc 97; THIRD_PARTY.md) — nothing for a theme of our own. And whose map
  * (2026-09-21): OpenStreetMap's streets, house outlines and land are drawn here, and
  * ODbL asks for the credit where they are shown, linked as its attribution
- * guideline asks — so the map's line stays beneath the plan on a phone too.
+ * guideline asks.
  */
-export function PlanCredit({ garden, landcover = false, style = true }: Props) {
+export function PlanCredit({ garden, landcover = false }: Props) {
+  const { credit } = usePlanTheme();
   return (
     <>
-      {style ? <StyleCredit /> : null}
+      {credit === undefined ? null : <p className="plan-credit">{credit}</p>}
       {drawsOpenStreetMap(garden, landcover) ? (
         <p className="plan-credit">
           Karte:{' '}
@@ -50,9 +50,19 @@ export function PlanCredit({ garden, landcover = false, style = true }: Props) {
   );
 }
 
-/** Whose drawing style the plan is in, in the words its author agreed to
- *  (doc 97; THIRD_PARTY.md) — nothing for a theme of our own. */
-export function StyleCredit() {
-  const { credit } = usePlanTheme();
-  return credit === undefined ? null : <p className="plan-credit">{credit}</p>;
+/**
+ * OpenStreetMap's credit in the drawing's corner, on a phone, where the
+ * captions close the details. Its guidelines ask that the credit be seen
+ * without interacting with the map, in a corner of it or beside it: at the
+ * foot of the details it is seen only by scrolling (the owner chose both,
+ * 2026-09-29). Bottom right, as they call traditional; the legend is bottom
+ * left.
+ */
+export function MapCorner({ garden, landcover = false }: Props) {
+  if (!drawsOpenStreetMap(garden, landcover)) return null;
+  return (
+    <a className="plan-map-corner" href={ATTRIBUTION_URL} target="_blank" rel="noreferrer noopener">
+      © OpenStreetMap
+    </a>
+  );
 }

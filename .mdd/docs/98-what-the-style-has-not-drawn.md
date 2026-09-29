@@ -218,14 +218,30 @@ lines, against the 40 % doc 87 holds it to. The drawing now keeps its floor of
 workspace's row keeps room for the caption on top; the dock gives way by the
 caption's height instead. Technisch, with no caption, lays out as before.
 
-**On a phone his credit goes all the way down (the owner, 2026-09-29).** Under
-the drawing it wrapped to three lines, 60 px of the least room the plan has.
-It now closes the details sheet (`StyleCredit` after the panels): still
-beneath the plan and always in the page while the plan is in his style, but
-reached by scrolling the sheet. The drawing grew from 358 px to 431 px of a
-375 × 812 phone. The map's credit stays under the plan on a phone too: one
-short line, and ODbL asks for it where the map is shown. A wide window keeps
-both captions beneath the drawing.
+**On a phone the credits go all the way down (the owner, 2026-09-29).** Under
+the drawing his wrapped to three lines, 60 px of the least room the plan has.
+Both captions now close the details sheet (`PlanCredit` after the panels):
+still beneath the plan and always in the page while the plan is in his style
+or draws the map, but reached by scrolling the sheet. The drawing grew from
+358 px to 431 px of a 375 × 812 phone.
+
+The map's credit could not only go down. OpenStreetMap's attribution
+guidelines ask for it in a corner of the map, beside it or on a start screen,
+and say the attribution "should not require individuals to interact with the
+map" to be seen — which the foot of a sheet does. So a phone also marks the
+map in the drawing's corner (`MapCorner`, "© OpenStreetMap" linked to its
+terms): bottom right, which they call traditional, with a theme's legend
+bottom left. Asked, the owner chose the corner and the full line at the foot
+both. A wide window keeps both captions beneath the drawing and marks no
+corner.
+
+The mark is bare text, a step under the type scale (0.68rem, about 11 px, as
+maps set their credit) — no frame, a little smaller, the owner's word. Bare,
+its ink is the surface's to decide: Technisch's drawing darkens with the page
+and the page's muted ink with it, but his paper stays light on a dark page,
+where that ink stood at 2.3:1. On his paper it is his ink, softened. Measured:
+6.5:1 and 6.2:1 in his style on a light and a dark page, 5.7:1 and 6.8:1 in
+Technisch.
 
 **The block on a phone, and a cross (the owner, 2026-09-28).** Below the
 workspace's 66rem the plan is small, and the block keeps only its scale bar:
