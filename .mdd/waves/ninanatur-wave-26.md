@@ -206,6 +206,36 @@ with a new date. The page says which model version computed a map.
   hand's. Checked on the preview: health, the smoke test at both windows, and
   a throwaway garden computed at model 26.6 in 0.5 m cells.
 
+- **2026-09-28/29 — the owner's round on the preview** (merges `3147ee6`,
+  `05f556b`, `966eb44`; V0.25.229–231). The first "Sonne & Schatten" at a
+  place ran long and ended with nothing: past the proxy's 90 s, the page took
+  the 504 for the end. The relight is a job now (POST 202 after 20 s, a
+  status the page asks without holding the rest of it; doc 65), reviewed and
+  fixed, and its new step log named the minutes at once — a Köln garden's
+  laser took 385 s, 381 of them testing every point against every building
+  outline in the survey's tile; each outline now meets only the points in its
+  box, 3.2 s for the same answer (doc 107). On the preview a first analysis at
+  a new place answered in 14 s and 19 s. The owner's UI requests: Draft Sketch
+  by default, the buttons in his hand, a legend that can be closed, no blue
+  ring on a selected shape (docs 97–101). The release's smoke test then
+  caught the drawing at 37.7 % of the window under his credit — the plan's
+  floor is the drawing's own now (doc 87) — and on a phone the credits close
+  the details, with OpenStreetMap marked bare in the drawing's corner, as its
+  guidelines ask (doc 98).
+
+- **2026-09-29 — released to production as V0.25.232** (merge `a616785` from
+  `dev-deployment`, at the owner's word "Go for main"): Wave 25's completion,
+  Wave 26 stages 1–3 and the owner's round above, with the OSM multipolygon
+  fix and each Python package pinned in one lock. Every runbook step passed:
+  CI on `dev-deployment` and on `main`, the smoke test on the preview in both
+  windows, and production serving the preview's assets exactly
+  (`index-CErCE31u.js`, `index-iEoYMam3.css`) after rolling from V0.23.223.
+  Its schema change is columns only, added at startup — the light grid's
+  model, sky, relative light and expected sunshine; an element's sky view,
+  relative light, expected sun and crown base; a laser window's anchor — with
+  no one-time migration. A stored map predates the model's version (26.6),
+  so each garden's map is computed again when it is next asked for.
+
 ## What each one is
 
 ### 0. the-measuring-instrument
