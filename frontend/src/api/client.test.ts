@@ -35,6 +35,35 @@ describe('NinaNaturClient', () => {
     );
   });
 
+  it('carries how long a busy server asked to be left, and nothing where it did not', async () => {
+    const busy = vi.fn(async () => new Response(JSON.stringify({ detail: 'busy' }), {
+      status: 429, headers: { 'content-type': 'application/json', 'retry-after': '10' },
+    })) as unknown as typeof globalThis.fetch;
+    await expect(new NinaNaturClient({ fetch: busy }).shadowMarks('tok')).rejects.toSatisfy(
+      (error: unknown) => error instanceof ApiError && error.retryAfterS === 10,
+    );
+    const plain = new NinaNaturClient({ fetch: respondWith({ detail: 'nope' }, 500) });
+    await expect(plain.shadowMarks('tok')).rejects.toSatisfy(
+      (error: unknown) => error instanceof ApiError && error.retryAfterS === null,
+    );
+  });
+
+  it('tells a relight still running (202) from one that is done', async () => {
+    // A 202 carries no map: taken as one, the page showed nothing and stopped
+    // waiting for the map the server was still making (doc 65).
+    const running = new NinaNaturClient({ fetch: respondWith(null, 202) });
+    expect(await running.rebuildLightMap('tok')).toEqual({ map: null, pending: true });
+    const done = new NinaNaturClient({ fetch: respondWith({ cell_m: 0.5 }, 200) });
+    expect(await done.rebuildLightMap('tok')).toEqual({ map: { cell_m: 0.5 }, pending: false });
+  });
+
+  it('asks after a relight where the server keeps it', async () => {
+    const fetch = respondWith({ running: true, failed: false, known: true });
+    const client = new NinaNaturClient({ fetch });
+    expect(await client.lightStatus('t o')).toEqual({ running: true, failed: false, known: true });
+    expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe('/api/v1/gardens/t%20o/light/status');
+  });
+
   it('treats an unknown share token as null, not as an error', async () => {
     // A stale share link is a normal thing for a user to hit.
     const client = new NinaNaturClient({ fetch: respondWith({ detail: 'no such garden' }, 404) });
@@ -56,7 +85,7 @@ describe('NinaNaturClient', () => {
         beds: [{
           bed_id: 1, name: 'Beet', polygon: [], soil_type: null, moisture: null, observed_colours: {},
           ellenberg_l: null, ellenberg_m: null, ellenberg_n: null, ellenberg_r: null,
-          sun_hours: null, light_computed_at: null,
+          sun_hours: null, sky_view: null, relative_light: null, expected_sun_h: null, light_computed_at: null,
         }],
       }),
     });

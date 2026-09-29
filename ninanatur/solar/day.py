@@ -12,12 +12,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from ninanatur.garden.casting import casting, casts
 from ninanatur.garden.models import Garden
-from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.garden.roofs import Roof, shading_height
-from ninanatur.solar.light import MINUTE_STEP
 from ninanatur.solar.position import Location, sun_position
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_polygon
+from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, shadow_rings
 
 #: The months a garden is watched in. The same window the light model uses, and
 #: for the same reason: December says nothing about where a plant can live.
@@ -27,6 +25,11 @@ MONTHS: tuple[int, ...] = tuple(range(3, 11))
 #: middle is the one that represents the month rather than either edge.
 MID_MONTH_DAY = 15
 
+#: A frame every half hour. The light model's own sampling has been every ten
+#: minutes since Wave 26 (doc 117); a day watched through does not need three
+#: times the frames, and each frame is the shadows of the whole garden.
+FRAME_MINUTES = 30
+
 
 @dataclass(frozen=True)
 class Frame:
@@ -35,6 +38,9 @@ class Frame:
     minute: int
     altitude: float
     azimuth: float
+    #: Every shadow as rings — outlines anticlockwise, holes clockwise — drawn
+    #: as one path under the non-zero rule (doc 116). Until Wave 26 one convex
+    #: hull per obstacle, which filled an L's open corner.
     polygons: list[list[tuple[float, float]]]
 
 
@@ -56,7 +62,7 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
     obstacles = _casting(garden)
     location = Location(latitude=garden.latitude, longitude=garden.longitude)
     start = datetime(year, month, MID_MONTH_DAY, tzinfo=UTC)
-    step = timedelta(minutes=MINUTE_STEP)
+    step = timedelta(minutes=FRAME_MINUTES)
 
     frames: list[Frame] = []
     moment = start
@@ -68,7 +74,7 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
                     minute=moment.hour * 60 + moment.minute,
                     altitude=sun.altitude,
                     azimuth=sun.azimuth,
-                    polygons=[shadow_polygon(o, sun) for o in obstacles],
+                    polygons=shadow_rings(obstacles, sun),
                 )
             )
         moment += step
@@ -77,19 +83,8 @@ def shadow_day(conn: object, garden: Garden, month: int, year: int = 2026) -> Da
 
 
 def _casting(garden: Garden) -> list[Obstacle]:
-    """Everything in the garden that throws a shadow, at its shading height.
-
-    The same rule the light model applies, and deliberately not a second copy of
-    it: a height of None is an element nobody has measured, and treating it as
-    zero would be a claim.
-    """
-    return [
-        Obstacle(
-            footprint=element.footprint,
-            height=shading_height(
-                element.height, Roof(element.roof), element.eaves_m
-            ),
-        )
-        for element in garden.obstacles
-        if element.height is not None and casts_shadow(ObjectKind(element.kind))
-    ]
+    """Everything in the garden that throws a shadow, cast as the light model
+    casts it (`garden.casting`) — a roof as its planes, not as the block of an
+    averaged height it once kept here after the model had moved on (review,
+    2026-09-28)."""
+    return [casting(element) for element in garden.obstacles if casts(element)]

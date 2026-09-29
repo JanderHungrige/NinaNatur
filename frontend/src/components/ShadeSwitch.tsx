@@ -17,7 +17,7 @@ interface Props {
   onMonth: (month: number | null) => void;
   onRebuild: () => void;
   busy: boolean;
-  /** The shade is being computed: the button says so while it waits. */
+  /** The shade is being computed: the button says so, and waits. */
   rebuilding?: boolean | undefined;
   /** A month's map is on its way. */
   monthWorking?: boolean | undefined;
@@ -48,6 +48,12 @@ function morningShare(map: LightMap): number {
   if (total <= 0) return 0;
   const morning = ground(map.morning);
   return Math.round((morning / total) * 100);
+}
+
+/** What of the sky a spot sees, beside its hours when a plant stands too dark
+ *  there: under a crown it is often what darkens it (doc 118). */
+function skyAt(sky: number | null | undefined): string {
+  return sky === null || sky === undefined ? '' : ` und ${Math.round(sky * 100)} % des Himmels`;
 }
 
 /** German short date from an ISO timestamp, or the raw string if it is not one. */
@@ -87,7 +93,9 @@ export function ShadeSwitch({
           been computed is exactly the garden that needs this button, and the
           old panel hid it behind "nothing drawn yet". */}
       <div className="shade-switch__rebuild">
-        <button type="button" disabled={busy} onClick={onRebuild}>
+        {/* A first analysis waits outside `busy` (doc 65), so the button
+            reads its own flag as well. */}
+        <button type="button" disabled={busy || rebuilding} onClick={onRebuild}>
           {rebuilding ? <Working label="Wird berechnet…" /> : 'Schatten neu berechnen'}
         </button>
         <p className="hint">
@@ -97,8 +105,10 @@ export function ShadeSwitch({
         {map !== null && (
           <span className="hint">
             {map.stale
-              ? 'Nicht mehr aktuell: seitdem hat sich am Garten oder an der Berechnung etwas geändert.'
-              : `Berechnet am ${whenText(map.computed_at)}.`}
+              ? `Nicht mehr aktuell: seitdem hat sich am Garten oder an der Berechnung etwas geändert. ${
+                map.model ? `Gezeichnet mit Lichtmodell ${map.model}.` : 'Gezeichnet mit einem älteren Lichtmodell.'}`
+              : `Berechnet am ${whenText(map.computed_at)}${
+                map.model ? `, Lichtmodell ${map.model}` : ''}.`}
           </span>
         )}
       </div>
@@ -230,7 +240,7 @@ export function ShadeSwitch({
                   <li key={m.planting_id}>
                     <strong>{m.name}</strong>{' '}
                     {m.problem === 'too_dark'
-                      ? `steht zu dunkel: ${m.sun_hours} h dort, die Art will mehr.`
+                      ? `steht zu dunkel: ${m.sun_hours} h dort${skyAt(m.sky_view)}, die Art will mehr.`
                       : `steht zu hell: ${m.sun_hours} h dort, die Art will weniger.`}
                   </li>
                 ))}

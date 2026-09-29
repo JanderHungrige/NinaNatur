@@ -7,7 +7,7 @@ import { draftSketch } from '../themes/draft-sketch';
 import { technisch } from '../themes/technisch';
 import type { PlanTheme } from '../themes/types';
 import { GardenCanvas } from './GardenCanvas';
-import { drawsOpenStreetMap, PlanCredit } from './PlanCredit';
+import { drawsOpenStreetMap, MapCorner, PlanCredit } from './PlanCredit';
 
 /*
  * OpenStreetMap's credit beneath the plan (owner's check, 2026-09-21, #10): a
@@ -57,6 +57,22 @@ describe('the map\'s credit beneath the plan', () => {
     expect(container.textContent).toBe(CREDIT);
     const link = screen.getByRole('link', { name: '© OpenStreetMap-Mitwirkende' });
     expect(link.getAttribute('href')).toBe('https://www.openstreetmap.org/copyright');
+  });
+
+  it('is marked in the drawing\'s corner on a phone, linked to its terms', () => {
+    // The owner chose both, 2026-09-29: the captions close the details, and
+    // the map keeps a mark where it is seen, as OSM's guidelines ask.
+    render(<MapCorner garden={{ obstacles: [street] }} />);
+    const link = screen.getByRole('link', { name: '© OpenStreetMap' });
+    expect(link.classList.contains('plan-map-corner')).toBe(true);
+    expect(link.getAttribute('href')).toBe('https://www.openstreetmap.org/copyright');
+  });
+
+  it('marks no corner of a garden drawn by hand, and marks its land once drawn', () => {
+    const { container, rerender } = render(<MapCorner garden={{ obstacles: [] }} />);
+    expect(container.textContent).toBe('');
+    rerender(<MapCorner garden={{ obstacles: [] }} landcover />);
+    expect(container.textContent).toBe('© OpenStreetMap');
   });
 
   it('stands on a line of its own under the style\'s credit', () => {

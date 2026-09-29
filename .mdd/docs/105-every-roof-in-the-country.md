@@ -4,8 +4,8 @@ title: Every Roof in the Country
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
-depends_on: [102-which-tiles-and-whose, 40-lod2-roofs]
+wave_status: complete
+depends_on: [102-which-tiles-and-whose, 82-the-roof-it-actually-has]
 relates: [103-a-tile-not-a-service, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs]
 source_files:
   - ninanatur/garden/building_sync.py

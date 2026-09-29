@@ -49,8 +49,13 @@ export const RAIL_TOOLS: readonly RailTool[] = [
   },
 ];
 
+/** Marking a shadow edge is armed from the element's details, not the rail (doc 122). */
+export const SHADOW_MARK_HINT =
+  'Klicke in den Plan, wo die Schattenkante gerade liegt — Esc bricht ab.';
+
 /** What the armed tool expects of the next gesture, or how to start when none is armed. */
 export function hintFor(active: Tool | null): string {
+  if (active === 'shadowmark') return SHADOW_MARK_HINT;
   return (RAIL_TOOLS.find((t) => t.tool === active) ?? RAIL_TOOLS[0]!).hint;
 }
 

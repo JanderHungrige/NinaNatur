@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-3
 wave_status: complete
 depends_on: []
-relates: [08-garden-model, 09-garden-api]
+relates: [08-garden-model, 09-garden-api, 118-the-sky-counts]
 source_files:
   - ninanatur/solar/__init__.py
   - ninanatur/solar/position.py
@@ -22,7 +22,7 @@ test_files:
   - tests/test_light_scale_migration.py
   - tests/test_light_legend.py
 data_flow: greenfield
-last_synced: 2026-09-21
+last_synced: 2026-09-22
 status: complete
 phase: all
 mdd_version: 11
@@ -113,6 +113,15 @@ on, and as **straight lines between anchors** rather than steps
 Between two anchors the value is on the line (3 h → 5.42, 1 h → 3.33); beyond
 the ends it is flat.
 
+**Since 2026-09-22 the hours have a floor under them** (doc 118, the owner's
+decision): a bed's value is never brighter than Ellenberg's own classes say of
+the share of the sky it sees with the crowns in leaf (`SKY_ANCHORS`,
+`light_value`). At 42 % of the sky or more the table above decides alone. A
+spot between buildings sees less — a 3 m passage between two 9 m houses, a
+fifth — but its sun is cut with it, and the hours stay the lower value. Under
+a dense crown, whose bare months the hours count as sun, the sky decides. And
+never below 2.5, by either measure.
+
 - **Why EIVE's scale.** The staircase before it had classic-looking rungs, 3–8,
   and was compared with EIVE values, which squeezed every bed towards the
   middle: full sun read as classic 7.4, deep shade as 3.4. EIVE scaled each
@@ -131,8 +140,8 @@ the ends it is flat.
 - **Why not below 2.5.** Classic 1–2 is a closed forest floor; a bed with no
   direct sun still has the sky.
 
-A bed's value comes from its hours as stored, so the two always agree — and a
-new convention needs no shadow work. `ingest/light_scale.py` is a one-time
+A bed's value comes from its hours and its sky as stored, so they always
+agree — and a new convention needs no shadow work. `ingest/light_scale.py` is a one-time
 migration that carried every computed bed onto these lines from its stored
 hours when they replaced the staircase. No map read stale over it: the
 convention is not an input of the map, because no shadow moved. The next change

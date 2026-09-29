@@ -1,9 +1,13 @@
 """What you plant changes the site.
 
 A bed is a marked area, and a tree standing in it is not a different kind of
-bed — it is a thing that casts a shadow. The shading machinery already models
-obstacles as vertical cylinders, which is exactly the shape of a tree; it simply
-was never told about the ones the user plants.
+bed — it is a thing that casts a shadow. It was cast as a cylinder from the
+ground to its top, and is a crown on a trunk since doc 121: an ellipsoid whose
+base is a third of the way up a tree.
+
+The shade of a tall crown falls to its north far more than at its foot, and
+the light value is capped at 9 over the hours an open bed has — so what these
+tests read is the sun hours, the quantity a crown moves.
 """
 import sqlite3
 from collections.abc import Iterator
@@ -58,18 +62,20 @@ def _sun_hours(c: sqlite3.Connection, garden_id: int, bed_id: int) -> float:
     return float(bed.sun_hours)
 
 
-def _light(c: sqlite3.Connection, garden_id: int, bed_id: int) -> float:
+def _sky(c: sqlite3.Connection, garden_id: int, bed_id: int) -> float:
     bed = next(b for b in load_garden(c, garden_id).beds if b.bed_id == bed_id)
-    assert bed.ellenberg_l is not None
-    return float(bed.ellenberg_l)
+    assert bed.sky_view is not None
+    return float(bed.sky_view)
 
 
 def test_a_full_grown_oak_darkens_the_bed_it_stands_in(conn: sqlite3.Connection) -> None:
-    """Reversed in Wave 16, and this one is not the interesting half.
+    """Reversed in Wave 16, and changed again by doc 121.
 
-    A 24 m oak has a crown 16 m across. Standing in a 4 x 4 m bed it covers the
-    whole of it and a good deal besides, so the bed going dark is the right
-    answer and not an artifact.
+    A 24 m oak has a crown 16 m across, starting 8 m up. From its foot the
+    crown fills the sky within 30° of the zenith, which the sun at 52.5° N
+    reaches only around noon in high summer (60.9° at most) — so the bed it
+    stands in loses little of its sun (13.14 h to 13.0) and a fifth of its
+    sky. As a cylinder it passed a fifth of the sun at every angle.
 
     The bed used to be excluded from its own plantings, for a reason that was
     sound at the time: a planting had no position, so it sat at the bed's
@@ -79,12 +85,13 @@ def test_a_full_grown_oak_darkens_the_bed_it_stands_in(conn: sqlite3.Connection)
     grid, so both halves of that artifact are gone.
     """
     garden_id, bed_id = _sunny_garden(conn)
-    before = _light(conn, garden_id, bed_id)
+    before = _sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)
 
     add_planting(conn, bed_id, taxon_id=1, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, bed_id) < before
+    assert _sun_hours(conn, garden_id, bed_id) < before[0]
+    assert _sky(conn, garden_id, bed_id) < before[1] - 0.1, "the crown overhead"
 
 
 def test_a_hazel_in_the_corner_costs_the_corner(conn: sqlite3.Connection) -> None:
@@ -128,12 +135,12 @@ def test_a_placed_crown_stands_where_the_plan_draws_it(conn: sqlite3.Connection)
 def test_planting_a_harebell_changes_nothing(conn: sqlite3.Connection) -> None:
     # A 40 cm perennial's shadow falls inside its own footprint.
     garden_id, bed_id = _sunny_garden(conn)
-    before = _light(conn, garden_id, bed_id)
+    before = _sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)
 
     add_planting(conn, bed_id, taxon_id=2, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, bed_id) == before
+    assert (_sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)) == before
 
 
 def test_a_tree_shades_the_bed_to_its_north(conn: sqlite3.Connection) -> None:
@@ -146,24 +153,24 @@ def test_a_tree_shades_the_bed_to_its_north(conn: sqlite3.Connection) -> None:
         conn, garden_id, BedInput(name="Nord", polygon=HERE, soil_type="loam", moisture="fresh")
     )
     recompute_light(conn, garden_id)
-    before = _light(conn, garden_id, north)
+    before = _sun_hours(conn, garden_id, north)
 
     add_planting(conn, south, taxon_id=1, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, north) < before
+    assert _sun_hours(conn, garden_id, north) < before - 0.5
 
 
 def test_a_species_with_no_recorded_height_casts_no_shadow(conn: sqlite3.Connection) -> None:
     """Absent data is not a property of the plant, and it is not a licence to
     invent a 5 m shrub either."""
     garden_id, bed_id = _sunny_garden(conn)
-    before = _light(conn, garden_id, bed_id)
+    before = _sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)
 
     add_planting(conn, bed_id, taxon_id=3, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, bed_id) == before
+    assert (_sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)) == before
 
 
 def test_planting_a_tree_changes_the_light_once_it_is_recomputed(
@@ -188,12 +195,12 @@ def test_planting_a_tree_changes_the_light_once_it_is_recomputed(
         conn, garden_id, BedInput(name="Nord", polygon=HERE, soil_type="loam", moisture="fresh")
     )
     recompute_light(conn, garden_id)
-    before = _light(conn, garden_id, north)
+    before = _sun_hours(conn, garden_id, north)
 
     add_planting(conn, south, taxon_id=1, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, north) < before
+    assert _sun_hours(conn, garden_id, north) < before - 0.5
 
 
 def test_a_perennial_changes_nothing_even_when_the_light_is_recomputed(
@@ -203,12 +210,12 @@ def test_a_perennial_changes_nothing_even_when_the_light_is_recomputed(
     # statement about *not doing work*; now that no write does work, it is the
     # plainer statement that the answer does not move.
     garden_id, bed_id = _sunny_garden(conn)
-    before = _light(conn, garden_id, bed_id)
+    before = _sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)
 
     add_planting(conn, bed_id, taxon_id=2, quantity=1)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, bed_id) == before
+    assert (_sun_hours(conn, garden_id, bed_id), _sky(conn, garden_id, bed_id)) == before
 
 
 def test_removing_the_tree_gives_the_light_back(conn: sqlite3.Connection) -> None:
@@ -222,12 +229,12 @@ def test_removing_the_tree_gives_the_light_back(conn: sqlite3.Connection) -> Non
         conn, garden_id, BedInput(name="Nord", polygon=HERE, soil_type="loam", moisture="fresh")
     )
     recompute_light(conn, garden_id)
-    before = _light(conn, garden_id, north)
+    before = _sun_hours(conn, garden_id, north)
     planting_id = add_planting(conn, south, taxon_id=1, quantity=1)
     recompute_light(conn, garden_id)
-    assert _light(conn, garden_id, north) < before
+    assert _sun_hours(conn, garden_id, north) < before
 
     remove_planting(conn, planting_id)
     recompute_light(conn, garden_id)
 
-    assert _light(conn, garden_id, north) == before
+    assert _sun_hours(conn, garden_id, north) == before

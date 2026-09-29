@@ -9,22 +9,49 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from ninanatur.solar.position import Location, sun_position
-from ninanatur.solar.shading import MIN_ALTITUDE, Obstacle, Point, is_shaded
+from ninanatur.solar.position import Location
+from ninanatur.solar.shading import Obstacle, Point
 
 # March to October. A plant's light experience in December does not decide where
 # it can live, and including winter would drag every German garden into shade.
 SEASON_START = (3, 1)
 SEASON_END = (10, 31)
 
-# One day every ten, sampled every half hour. Fine enough that the answer stops
-# moving, coarse enough to stay well under a second per bed.
-DAY_STEP = 10
-MINUTE_STEP = 30
+# Every fifth day, every ten minutes; a month every second day. Until Wave 26 it
+# was every tenth day and every half hour, a month every fifth, with the claim
+# "fine enough that the answer stops moving" — measured, it was 0.22 h low over
+# the season and 0.46 h in an April month, mostly from the days skipped
+# (doc 115). These are the steps its convergence suite asks for, within 0.04 h
+# and 0.10 h of an answer that has stopped moving, and the raster pays for
+# them (doc 117).
+DAY_STEP = 5
+MINUTE_STEP = 10
+MONTH_DAY_STEP = 2
 
-# A single month gets a finer step, because ten days would sample it three
-# times. Six samples over four weeks, at a quarter of the season's cost.
-MONTH_DAY_STEP = 5
+#: Which light model computed a map. It enters every map's signature, so a map
+#: an older model drew reads stale instead of showing its answer under a new
+#: date, and the page names it (Wave 26: "every model change bumps a
+#: MODEL_VERSION"). Raise it with every change to what the model answers:
+#:
+#: - "" — before Wave 26: every 10th day, every half hour, the sun from 5°.
+#: - "26.2" — every 5th day, every 10 minutes, a month every 2nd day, the sun
+#:   from 3°, concave shadows exact (docs 115–117).
+#: - "26.3" — the sky: each cell's sky-view factor, relative illuminance in the
+#:   garden's DWD climate, and the sunshine to expect; the light value never
+#:   brighter than Ellenberg's classes say of the sky in leaf (doc 118). The
+#:   hours are 26.2's.
+#: - "26.4" — the sun's share of a month is what its beam brings to the cell's
+#:   own surface, not its hours: a March sun at 8° counts for less than a June
+#:   sun at 60°, and a slope takes the light at its own angle (doc 119). The
+#:   hours, the sky and the light value are 26.3's.
+#: - "26.5" — a roof casts as a roof: the solid under its own planes rather
+#:   than a block of `RISE_KEPT`'s averaged height, and a hip's corners sit on
+#:   its planes rather than in the dip a distance to its ridge left (doc 120).
+#: - "26.6" — a crown is an ellipsoid on a trunk, passing light by the depth a
+#:   ray crosses, not a cylinder from the ground passing a fixed share; and a
+#:   tree or shrub the gardener drew is a crown too, not an opaque block
+#:   (doc 121).
+MODEL_VERSION = "26.6"
 
 # Mean daily direct sun (hours) -> light value on EIVE's own 0–10 scale, as
 # anchors joined by straight lines, darkest first.
@@ -70,6 +97,36 @@ SUN_HOUR_ANCHORS: tuple[tuple[float, float], ...] = (
 )
 
 
+# Ellenberg's own measure (doc 118): relative illuminance under an overcast
+# sky in full leaf — which is what a cell's sky-view factor with the crowns in
+# leaf is. His classes by their thresholds, as the plan quotes them, carried
+# onto EIVE's scale the way the hours' anchors are ((L − 1) × 1.25), and flat
+# at the hours' top: open ground is 9.0 by either measure.
+#
+# Not a second convention beside the hours but a floor under them, by the
+# owner's decision of 2026-09-22 (`light_value`). His thresholds come from
+# forest floors, and a garden rarely sees less than a fifth of its sky outside
+# a dense crown: read alone, they put nearly every garden spot at L 9 and gave
+# a bed with four hours of sun the open lawn's list. As a floor they change
+# nothing where 42 % of the sky or more is seen, and under a dense beech —
+# whose bare months the hours count as sun — they say what it is.
+#
+# **Not below 2.5, as the hours are not.** Classic 1–2 is a closed forest
+# floor. And inside a hedge the gardener drew, which the model casts solid to
+# the ground, the sky reads 0: with classes 1 and 2 kept, every bed there fell
+# from 2.5 to 0.0 (review, 2026-09-22). A drawn tree or shrub was such a solid
+# too until it became a crown on a trunk (doc 121).
+SKY_ANCHORS: tuple[tuple[float, float], ...] = (
+    (0.05, 2.5),    # classic 3 — mostly below 5 %; the hours' floor too
+    (0.075, 3.75),  # classic 4
+    (0.10, 5.0),    # classic 5 — mostly above 10 %
+    (0.20, 6.25),   # classic 6 — rarely below 20 %
+    (0.30, 7.5),    # classic 7 — down to about 30 %
+    (0.40, 8.75),   # classic 8 — rarely below 40 %
+    (0.42, 9.0),    # the hours' top, on the way to classic 9 at 50 %
+)
+
+
 @dataclass(frozen=True)
 class BedLight:
     """A bed's light value, with the evidence that produced it."""
@@ -78,6 +135,35 @@ class BedLight:
     sun_hours: float
     samples: int
     year: int
+    #: The share of the sky it sees with the crowns in leaf (doc 118).
+    sky_view: float = 1.0
+
+
+def _on_lines(x: float, anchors: tuple[tuple[float, float], ...]) -> float:
+    """Straight lines between the anchors, flat beyond both ends, rounded to
+    two places — already finer than the model knows."""
+    first_x, first_value = anchors[0]
+    if x <= first_x:
+        return first_value
+    for (x0, l0), (x1, l1) in zip(anchors, anchors[1:], strict=False):
+        if x <= x1:
+            return round(l0 + (l1 - l0) * (x - x0) / (x1 - x0), 2)
+    return anchors[-1][1]
+
+
+def ellenberg_from_sky(sky: float) -> float:
+    """Ellenberg's classes on EIVE's scale from the share of the sky seen in
+    leaf (`SKY_ANCHORS`)."""
+    return _on_lines(sky, SKY_ANCHORS)
+
+
+def light_value(sun_hours: float, sky: float | None) -> float:
+    """The light value a bed is matched by (owner, 2026-09-22): the hours'
+    convention, never brighter than Ellenberg's classes say of the sky it
+    sees in leaf. Without a sky — a bed computed before the sky counted — the
+    hours alone. The one rule for a bed, a cell and a point."""
+    by_hours = ellenberg_from_sun_hours(sun_hours)
+    return by_hours if sky is None else min(by_hours, ellenberg_from_sky(sky))
 
 
 def ellenberg_from_sun_hours(sun_hours: float) -> float:
@@ -86,16 +172,10 @@ def ellenberg_from_sun_hours(sun_hours: float) -> float:
     Straight lines between `SUN_HOUR_ANCHORS`, flat beyond both ends. Rounded
     to two places, which is already finer than the model knows.
     """
-    first_hours, first_value = SUN_HOUR_ANCHORS[0]
-    if sun_hours <= first_hours:
-        return first_value
-    for (h0, l0), (h1, l1) in zip(SUN_HOUR_ANCHORS, SUN_HOUR_ANCHORS[1:], strict=False):
-        if sun_hours <= h1:
-            return round(l0 + (l1 - l0) * (sun_hours - h0) / (h1 - h0), 2)
-    return SUN_HOUR_ANCHORS[-1][1]
+    return _on_lines(sun_hours, SUN_HOUR_ANCHORS)
 
 
-def _season_days(year: int, month: int | None = None) -> list[datetime]:
+def season_days(year: int, month: int | None = None) -> list[datetime]:
     """The days a light answer is averaged over.
 
     March to October by default — a plant's whole growing season, which is what
@@ -128,36 +208,35 @@ def bed_light_value(
     year: int = 2026,
     height_above_ground: float = 0.0,
 ) -> BedLight:
-    """Mean daily hours of direct sun on a bed, and the light value it implies.
+    """Mean daily hours of direct sun on a bed, the sky it sees, and the light
+    value they imply (`light_value`).
 
     Returns the sun hours alongside the value: a bare number the user cannot
     trace back to their own obstacles is not explainable, and this one will
     surprise people.
+
+    A crown passes what it passes, as it does on the map: until Wave 26 this
+    point path counted any shadow as a wall, trees included, and a raised bed
+    under an apple tree read darker than the ground beside it.
     """
-    days = _season_days(year)
-    lit_minutes = 0
-    samples = 0
-    step = timedelta(minutes=MINUTE_STEP)
+    # The raster's point path, every moment at once (doc 117). It imports
+    # this module's sampling, so it is imported here rather than at the top.
+    from ninanatur.solar.raster import moments_for, parts_of, point_hours, point_sums
+    from ninanatur.solar.relative import LEAF_MONTH
+    from ninanatur.solar.sky import sky_directions
 
-    for day in days:
-        moment = day
-        end_of_day = day + timedelta(days=1)
-        while moment < end_of_day:
-            samples += 1
-            sun = sun_position(location, moment)
-            if sun.altitude > MIN_ALTITUDE and not any(
-                is_shaded(bed, obstacle, sun, height_above_ground)
-                for obstacle in obstacles
-            ):
-                lit_minutes += MINUTE_STEP
-            moment += step
-
-    # The value from the hours as stored, so the two always agree: on lines
-    # rather than steps, a rounding of the hours moves the value too.
-    sun_hours = round((lit_minutes / 60) / len(days), 2) if days else 0.0
+    moments = moments_for(location, year)
+    parts = parts_of(obstacles)
+    before, after = point_hours(parts, moments, bed.x, bed.y, height_above_ground)
+    sky = float(point_sums(parts, sky_directions(LEAF_MONTH), bed.x, bed.y,
+                           height_above_ground)[0])
+    # The value from the hours and the sky as stored, so they always agree: on
+    # lines rather than steps, a rounding of either moves the value too.
+    sun_hours, sky_view = round(before + after, 2), round(sky, 3)
     return BedLight(
-        ellenberg_l=ellenberg_from_sun_hours(sun_hours),
+        ellenberg_l=light_value(sun_hours, sky_view),
         sun_hours=sun_hours,
-        samples=samples,
+        samples=moments.days * (24 * 60 // MINUTE_STEP),
         year=year,
+        sky_view=sky_view,
     )

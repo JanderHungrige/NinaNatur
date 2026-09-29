@@ -24,6 +24,7 @@ const ABOUT: Record<string, string> = {
   buildings: 'Gebäude',
   laser: 'Baumkronen',
   map: 'Karte',
+  climate: 'Klima',
 };
 
 /** A credit whose terms ask for a link to them, by the source's name: OSM's
@@ -48,13 +49,22 @@ export function SourceCredits({ credits }: Props) {
               {decided(credit.about)}: {credit.name}
               {credit.detail === null || credit.detail === undefined ? '' : ` · ${credit.detail}`}
             </span>
-            {/* The credit itself, word for word as the licence asks. */}
+            {/* The credit itself, word for word as the licence asks, and the
+                licence, named and linked as CC BY 4.0 asks (§ 3(a)(1)(C)). */}
             <span className="source-credits__credit">
               {LINKED[credit.name] === undefined ? credit.attribution : (
                 <a href={LINKED[credit.name]} target="_blank" rel="noreferrer noopener">
                   {credit.attribution}
                 </a>
               )}
+            </span>
+            <span className="source-credits__credit">
+              {'Lizenz '}
+              {credit.licence_url ? (
+                <a href={credit.licence_url} target="_blank" rel="noreferrer noopener license">
+                  {credit.licence}
+                </a>
+              ) : credit.licence}
             </span>
           </li>
         ))}

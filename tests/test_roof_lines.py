@@ -211,3 +211,32 @@ def test_a_real_kink_in_the_upper_wall_is_not_straightened_over_the_garden() -> 
 
 def _round(point: tuple[float, float]) -> tuple[float, float]:
     return (round(point[0], 3) + 0.0, round(point[1], 3) + 0.0)
+
+
+@pytest.mark.parametrize("fall", [0.0, 0.7, -2.5])
+def test_a_hip_surveyed_across_its_long_side_is_drawn_where_its_planes_crease(
+    fall: float,
+) -> None:
+    """Falling north on a house 10 m wide and 12 m deep, the ridge runs the
+    shorter way and is a point; the model's planes crease on the ends, 5 m
+    either side of the middle, not at the corners. Along every hip drawn, two
+    of the roof's planes are the lowest together — which is what a crease is
+    (review of feature 5, 2026-09-28). And a fall a little off square, as a
+    survey's always is: square only, the corners came back (review of
+    45eb56a)."""
+    from ninanatur.garden.roofshape import surface_of
+
+    house = [(-5.0, -6.0), (5.0, -6.0), (5.0, 6.0), (-5.0, 6.0)]
+    lines = roof_lines(house, Roof.HIP, height_m=9.0, eaves_m=5.0, fall_deg=fall)
+
+    assert len(lines) == 4
+    if fall == 0.0:
+        ends = {(-5.0, -5.0), (-5.0, 5.0), (5.0, -5.0), (5.0, 5.0)}
+        assert _rounded(lines) == {frozenset({(0.0, 0.0), end}) for end in ends}
+    surface = surface_of(house, Roof.HIP, 9.0, 5.0, fall)
+    assert surface is not None
+    for (x0, y0), (x1, y1) in lines:
+        for t in (0.25, 0.5, 0.75, 1.0):
+            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            heights = sorted(d - a * x - b * y for a, b, _c, d in surface.planes())
+            assert heights[1] - heights[0] < 1e-9, (x, y, heights)

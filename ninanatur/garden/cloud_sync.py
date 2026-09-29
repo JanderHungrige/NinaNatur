@@ -16,7 +16,9 @@ calling every roof a tree.
 from __future__ import annotations
 
 import logging
+import math
 import sqlite3
+import statistics
 from pathlib import Path
 
 from geokachel.addressing import addressed
@@ -25,9 +27,11 @@ from geokachel.tile_sources import TileProduct, TileSource, sources_for
 from geokachel.tile_zip import extract
 from geokachel.utm import to_utm
 
+from ninanatur.garden.casting import crown_disc
+from ninanatur.garden.footprint import covers
 from ninanatur.garden.models import Garden
 from ninanatur.garden.terrain_sync import TILE_CACHE_BYTES, is_precise
-from ninanatur.geo.cloud_store import load_cloud, save_cloud
+from ninanatur.geo.cloud_store import load_cloud, save_cloud, stored_cloud
 from ninanatur.geo.lod2 import Lod2Building
 from ninanatur.geo.osm import state_at
 from ninanatur.geo.pointcloud import CloudWindow, window_from
@@ -57,6 +61,11 @@ def ensure_cloud(conn: sqlite3.Connection, garden: Garden, *,
     most states publish no open cloud, and a garden there keeps the rasters it
     always had.
 
+    `buildings` is the survey's building model on the garden's axes — what
+    tells a roof from a crown (doc 107) — or None where none was read. A
+    window is read again when it does not say which garden it was read around,
+    or when a building model has arrived that it was read without (doc 121).
+
     Slow on purpose — tens of megabytes and a second of arithmetic — so this
     belongs on the background path with the light model, never in a request.
     """
@@ -64,7 +73,8 @@ def ensure_cloud(conn: sqlite3.Connection, garden: Garden, *,
     if not is_precise(anchor):
         return False
     key = cache_key(anchor)
-    if load_cloud(conn, key) is not None:
+    stored = stored_cloud(conn, key)
+    if stored is not None and stored.anchored and (stored.classified or buildings is None):
         return True
 
     state = state_at(anchor.lat, anchor.lon)
@@ -75,8 +85,8 @@ def ensure_cloud(conn: sqlite3.Connection, garden: Garden, *,
 
     window = _read(anchor, source, buildings or [])
     if window is None:
-        return False
-    save_cloud(conn, key, window)
+        return stored is not None
+    save_cloud(conn, key, window, anchor, classified=buildings is not None)
     return True
 
 
@@ -129,4 +139,81 @@ def _read(anchor: LatLon, source: TileSource,
         return None
 
 
-__all__ = ["ensure_cloud", "laser_for"]
+def cloud_for(conn: sqlite3.Connection, anchor: LatLon) -> CloudWindow | None:
+    """The stored laser window on this garden's axes, where its crown bases can
+    be trusted: read under the same check as the ground
+    (`terrain_sync.ground_for`), around a garden it can be moved from, and
+    with a building model that told its roofs from its crowns (doc 121)."""
+    if not is_precise(anchor):
+        return None
+    key = cache_key(anchor)
+    stored = stored_cloud(conn, key)
+    if stored is None or not stored.classified:
+        return None
+    return load_cloud(conn, key, around=anchor)
+
+
+def crown_base_under(window: CloudWindow, x: float, y: float, radius: float,
+                     buildings: list[list[tuple[float, float]]] | None = None) -> float | None:
+    """Where the laser saw this crown start (doc 121), or None where it saw
+    no canopy under it.
+
+    The median over the cells within half its radius. Nearer the rim, the
+    lowest leaves of a round crown are its side rather than its base; and the
+    median rather than the lowest, because a cell can hold a shrub under the
+    tree, whose leaves the laser reads as the crown's. Cells inside a drawn
+    building are left out: a roof the survey's model does not know reads as a
+    crown too.
+    """
+    reach = max(radius / 2, window.cell_m / 2)
+    steps = int(reach // window.cell_m) + 1
+    bases = []
+    for i in range(-steps, steps + 1):
+        for j in range(-steps, steps + 1):
+            px, py = x + i * window.cell_m, y + j * window.cell_m
+            if math.hypot(px - x, py - y) > reach or any(
+                    covers(outline, (px, py)) for outline in buildings or []):
+                continue
+            base = window.crown_at(px, py)
+            if base is not None:
+                bases.append(base)
+    return None if not bases else round(statistics.median(bases), 2)
+
+
+def fill_crown_bases(conn: sqlite3.Connection, garden: Garden) -> int:
+    """Where the laser saw each tree's crown start, for the trees nobody has
+    said it of (doc 121). Returns how many it filled.
+
+    Only where nobody has spoken: a base the gardener typed is theirs, one
+    measured stays measured, and one emptied is nobody's again — so the laser
+    may answer it, as the survey answers emptied eaves (doc 93). Only trees:
+    a shrub branches from the ground, and the laser's lowest leaves over one
+    are its own. On the light's path, after the window is read.
+    """
+    window = cloud_for(conn, LatLon(lat=garden.latitude, lon=garden.longitude))
+    if window is None:
+        return 0
+    built = [list(o.footprint) for o in garden.obstacles if o.kind in ("house", "shed")]
+    filled = 0
+    for tree in garden.obstacles:
+        if tree.kind != "tree" or tree.crown_base_m is not None:
+            continue
+        disc = crown_disc(tree)
+        if tree.crown_base_source is not None or disc is None:
+            continue
+        base = crown_base_under(window, disc[0], disc[1], disc[2], built)
+        if base is None:
+            continue
+        # Asked again of the row itself: the garden was read before the laser
+        # was, and a base typed in between is the gardener's (review of stage
+        # 3, 2026-09-28) — the survey guards its own writes the same way.
+        written = conn.execute(
+            "UPDATE element SET crown_base_m = ?, crown_base_source = 'measured'"
+            " WHERE element_id = ? AND crown_base_m IS NULL AND crown_base_source IS NULL",
+            (base, tree.element_id))
+        filled += written.rowcount
+    conn.commit()
+    return filled
+
+
+__all__ = ["cloud_for", "crown_base_under", "ensure_cloud", "fill_crown_bases", "laser_for"]

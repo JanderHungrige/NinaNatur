@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-9
 demo_state: "A user stamps a house, a lawn and an oak onto the plan, sketches a bed freehand without aiming precisely, names everything — and the plan looks like a garden plan, with shadows shaped like the things that cast them"
 created: 2026-08-30
-hash: 3e5bcd8a
+hash: ad20c46f
 ---
 
 # Wave 10 — The garden drawn as a garden

@@ -18,14 +18,14 @@ from ninanatur.garden.canopies import (
     transmission,
 )
 from ninanatur.garden.canopy import Canopy, canopy_of, shades
+from ninanatur.garden.casting import casting, casts
 from ninanatur.garden.elements import polygon_centroid as _polygon_centroid
 from ninanatur.garden.footprint import Shape, footprint_of
 from ninanatur.garden.lightgrid import LightGrid, compute_grid
 from ninanatur.garden.models import Garden
-from ninanatur.garden.objects import ObjectKind, casts_shadow
-from ninanatur.garden.roofs import Roof, shading_height
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import TerrainWindow
+from ninanatur.solar.crown import Crown
 from ninanatur.solar.shading import Obstacle as ShadingObstacle
 
 
@@ -35,8 +35,8 @@ def _planted_obstacles(
     """Woody plantings, as the shadows they will cast, tagged with their own bed.
 
     A bed is a marked area; a tree standing in it is not a different kind of bed,
-    it is a thing that blocks the sun. The shading model already describes
-    obstacles as vertical cylinders — the exact shape of a tree.
+    it is a thing that blocks the sun — a crown on a trunk since doc 121, where
+    it was a cylinder from the ground to its top.
 
     **A tree now shades its own bed**, which it did not until this wave. The
     exclusion existed because a planting had no position: it sat at the bed's
@@ -73,30 +73,29 @@ def _planted_obstacles(
                 if planting.x is not None and planting.y is not None
                 else centroid
             )
-            # A crown, not a wall. What it passes depends on its leaves and on
-            # the month — see `canopies.py` for where the numbers come from and
-            # what is assumed where the catalogue says nothing.
             leaves = deciduousness_of(conn, planting.taxon_id)
-            obstacles.append(
-                (
-                    bed.bed_id,
-                    ShadingObstacle(
-                        footprint=footprint_of(
-                            shape=Shape.CIRCLE, x=at[0], y=at[1],
-                            width=canopy.radius_m * 2, depth=None,
-                            rotation=0.0, points=None,
-                        ),
-                        height=canopy.height_m,
-                        transmission=transmission(leaves, FIRST_LEAF_MONTH),
-                        bare_transmission=(
-                            None
-                            if leaves in ("evergreen", "variable")
-                            else transmission(leaves, 1)
-                        ),
-                    ),
-                )
-            )
+            obstacles.append((bed.bed_id, _crown_of(canopy, at, leaves)))
     return obstacles
+
+
+def _crown_of(canopy: Canopy, at: tuple[float, float], leaves: str | None) -> ShadingObstacle:
+    """A planted crown as the light model casts it: an ellipsoid on a trunk
+    (doc 121), passing light by the depth a ray crosses. What its longest
+    crossing passes depends on its leaves and on the month — see `canopies.py`
+    for where the numbers come from and what is assumed where the catalogue
+    says nothing."""
+    return ShadingObstacle(
+        footprint=footprint_of(shape=Shape.CIRCLE, x=at[0], y=at[1],
+                               width=canopy.radius_m * 2, depth=None,
+                               rotation=0.0, points=None),
+        height=canopy.height_m,
+        transmission=transmission(leaves, FIRST_LEAF_MONTH),
+        bare_transmission=(
+            None if leaves in ("evergreen", "variable") else transmission(leaves, 1)
+        ),
+        crown=Crown(x=at[0], y=at[1], radius=canopy.radius_m, base=canopy.base_m,
+                    top=canopy.height_m),
+    )
 
 
 def shading_taxa(conn: sqlite3.Connection, garden: Garden) -> frozenset[int]:
@@ -176,21 +175,7 @@ def shading_obstacles(
     plantings is gone — see `_planted_obstacles` for why it existed and why it
     no longer has to.
     """
-    built = [
-        ShadingObstacle(
-            footprint=o.footprint,
-            # The ridge is a line, not a wall. Without a roof shape this is the
-            # recorded height, exactly as before.
-            height=shading_height(o.height, Roof(o.roof), o.eaves_m),
-            # So a point on this building's own roof can leave it out.
-            owner=o.element_id,
-        )
-        for o in garden.obstacles
-        # A height of None is an element nobody has said the height of. Treating
-        # it as zero would be a claim; skipping it is the same answer Wave 8
-        # gave for a building with no recorded height.
-        if o.height is not None and casts_shadow(ObjectKind(o.kind))
-    ]
+    built = [casting(o) for o in garden.obstacles if casts(o)]
     return built + [o for _owner, o in _planted_obstacles(conn, garden)]
 
 

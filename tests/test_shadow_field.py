@@ -75,32 +75,3 @@ def test_an_obstacle_shorter_than_the_bed_it_stands_beside_is_dropped() -> None:
     field = shadow_field(BERLIN, [fence], height_above_ground=1.5)
 
     assert all(not shadows for shadows in field.moments)
-
-
-def test_the_field_is_faster_than_asking_the_slow_path_each_time() -> None:
-    """Not a benchmark — a guard on the shape of the thing.
-
-    The point of the field is that a second point costs almost nothing. If a
-    change ever puts per-point work back into it, the ratio collapses and this
-    fails long before anybody notices a slow page.
-    """
-    import time
-
-    obstacles = [
-        Obstacle(footprint=_rect(10 + i, 10, 8, 6), height=8.0) for i in range(12)
-    ]
-    field = shadow_field(BERLIN, obstacles)
-
-    start = time.perf_counter()
-    for i in range(20):
-        field.sun_hours_at(i * 0.5, 0.0)
-    per_point = (time.perf_counter() - start) / 20
-
-    start = time.perf_counter()
-    bed_light_value(BERLIN, Point(0, 0), obstacles)
-    slow = time.perf_counter() - start
-
-    assert per_point * 5 < slow, (
-        f"the field is meant to be far cheaper per point: {per_point*1000:.2f} ms "
-        f"against {slow*1000:.1f} ms"
-    )

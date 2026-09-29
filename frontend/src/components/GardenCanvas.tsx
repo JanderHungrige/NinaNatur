@@ -18,7 +18,7 @@ import { usePinch } from '../usePinch';
 import { CanvasControls } from './CanvasControls';
 import { CanvasOverlays } from './CanvasOverlays';
 import { CanvasScene } from './CanvasScene';
-import { PlanCredit } from './PlanCredit';
+import { MapCorner, PlanCredit } from './PlanCredit';
 import { PlanFurniture } from './PlanFurniture';
 import { PlanHint } from './PlanHint';
 import { SunReadout, type SunReadoutHandle } from './SunReadout';
@@ -54,9 +54,9 @@ export function GardenCanvas({
   onMoveCluster,
   onShowClusterInfo,
   sunMap,
-  terrain, landcover,
+  terrain, landcover, creditsBelow = true,
   shadows,
-  viewpoint = null,
+  viewpoint = null, shadowMarks,
   onPlaceViewpoint,
   canopies,
   onShowFoundTrees,
@@ -75,13 +75,14 @@ export function GardenCanvas({
   const touchPinch = useRef(false);
   const { view, setView, surface, stage, zoom, moving } = useViewport(size, touchPinch);
   const readout = useRef<SunReadoutHandle>(null);
+  const drawsLand = (landcover?.areas.length ?? 0) > 0;
   // The same functions from render to render, or the memoised scene redraws.
   const handlers = useStableHandlers({
     onSelectBed, onSelectObstacle, onSelectCluster, onShowClusterInfo, onAskWhatItIs,
   });
 
-  // Placing a viewpoint is the rail's Standpunkt (doc 89), not a mode of the plan's own.
-  const placing = tool === 'viewpoint';
+  // Placing a viewpoint is the rail's Standpunkt (doc 89), a mark an element's (doc 122).
+  const placing = tool === 'viewpoint' || tool === 'shadowmark';
   const spacing = gridSpacing(view);
   const elementDrag = useElementDrag({
     view,
@@ -247,7 +248,7 @@ export function GardenCanvas({
           spacing={spacing}
           selectedBedId={selectedBedId}
           draft={points}
-          viewpoint={viewpoint}
+          viewpoint={viewpoint} shadowMarks={shadowMarks}
           canopies={canopies}
           onSelectBed={handlers.onSelectBed}
           onSelectObstacle={handlers.onSelectObstacle}
@@ -291,8 +292,9 @@ export function GardenCanvas({
       <PlanFurniture metresPerPixel={view.spanM / view.widthPx} title={garden.name}
                      updatedAt={garden.updated_at} />
       {hint !== undefined && <PlanHint text={hint} />}
+      {!creditsBelow && <MapCorner garden={garden} landcover={drawsLand} />}
       </div>
-      <PlanCredit garden={garden} landcover={(landcover?.areas.length ?? 0) > 0} />
+      {creditsBelow && <PlanCredit garden={garden} landcover={drawsLand} />}
     </div>
   );
 }

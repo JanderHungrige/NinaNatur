@@ -26,7 +26,8 @@ interface Props {
 
 /**
  * The plan's captions, beneath it rather than on the drawing: in full, one
- * would cover a third of a phone's plan (doc 98).
+ * would cover a third of a phone's plan (doc 98). On a phone they close the
+ * details instead (the owner, 2026-09-29), and `MapCorner` marks the map.
  *
  * Whose drawing style the plan is in, in the words its author agreed to
  * (doc 97; THIRD_PARTY.md) — nothing for a theme of our own. And whose map
@@ -46,5 +47,22 @@ export function PlanCredit({ garden, landcover = false }: Props) {
         </p>
       ) : null}
     </>
+  );
+}
+
+/**
+ * OpenStreetMap's credit in the drawing's corner, on a phone, where the
+ * captions close the details. Its guidelines ask that the credit be seen
+ * without interacting with the map, in a corner of it or beside it: at the
+ * foot of the details it is seen only by scrolling (the owner chose both,
+ * 2026-09-29). Bottom right, as they call traditional; the legend is bottom
+ * left.
+ */
+export function MapCorner({ garden, landcover = false }: Props) {
+  if (!drawsOpenStreetMap(garden, landcover)) return null;
+  return (
+    <a className="plan-map-corner" href={ATTRIBUTION_URL} target="_blank" rel="noreferrer noopener">
+      © OpenStreetMap
+    </a>
   );
 }

@@ -9,6 +9,9 @@ from ninanatur.api import geo as geo_routes
 from ninanatur.api.deps import get_connection
 from ninanatur.geo.osm import Place
 from ninanatur.ingest.db import connect, init_schema
+from ninanatur.solar.light import bed_light_value
+from ninanatur.solar.position import Location
+from ninanatur.solar.shading import Point
 from ninanatur.web.app import app
 
 # A square garden of about 20 x 20 m near Kleinmachnow.
@@ -129,10 +132,15 @@ def test_the_light_is_computed_from_the_surroundings(client: TestClient) -> None
     # buildings, and computing its light there was the slowest thing the app
     # did — at the moment somebody wants to start drawing.
     client.post(f"/api/v1/gardens/{token}/recompute")
-    bed = client.get(f"/api/v1/gardens/{token}").json()["beds"][0]
+    garden = client.get(f"/api/v1/gardens/{token}").json()
+    bed = garden["beds"][0]
+    # Less than open ground here gets: the model's own answer with nothing
+    # standing, rather than a number frozen from one sampling (doc 117).
+    open_ground = bed_light_value(Location(garden["latitude"], garden["longitude"]),
+                                  Point(1.5, 1.0), []).sun_hours
 
     assert bed["sun_hours"] is not None
-    assert bed["sun_hours"] < 12.6
+    assert bed["sun_hours"] < open_ground - 0.05
 
 
 def test_an_outline_with_two_points_is_refused(client: TestClient) -> None:

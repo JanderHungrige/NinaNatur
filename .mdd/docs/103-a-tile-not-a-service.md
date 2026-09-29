@@ -4,8 +4,8 @@ title: A Tile, Not a Service
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
-depends_on: [102-which-tiles-and-whose, 68-terrain-sources]
+wave_status: complete
+depends_on: [102-which-tiles-and-whose, 68-which-ground-and-whose]
 relates: [17-terrain-window, 07-solar-geometry]
 source_files:
   - ninanatur/geo/tiles.py

@@ -4,7 +4,7 @@ title: A Plan That Keeps Up
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [11-garden-canvas, 65-the-shade-switch, 95-look-before-you-argue, 96-a-theme-is-a-thing]
 relates: [112-drawing-at-any-zoom, 64-light-across-the-bed, 58-painted-plan]
 source_files:

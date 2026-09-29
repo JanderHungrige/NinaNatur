@@ -4,7 +4,7 @@ title: Is It Still There
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service]
 relates: [68-terrain-sources, 80-surface-sources, 106-which-source-said-so]
 source_files:

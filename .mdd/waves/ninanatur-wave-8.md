@@ -8,7 +8,7 @@ depends_on: ninanatur-wave-7
 demo_state: "A user finds their address on a map, outlines the garden, and gets a drawing that already carries the buildings that shade it — with heights it can defend"
 created: 2026-08-28
 replanned: 2026-08-29
-hash: 69ed7adf
+hash: 1344b683
 ---
 
 # Wave 8 — From the map into the garden

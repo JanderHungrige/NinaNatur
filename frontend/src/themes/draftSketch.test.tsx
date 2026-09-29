@@ -91,15 +91,18 @@ describe('the Draft Sketch theme', () => {
 });
 
 describe('where Draft Sketch can be seen', () => {
-  it('anywhere, when it is asked for — and Technisch when it is not', () => {
+  it('anywhere — and by default since the owner chose it (2026-09-28); Technisch when asked', () => {
     const at = (search: string) => chosenTheme({ search, stored: null, moreContrast: false });
     expect(at('?theme=draft-sketch')).toBe('draft-sketch');
-    expect(at('')).toBe('technisch');
-    expect(at('?theme=verschollen')).toBe('technisch');
+    expect(at('')).toBe('draft-sketch');
+    expect(at('?theme=verschollen')).toBe('draft-sketch');
+    expect(at('?theme=technisch')).toBe('technisch');
   });
 
-  it('is not among the themes a page starts with, and is fetched when it is asked for', async () => {
-    expect(THEMES.map((t) => t.id)).toEqual(['technisch']);
+  it('ships with the page since it is the default, so no plan is drawn in Technisch first', async () => {
+    // A chunk of its own until 2026-09-28: every load drew the plan and its
+    // buttons in Technisch, then changed style under the gardener's eyes.
+    expect(THEMES.map((t) => t.id)).toEqual(['technisch', 'draft-sketch']);
     expect(await loadTheme('draft-sketch')).toBe(draftSketch);
     expect((await loadTheme('technisch')).id).toBe('technisch');
   });

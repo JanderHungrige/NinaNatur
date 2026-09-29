@@ -229,6 +229,37 @@ def test_a_garden_drawn_by_hand_owes_openstreetmap_nothing() -> None:
     assert credits_for(_garden("user", tree, lawn), ground=None, horizon_source=None) == []
 
 
+def test_the_climate_says_whether_it_was_measured_there_or_assumed() -> None:
+    """A garden beyond the DWD's grid takes Germany's mean (doc 118); a credit
+    that called it a 10 km cell would pass an assumption off as a measurement."""
+    from dataclasses import replace
+
+    [munich] = credits_for(_garden(), ground=None, horizon_source=None, climate=True)
+    assert (munich.about, munich.licence) == ("climate", "CC-BY-4.0")
+    assert munich.detail == "10 km, Monatsmittel"
+    innsbruck = replace(_garden(), latitude=47.27, longitude=11.39)
+    [borrowed] = credits_for(innsbruck, ground=None, horizon_source=None, climate=True)
+    assert borrowed.detail == "nächste Zelle, 14 km entfernt"
+    paris = replace(_garden(), latitude=48.86, longitude=2.35)
+    [assumed] = credits_for(paris, ground=None, horizon_source=None, climate=True)
+    assert assumed.detail == "Mittel für Deutschland, angenommen"
+
+
+def test_every_licence_a_credit_can_carry_links_to_its_text() -> None:
+    """CC BY 4.0 asks for the licence named and linked (§ 3(a)(1)(C)); the page
+    showed neither (review, 2026-09-22). Every licence a source here names is
+    known, or said to be text only."""
+    from geokachel.tile_sources import COPERNICUS_LICENCE
+
+    from ninanatur.garden.credits import OSM_LICENCE, licence_url
+    from ninanatur.solar.climate import climate_at
+
+    for licence in ("CC-BY-4.0", "dl-de/by-2-0", "dl-de/zero-2-0", OSM_LICENCE,
+                    climate_at(51.0, 10.0).licence):
+        assert (licence_url(licence) or "").startswith("https://"), licence
+    assert licence_url(COPERNICUS_LICENCE) is None
+
+
 def test_the_page_is_told_about_openstreetmap_once_a_street_is_drawn() -> None:
     import sqlite3
 

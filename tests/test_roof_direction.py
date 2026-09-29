@@ -213,11 +213,12 @@ def test_the_page_is_told_the_direction_and_the_pitch(
 
 # --- the light: the demo state ------------------------------------------------------
 
-def _turned_house_garden(conn: sqlite3.Connection, fall: float | None) -> Garden:
+def _turned_house_garden(conn: sqlite3.Connection, fall: float | None,
+                         height: float = 9.0) -> Garden:
     garden_id = create_garden(conn, name="G", latitude=WUPPERTAL.lat, longitude=WUPPERTAL.lon)
     house = add_obstacle(conn, garden_id, ObstacleInput(
         kind="house", x=0, y=0, shape="rect", width=8, depth=12,
-        height=9.0, roof="gable", eaves_m=6.0, label="Haus"))
+        height=height, roof="gable", eaves_m=6.0, label="Haus"))
     conn.execute("UPDATE element SET roof_fall_deg = ? WHERE element_id = ?", (fall, house))
     insert_element(conn, garden_id, kind=PLANTING_KIND, shape="polygon", x=0, y=0,
                    name="Beet", points=[[-8.0, -16.0], [8.0, -16.0], [8.0, -10.0], [-8.0, -10.0]])
@@ -247,14 +248,20 @@ def test_the_north_side_is_darker_because_the_ridge_was_measured(
     """Wave 21's demo, in one test. The long side runs north-south, so the
     assumption faces the pitches east and west and the roof's two halves read
     alike; the surveyed ridge faces them north and south, and the north one
-    loses the noon sun behind it."""
-    assumed = _turned_house_garden(conn, None)
-    surveyed = _turned_house_garden(conn, 0.0)
+    loses the noon sun behind it.
+
+    On a 38° roof, as doc 65 measured it. This used a 27° one and asked for
+    0.2 h, which the old sampling's noise supplied: sampled until the answer
+    stops moving, a 27° pitch loses the noon sun only in late October, and in
+    hours its two halves differ by a tenth (doc 117). A steeper pitch loses it
+    all of March and October: 1.2 h."""
+    assumed = _turned_house_garden(conn, None, height=10.7)
+    surveyed = _turned_house_garden(conn, 0.0, height=10.7)
     a_north, a_south = _halves(compute_grid(assumed, shading_obstacles(conn, assumed)))
     s_north, s_south = _halves(compute_grid(surveyed, shading_obstacles(conn, surveyed)))
 
     assert s_north < s_south
-    assert (s_south - s_north) > (a_south - a_north) + 0.2
+    assert (s_south - s_north) > (a_south - a_north) + 0.8
 
 
 def test_a_map_computed_before_the_direction_was_known_is_stale(

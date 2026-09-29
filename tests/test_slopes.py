@@ -122,15 +122,17 @@ def _mean(grid: object) -> float:
 
 
 def test_a_ring_below_the_models_own_floor_changes_nothing() -> None:
-    """Potsdam's horizon is 4.8°, and the model already stops counting the sun
-    below 5°. In the North German Plain this feature is correctly inert — and a
-    feature that appears to do nothing must be shown to be doing nothing on
-    purpose."""
+    """A horizon lower than the altitude the model stops counting the sun at
+    (`MIN_ALTITUDE`: 5° until Wave 26, 3° since) changes nothing. In most of
+    the North German Plain this feature is correctly inert — and a feature
+    that appears to do nothing must be shown to be doing nothing on purpose."""
     from ninanatur.garden.lightgrid import compute_grid
+    from ninanatur.solar.shading import MIN_ALTITUDE
 
     garden, obstacles = _garden()
     without = compute_grid(garden, obstacles)  # type: ignore[arg-type]
-    with_low_hills = compute_grid(garden, obstacles, horizon=[4.0] * 360)  # type: ignore[arg-type]
+    low_hills = [MIN_ALTITUDE - 0.5] * 360
+    with_low_hills = compute_grid(garden, obstacles, horizon=low_hills)  # type: ignore[arg-type]
 
     assert without is not None and with_low_hills is not None
     assert _mean(with_low_hills) == pytest.approx(_mean(without), abs=0.001)

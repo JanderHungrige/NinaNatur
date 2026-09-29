@@ -43,8 +43,10 @@ _EDITABLE = frozenset(
         # What shape the roof is. One of the few things somebody can answer by
         # looking out of the window.
         "roof", "eaves_m",
+        # Where a crown starts (doc 121): seen from under the tree.
+        "crown_base_m",
         # Set by the endpoint from what changed, never taken from a caller.
-        "roof_source", "eaves_source", "roof_fall_deg",
+        "roof_source", "eaves_source", "roof_fall_deg", "crown_base_source",
     }
 )
 

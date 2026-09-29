@@ -34,6 +34,7 @@ from pathlib import Path
 import numpy as np
 from geokachel.utm import to_utm
 
+from ninanatur.geo.inside import inside_any
 from ninanatur.geo.projection import LatLon
 from ninanatur.geo.terrain import frame_map
 
@@ -208,27 +209,6 @@ def _crown_bases(above: np.ndarray, flat: np.ndarray, size: int,
     return out
 
 
-def _inside_any(x: np.ndarray, y: np.ndarray,
-                footprints: list[list[tuple[float, float]]]) -> np.ndarray:
-    """Which points stand inside a surveyed building (doc 105).
-
-    The classification cannot say — NRW's tile has no building code at all — so
-    the building model does. A ray cast along +x, as everywhere else here.
-    """
-    inside = np.zeros(len(x), dtype=bool)
-    for outline in footprints:
-        if len(outline) < 3:
-            continue
-        crossings = np.zeros(len(x), dtype=bool)
-        for (ax, ay), (bx, by) in zip(outline, [*outline[1:], outline[0]], strict=True):
-            straddles = (ay > y) != (by > y)
-            with np.errstate(divide="ignore", invalid="ignore"):
-                at = ax + (y - ay) * (bx - ax) / np.where(by == ay, np.nan, by - ay)
-            crossings ^= straddles & (x < at)
-        inside |= crossings
-    return inside
-
-
 def window_from(tile: Path | bytes, anchor: LatLon, *, zone: int, source: str, licence: str,
                 attribution: str,
                 footprints: list[list[tuple[float, float]]] | None = None) -> CloudWindow | None:
@@ -294,7 +274,7 @@ def _layers(garden_xy: tuple[np.ndarray, np.ndarray], z: np.ndarray,
     above = z - ground[flat]
     # A crown is what stands and is not a roof: the building model decides which
     # is which, because the classification does not (doc 107).
-    standing = np.isfinite(above) & (above > STANDING_M) & ~_inside_any(x, y, footprints)
+    standing = np.isfinite(above) & (above > STANDING_M) & ~inside_any(x, y, footprints)
     crown = _crown_bases(above, flat, size, standing)
 
     return CloudWindow(

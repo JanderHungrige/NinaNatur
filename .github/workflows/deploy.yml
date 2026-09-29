@@ -52,10 +52,11 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install
-        # The dev lock is the image's lock plus the tools: CI tests exactly the
-        # versions the image ships, every file checked against its hash.
+        # The image's own lock, and beside it the tools, which pin nothing the
+        # image's lock pins: CI tests exactly the versions the image ships,
+        # every file checked against its hash.
         run: |
-          pip install --require-hashes -r requirements-dev.txt
+          pip install --require-hashes -r requirements.txt -r requirements-dev.txt
           pip install --no-deps -e .
       # Named, and first, so that a red build says which promise broke: every
       # route refuses another garden's ids and a token that names none, the

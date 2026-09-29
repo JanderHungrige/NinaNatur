@@ -154,7 +154,10 @@ None. The same client calls, from new places.
    is armed the shapes carry no handlers (doc 49): a click places the viewpoint
    rather than selecting what is under it.
 9. **The rail's floor grows with the rail.** Seven tools need 20rem; the
-   stylesheet guard from the stage 1 fix counts them.
+   stylesheet guard from the stage 1 fix counts them. Since 2026-09-29 the
+   plan's row keeps what its contents need, the rail among them, so the rail
+   counts itself; the guard checks that it neither wraps nor scrolls, either of
+   which would stop it counting (doc 87).
 10. **A found tree on the plan is a mark, not an object** (doc 84): a dashed crown
     at `x`, `y` with `radius_m`, hidden from the accessibility tree and from the
     pointer, so it never takes a click from what is beneath it. Accepting or

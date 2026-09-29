@@ -25,11 +25,14 @@ def _legend() -> dict[float, str]:
 
 
 def _anchor_words() -> dict[float, str]:
-    """The word each anchor's comment gives it, as hours -> name."""
+    """The word each anchor's comment gives it, as hours -> name — read from
+    the hours' table alone, not the sky's beside it (doc 118)."""
     source = Path(light.__file__).read_text(encoding="utf-8")
+    table = source[source.index("SUN_HOUR_ANCHORS:"):]
+    table = table[:table.index("\n)\n")]
     return {
         float(h): name.strip()
-        for h, name in re.findall(r"\((\d+\.\d+), \d+\.\d+\),\s+# (.+?) —", source)
+        for h, name in re.findall(r"\((\d+\.\d+), \d+\.\d+\),\s+# (.+?) —", table)
     }
 
 

@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-12
 demo_state: "Somebody arriving at ninanatur.w3rth.de finds sign-in where every site puts it, one obvious way in, a note saying an account is optional but worth having — and a page that breathes"
 created: 2026-08-31
-hash: 7fd640aa
+hash: a762f69a
 ---
 
 # Wave 13 — A front door that looks like one

@@ -36,11 +36,12 @@ def polygon_centroid(polygon: Polygon) -> tuple[float, float]:
 _COLUMNS = (
     "element_id, kind, shape, x, y, points, width, constraint_hint, height,"
     " height_source, roof, roof_source, eaves_m, eaves_source, outline_source, roof_fall_deg,"
-    " label,"
+    " crown_base_m, crown_base_source, label,"
     " name, soil_type,"
     " moisture,"
     " ellenberg_l, ellenberg_m,"
     " ellenberg_n, ellenberg_r, sun_hours, slope_deg, aspect_deg,"
+    " sky_view, relative_light, expected_sun_h,"
     " light_computed_at, height_above_ground"
 )
 
@@ -108,6 +109,8 @@ def _row_to_element(row: sqlite3.Row, plantings: list[Planting] | None = None) -
         eaves_source=row["eaves_source"],
         outline_source=row["outline_source"],
         roof_fall_deg=None if row["roof_fall_deg"] is None else float(row["roof_fall_deg"]),
+        crown_base_m=None if row["crown_base_m"] is None else float(row["crown_base_m"]),
+        crown_base_source=row["crown_base_source"],
         label=row["label"],
         name=row["name"],
         soil_type=row["soil_type"],
@@ -119,6 +122,9 @@ def _row_to_element(row: sqlite3.Row, plantings: list[Planting] | None = None) -
         sun_hours=row["sun_hours"],
         slope_deg=row["slope_deg"],
         aspect_deg=row["aspect_deg"],
+        sky_view=row["sky_view"],
+        relative_light=row["relative_light"],
+        expected_sun_h=row["expected_sun_h"],
         light_computed_at=row["light_computed_at"],
         height_above_ground=float(row["height_above_ground"] or 0.0),
         plantings=plantings or [],

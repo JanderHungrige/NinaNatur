@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { scaleBar } from '../canvas/scaleBar';
@@ -37,6 +37,27 @@ describe('the plan\'s furniture', () => {
     const svg = container.querySelector('.plan-furniture__scale svg')!;
     const bar = scaleBar(0.25, 56);
     expect(Number(svg.getAttribute('width')) - 8).toBeCloseTo(bar.pixels, 0);
+  });
+
+  it('can be put away with its cross, and is there again when the page loads again', () => {
+    // The owner, 2026-09-28: a close on the phone and in the browser alike,
+    // and back with the next load — kept in the page, not in storage.
+    const first = corner(draftSketch);
+    fireEvent.click(first.getByRole('button', { name: 'Legende ausblenden' }));
+    expect(first.container.querySelector('.plan-furniture')).toBeNull();
+    first.unmount();
+
+    expect(corner(draftSketch).container.querySelector('.plan-furniture')).not.toBeNull();
+  });
+
+  it('has no cross where it cannot be put away: the contact sheet', () => {
+    const { queryByRole } = render(
+      <PlanThemeProvider theme={draftSketch}>
+        <PlanFurniture metresPerPixel={0.1} title="Musterblatt" updatedAt={null}
+                       closable={false} />
+      </PlanThemeProvider>,
+    );
+    expect(queryByRole('button', { name: 'Legende ausblenden' })).toBeNull();
   });
 
   it('gives his credit beneath the plan, word for word, and nothing for Technisch', () => {

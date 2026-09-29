@@ -183,6 +183,10 @@
             ],
             "title": "Constraint Hint"
           },
+          "crown_fits": {
+            "title": "Crown Fits",
+            "type": "boolean"
+          },
           "ellenberg_l": {
             "anyOf": [
               {
@@ -226,6 +230,17 @@
               }
             ],
             "title": "Ellenberg R"
+          },
+          "expected_sun_h": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Sun H"
           },
           "height_above_ground": {
             "title": "Height Above Ground",
@@ -306,9 +321,31 @@
             "title": "Polygon",
             "type": "array"
           },
+          "relative_light": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Light"
+          },
           "shape": {
             "title": "Shape",
             "type": "string"
+          },
+          "sky_view": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sky View"
           },
           "slope_deg": {
             "anyOf": [
@@ -383,8 +420,12 @@
           "sun_hours",
           "slope_deg",
           "aspect_deg",
+          "sky_view",
+          "relative_light",
+          "expected_sun_h",
           "light_computed_at",
           "height_above_ground",
+          "crown_fits",
           "label",
           "plantings"
         ],
@@ -751,6 +792,17 @@
           "licence": {
             "title": "Licence",
             "type": "string"
+          },
+          "licence_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence Url"
           },
           "name": {
             "title": "Name",
@@ -1294,6 +1346,21 @@
             "title": "Computed At",
             "type": "string"
           },
+          "expected": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Expected",
+            "type": "array"
+          },
           "hours": {
             "items": {
               "anyOf": [
@@ -1327,6 +1394,11 @@
             "title": "Misplaced",
             "type": "array"
           },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
           "morning": {
             "items": {
               "anyOf": [
@@ -1341,6 +1413,21 @@
             "title": "Morning",
             "type": "array"
           },
+          "relative": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Relative",
+            "type": "array"
+          },
           "roof": {
             "items": {
               "type": "boolean"
@@ -1351,6 +1438,21 @@
           "rows": {
             "title": "Rows",
             "type": "integer"
+          },
+          "sky": {
+            "default": [],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Sky",
+            "type": "array"
           },
           "stale": {
             "title": "Stale",
@@ -1443,6 +1545,17 @@
           "problem": {
             "title": "Problem",
             "type": "string"
+          },
+          "sky_view": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sky View"
           },
           "sun_hours": {
             "title": "Sun Hours",
@@ -1648,6 +1761,32 @@
             ],
             "title": "Constraint Hint"
           },
+          "crown_base_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Base M"
+          },
+          "crown_base_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Base Source"
+          },
+          "crown_fits": {
+            "title": "Crown Fits",
+            "type": "boolean"
+          },
           "eaves_m": {
             "anyOf": [
               {
@@ -1831,6 +1970,9 @@
           "roof_source",
           "eaves_source",
           "roof_fall_deg",
+          "crown_base_m",
+          "crown_base_source",
+          "crown_fits",
           "roof_pitch_deg",
           "roof_lines",
           "label",
@@ -1860,6 +2002,19 @@
               }
             ],
             "title": "Constraint Hint"
+          },
+          "crown_base_m": {
+            "anyOf": [
+              {
+                "maximum": 200.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crown Base M"
           },
           "depth": {
             "anyOf": [
@@ -2773,6 +2928,30 @@
         "title": "Registration",
         "type": "object"
       },
+      "RelightStatus": {
+        "description": "What the page asks after a relight answered 202 (doc 65): whether it\nstill runs, and whether the garden's last one ended in an error \u2014 said,\nnever swallowed, so a failed first analysis does not leave the button\nwaiting for a map that will not come.",
+        "properties": {
+          "failed": {
+            "title": "Failed",
+            "type": "boolean"
+          },
+          "known": {
+            "title": "Known",
+            "type": "boolean"
+          },
+          "running": {
+            "title": "Running",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "running",
+          "failed",
+          "known"
+        ],
+        "title": "RelightStatus",
+        "type": "object"
+      },
       "RoofShape": {
         "description": "Mirrors `garden.roofs.Roof`; a pytest guard keeps the two in step.",
         "enum": [
@@ -2902,6 +3081,179 @@
           "polygons"
         ],
         "title": "ShadowFrame",
+        "type": "object"
+      },
+      "ShadowMarkIn": {
+        "description": "Where the gardener saw the shadow of one standing thing end, and when.",
+        "properties": {
+          "element_id": {
+            "title": "Element Id",
+            "type": "integer"
+          },
+          "seen_at": {
+            "format": "date-time",
+            "title": "Seen At",
+            "type": "string"
+          },
+          "x": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 2000.0,
+            "minimum": -2000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "element_id",
+          "x",
+          "y",
+          "seen_at"
+        ],
+        "title": "ShadowMarkIn",
+        "type": "object"
+      },
+      "ShadowMarkOut": {
+        "properties": {
+          "element_id": {
+            "title": "Element Id",
+            "type": "integer"
+          },
+          "mark_id": {
+            "title": "Mark Id",
+            "type": "integer"
+          },
+          "reading": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShadowReadingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seen_at": {
+            "title": "Seen At",
+            "type": "string"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "mark_id",
+          "element_id",
+          "x",
+          "y",
+          "seen_at",
+          "reading"
+        ],
+        "title": "ShadowMarkOut",
+        "type": "object"
+      },
+      "ShadowReadingOut": {
+        "description": "The model's shadow edge against the mark, worked out now.",
+        "properties": {
+          "across_m": {
+            "title": "Across M",
+            "type": "number"
+          },
+          "along_m": {
+            "title": "Along M",
+            "type": "number"
+          },
+          "altitude": {
+            "title": "Altitude",
+            "type": "number"
+          },
+          "azimuth": {
+            "title": "Azimuth",
+            "type": "number"
+          },
+          "edge": {
+            "enum": [
+              "far",
+              "near",
+              "side"
+            ],
+            "title": "Edge",
+            "type": "string"
+          },
+          "height_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height M"
+          },
+          "model_longer": {
+            "title": "Model Longer",
+            "type": "boolean"
+          },
+          "nearest": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Nearest",
+            "type": "array"
+          },
+          "offset_m": {
+            "title": "Offset M",
+            "type": "number"
+          },
+          "rings": {
+            "items": {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Rings",
+            "type": "array"
+          },
+          "turned_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turned Deg"
+          }
+        },
+        "required": [
+          "altitude",
+          "azimuth",
+          "rings",
+          "nearest",
+          "offset_m",
+          "edge",
+          "model_longer",
+          "along_m",
+          "across_m",
+          "height_m",
+          "turned_deg"
+        ],
+        "title": "ShadowReadingOut",
         "type": "object"
       },
       "Shape": {
@@ -4162,7 +4514,7 @@
         ]
       },
       "post": {
-        "description": "Turn a suggestion into a tree on the plan.\n\nIts height is marked `measured`, which is what it is \u2014 and its species is\nnobody's guess, so the canopy model treats it as a broadleaf in leaf, the\nsame default every unidentified woody planting already gets.",
+        "description": "Turn a suggestion into a tree on the plan.\n\nIts height is marked `measured`, which is what it is, and so is where its\ncrown starts wherever the laser's point cloud has been read here (doc 121).\nIts species is nobody's guess, so it casts with a broadleaf's shares\n(`garden.casting`), the default every unidentified woody planting gets.",
         "operationId": "accept_canopy_api_v1_gardens__token__canopies__suggestion_id__post",
         "parameters": [
           {
@@ -4472,7 +4824,7 @@
         ]
       },
       "post": {
-        "description": "Recompute the whole map, now, because somebody asked.\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.\n\nIt is also where a garden gets its ground for the first time. A state survey\ntakes seconds to answer, which is too long for a page load and perfectly\nreasonable for a button \u2014 and afterwards every recompute reads it for free.",
+        "description": "Recompute the whole map, because somebody asked \u2014 and 202 with no body\nwhere it takes longer than a request should wait (doc 65).\n\nBelt as well as braces. The signature should catch every change that moves a\nshadow, and if it ever does not, this is how somebody fixes their own map\nwithout knowing why it was wrong.\n\nIt is also where a garden gets its ground, its buildings and its laser for\nthe first time (`garden.relight`) \u2014 seconds where a place has been read,\na minute and more where it has not, which the preview's proxy cut off at\n90 s while the server went on (the owner, 2026-09-28). So the relight runs\nas a job of its own (`relight_jobs`), and this answers with the map if it\nis done within `WAIT_S`, and 202 if not. A press while one runs answers\n202 at once, and neither takes a slot nor counts against the visitor.",
         "operationId": "rebuild_light_map_api_v1_gardens__token__light_post",
         "parameters": [
           {
@@ -4504,6 +4856,9 @@
             },
             "description": "Successful Response"
           },
+          "202": {
+            "description": "Still relighting: ask `/light/status`."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -4516,6 +4871,49 @@
           }
         },
         "summary": "Rebuild Light Map",
+        "tags": [
+          "light"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/light/status": {
+      "get": {
+        "description": "Whether this garden is being relit, and whether its last relight failed \u2014\nwhat the page asks after a 202 until the map is there (doc 65).",
+        "operationId": "relight_status_api_v1_gardens__token__light_status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelightStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relight Status",
         "tags": [
           "light"
         ]
@@ -4883,9 +5281,154 @@
         ]
       }
     },
+    "/api/v1/gardens/{token}/shadow-marks": {
+      "get": {
+        "description": "Every mark of this garden's, each read against the model as it is now.\n\nThe page asks this of every garden it opens, and most have no marks: only\nreading some takes a heavy slot, as the month view takes one only for a\nmonth. Taken always, it turned a garden's opening away whenever two\ncomputations were running (review of stage 3, 2026-09-28).",
+        "operationId": "shadow_marks_api_v1_gardens__token__shadow_marks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShadowMarkOut"
+                  },
+                  "title": "Response Shadow Marks Api V1 Gardens  Token  Shadow Marks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Shadow Marks",
+        "tags": [
+          "shadow marks"
+        ]
+      },
+      "post": {
+        "description": "Keep where a shadow was seen to end, and read the model against it.\n\nA mark is an observation: of a thing of this garden's that casts, at a\nmoment that has passed, with the sun high enough to cast at all.",
+        "operationId": "mark_shadow_api_v1_gardens__token__shadow_marks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShadowMarkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShadowMarkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Shadow",
+        "tags": [
+          "shadow marks"
+        ]
+      }
+    },
+    "/api/v1/gardens/{token}/shadow-marks/{mark_id}": {
+      "delete": {
+        "description": "Forget one mark.",
+        "operationId": "forget_mark_api_v1_gardens__token__shadow_marks__mark_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "mark_id",
+            "required": true,
+            "schema": {
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "title": "Mark Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forget Mark",
+        "tags": [
+          "shadow marks"
+        ]
+      }
+    },
     "/api/v1/gardens/{token}/shadows": {
       "get": {
-        "description": "Where the shadows fall through one middling day of a month.\n\nThe 15th, because a month's first and last days differ by a fortnight of sun\nand the middle is the one that represents it. Computed rather than stored:\nit is one day rather than a season, and nobody watches it twice in a row.",
+        "description": "Where the shadows fall through one middling day of a month.\n\nThe 15th, because a month's first and last days differ by a fortnight of sun\nand the middle is the one that represents it. Computed rather than stored:\nit is one day rather than a season, and nobody watches it twice in a row.\n\nA heavy route since Wave 26 (doc 116): the exact shadow of a house with a\nmany-cornered outline is a union per frame, and a garden imported from the\nmap has two dozen of them \u2014 up to seconds, like the month view.",
         "operationId": "shadows_through_a_day_api_v1_gardens__token__shadows_get",
         "parameters": [
           {
@@ -4940,7 +5483,7 @@
     },
     "/api/v1/gardens/{token}/sightlines": {
       "post": {
-        "description": "What is visible from a point in the garden.\n\nThe same cylinders the shading model uses, seen from an eye instead of from\nthe sun \u2014 so a hedge blocks sight exactly as it blocks light, and a raised\nbed stands above both.",
+        "description": "What is visible from a point in the garden.\n\nThe standing things on the plan as prisms to their full height, seen from\nan eye instead of from the sun \u2014 so a hedge blocks sight as it blocks\nlight, and a raised bed stands above both. A tree blocks a view whole: the\nlight model sees through its crown since doc 121, but a view does not pass\nthrough leaves the way a fifth of the sun does.",
         "operationId": "sightlines_api_v1_gardens__token__sightlines_post",
         "parameters": [
           {

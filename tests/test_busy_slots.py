@@ -140,3 +140,23 @@ def test_the_probe_does_not_wait_for_a_thread() -> None:
     busy app used to look like a dead one to the deploy cron and the proxy.
     On the event loop it answers regardless."""
     assert inspect.iscoroutinefunction(healthz)
+
+
+def test_a_full_house_turns_a_day_of_shadows_away(
+    conn: sqlite3.Connection, full_house: None,
+) -> None:
+    """A day of exact shadows is a computation too (doc 116)."""
+    client = TestClient(app, client=PROXY)
+    token = _garden(client)
+    answer = client.get(f"/api/v1/gardens/{token}/shadows?month=6", headers=VISITOR)
+    assert answer.status_code == 429 and answer.json()["detail"] == ratelimit.BUSY
+
+
+def test_a_day_of_shadows_is_limited_per_visitor(
+    conn: sqlite3.Connection, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(ratelimit.LIMITS, "shadows", (2, 600.0))
+    client = TestClient(app, client=PROXY)
+    url = f"/api/v1/gardens/{_garden(client)}/shadows?month=6"
+    codes = [client.get(url, headers=VISITOR).status_code for _ in range(3)]
+    assert codes == [200, 200, 429]

@@ -21,6 +21,7 @@ from ninanatur.api.origin import same_origin
 from ninanatur.api.schemas import BedOut, GardenCreated, GardenOut, ObstacleOut, PlantingOut
 from ninanatur.api.schemas_garden_in import GardenCreate, GardenSoil
 from ninanatur.auth.sessions import Account
+from ninanatur.garden.casting import crown_fits
 from ninanatur.garden.light_worker import recompute_light
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind, casts_shadow
@@ -79,7 +80,10 @@ def to_out(garden: Garden) -> GardenOut:
                 ellenberg_n=b.ellenberg_n, ellenberg_r=b.ellenberg_r,
                 sun_hours=b.sun_hours, slope_deg=b.slope_deg,
                 aspect_deg=b.aspect_deg, light_computed_at=b.light_computed_at,
-                height_above_ground=b.height_above_ground, label=b.label,
+                sky_view=b.sky_view, relative_light=b.relative_light,
+                expected_sun_h=b.expected_sun_h,
+                height_above_ground=b.height_above_ground, crown_fits=crown_fits(b),
+                label=b.label,
                 plantings=[
                     PlantingOut(
                         planting_id=p.planting_id, taxon_id=p.taxon_id,
@@ -116,6 +120,8 @@ def _obstacle_out(o: Element, sun: SunPosition) -> ObstacleOut:
         roof_source=o.roof_source, eaves_m=o.eaves_m,
         eaves_source=o.eaves_source, outline_source=o.outline_source,
         roof_fall_deg=o.roof_fall_deg,
+        crown_base_m=o.crown_base_m, crown_base_source=o.crown_base_source,
+        crown_fits=crown_fits(o),
         roof_pitch_deg=pitch_of(o.footprint, Roof(o.roof), o.height,
                                 o.eaves_m, o.roof_fall_deg),
         roof_lines=[

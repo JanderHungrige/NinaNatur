@@ -4,8 +4,8 @@ title: Which Tiles, and Whose
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
-depends_on: [68-terrain-sources, 80-surface-sources]
+wave_status: complete
+depends_on: [68-which-ground-and-whose, 80-which-models-and-whose]
 relates: [07-solar-geometry, 32-object-heights]
 source_files:
   - scripts/probe_tile_sources.py

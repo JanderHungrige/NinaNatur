@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import secrets
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -49,6 +49,17 @@ OWNED: dict[tuple[str, str], Body] = {
     ("DELETE", f"{G}/obstacles/{{obstacle_id}}"): None,
     ("PATCH", f"{G}/plantings/{{planting_id}}"): {"x": 0.5, "y": 0.5},
     ("DELETE", f"{G}/plantings/{{planting_id}}"): None,
+    ("DELETE", f"{G}/shadow-marks/{{mark_id}}"): None,
+}
+
+#: Every route that carries the id of something inside a garden in its body
+#: rather than its path, with the body it would accept, given the ids of the
+#: garden the body names things of. A garden-blind check of such an id passed
+#: every table above (review, 2026-09-28).
+BODY_OWNED: dict[tuple[str, str], Callable[[dict[str, int]], dict[str, Any]]] = {
+    ("POST", f"{G}/shadow-marks"): lambda ids: {
+        "element_id": ids["obstacle_id"], "x": 7.0, "y": 9.0,
+        "seen_at": "2026-06-21T09:30:00+00:00"},
 }
 
 #: Ids that are nobody's property: species in the catalogue. `/plants/{taxon_id}`
@@ -73,10 +84,14 @@ BY_TOKEN: dict[tuple[str, str], Body] = {
     ("GET", f"{G}/landcover"): None,
     ("GET", f"{G}/light"): None,
     ("POST", f"{G}/light"): None,
+    ("GET", f"{G}/light/status"): None,
     ("POST", f"{G}/obstacles"): {"kind": "shed", "x": 1.0, "y": 1.0},
     ("POST", f"{G}/recompute"): None,
     ("GET", f"{G}/score"): None,
     ("GET", f"{G}/shadows"): None,
+    ("GET", f"{G}/shadow-marks"): None,
+    ("POST", f"{G}/shadow-marks"): {"element_id": 1, "x": 1.0, "y": 1.0,
+                                    "seen_at": "2026-06-21T09:30:00+00:00"},
     ("POST", f"{G}/sightlines"): {"x": 0.0, "y": 0.0},
     ("PATCH", f"{G}/soil"): {"soil_type": "loam", "moisture": "fresh"},
     ("GET", f"{G}/sources"): None,
@@ -124,8 +139,11 @@ def _plant(client: TestClient, conn: sqlite3.Connection, name: str) -> Planted:
                              (token,)).fetchone()[0]
     remember(conn, garden_id, [Canopy(x=12.0, y=12.0, radius_m=3.0, height_m=14.0)])
     suggestion = client.get(f"{base}/canopies").json()[0]["suggestion_id"]
+    mark = client.post(f"{base}/shadow-marks", json={
+        "element_id": obstacle, "x": 7.0, "y": 9.0,
+        "seen_at": "2026-06-21T09:30:00+00:00"}).json()["mark_id"]
     return Planted(token, {"bed_id": bed, "planting_id": planting, "obstacle_id": obstacle,
-                           "suggestion_id": suggestion, "taxon_id": 1})
+                           "suggestion_id": suggestion, "mark_id": mark, "taxon_id": 1})
 
 
 @pytest.fixture()
@@ -144,7 +162,8 @@ def _url(path: str, token: str, ids: dict[str, int]) -> str:
 
 def _state(client: TestClient, garden: Planted) -> Any:
     base = f"/api/v1/gardens/{garden.token}"
-    return client.get(base).json(), client.get(f"{base}/canopies").json()
+    return (client.get(base).json(), client.get(f"{base}/canopies").json(),
+            client.get(f"{base}/shadow-marks").json())
 
 
 def _ids(table: dict[tuple[str, str], Body]) -> list[str]:
@@ -183,6 +202,31 @@ def test_the_same_call_with_the_garden_s_own_id_is_answered(
     never have worked."""
     client, _mine, theirs = gardens
     status = _status(client, method, _url(path, theirs.token, theirs.ids), OWNED[(method, path)])
+
+    assert 200 <= status < 300
+
+
+@pytest.mark.parametrize(("method", "path"), sorted(BODY_OWNED), ids=_ids(BODY_OWNED))
+def test_an_id_in_the_body_from_another_garden_is_a_404_and_changes_nothing(
+    gardens: tuple[TestClient, Planted, Planted], method: str, path: str,
+) -> None:
+    client, mine, theirs = gardens
+    before = (_state(client, mine), _state(client, theirs))
+
+    status = _status(client, method, _url(path, mine.token, mine.ids),
+                     BODY_OWNED[(method, path)](theirs.ids))
+
+    assert status == 404
+    assert (_state(client, mine), _state(client, theirs)) == before
+
+
+@pytest.mark.parametrize(("method", "path"), sorted(BODY_OWNED), ids=_ids(BODY_OWNED))
+def test_the_same_body_with_the_garden_s_own_id_is_answered(
+    gardens: tuple[TestClient, Planted, Planted], method: str, path: str,
+) -> None:
+    client, _mine, theirs = gardens
+    status = _status(client, method, _url(path, theirs.token, theirs.ids),
+                     BODY_OWNED[(method, path)](theirs.ids))
 
     assert 200 <= status < 300
 

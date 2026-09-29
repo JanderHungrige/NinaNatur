@@ -156,13 +156,14 @@ describe('ShadeSwitch — what is standing wrong', () => {
       map: map({
         misplaced: [{
           planting_id: 1, bed_id: 2, taxon_id: 3, name: 'Sonnenkraut',
-          wants: 8, gets: 3, sun_hours: 1.2, problem: 'too_dark',
+          wants: 8, gets: 3, sun_hours: 1.2, problem: 'too_dark', sky_view: 0.05,
         }],
       }),
     });
 
     expect(screen.getByText('Sonnenkraut')).toBeDefined();
-    expect(screen.getByText(/zu dunkel: 1.2 h/)).toBeDefined();
+    // Under a crown the sky is often what darkens it (doc 118).
+    expect(screen.getByText(/zu dunkel: 1.2 h dort und 5 % des Himmels, die Art/)).toBeDefined();
   });
 
   it('names the forgotten direction too', () => {
@@ -172,12 +173,12 @@ describe('ShadeSwitch — what is standing wrong', () => {
       map: map({
         misplaced: [{
           planting_id: 1, bed_id: 2, taxon_id: 3, name: 'Wurmfarn',
-          wants: 3, gets: 8, sun_hours: 11.4, problem: 'too_bright',
+          wants: 3, gets: 8, sun_hours: 11.4, problem: 'too_bright', sky_view: 0.8,
         }],
       }),
     });
 
-    expect(screen.getByText(/zu hell: 11.4 h/)).toBeDefined();
+    expect(screen.getByText(/zu hell: 11.4 h dort, die Art will weniger/)).toBeDefined();
   });
 
   it('says it is a hint rather than an objection', () => {
@@ -191,6 +192,7 @@ describe('ShadeSwitch — what is standing wrong', () => {
     });
 
     expect(screen.getByText(/kein Einwand/)).toBeDefined();
+    expect(screen.getByText(/zu dunkel: 1 h dort, die Art/)).toBeDefined(); // no sky yet
   });
 
   it('says nothing at all when nothing is misplaced', () => {

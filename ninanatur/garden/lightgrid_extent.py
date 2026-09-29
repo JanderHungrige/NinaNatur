@@ -8,6 +8,7 @@ the cells the same wait can buy.
 """
 from __future__ import annotations
 
+from ninanatur.garden.lightgrid_cost import cost_model, estimate_ms
 from ninanatur.garden.models import Element, Garden
 from ninanatur.garden.objects import ObjectKind
 
@@ -31,11 +32,6 @@ CELL_LADDER_M: tuple[float, ...] = (0.5, 1.0, 2.0, 3.0, 5.0)
 #: number has to be wrong about at one end or the other. At 600 cells a small
 #: garden waited 0.16 s for a 1 m grid it did not need to be that coarse.
 GRID_BUDGET_S = 5.0
-
-#: The straight line those measurements sit on: a fixed cost per cell, plus what
-#: each obstacle adds to it. Rounded from 0.105 and 0.045 ms.
-CELL_COST_MS = 0.1
-OBSTACLE_COST_MS = 0.05
 
 #: Metres of ground shown past the garden itself. Enough for the strip along
 #: the fence and the shadow a hedge throws over it; not the neighbours' land.
@@ -61,16 +57,41 @@ class GardenTooLarge(ValueError):
 #: a little over is a slow button, far over is a request that never returns.
 REFUSE_AT_BUDGET_MULTIPLE = 4.0
 
+#: The most cells a grid may have at the coarsest rung. The raster computes a
+#: large grid quickly (doc 117) — four kilometres square at 5 m in seconds —
+#: but a map is a list of cells kept in the database and sent to the page, and
+#: time alone stopped refusing a garden with a shed drawn two kilometres out.
+#: The largest legitimate garden, 1.2 km square, needs 58,000.
+MAX_CELLS = 100_000
+
+
+def stands_in(footprint: list[tuple[float, float]],
+              box: tuple[float, float, float, float]) -> bool:
+    """Whether a footprint reaches into the grid's box: its shadow is then on
+    the grid at every moment, which is what a grid pays for (`estimate_ms`)."""
+    xs = [x for x, _ in footprint]
+    ys = [y for _, y in footprint]
+    return bool(xs) and max(xs) >= box[0] and min(xs) <= box[2] \
+        and max(ys) >= box[1] and min(ys) <= box[3]
+
+
+def cells_at(width_m: float, depth_m: float, cell: float) -> float:
+    """How many cells a box is cut into at this size, as `compute_grid` cuts it."""
+    return (int(width_m / cell) + 1) * (int(depth_m / cell) + 1)
+
 
 def check_extent(
-    min_x: float, min_y: float, max_x: float, max_y: float, obstacles: int = 0
+    min_x: float, min_y: float, max_x: float, max_y: float, parts: int = 0,
+    near: int | None = None, terrain: bool = False, deciduous: bool = False,
+    tilted: bool = False, near_planes: int = 0, far_planes: int = 0,
+    *, far_crowns: int = 0, near_crowns: int = 0, reaching: int = 0, relief_m: float = 0.0,
 ) -> None:
     """Refuse a garden whose grid would take far longer than the budget allows.
 
     The second line of defence, behind the API's coordinate bounds. It asks the
-    same question `cell_size_for` does — cells times the measured cost of each —
-    at the coarsest cell the ladder has, so the limit is the budget rather than
-    a second number somebody has to keep in step with it.
+    same question `cell_size_for` does — what the grid will cost — at the
+    coarsest cell the ladder has, so the limit is the budget rather than a
+    second number somebody has to keep in step with it.
 
     Asked about the box the grid will actually cover (`grid_extent_of`), not the
     whole plan: a street running a kilometre past the garden is not computed,
@@ -81,27 +102,39 @@ def check_extent(
     """
     width = max(max_x - min_x, 1.0)
     depth = max(max_y - min_y, 1.0)
-    coarsest = CELL_LADDER_M[-1]
-    cells = (width / coarsest + 1) * (depth / coarsest + 1)
-    seconds = cells * (CELL_COST_MS + OBSTACLE_COST_MS * obstacles) / 1000
-    if seconds > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
+    cells = cells_at(width, depth, CELL_LADDER_M[-1])
+    spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted, near_planes, far_planes,
+                        far_crowns=far_crowns, near_crowns=near_crowns, reaching=reaching,
+                        relief_m=relief_m, cell_m=CELL_LADDER_M[-1])
+    if cells > MAX_CELLS or spent / 1000 > GRID_BUDGET_S * REFUSE_AT_BUDGET_MULTIPLE:
         raise GardenTooLarge(
             f"Garten zu groß: {width:.0f} × {depth:.0f} m lassen sich nicht in "
             f"vertretbarer Zeit berechnen"
         )
 
 
-def cell_size_for(width_m: float, depth_m: float, obstacles: int = 0) -> float:
+def cell_size_for(width_m: float, depth_m: float, parts: int = 0,
+                  near: int | None = None, terrain: bool = False,
+                  deciduous: bool = False, tilted: bool = False,
+                  near_planes: int = 0, far_planes: int = 0, *, far_crowns: int = 0,
+                  near_crowns: int = 0, reaching: int = 0, relief_m: float = 0.0) -> float:
     """The finest cell that keeps the recompute inside `GRID_BUDGET_S`.
 
-    A small garden with three buildings gets 0.5 m and takes half a second; a
-    150 m street with forty gets 3 m and takes four and a half. Both are the
-    finest grid that fits the same budget, which is the point of asking about
-    time rather than about a cell count.
+    Since the raster (doc 117) nearly every garden gets 0.5 m: forty
+    neighbours round an ordinary plot cost 1.4 s. A plot with forty houses
+    drawn on it, or a very large one, still steps down the ladder, which is the
+    point of asking about time rather than about a cell count.
     """
-    allowed = GRID_BUDGET_S * 1000 / (CELL_COST_MS + OBSTACLE_COST_MS * obstacles)
     for cell in CELL_LADDER_M:
-        if (width_m / cell) * (depth_m / cell) <= allowed:
+        cells = cells_at(width_m, depth_m, cell)
+        # The cap on the grid that is built, not only the coarsest: a map is a
+        # list kept and sent, and cheap cells let a plain 500 m plot reach a
+        # million of them (review, 2026-09-22).
+        spent = estimate_ms(cells, parts, near, terrain, deciduous, tilted,
+                            near_planes, far_planes, far_crowns=far_crowns,
+                            near_crowns=near_crowns, reaching=reaching, relief_m=relief_m,
+                            cell_m=cell)
+        if cells <= MAX_CELLS and spent <= GRID_BUDGET_S * 1000:
             return cell
     return CELL_LADDER_M[-1]
 
@@ -199,7 +232,10 @@ def grid_model() -> str:
     Folded into the signature, so a map computed under another rule, margin,
     ladder or budget reads as stale and the button offers the new grid.
     """
+    from ninanatur.solar.light import MODEL_VERSION
+
     return (
         f"grid|rule {EXTENT_RULE}|margin {GRID_MARGIN_M}|ladder {CELL_LADDER_M}"
-        f"|budget {GRID_BUDGET_S}|cost {CELL_COST_MS},{OBSTACLE_COST_MS}"
+        f"|budget {GRID_BUDGET_S}|{cost_model()}"
+        f"|model {MODEL_VERSION}"
     )

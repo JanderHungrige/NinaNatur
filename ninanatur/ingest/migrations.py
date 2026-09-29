@@ -59,6 +59,18 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # existing grid, which the reader treats as "computed before roofs were" —
     # every cell is then ground, exactly as it was, until the next rebuild.
     ("light_grid", "roof", "TEXT NOT NULL DEFAULT '[]'"),
+    # Wave 26 (doc 117): the light model that computed the map. A stored map
+    # was computed by the model before versions, which the empty default says.
+    ("light_grid", "model", "TEXT NOT NULL DEFAULT ''"),
+    # Wave 26, feature 3 (doc 118): the sky, relative illuminance and expected
+    # sunshine per cell. Empty until the map is rebuilt, which its model's
+    # version asks for.
+    ("light_grid", "sky", "TEXT NOT NULL DEFAULT '[]'"),
+    ("light_grid", "relative", "TEXT NOT NULL DEFAULT '[]'"),
+    ("light_grid", "expected", "TEXT NOT NULL DEFAULT '[]'"),
+    ("element", "sky_view", "REAL"),
+    ("element", "relative_light", "REAL"),
+    ("element", "expected_sun_h", "REAL"),
     # Wave 21. Null on every existing row until the one-time backfill in
     # `one_time.roof_provenance` marks what the history makes certain.
     ("element", "eaves_source", "TEXT"),
@@ -67,6 +79,16 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     # The owner's check, 2026-09-21. Null on every existing row until the
     # one-time backfill in `outline_provenance` marks what the import left.
     ("element", "outline_source", "TEXT"),
+    # Wave 26, feature 6 (doc 121): where a crown starts. Null on every
+    # existing row, which is what the assumption stands in for.
+    ("element", "crown_base_m", "REAL"),
+    ("element", "crown_base_source", "TEXT"),
+    # Wave 26, feature 6 (doc 121): where a laser window was read, and whether a
+    # building model classified it. Null and 0 on every existing window, which
+    # is read again the next time its place's light is computed.
+    ("cloud_window", "anchor_lat", "REAL"),
+    ("cloud_window", "anchor_lon", "REAL"),
+    ("cloud_window", "classified", "INTEGER NOT NULL DEFAULT 0"),
 )
 
 

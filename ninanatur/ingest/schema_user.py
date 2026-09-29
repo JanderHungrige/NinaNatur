@@ -92,6 +92,11 @@ CREATE TABLE IF NOT EXISTS element (
     -- in [0, 360) for a pent. Null: not surveyed, and the ridge is assumed to
     -- run along the long side.
     roof_fall_deg REAL,
+    -- Where a tree's or shrub's crown starts, in metres above its ground
+    -- (doc 121), and who said: 'user' | 'measured'. Null is nobody, and the
+    -- model assumes a third of a tree's height and the ground under a shrub.
+    crown_base_m  REAL,
+    crown_base_source TEXT,
     label       TEXT,
     -- Below here: what a planting site needs. All null on a paving slab, and
     -- that is the point — one table, and being a bed is a property.
@@ -110,6 +115,12 @@ CREATE TABLE IF NOT EXISTS element (
     -- counts hours. Scoring it would be a claim the model cannot support.
     slope_deg   REAL,
     aspect_deg  REAL,
+    -- Wave 26, feature 3 (doc 118): the share of the sky the bed sees (crowns
+    -- in leaf), its relative illuminance — its light, sun and sky, as a share
+    -- of open ground's in its climate — and the sunshine it can expect.
+    sky_view    REAL,
+    relative_light REAL,
+    expected_sun_h REAL,
     light_computed_at TEXT,
     -- A raised bed stands above the low things around it; Wave 9's sightlines
     -- need the same number, which is why it is stored rather than derived.
@@ -143,6 +154,25 @@ CREATE TABLE IF NOT EXISTS planting (
 );
 
 CREATE INDEX IF NOT EXISTS idx_planting_element ON planting(element_id);
+
+-- Where the gardener saw the shadow of one standing thing end, and when
+-- (doc 122). Only the observation: the model's reading of it is worked out on
+-- every read, so a mark keeps measuring the model as it changes. Goes with
+-- the garden, and with the thing whose shadow it marks.
+CREATE TABLE IF NOT EXISTS shadow_mark (
+    mark_id     INTEGER PRIMARY KEY,
+    garden_id   INTEGER NOT NULL REFERENCES garden(garden_id) ON DELETE CASCADE,
+    element_id  INTEGER NOT NULL REFERENCES element(element_id) ON DELETE CASCADE,
+    x           REAL    NOT NULL,
+    y           REAL    NOT NULL,
+    -- The moment it was seen, UTC, ISO 8601.
+    seen_at     TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_shadow_mark_garden ON shadow_mark(garden_id);
+-- For the cascade: every element deleted anywhere looks for its marks.
+CREATE INDEX IF NOT EXISTS idx_shadow_mark_element ON shadow_mark(element_id);
 
 -- What the gardener saw, as opposed to what the catalogue says.
 --

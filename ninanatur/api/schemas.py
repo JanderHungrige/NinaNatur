@@ -62,13 +62,24 @@ class BedOut(BaseModel):
     ellenberg_r: float | None
     sun_hours: float | None
     #: Named, never scored. See `slopes.py` for why: at this latitude a slope
-    #: barely moves the hours and moves the energy a great deal.
+    #: barely moves the hours and moves the energy a great deal — which
+    #: `relative_light` now says, since doc 119 weighs the sun by what it
+    #: brings to the bed's own surface.
     slope_deg: float | None
     aspect_deg: float | None
+    #: The share of the sky the bed sees, 0–1; its relative illuminance, 1 on
+    #: open level ground and more on a surface turned towards the sun; and the
+    #: hours of sunshine it can expect, cloud included (docs 118, 119).
+    sky_view: float | None
+    relative_light: float | None
+    expected_sun_h: float | None
     light_computed_at: str | None
     # Required, not defaulted: the response always carries both, and a default
     # here makes them optional in the generated client for no reason.
     height_above_ground: float
+    #: Whether one crown fits the outline (as `ObstacleOut.crown_fits`), so a
+    #: form that turns a bed into a tree knows whether to ask for a crown base.
+    crown_fits: bool
     label: str | None
     plantings: list[PlantingOut]
 
@@ -94,6 +105,18 @@ class ObstacleOut(BaseModel):
     #: The bearing the roof falls towards, as the survey read it (doc 94); null
     #: when it has not, and the ridge is assumed to run along the long side.
     roof_fall_deg: float | None
+    #: Where a tree's or shrub's crown starts (doc 121), and who said:
+    #: 'user' | 'measured'. Null is nobody, and the model assumes a third of a
+    #: tree's height and the ground under a shrub. Required, not defaulted,
+    #: for the reason `BedOut.height_above_ground` gives.
+    crown_base_m: float | None
+    crown_base_source: str | None
+    #: Whether one crown fits what was drawn (doc 121): a tree or shrub on it
+    #: casts as a crown on a trunk. False for a line, or an outline too long or
+    #: thin — it casts as the solid a row is, a crown base would change
+    #: nothing, and the form does not ask for one. Said of every outline, so a
+    #: form that turns a hedge into a tree knows. Required, as above.
+    crown_fits: bool
     #: The pitch the model uses, from eaves, ridge and the span across the
     #: ridge; null where it models the roof unpitched.
     roof_pitch_deg: float | None

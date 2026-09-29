@@ -28,9 +28,9 @@ mdd_version: 11
 tags: [shadows, geometry, convex-hull, occlusion, sightlines]
 path: Solar/Shadows
 integration_contracts:
-  - function: shadow_polygon(obstacle, sun)
-    when: anything asks what an object shades
-    note: sightlines and sunlight share it, so they agree by construction rather than by coincidence
+  - function: shadow_hull(obstacle, sun)
+    when: a point test wants a cheap first rejection
+    note: a superset, never the shadow; the exact shadow is is_shaded for a point and shading.shadow_rings for a drawing (doc 116)
 satisfies_contracts: []
 security_read_sites: []
 known_issues: []
@@ -49,8 +49,9 @@ claim about it.
 
 The shadow of a footprint is that footprint swept along the anti-solar direction
 by `height / tan(altitude)`, and the convex hull of the original and the swept
-copy. For the shapes a garden contains — rectangles, circles, sketched outlines
-— the hull *is* the shadow.
+copy. For a convex outline — a rectangle, a circle — the hull *is* the
+shadow. For a concave one it is not, and since Wave 26 the hull is only a
+prefilter (`shadow_hull`, below; doc 116).
 
 Andrew's monotone chain does the hull. The inputs are tiny: a rectangle's shadow
 is eight points before the hull and four to six after.
@@ -98,9 +99,11 @@ sample and the containment test then walks four to sixteen edges.
   terrace would darken every one in the country.
 - **The ground under an object is shaded**, which the Wave 7 fix established and
   the polygon form keeps for free: the footprint is part of its own shadow.
-- **A concave outline is shaded exactly** since 2026-09-22. The hull still
-  draws its shadow (`shadow_polygon`), but whether a point is in it is asked of
-  the footprint itself: inside the hull, a point of a concave outline is shaded
+- **A concave outline is shaded exactly** since 2026-09-22, and drawn exactly
+  since Wave 26 (doc 116: the day's frames are the shadows' union, with its
+  holes). The hull (`shadow_hull`, until then `shadow_polygon`) is kept as a
+  cheap superset, and whether a point is in it is asked of the footprint
+  itself: inside the hull, a point of a concave outline is shaded
   only where the ray towards the sun meets the footprint within the shadow's
   length (`solar.reach.near_edge`, used by `is_shaded` and the grid's
   `ShadowAt`). The hull filled the notch — the inner corner of an L-shaped
@@ -117,7 +120,8 @@ sample and the containment test then walks four to sixteen edges.
 ## Known Issues
 
 - ~~Concave footprints are over-shaded by the hull.~~ Fixed 2026-09-22 (above);
-  the shadow drawn on the plan (`day.py`) is still the hull.
+  ~~the shadow drawn on the plan (`day.py`) is still the hull.~~ Drawn exactly
+  since Wave 26 (doc 116).
 - The shadow polygon is recomputed per sun sample rather than cached. It is fast
   enough; it is not clever.
 

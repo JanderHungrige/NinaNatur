@@ -14,6 +14,7 @@ import { GardenId } from './GardenId';
 import { Inspector } from './Inspector';
 import { InspectorPanels } from './InspectorPanels';
 import { PlanArea } from './PlanArea';
+import { PlanCredit } from './PlanCredit';
 import { ShortcutHelp } from './ShortcutHelp';
 import { SiteHeader, type SiteProps } from './SiteHeader';
 import { Skeleton } from './Skeleton';
@@ -77,6 +78,12 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
   const help = useShortcutHelp();
   const workspace = useRef<HTMLElement>(null);
   const month = suggestions.filters.floweringMonth ?? null;
+
+  // A shadow mark is placed on the plan (doc 122): a sheet raised over it
+  // leaves the plan inert and the click nowhere to land.
+  useEffect(() => {
+    if (elements.tool === 'shadowmark' && snap === 'full') setSnap('peek');
+  }, [elements.tool, snap]);
 
   // A drag in progress goes straight to the stylesheet, so a moving finger
   // re-renders nothing; the plan waits for the height the drag comes to rest at.
@@ -157,9 +164,16 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
           busy={status.busy}
           orientation={columns ? 'vertical' : 'horizontal'}
         />
-        <PlanArea garden={garden} controller={controller} />
+        <PlanArea garden={garden} controller={controller} creditsBelow={columns} />
         <Inspector wide={wide} onWide={setWide} sheet={columns ? undefined : { snap, onSnap: setSnap, onDrag }}>
           <InspectorPanels garden={garden} controller={controller} busy={status.busy} />
+          {/* On a phone the credits close the details, still beneath the plan:
+              three lines of his under the drawing took the room the plan has
+              least of, and the map's corner mark stays in sight (the owner,
+              2026-09-29). */}
+          {columns ? null : (
+            <PlanCredit garden={garden} landcover={(derived.landcover?.areas.length ?? 0) > 0} />
+          )}
         </Inspector>
       </main>
 

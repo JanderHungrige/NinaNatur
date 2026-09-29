@@ -33,6 +33,17 @@ import pytest
 # (2026-09-21). An empty cache makes a local run fail exactly where CI would.
 os.environ["NINANATUR_CACHE_DIR"] = tempfile.mkdtemp(prefix="ninanatur-test-cache-")
 
+# Never the developer's own database either. Four tests start the app, and its
+# startup opens `database_path()` — `data/ninanatur.sqlite` unless this says
+# otherwise — snapshots it before migrating, migrates it and syncs the
+# catalogue into it: every run of the suite migrated the developer's database
+# and rotated their pre-migration backups out of `data/backups` (review of
+# Wave 26's stage 3, 2026-09-28). Set outright, not by default: a shell that
+# points NINANATUR_DB at a real database is not one a test may touch. A test
+# that wants a database of its own still sets it for itself.
+os.environ["NINANATUR_DB"] = os.path.join(
+    tempfile.mkdtemp(prefix="ninanatur-test-db-"), "ninanatur.sqlite")
+
 # The names the app answers to, plus `testserver` — the Host every TestClient
 # sends. Set here, before any test module imports the app, because the list is
 # read once at import. Production never sees this value: the image's default

@@ -59,6 +59,9 @@ export interface FurnitureProps {
   title: string;
   /** When the garden last changed, as the server says it. */
   updatedAt: string | null;
+  /** Put it away until the page is loaded again; absent where it cannot be
+   *  (the contact sheet). */
+  onClose?: (() => void) | undefined;
 }
 
 /** What a theme draws for a shape besides its fill: under all the shapes, and over them. */

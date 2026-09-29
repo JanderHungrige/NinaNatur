@@ -49,7 +49,7 @@ export function SheetCell({ entry, spanM, sun, width, height }: Props) {
       </svg>
       {/* The plan's corner, as GardenCanvas puts it there: nothing for Technisch. */}
       <PlanFurniture metresPerPixel={spanM / width} title={entry.title}
-                     updatedAt={entry.garden.updated_at} />
+                     updatedAt={entry.garden.updated_at} closable={false} />
     </div>
   );
 }

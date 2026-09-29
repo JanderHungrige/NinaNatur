@@ -80,6 +80,11 @@ def test_an_obstacle_changes_with_the_season() -> None:
 
     assert oak.transmission_in(7) == TRANSMISSION_IN_LEAF
     assert oak.transmission_in(3) == TRANSMISSION_BARE
+    # The whole calendar, edges included: in leaf from May to October. The
+    # grid and a bed's own sample ask this one rule (doc 117), so a month
+    # moved here moves in all three — and the field they are tested against.
+    leafy = [m for m in range(1, 13) if oak.transmission_in(m) == TRANSMISSION_IN_LEAF]
+    assert leafy == [5, 6, 7, 8, 9, 10]
 
 
 def test_a_wall_never_changes() -> None:
@@ -126,8 +131,12 @@ def test_a_spruce_takes_more_light_than_an_oak(conn: sqlite3.Connection) -> None
 
 
 def test_a_tree_is_no_longer_a_wall(conn: sqlite3.Connection) -> None:
-    """The change stated as a number. A crown that passes a fifth of the light
-    is a different thing from masonry, and the bed underneath says so."""
+    """The change stated as a number. Leaves that pass a fifth of the light
+    are a different thing from masonry, and the bed behind them says so.
+
+    Asked of the slow field, which casts prisms: a solid of leaves, as crowns
+    were cast until doc 121. A crown on its trunk is the raster's, and
+    `test_crown.py`'s."""
     from ninanatur.solar.field import shadow_field
     from ninanatur.solar.position import Location
 

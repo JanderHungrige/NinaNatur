@@ -27,6 +27,7 @@ source_files:
   - frontend/src/components/CanvasScene.tsx
   - frontend/src/components/PlanFurniture.tsx
   - frontend/src/components/PlanCredit.tsx
+  - frontend/src/components/GardenWorkspace.tsx
   - frontend/src/components/GardenCanvas.tsx
   - frontend/src/canvas/sketch.ts
   - frontend/src/canvas/along.ts
@@ -61,8 +62,11 @@ test_files:
   - frontend/src/themes/draftSketchRoads.test.tsx
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
+  - frontend/src/App.credit.test.tsx
+  - frontend/src/components/PlanCredit.test.tsx
+  - tests/test_workspace_layout.py
 data_flow: reads-existing
-last_synced: 2026-09-21
+last_synced: 2026-09-29
 status: complete
 phase: all
 mdd_version: 11
@@ -133,7 +137,12 @@ the roof the model knows, in garden metres.
 - **gable** — the ridge, wall to wall along the model's axis.
 - **hip** — the shortened ridge, and a hip from each of its ends towards the
   two corners of the roof's rectangle at that end — ending on the house's own
-  corner nearest to each.
+  corner nearest to each. Where a survey runs the ridge the shorter way, the
+  ridge is a point and the model's planes crease on the rectangle's ends,
+  half its length either side of the middle, so the hips are drawn there and
+  cut to the outline (review of feature 5, 2026-09-28: they were drawn to
+  the corners, a metre from the model's creases on a 10 × 12 m house; and
+  first only for a fall exactly square to the walls, which no survey's is).
 - **pent** (surveyed) — the upper edge, where the one plane is highest: the
   house's own walls that face uphill, in its upper half (`uphill_walls`). The
   model's edge is its rectangle's, across the surveyed fall; a surveyed fall is
@@ -199,6 +208,48 @@ own box (`canvas-stage`) instead, and the stage takes the room the caption
 leaves (`flex: 1`, doc 86's rule intact: the drawing still cannot set its own
 height). Under the controls at the top edge, not at the bottom: the bottom is
 the theme's, and the first try put the hint straight over the title block.
+
+**The caption has room of its own (2026-09-29).** Taken out of the drawing,
+the caption cost the plan its acceptance as soon as Draft Sketch became the
+default: the release's smoke test measured the drawing at 37.7 % of a
+1280 × 720 window with the dock full, 34.9 % where the caption wraps to two
+lines, against the 40 % doc 87 holds it to. The drawing now keeps its floor of
+40vh itself, its size contained so nothing drawn inside can raise it, and the
+workspace's row keeps room for the caption on top; the dock gives way by the
+caption's height instead. Technisch, with no caption, lays out as before.
+
+**On a phone the credits go all the way down (the owner, 2026-09-29).** Under
+the drawing his wrapped to three lines, 60 px of the least room the plan has.
+Both captions now close the details sheet (`PlanCredit` after the panels):
+still beneath the plan and always in the page while the plan is in his style
+or draws the map, but reached by scrolling the sheet. The drawing grew from
+358 px to 431 px of a 375 × 812 phone.
+
+The map's credit could not only go down. OpenStreetMap's attribution
+guidelines ask for it in a corner of the map, beside it or on a start screen,
+and say the attribution "should not require individuals to interact with the
+map" to be seen — which the foot of a sheet does. So a phone also marks the
+map in the drawing's corner (`MapCorner`, "© OpenStreetMap" linked to its
+terms): bottom right, which they call traditional, with a theme's legend
+bottom left. Asked, the owner chose the corner and the full line at the foot
+both. A wide window keeps both captions beneath the drawing and marks no
+corner.
+
+The mark is bare text, a step under the type scale (0.68rem, about 11 px, as
+maps set their credit) — no frame, a little smaller, the owner's word. Bare,
+its ink is the surface's to decide: Technisch's drawing darkens with the page
+and the page's muted ink with it, but his paper stays light on a dark page,
+where that ink stood at 2.3:1. On his paper it is his ink, softened. Measured:
+6.5:1 and 6.2:1 in his style on a light and a dark page, 5.7:1 and 6.8:1 in
+Technisch.
+
+**The block on a phone, and a cross (the owner, 2026-09-28).** Below the
+workspace's 66rem the plan is small, and the block keeps only its scale bar:
+the north arrow and the title, which the page already says, give way. On a
+phone and on a wide screen alike a cross in his ink puts the whole block away
+(`PlanFurniture`), and it is back at the next load of the page — kept in the
+page, never in storage, so nobody is left without a scale bar they forgot
+they had closed. The contact sheet draws no cross.
 
 ## His line symbols along our elements
 

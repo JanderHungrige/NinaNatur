@@ -124,6 +124,13 @@ class Element:
     #: The bearing the roof falls towards, from the survey (doc 94). None: the
     #: ridge is assumed to run along the long side, and a pent is left flat.
     roof_fall_deg: float | None = None
+    #: Where a tree's or shrub's crown starts, above its ground (doc 121). None
+    #: is nobody: the model then assumes a third of a tree's height, and the
+    #: ground under a shrub.
+    crown_base_m: float | None = None
+    #: Who gave it: 'user' | 'measured' (the laser, doc 107). None exactly when
+    #: nobody did.
+    crown_base_source: str | None = None
     label: str | None = None
 
     # --- what a planting site needs, null on everything else ----------------
@@ -140,6 +147,11 @@ class Element:
     #: would tell a gardener on a hillside that their garden is flat.
     slope_deg: float | None = None
     aspect_deg: float | None = None
+    #: The sky it sees, its relative illuminance, the sunshine it can expect
+    #: (doc 118). None until its light is computed by a model that knows them.
+    sky_view: float | None = None
+    relative_light: float | None = None
+    expected_sun_h: float | None = None
     light_computed_at: str | None = None
     #: A raised bed stands above the low things around it, and its light is
     #: computed from up there.

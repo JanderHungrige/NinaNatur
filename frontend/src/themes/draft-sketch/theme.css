@@ -85,8 +85,9 @@
 
 /* The drawing and what belongs to it: text inside the plan, and the title block
    beside it, which is drawn as HTML rather than in the SVG (doc 98) and so
-   carries the theme's own class. Everything else on the page is a control panel
-   and keeps the interface's type. */
+   carries the theme's own class. The page's buttons follow his hand too, since
+   the owner asked for them (2026-09-28, `ours/controls.css`); the rest of the
+   control panels keep the interface's type. */
 .plan-theme--draft-sketch text,
 .plan-furniture--draft-sketch {
   font-family: 'Patrick Hand', system-ui, sans-serif;
@@ -98,7 +99,7 @@
   bottom: 0.4rem;
   z-index: 2;
   display: grid;
-  grid-template-columns: auto auto minmax(0, auto);
+  grid-template-columns: auto auto minmax(0, auto) auto;
   align-items: end;
   gap: 0.2rem 0.7rem;
   max-width: min(26rem, calc(100% - 1rem));
@@ -127,6 +128,41 @@
 .plan-furniture__title strong {
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
+}
+
+/* The one part of the block that takes a click: the rest never stands in the
+   way of the plan. 24px, the least a finger or a pointer should have to hit. */
+.plan-furniture__close {
+  align-self: start;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.2rem -0.35rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.plan-furniture__close:hover svg {
+  transform: rotate(-6deg) scale(1.1);
+}
+
+/* On a phone the plan is small and every centimetre of it counts: the block
+   keeps its scale bar and the cross, and gives up the north arrow and the
+   title, which the page already says (the owner, 2026-09-28). */
+@media (max-width: 65.99rem) {
+  .plan-furniture__north,
+  .plan-furniture__title {
+    display: none;
+  }
+
+  .plan-furniture {
+    gap: 0.2rem 0.4rem;
+    padding: 0.2rem 0.4rem;
+  }
 }
 
 /* His style is black ink on white paper, and in dark mode the plan stays paper:

@@ -12,8 +12,8 @@ raster is fetched, measured, and thrown away.
 
 **This will do nothing in flat country, and that is correct.** Measured at
 Potsdam while Wave 17 was being planned: a maximum of 2.42°, a mean of 0.89° —
-and the light model already discards the sun below `MIN_ALTITUDE = 5°`. In the
-North German Plain the ring changes no number at all. In the Sauerland, the
+and the light model discards the sun below `MIN_ALTITUDE` (5° until Wave 26,
+3° since). In the North German Plain the ring changes next to no number. In the Sauerland, the
 Schwarzwald or the Alpenvorland it decides whether a garden sees December.
 """
 from __future__ import annotations
@@ -30,8 +30,8 @@ from ninanatur.geo.terrain import Fetch, frame_map
 from ninanatur.ingest.http import get_bytes
 
 #: How far out the land is asked about. Beyond five kilometres a hill has to be
-#: several hundred metres high to reach 5° — the altitude below which the light
-#: model already stops counting the sun.
+#: over 260 m high to reach 3° — the altitude below which the light model stops
+#: counting the sun (5° until Wave 26).
 RING_RADIUS_M = 5000.0
 
 #: The resolution the far field is asked for. A hill is not a garden: 20 m is

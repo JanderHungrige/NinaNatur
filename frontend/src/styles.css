@@ -150,6 +150,14 @@ body {
   outline: none;
 }
 
+/* And on every focus, not only the keyboard's: Safari draws its own ring on
+   `:focus` — 5px of it, which on the plan are 5 metres — so a click on a shape
+   put a wide blue band round it once more (the owner, 2026-09-28). The
+   keyboard's ring is the shape's own stroke (below), and stays. */
+:where(.bed, .obstacle, .cluster, .cluster-tag__info):focus {
+  outline: none;
+}
+
 .site-header {
   position: relative;
   display: flex; align-items: center; justify-content: space-between;
@@ -416,12 +424,16 @@ body {
     padding: 0.45rem 1rem;
     border-bottom: 1px solid var(--line);
   }
-  /* The plan's row keeps 40 % of the window and its padding — or the whole
-     tool rail, if that is more — however full the dock is. It grows from
-     nothing rather than from its content, and the dock gives way below it. */
+  /* The plan's row keeps what its contents need, however full the dock is:
+     the drawing's 40 % of the window with the caption beneath it and the
+     padding, or the whole tool rail, if that is more. It grows from nothing,
+     and the dock gives way below it. The floor was the row's own,
+     `max(40vh + 1rem, 20rem)`, and his credit, a caption inside the row
+     (doc 98), then came out of the drawing: 37.7 % at 1280 × 720 once Draft
+     Sketch was the default, and 34.9 % where the caption wraps (2026-09-29). */
   .workspace {
     flex: 1 1 0;
-    min-height: max(calc(40vh + 1rem), 20rem);
+    min-height: auto;
     gap: 0;
     grid-template-columns: 3.5rem minmax(0, 1fr) 22rem;
   }
@@ -434,10 +446,14 @@ body {
     position: relative;
     height: 100%;
   }
+  /* The drawing's floor is the wave's acceptance, 40 % of the window, and its
+     size is contained: what is drawn inside can never make it taller, nor the
+     row that keeps room for it (doc 86). */
   .workspace .canvas-stage {
     flex: 1;
-    min-height: 0;
+    min-height: 40vh;
     height: auto;
+    contain: size;
   }
   .workspace .canvas-controls {
     position: absolute;
@@ -1025,6 +1041,23 @@ button[disabled] { opacity: 0.55; cursor: default; }
 .plan-credit + .plan-credit { margin-top: 0; }
 /* A credit that links to its terms keeps the caption's ink, underlined. */
 .plan-credit a { color: inherit; }
+
+/* OpenStreetMap's credit in the drawing's corner, on a phone, where the
+   captions close the details (doc 98): its guidelines ask for it where the
+   map is seen, not at the end of a scroll. Bottom right, as they call
+   traditional; a theme's legend stands bottom left. Bare text, a step under
+   the scale, as maps set their credit (the owner, 2026-09-29: no frame, a
+   little smaller). Its ink follows the drawing's surface, which follows the
+   page here; Draft Sketch's paper does not (`ours/controls.css`). */
+.plan-map-corner {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.4rem;
+  z-index: 2;
+  color: var(--ink-muted);
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so
    it never sits under the thing being pointed at, and `pointer-events: none` so
@@ -1869,12 +1902,51 @@ button[disabled] { opacity: 0.55; cursor: default; }
 
 /* One moment of one day, over everything: while it plays, where the shadow is
    *now* is the only question being asked. */
-.day-shadows polygon {
+.day-shadows path {
   fill: rgb(43 47 40 / 34%);
   stroke: rgb(43 47 40 / 55%);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
+
+/* Where the gardener saw a shadow end, and where the model ends it (doc 122):
+   the model's edge dashed, the way between them a thin line, the mark a cross
+   in the focus colour — the cross and the line on a halo of the paper, so
+   they read over the sun map's darkest shade. Over everything and never a
+   target. */
+.shadow-mark__halo {
+  fill: none;
+  stroke: var(--bg-raised);
+  stroke-width: 6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.shadow-mark__edge {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
+.shadow-mark__way {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.shadow-mark__cross {
+  fill: none;
+  stroke: var(--focus);
+  stroke-width: 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.shadow-mark-panel__list {
+  display: grid; gap: var(--space-2); margin: var(--space-2) 0 0; padding: 0; list-style: none;
+}
+.shadow-mark-panel__item { display: grid; gap: var(--space-1); }
+.shadow-mark-panel__when { color: var(--ink-muted); font-size: var(--text-sm); }
 
 .shade-switch { display: grid; gap: 0.6rem; }
 .shade-switch h2 { margin: 0; font-size: var(--text-lg); }

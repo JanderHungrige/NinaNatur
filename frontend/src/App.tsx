@@ -187,8 +187,10 @@ export function App({ client = defaultClient }: { client?: NinaNaturClient }) {
 
   return (
     // The front door is dark all the way out to the edges; a garden is not.
+    // The style the plan is actually drawn in, for the page's own controls to
+    // follow: his buttons with his plan, never before it has arrived.
     <div className={garden === null ? 'app app--front-door' : 'app app--workspace'}
-         data-busy={status.busy ? '' : undefined}>
+         data-busy={status.busy ? '' : undefined} data-plan-theme={planStyle.theme.id}>
       <a className="skip-link" href="#main">
         Zum Inhalt springen
       </a>

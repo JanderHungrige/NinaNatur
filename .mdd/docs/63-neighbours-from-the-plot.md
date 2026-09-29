@@ -8,6 +8,7 @@ relates: []
 source_files:
   - ninanatur/geo/surroundings.py
   - ninanatur/geo/osm.py
+  - ninanatur/geo/osm_rings.py
   - ninanatur/geo/projection.py
   - ninanatur/api/geo.py
 routes:
@@ -16,9 +17,10 @@ models: [element]
 test_files:
   - tests/test_surroundings_reach.py
   - tests/test_osm.py
+  - tests/test_osm_building_relations.py
   - tests/test_map_selection.py
 data_flow: reads-existing
-last_synced: 2026-09-04
+last_synced: 2026-09-22
 status: complete
 phase: all
 mdd_version: 11
@@ -27,7 +29,8 @@ path: Map/Surroundings
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "A building drawn as a multipolygon keeps its courtyards as building: the outline is its outer ring. The courtyard is shaded and drawn as house; a garden in one leaves the building out rather than standing under it. Holes need their own rings in the outline the plan draws and edits (2026-09-22)."
 ---
 
 # The neighbours a garden actually has
@@ -97,6 +100,27 @@ being 8.9 m.
 
 A test asserting the old choice — "a centre is all the shading model needs" —
 was reversed rather than deleted. It was a reasonable belief and it was wrong.
+
+### Buildings drawn as multipolygons were missing (2026-09-22)
+
+`out tags geom` has a catch the landcover work found live (doc 114): at `tags`
+Overpass returns a relation with its tags and a bounding box, and no members.
+Every building drawn as a multipolygon — a courtyard building, a farm range, a
+house and its barn under one relation — had no outline and no centre, and was
+skipped without a word. The query now ends in `out geom`, which carries the
+tags as well. A relation's outer ring, often several ways, is joined end to end
+(`geo/osm_rings.assemble`, shared with the landcover), and each outer ring is a
+building of its own. The outline is the outer ring alone, so a **courtyard
+counts as building**; its inner rings travel beside it (`OsmBuilding.courtyards`)
+and are used once: a building whose courtyard holds the garden's middle is left
+out, as it was before — a garden in a courtyard would otherwise stand under the
+house. A ring with a slit of no width to each courtyard kept them open in the
+light model and was tried first; the review found it everywhere else: every
+stroke on the plan drew the slit as a wall, its doubled corners broke editing,
+the day's drawn shadow still covered the courtyard, and with several courtyards
+a slit could cross one. Courtyards as holes are a feature of their own (known
+issue). One live request round Berlin's Rotes Rathaus: 4 buildings where 2 came
+before, the Rathaus one outline with its three courtyards recorded.
 
 ## What did not change
 

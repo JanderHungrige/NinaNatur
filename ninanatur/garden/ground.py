@@ -11,6 +11,8 @@ that module decides where to sample, this one decides how high each sample is.
 """
 from __future__ import annotations
 
+from dataclasses import replace
+
 from ninanatur.geo.terrain import TerrainWindow
 from ninanatur.solar.shading import Obstacle
 
@@ -33,16 +35,10 @@ def standing_on(
             h for h in (ground.at(x, y) for x, y in obstacle.footprint) if h is not None
         ]
         base = sum(heights) / len(heights) if heights else 0.0
-        placed.append(
-            Obstacle(
-                footprint=obstacle.footprint,
-                height=obstacle.height,
-                base=base,
-                transmission=obstacle.transmission,
-                bare_transmission=obstacle.bare_transmission,
-                owner=obstacle.owner,
-            )
-        )
+        # Replaced, not rebuilt field by field: listing them dropped the roof
+        # the moment one was added, and every house on surveyed ground cast as
+        # a block again — a taller one than before (review, 2026-09-22).
+        placed.append(replace(obstacle, base=base))
     return placed
 
 

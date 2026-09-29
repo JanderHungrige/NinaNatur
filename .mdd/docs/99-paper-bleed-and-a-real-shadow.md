@@ -6,7 +6,7 @@ initiative: ninanatur
 wave: ninanatur-wave-24
 wave_status: active
 depends_on: [97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn]
-relates: [96-a-theme-is-a-thing, 07-solar-geometry, 38-polygon-shadows]
+relates: [96-a-theme-is-a-thing, 07-solar-geometry, 38-polygon-shadows, 120-a-roof-casts-as-a-roof]
 source_files:
   - ninanatur/solar/drawing.py
   - ninanatur/api/schemas.py
@@ -32,7 +32,7 @@ test_files:
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/themes/draftSketchVocabulary.test.tsx
 data_flow: mixed
-last_synced: 2026-09-20
+last_synced: 2026-09-28
 status: complete
 phase: all
 mdd_version: 11
@@ -41,7 +41,8 @@ path: Plan/Draft Sketch/Paper and shadow
 integration_contracts: []
 satisfies_contracts: []
 security_read_sites: []
-known_issues: []
+known_issues:
+  - "Since doc 120 the drop shadow is the model's only for a block. A gable, a hip or a surveyed pent casts its planes in the light model and the day's playback, while the drop shadow stays one offset at `shading_height` — the eaves plus part of the gable (review of stage 3, 2026-09-28)."
 sister_projects: []
 ---
 
@@ -84,9 +85,16 @@ gable rather than of its ridge.
 **The shape is swept, not moved.** Offsetting the outline by eight metres
 leaves a gap between a house and its own shadow, which reads as a second
 building; the shadow is the ground the thing hides all the way over. So the
-mark is the hull of the outline and its offset copy (`sweep`), which is the
-same hull `solar/shading.shadow_polygon` takes — the drawing and the light
-model draw one outline, not two.
+mark is the outline swept (`canvas/sweep.ts`): for a convex outline the hull
+of it and its offset copy, for a concave one the outline, its copy and the band
+each wall sweeps, drawn as one path under the non-zero rule (Wave 26, doc 116;
+it was the hull for every outline, which filled an L-shaped house's open
+corner). For a block `solar/sweep.shadow_shape` sweeps the same way for the
+day's shadows, so the drawing and the light model draw one shadow, not two. A
+pitched roof the model can place — a gable, a hip, a surveyed pent — has cast
+its own planes there since doc 120, and one offset cannot draw planes: for
+those the drop shadow here is the guess and the day's shadow the model's. An
+outline that crosses itself keeps the hull here.
 
 And it is **not wobbled**. His drop shadow was a pen mark and wobbled like one;
 a cast shadow has the edge the wall has. Dropping the wobble from 51 shadows on

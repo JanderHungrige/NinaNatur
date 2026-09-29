@@ -7,6 +7,10 @@ import { hintFor } from './ToolRail';
 interface Props {
   garden: GardenOut;
   controller: GardenController;
+  /** Whether the plan's credits stand beneath it: not on a phone, where they
+   *  close the details instead and the map is marked in the drawing's corner
+   *  (the owner, 2026-09-29). */
+  creditsBelow: boolean;
 }
 
 /**
@@ -21,8 +25,8 @@ interface Props {
  * month's map is on its way the old one is dimmed — both from here, around the
  * canvas, so nothing inside the drawing has to know (doc 65).
  */
-export function PlanArea({ garden, controller }: Props) {
-  const { derived, elements, geometry, light, suggestions, clipboard, ids } = controller;
+export function PlanArea({ garden, controller, creditsBelow }: Props) {
+  const { derived, elements, geometry, light, marks, suggestions, clipboard, ids } = controller;
   const waiting = light.shadeOn && light.monthLoading;
 
   return (
@@ -41,6 +45,7 @@ export function PlanArea({ garden, controller }: Props) {
         terrain={light.shadeOn ? derived.terrain : null}
         // The neighbourhood is not the shade's: it is there either way (doc 114).
         landcover={derived.landcover}
+        creditsBelow={creditsBelow}
         sunMap={
           light.shadeOn && derived.lightMap !== null
             ? { map: derived.lightMap, mode: light.mapMode }
@@ -50,7 +55,10 @@ export function PlanArea({ garden, controller }: Props) {
         // keeps the heat maps free of obstacle shadows.
         shadows={light.day.shadows?.frames[light.day.frame]?.polygons ?? undefined}
         viewpoint={light.viewpoint}
-        onPlaceViewpoint={light.lookFrom}
+        // One click on the plan places a point: where somebody stands (doc 89),
+        // or where the armed element's shadow was seen to end (doc 122).
+        onPlaceViewpoint={elements.tool === 'shadowmark' ? marks.place : light.lookFrom}
+        shadowMarks={marks.marks}
         canopies={derived.canopies}
         onShowFoundTrees={controller.showFoundTrees}
         tool={elements.tool}

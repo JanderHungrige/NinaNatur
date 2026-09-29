@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { inset, offset, overshoots, scaled, sweep, ticks, wobble, wobbleLine } from './sketch';
+import { inset, offset, overshoots, scaled, ticks, wobble, wobbleLine } from './sketch';
+import { sweep } from './sweep';
 
 /* The geometry a sketched outline is drawn with (doc 97): pure, seeded, in metres. */
 
@@ -99,33 +100,93 @@ describe('the marks doc 98 adds', () => {
   });
 });
 
-describe('a shape swept along the light (doc 99)', () => {
+describe('a shape swept along the light (docs 99, 116)', () => {
   const box = [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 0, y: 1 }];
+  // An L with its north-east quarter open: the open corner is (1..3, 1..3).
+  const ell = [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 1 },
+               { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 0, y: 3 }];
 
   it('covers the shape, its offset copy and the ground between them', () => {
     const cast = sweep(box, 3, 1);
+    expect(cast).toHaveLength(1);
     // The hull of both boxes: nothing of either sticks out of it.
     for (const p of [...box, ...box.map((q) => ({ x: q.x + 3, y: q.y + 1 }))]) {
-      expect(inside(cast, p)).toBe(true);
+      expect(inside(cast[0]!, p)).toBe(true);
     }
     // And it reaches the far corner of the offset copy, not merely the shape.
-    expect(Math.max(...cast.map((p) => p.x))).toBeCloseTo(5, 6);
-    expect(Math.max(...cast.map((p) => p.y))).toBeCloseTo(2, 6);
+    expect(Math.max(...cast[0]!.map((p) => p.x))).toBeCloseTo(5, 6);
+    expect(Math.max(...cast[0]!.map((p) => p.y))).toBeCloseTo(2, 6);
   });
 
   it('is the shape itself where the light casts nothing', () => {
-    expect(sweep(box, 0, 0).length).toBeLessThanOrEqual(box.length);
-    expect(Math.max(...sweep(box, 0, 0).map((p) => p.x))).toBeCloseTo(2, 6);
+    const [still] = sweep(box, 0, 0);
+    expect(still!.length).toBeLessThanOrEqual(box.length);
+    expect(Math.max(...still!.map((p) => p.x))).toBeCloseTo(2, 6);
   });
 
-  it('keeps the hull convex: no inner corner survives a sweep', () => {
-    // An L, swept: the notch is filled in, as a shadow's edge has no notch.
-    const ell = [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 1 },
-                 { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 0, y: 3 }];
+  it('leaves an L its open corner where the shadow does not reach into it', () => {
+    // Swept towards the north-east by 1 m: a point in the corner 1.5 m from
+    // both arms is ground the sun still reaches, as the light model counts it.
     const cast = sweep(ell, 1, 1);
-    expect(inside(cast, { x: 2.5, y: 2.5 })).toBe(true);
+    expect(cast.length).toBeGreaterThan(1);
+    expect(inAny(cast, { x: 2.5, y: 2.5 })).toBe(false);
+    for (const p of [{ x: 0.5, y: 2.5 }, { x: 2.5, y: 0.5 }, { x: 3.5, y: 1.5 }, { x: 1.5, y: 1.2 }]) {
+      expect(inAny(cast, p)).toBe(true);
+    }
+  });
+
+  it('fills the corner once the shadow is long enough to cross it', () => {
+    expect(inAny(sweep(ell, 3, 3), { x: 2.5, y: 2.5 })).toBe(true);
+  });
+
+  it('turns every piece the same way, so a non-zero fill never cancels one', () => {
+    const turned = (ring: { x: number; y: number }[]): number =>
+      ring.reduce((sum, a, i) => {
+        const b = ring[(i + 1) % ring.length]!;
+        return sum + a.x * b.y - b.x * a.y;
+      }, 0);
+    for (const piece of sweep(ell, -2, 1)) expect(turned(piece)).toBeGreaterThan(0);
+  });
+
+  it('reads an outline closed on its first point as the shape it is', () => {
+    expect(sweep([...ell, ell[0]!], 1, 1)).toEqual(sweep(ell, 1, 1));
+  });
+
+  it('keeps the corner a wall drawn as a line turns round (review, 2026-09-22)', () => {
+    // The band the server makes of an L-shaped wall line, 0.3 m wide: at the
+    // inside of the corner it runs to (0, 0.15) and straight back — a spur
+    // that made the wall read as convex, so its hull shaded the corner.
+    const wall = [{ x: 0.15, y: 10 }, { x: 0.15, y: 0.15 }, { x: 0, y: 0.15 }, { x: 10, y: 0.15 },
+                  { x: 10, y: -0.15 }, { x: 0, y: -0.15 }, { x: -0.15, y: -0.15 },
+                  { x: -0.15, y: 10 }];
+    const cast = sweep(wall, 1.7, 1.7);
+    expect(cast.length).toBeGreaterThan(1);
+    expect(inAny(cast, { x: 6, y: 6 })).toBe(false);
+    expect(inAny(cast, { x: 1, y: 1 })).toBe(true);
+  });
+
+  it('draws an outline that crosses itself as the hull it always was', () => {
+    // Its lobes wind opposite ways; one of them would cancel a band.
+    const bowTie = [{ x: 0, y: 0 }, { x: 4, y: 4 }, { x: 4, y: 0 }, { x: 0, y: 4 }];
+    const cast = sweep(bowTie, 1, 0);
+    expect(cast).toHaveLength(1);
+    expect(inAny(cast, { x: 4.5, y: 2 })).toBe(true);
   });
 });
+
+/** Inside the union of pieces turned one way: inside any of them. */
+function inAny(pieces: { x: number; y: number }[][], p: { x: number; y: number }): boolean {
+  return pieces.some((ring) => {
+    let odd = false;
+    ring.forEach((a, i) => {
+      const b = ring[(i + 1) % ring.length]!;
+      if ((a.y > p.y) !== (b.y > p.y) && p.x < a.x + ((p.y - a.y) * (b.x - a.x)) / (b.y - a.y)) {
+        odd = !odd;
+      }
+    });
+    return odd;
+  });
+}
 
 /** Is the point inside this convex ring? Winding all one way says so. */
 function inside(ring: { x: number; y: number }[], p: { x: number; y: number }): boolean {

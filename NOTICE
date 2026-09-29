@@ -18,6 +18,15 @@ them **require a named credit wherever the data is shown**.
 
 A height displayed without its credit is a height used outside its licence.
 
+One of them ships inside this repository and its image rather than being
+fetched: `ninanatur/data/climate_de.json.gz`, the growing season's light
+climate, made by `scripts/dwd_climate.py` from the Deutscher Wetterdienst's
+Climate Data Center grids (global and diffuse radiation, sunshine duration).
+It is licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+and **changed**: 1 km cells averaged to 10 km, and the diffuse fraction computed
+from two of the grids. Its credit, in the DWD's own wording for averaged
+values: "Datenbasis: Deutscher Wetterdienst, Einzelwerte gemittelt".
+
 The required credit for every source is carried in the code beside the source
 itself, and is served to the page that shows the number, so that showing a
 value and showing its provenance are one act rather than two. See
@@ -30,8 +39,8 @@ Not affiliated
 This project is not affiliated with, endorsed by, or produced by any
 Landesvermessungsamt or Landesbetrieb, the Arbeitsgemeinschaft der
 Vermessungsverwaltungen der Länder der Bundesrepublik Deutschland (AdV), the
-Bundesamt für Kartographie und Geodäsie (BKG), the European Space Agency, or
-the Copernicus programme. Where the names or brands of those bodies appear, they
+Bundesamt für Kartographie und Geodäsie (BKG), the Deutscher Wetterdienst
+(DWD), the European Space Agency, or the Copernicus programme. Where the names or brands of those bodies appear, they
 appear because a licence requires them to be named as the source of the data —
 not to suggest any relationship.
 

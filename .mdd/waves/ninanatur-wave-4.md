@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-3
 demo_state: "A user picks suggested species into a bed and sees the garden's bloom year month by month, with forage gaps marked and explained"
 created: 2026-08-27
-hash: 77054cc6
+hash: a29c3487
 ---
 
 # Wave 4 — Plantings and the bloom year

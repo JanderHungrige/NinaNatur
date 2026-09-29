@@ -1,12 +1,13 @@
 import { memo, useCallback, useMemo } from 'react';
 
-import type { CanopySuggestion, GardenOut, LightMap } from '../api/client';
+import type { CanopySuggestion, GardenOut, LightMap, ShadowMark } from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import { usePlanTheme } from '../themes/context';
 import { CanopyMarks } from './CanopyMarks';
 import { ClusterLayer } from './ClusterLayer';
 import { InkLayer, beneathOf, useDecorations } from './PlanDecorations';
 import { PlanObjects } from './PlanObjects';
+import { ShadowMarkLayer } from './ShadowMarkLayer';
 import { type MapMode, SunMap } from './SunMap';
 
 export interface WorldProps {
@@ -34,6 +35,8 @@ export interface WorldProps {
   mapMode?: MapMode | undefined;
   shadows?: number[][][] | undefined;
   canopies: CanopySuggestion[];
+  /** Where the gardener saw shadows end, and the model's edges (doc 122). */
+  shadowMarks: ShadowMark[];
 }
 
 /**
@@ -50,7 +53,7 @@ function World({
   garden, scale, spacing, selectedBedId, selectedObstacleId, viewpoint, onSelectBed,
   onSelectObstacle, armed, onAskWhatItIs, onGrabElement, dragOffset, clusters,
   selectedPlantingId, freshPlantingId, onSelectCluster, onGrabCluster, onShowClusterInfo,
-  sunMap, mapMode = 'hours', shadows, canopies,
+  sunMap, mapMode = 'hours', shadows, canopies, shadowMarks,
 }: WorldProps) {
   const theme = usePlanTheme();
   // Each shape asks for itself (doc 99), at the scale the decorations use, so
@@ -81,27 +84,34 @@ function World({
       <CanopyMarks trees={canopies} />
 
       {/* One moment of one day, over everything: while it plays, where the
-          shadow is *now* is the only question being asked. */}
+          shadow is *now* is the only question being asked. Every shadow of the
+          moment, as rings — outlines anticlockwise, the holes in them clockwise
+          (doc 116) — in one path under the non-zero rule, so a courtyard the
+          sun still reaches is drawn open and two that overlap fill once. */}
       {shadows !== undefined && (
         <g className="day-shadows" aria-hidden="true" pointerEvents="none">
-          {shadows.map((polygon, i) => (
-            <polygon
-              key={i}
-              points={polygon.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join(' ')}
-            />
-          ))}
+          <path
+            fillRule="nonzero"
+            d={shadows.map((ring) =>
+              `M${ring.map((p) => `${p[0] ?? 0},${-(p[1] ?? 0)}`).join('L')}Z`).join('')}
+          />
         </g>
       )}
 
+      {/* A tool armed, the plan takes the click, not a patch on it, as the
+          shapes let it through: a mark aimed at a planted bed chose the
+          planting instead (review of stage 3, 2026-09-28). */}
       <ClusterLayer
         clusters={clusters}
         selectedPlantingId={selectedPlantingId}
         freshPlantingId={freshPlantingId}
-        onSelectCluster={onSelectCluster}
-        onGrabCluster={onGrabCluster}
+        onSelectCluster={armed ? undefined : onSelectCluster}
+        onGrabCluster={armed ? undefined : onGrabCluster}
         spacing={spacing}
-        onShowInfo={onShowClusterInfo}
+        onShowInfo={armed ? undefined : onShowClusterInfo}
       />
+
+      <ShadowMarkLayer marks={shadowMarks} />
 
       {viewpoint !== null && (
         <g className="viewpoint" data-testid="viewpoint">

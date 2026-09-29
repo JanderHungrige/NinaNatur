@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { halfWidth } from '../../canvas/along';
-import { centreOf, inset, offset, overshoots, scaled, sweep, ticks } from '../../canvas/sketch';
+import { centreOf, inset, offset, overshoots, scaled, ticks } from '../../canvas/sketch';
+import { sweep } from '../../canvas/sweep';
 import type { Point } from '../../canvas/viewport';
 import type { DecoratedShape, Decoration } from '../types';
 import type {
@@ -55,12 +56,14 @@ function shadow(o: Shadow, shape: DecoratedShape, mpp: number, key: string): Rea
   const at = o.edge === true ? { x: o.dx, y: o.dy } : shape.shadow;
   if (at === null) return null;
   // A bed's edge is the shape moved a little; a thing that stands up hides the
-  // ground all the way over, so its shadow is the shape swept (doc 99).
-  const cast = o.edge === true ? offset(points, at.x, at.y) : sweep(points, at.x, at.y);
+  // ground all the way over, so its shadow is the shape swept (doc 99) — in
+  // pieces for a concave house, one path under the non-zero rule, so they fill
+  // their union once (doc 116).
+  const cast = o.edge === true ? [offset(points, at.x, at.y)] : sweep(points, at.x, at.y);
   const wave = o.edge === true ? capped(o.wave, radiusOf(points)) : null;
   // Drawn beneath its shape, among the targets: it must never be one itself.
   return <path key={key} data-mark="shadow" className="canvas__shadow" pointerEvents="none"
-               aria-hidden="true" d={outline(cast, wave, mpp)}
+               aria-hidden="true" d={cast.map((piece) => outline(piece, wave, mpp)).join('')}
                fill={o.colour} fillOpacity={o.opacity} />;
 }
 

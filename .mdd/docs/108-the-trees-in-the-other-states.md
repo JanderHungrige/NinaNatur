@@ -4,7 +4,7 @@ title: The Trees in the Other States
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-25
-wave_status: active
+wave_status: complete
 depends_on: [102-which-tiles-and-whose, 103-a-tile-not-a-service]
 relates: [80-surface-sources, 84-canopies-found, 107-the-cloud-under-the-crown]
 source_files:

@@ -42,6 +42,13 @@ export interface FormValues {
   eavesM: number | null;
   /** Who gave the eaves; null is nobody — or a value older than anybody's record. */
   eavesSource: string | null;
+  /** Where a tree's or shrub's crown starts (doc 121). Null is "nobody has said". */
+  crownBaseM: number | null;
+  /** Who gave it: 'user' | 'measured'; null is nobody. */
+  crownBaseSource: string | null;
+  /** Whether a tree or shrub casts as a crown on a trunk; false where the
+   *  outline is too long or thin for one, and a base changes nothing (doc 121). */
+  crownFits: boolean | null;
   height: number | null;
   width: number | null;
   soilType: string | null;
@@ -106,7 +113,7 @@ export function viewKey(selection: Selection): string {
 }
 
 /** The element form's starting values. Only a bed has its own soil and a raised
- *  height; only an element has a height, a roof and eaves. */
+ *  height; only an element has a height, a roof and eaves, or a crown. */
 export function formValues(item: Bed | Obstacle): FormValues {
   if ('bed_id' in item) {
     return {
@@ -120,6 +127,9 @@ export function formValues(item: Bed | Obstacle): FormValues {
       roofPitchDeg: null,
       eavesM: null,
       eavesSource: null,
+      crownBaseM: null,
+      crownBaseSource: null,
+      crownFits: item.crown_fits,
       height: null,
       width: item.width,
       soilType: item.soil_type,
@@ -138,6 +148,9 @@ export function formValues(item: Bed | Obstacle): FormValues {
     roofPitchDeg: item.roof_pitch_deg,
     eavesM: item.eaves_m,
     eavesSource: item.eaves_source,
+    crownBaseM: item.crown_base_m,
+    crownBaseSource: item.crown_base_source,
+    crownFits: item.crown_fits,
     height: item.height,
     width: item.width,
     soilType: null,

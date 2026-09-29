@@ -1,4 +1,6 @@
-import type { CanopySuggestion, GardenOut, Landcover, LightMap, Terrain } from '../api/client';
+import type {
+  CanopySuggestion, GardenOut, Landcover, LightMap, ShadowMark, Terrain,
+} from '../api/client';
 import type { Cluster } from '../canvas/clusters';
 import type { Box } from '../canvas/handles';
 import type { DrawnShape, Tool } from '../canvas/shapes';
@@ -34,11 +36,18 @@ export interface GardenCanvasProps {
   /** The land around the garden, from OpenStreetMap (doc 114): decoration,
    *  drawn whether the shade is on or not, and credited under the plan. */
   landcover?: Landcover | null | undefined;
+  /** Whether the plan's credits stand beneath the drawing (doc 98). On a
+   *  phone they close the details instead, and the map's is marked in the
+   *  drawing's corner. */
+  creditsBelow?: boolean | undefined;
   shadows?: number[][][] | undefined;
   /** Where the user is standing, if anywhere. */
   viewpoint?: { x: number; y: number } | null;
-  /** Placing one, while the rail's Standpunkt is armed (doc 89). */
+  /** Placing one, while the rail's Standpunkt is armed (doc 89) — or a shadow
+   *  mark, while an element's details have armed one (doc 122). */
   onPlaceViewpoint?: ((x: number, y: number) => void) | undefined;
+  /** Where the gardener saw shadows end, and the model's edges (doc 122). */
+  shadowMarks?: ShadowMark[] | undefined;
   /** Trees the surface model found, marked where they stand (doc 89). */
   canopies?: CanopySuggestion[] | undefined;
   /** The plan's "N gefundene Bäume": show their card. */

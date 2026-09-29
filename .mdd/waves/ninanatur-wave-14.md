@@ -7,7 +7,7 @@ status: complete
 depends_on: ninanatur-wave-13
 demo_state: "A bed shows its flowers as clustered dots rather than a colour bar, an element can be deleted where it stands, the plan reads as a painting rather than a drawing, and the street outside is on it"
 created: 2026-08-31
-hash: e7b57f79
+hash: 35c91070
 ---
 
 # Wave 14 — A plan that looks painted, not plotted

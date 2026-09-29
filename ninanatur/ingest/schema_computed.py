@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS light_grid (
     -- or the garden's brightest point, and the reader is told which they are
     -- looking at. Empty on a grid computed before roofs were.
     roof        TEXT    NOT NULL DEFAULT '[]',
+    -- The light model that computed it (Wave 26); empty before models had a
+    -- version, so an old map says it was drawn by the model before them.
+    model       TEXT    NOT NULL DEFAULT '',
+    -- Wave 26, feature 3 (doc 118), in step with hours: the sky each cell
+    -- sees, its relative illuminance, and the sunshine it can expect. Empty on
+    -- a map computed before.
+    sky         TEXT    NOT NULL DEFAULT '[]',
+    relative    TEXT    NOT NULL DEFAULT '[]',
+    expected    TEXT    NOT NULL DEFAULT '[]',
     signature   TEXT    NOT NULL,
     computed_at TEXT    NOT NULL
 );
@@ -77,7 +86,15 @@ CREATE TABLE IF NOT EXISTS cloud_window (
     -- What the answer is worth: at four points a square metre a half-metre
     -- cell is one measurement, and the window says which it had.
     points_per_m2   REAL    NOT NULL,
-    fetched_at      TEXT    NOT NULL
+    fetched_at      TEXT    NOT NULL,
+    -- The garden the window was read around (doc 121). A window is shared by
+    -- every garden in its place and drawn on the axes of the one that read it,
+    -- so another garden moves it onto its own. Null: read before this was kept.
+    anchor_lat      REAL,
+    anchor_lon      REAL,
+    -- 1 when a building model told its roofs from its crowns (doc 107); a
+    -- crown base read without one may be a roof's.
+    classified      INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS terrain_window (

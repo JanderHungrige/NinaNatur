@@ -61,14 +61,36 @@ def test_every_variable_used_is_declared(css: str) -> None:
     """
     themes = [sheet.read_text(encoding="utf-8") for sheet in THEME_SHEETS]
     hooks = {name for sheet in themes for name in _declared(sheet) if name.startswith("--plan-")}
+    # Draft Sketch's own names, declared and used in its own sheets — the ink,
+    # the paper and the washes of his buttons (doc 101) — and nowhere else.
+    own = {name for sheet in themes for name in _declared(sheet) if name.startswith("--ds-")}
     used = _used(css).union(*(_used(sheet) for sheet in themes))
-    unknown = sorted(used - _declared(css) - SET_INLINE - hooks)
+    unknown = sorted(used - _declared(css) - SET_INLINE - hooks - own)
     assert unknown == [], f"used but never declared: {unknown}"
+    assert not {name for name in _used(css) if name.startswith("--ds-")}, (
+        "the interface's stylesheet leans on a name only his sheets declare")
 
 
 def test_a_theme_sheet_is_found(css: str) -> None:
     """Guards the hooks above: with no theme sheet read, every hook would fail."""
     assert any(sheet.parent.name == "draft-sketch" for sheet in THEME_SHEETS)
+
+
+def test_the_map_credit_in_the_corner_is_bare_text_in_the_ink_of_its_paper(css: str) -> None:
+    """OpenStreetMap's credit in a phone's drawing (doc 98): no frame, the
+    owner's word (2026-09-29). Bare, its ink is the drawing's surface's to
+    decide, and his paper stays light on a dark page, where the page's muted
+    ink turns light: it stood at 2.3:1. Where his style draws, his ink."""
+    base = re.search(r"\n\.plan-map-corner \{([^}]*)\}", css)
+    assert base is not None, "the corner credit has no rule"
+    assert "background" not in base.group(1) and "border" not in base.group(1)
+    controls = next(sheet for sheet in THEME_SHEETS if sheet.name == "controls.css")
+    his = re.search(
+        r"\[data-plan-theme='draft-sketch'\] \.plan-map-corner \{([^}]*)\}",
+        controls.read_text(encoding="utf-8"),
+    )
+    assert his is not None, "on his paper the corner credit keeps the page's ink"
+    assert "var(--ds-ink)" in his.group(1)
 
 
 def test_every_colour_has_a_dark_mode_value(css: str) -> None:
