@@ -59,6 +59,16 @@ describe('the map\'s credit beneath the plan', () => {
     expect(link.getAttribute('href')).toBe('https://www.openstreetmap.org/copyright');
   });
 
+  it('stands alone where the style\'s credit is left to the details (a phone)', () => {
+    const { container } = render(
+      <PlanThemeProvider theme={draftSketch}>
+        <PlanCredit garden={{ obstacles: [street] }} style={false} />
+      </PlanThemeProvider>,
+    );
+    expect([...container.querySelectorAll('.plan-credit')].map((line) => line.textContent))
+      .toEqual([CREDIT]);
+  });
+
   it('stands on a line of its own under the style\'s credit', () => {
     const { container } = caption(draftSketch);
     const lines = [...container.querySelectorAll('.plan-credit')].map((line) => line.textContent);

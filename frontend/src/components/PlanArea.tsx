@@ -7,6 +7,9 @@ import { hintFor } from './ToolRail';
 interface Props {
   garden: GardenOut;
   controller: GardenController;
+  /** Whether the style's credit stands beneath the plan: not on a phone, where
+   *  it closes the details instead (the owner, 2026-09-29). */
+  styleCredit: boolean;
 }
 
 /**
@@ -21,7 +24,7 @@ interface Props {
  * month's map is on its way the old one is dimmed — both from here, around the
  * canvas, so nothing inside the drawing has to know (doc 65).
  */
-export function PlanArea({ garden, controller }: Props) {
+export function PlanArea({ garden, controller, styleCredit }: Props) {
   const { derived, elements, geometry, light, marks, suggestions, clipboard, ids } = controller;
   const waiting = light.shadeOn && light.monthLoading;
 
@@ -41,6 +44,7 @@ export function PlanArea({ garden, controller }: Props) {
         terrain={light.shadeOn ? derived.terrain : null}
         // The neighbourhood is not the shade's: it is there either way (doc 114).
         landcover={derived.landcover}
+        styleCredit={styleCredit}
         sunMap={
           light.shadeOn && derived.lightMap !== null
             ? { map: derived.lightMap, mode: light.mapMode }

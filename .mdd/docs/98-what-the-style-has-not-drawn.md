@@ -27,6 +27,7 @@ source_files:
   - frontend/src/components/CanvasScene.tsx
   - frontend/src/components/PlanFurniture.tsx
   - frontend/src/components/PlanCredit.tsx
+  - frontend/src/components/GardenWorkspace.tsx
   - frontend/src/components/GardenCanvas.tsx
   - frontend/src/canvas/sketch.ts
   - frontend/src/canvas/along.ts
@@ -61,8 +62,11 @@ test_files:
   - frontend/src/themes/draftSketchRoads.test.tsx
   - frontend/src/themes/draftSketch.test.tsx
   - frontend/src/components/PlanFurniture.test.tsx
+  - frontend/src/App.credit.test.tsx
+  - frontend/src/components/PlanCredit.test.tsx
+  - tests/test_workspace_layout.py
 data_flow: reads-existing
-last_synced: 2026-09-28
+last_synced: 2026-09-29
 status: complete
 phase: all
 mdd_version: 11
@@ -204,6 +208,24 @@ own box (`canvas-stage`) instead, and the stage takes the room the caption
 leaves (`flex: 1`, doc 86's rule intact: the drawing still cannot set its own
 height). Under the controls at the top edge, not at the bottom: the bottom is
 the theme's, and the first try put the hint straight over the title block.
+
+**The caption has room of its own (2026-09-29).** Taken out of the drawing,
+the caption cost the plan its acceptance as soon as Draft Sketch became the
+default: the release's smoke test measured the drawing at 37.7 % of a
+1280 × 720 window with the dock full, 34.9 % where the caption wraps to two
+lines, against the 40 % doc 87 holds it to. The drawing now keeps its floor of
+40vh itself, its size contained so nothing drawn inside can raise it, and the
+workspace's row keeps room for the caption on top; the dock gives way by the
+caption's height instead. Technisch, with no caption, lays out as before.
+
+**On a phone his credit goes all the way down (the owner, 2026-09-29).** Under
+the drawing it wrapped to three lines, 60 px of the least room the plan has.
+It now closes the details sheet (`StyleCredit` after the panels): still
+beneath the plan and always in the page while the plan is in his style, but
+reached by scrolling the sheet. The drawing grew from 358 px to 431 px of a
+375 × 812 phone. The map's credit stays under the plan on a phone too: one
+short line, and ODbL asks for it where the map is shown. A wide window keeps
+both captions beneath the drawing.
 
 **The block on a phone, and a cross (the owner, 2026-09-28).** Below the
 workspace's 66rem the plan is small, and the block keeps only its scale bar:
