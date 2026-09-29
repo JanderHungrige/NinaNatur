@@ -1045,17 +1045,18 @@ button[disabled] { opacity: 0.55; cursor: default; }
 /* OpenStreetMap's credit in the drawing's corner, on a phone, where the
    captions close the details (doc 98): its guidelines ask for it where the
    map is seen, not at the end of a scroll. Bottom right, as they call
-   traditional; a theme's legend stands bottom left. */
+   traditional; a theme's legend stands bottom left. Bare text, a step under
+   the scale, as maps set their credit (the owner, 2026-09-29: no frame, a
+   little smaller). Its ink follows the drawing's surface, which follows the
+   page here; Draft Sketch's paper does not (`ours/controls.css`). */
 .plan-map-corner {
   position: absolute;
   right: 0.5rem;
   bottom: 0.4rem;
   z-index: 2;
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
   color: var(--ink-muted);
-  font-size: var(--text-xs);
+  font-size: 0.68rem;
+  line-height: 1.2;
 }
 
 /* What the sun map says under the pointer. Offset up and right of the cursor so
