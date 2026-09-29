@@ -4,7 +4,7 @@ title: The Measuring Instrument
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [07-solar-geometry, 38-polygon-shadows, 64-light-across-the-bed]
 relates: [71-buildings-stand-on-the-ground]
 source_files:

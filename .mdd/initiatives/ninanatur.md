@@ -3,7 +3,7 @@ id: ninanatur
 title: NinaNatur
 status: active
 version: 24
-hash: a390899e
+hash: 2b9dfd09
 created: 2026-08-27
 ---
 
@@ -207,6 +207,6 @@ data would be convenient.
 | Wave 23 | waves/ninanatur-wave-23.md | The plan is the page: a workspace that never scrolls, on the desk and on the phone | complete |
 | Wave 24 | waves/ninanatur-wave-24.md | A drawing of a garden: Draft Sketch, with Warren Davison's permission, extended for gardens behind a swappable theme | in_progress |
 | Wave 25 | waves/ninanatur-wave-25.md | Down to the square metre: open tiles, point clouds and LoD2 for every state | complete |
-| Wave 26 | waves/ninanatur-wave-26.md | Light, not hours: sky, climatology and exact shadows, checked against reality | in_progress |
+| Wave 26 | waves/ninanatur-wave-26.md | Light, not hours: sky, climatology and exact shadows, checked against reality | complete |
 | Wave 27 | waves/ninanatur-wave-27.md | One plan, one basket: a shopping list by region and parcel, handed to the nurseries | planned |
 | Wave 28 | waves/ninanatur-wave-28.md | What colour it flowers: primary and secondary flower colours from open photographs, measured, judged and evidenced | planned |

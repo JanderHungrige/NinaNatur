@@ -4,7 +4,7 @@ title: Mark the Shadow Edge — the Gardener's Eye Against the Model's Shadow
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [115-the-measuring-instrument, 116-no-hull, 118-the-sky-counts, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder]
 relates: [89-three-steps-in, 99-paper-bleed-and-a-real-shadow, 93-where-the-roof-came-from]
 source_files:

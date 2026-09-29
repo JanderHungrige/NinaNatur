@@ -1,8 +1,8 @@
 ---
-generated: 2026-09-22
-doc_count: 115
-connection_count: 168
-overlap_count: 171
+generated: 2026-09-29
+doc_count: 123
+connection_count: 196
+overlap_count: 202
 ---
 
 # Connections
@@ -75,6 +75,14 @@ Garden
 ├── Light  72-the-hill-that-eats-the-morning  complete
 ├── Light  73-which-way-does-it-fall  complete
 ├── Light  74-say-how-good-it-is  complete
+├── Light
+│   ├── Crowns  121-a-crown-is-not-a-cylinder  complete
+│   ├── Energy  119-energy-not-hours  complete
+│   ├── Raster  117-room-to-compute  complete
+│   ├── Roofs  120-a-roof-casts-as-a-roof  complete
+│   ├── Shadow marks  122-mark-the-shadow-edge  complete
+│   ├── Sky  118-the-sky-counts  complete
+│   └── Validation  115-the-measuring-instrument  complete
 ├── Map  31-map-selection  complete
 ├── Model  08-garden-model  complete
 ├── Objects  27-object-labelling  complete
@@ -136,7 +144,9 @@ Platform
 Search
 └── Filters  23-catalogue-filters  complete
 Solar
-└── Shadows  38-polygon-shadows  complete
+├── Shadows  38-polygon-shadows  complete
+└── Shadows
+    └── Drawn  116-no-hull  complete
 Support
 └── Feedback  60-feedback-box  complete
 UI
@@ -439,6 +449,42 @@ graph TD
     96_a_theme_is_a_thing --> 114_the_ground_around_the_garden
     106_which_source_said_so --> 114_the_ground_around_the_garden
     113_a_plan_that_keeps_up --> 114_the_ground_around_the_garden
+    115_the_measuring_instrument["115-the-measuring-instrument"]:::complete
+    07_solar_geometry --> 115_the_measuring_instrument
+    38_polygon_shadows --> 115_the_measuring_instrument
+    64_light_across_the_bed --> 115_the_measuring_instrument
+    116_no_hull["116-no-hull"]:::complete
+    38_polygon_shadows --> 116_no_hull
+    65_the_shade_switch --> 116_no_hull
+    99_paper_bleed_and_a_real_shadow --> 116_no_hull
+    115_the_measuring_instrument --> 116_no_hull
+    117_room_to_compute["117-room-to-compute"]:::complete
+    64_light_across_the_bed --> 117_room_to_compute
+    115_the_measuring_instrument --> 117_room_to_compute
+    116_no_hull --> 117_room_to_compute
+    118_the_sky_counts["118-the-sky-counts"]:::complete
+    117_room_to_compute --> 118_the_sky_counts
+    64_light_across_the_bed --> 118_the_sky_counts
+    106_which_source_said_so --> 118_the_sky_counts
+    119_energy_not_hours["119-energy-not-hours"]:::complete
+    118_the_sky_counts --> 119_energy_not_hours
+    117_room_to_compute --> 119_energy_not_hours
+    72_the_hill_that_eats_the_morning --> 119_energy_not_hours
+    120_a_roof_casts_as_a_roof["120-a-roof-casts-as-a-roof"]:::complete
+    116_no_hull --> 120_a_roof_casts_as_a_roof
+    117_room_to_compute --> 120_a_roof_casts_as_a_roof
+    94_which_way_the_ridge_runs --> 120_a_roof_casts_as_a_roof
+    121_a_crown_is_not_a_cylinder["121-a-crown-is-not-a-cylinder"]:::complete
+    117_room_to_compute --> 121_a_crown_is_not_a_cylinder
+    118_the_sky_counts --> 121_a_crown_is_not_a_cylinder
+    120_a_roof_casts_as_a_roof --> 121_a_crown_is_not_a_cylinder
+    107_the_cloud_under_the_crown --> 121_a_crown_is_not_a_cylinder
+    122_mark_the_shadow_edge["122-mark-the-shadow-edge"]:::complete
+    115_the_measuring_instrument --> 122_mark_the_shadow_edge
+    116_no_hull --> 122_mark_the_shadow_edge
+    118_the_sky_counts --> 122_mark_the_shadow_edge
+    120_a_roof_casts_as_a_roof --> 122_mark_the_shadow_edge
+    121_a_crown_is_not_a_cylinder --> 122_mark_the_shadow_edge
     classDef complete fill:#00e5cc,color:#000
     classDef in_progress fill:#ffaa00,color:#000
     classDef draft fill:#888,color:#fff
@@ -457,68 +503,71 @@ graph TD
 - `deploy/install-cron.sh` — 02-web-shell, 77-one-cron-two-environments
 - `frontend/package.json` — 10-web-client, 95-look-before-you-argue
 - `frontend/scripts/plan-sheet.mjs` — 95-look-before-you-argue, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn
-- `frontend/src/App.tsx` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 27-object-labelling, 29-bloom-playback, 30-landing-and-garden-id, 32-object-heights, 36-claim-gardens, 39-element-stamps, 47-panel-order, 53-account-in-header, 54-one-way-in, 57-delete-elements, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 97-draft-sketch-in-svg, 100-the-switch
-- `frontend/src/api/client.ts` — 10-web-client, 15-timeline-ui, 35-accounts, 78-you-are-looking-at-the-preview, 90-a-list-that-fits-a-window, 114-the-ground-around-the-garden
-- `frontend/src/api/types.ts` — 10-web-client, 15-timeline-ui, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
+- `frontend/src/App.tsx` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 27-object-labelling, 29-bloom-playback, 30-landing-and-garden-id, 32-object-heights, 36-claim-gardens, 39-element-stamps, 47-panel-order, 53-account-in-header, 54-one-way-in, 57-delete-elements, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 97-draft-sketch-in-svg, 100-the-switch, 101-lettered-by-hand
+- `frontend/src/api/client.ts` — 10-web-client, 15-timeline-ui, 35-accounts, 65-the-shade-switch, 78-you-are-looking-at-the-preview, 90-a-list-that-fits-a-window, 114-the-ground-around-the-garden, 122-mark-the-shadow-edge
+- `frontend/src/api/types.ts` — 10-web-client, 15-timeline-ui, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow, 121-a-crown-is-not-a-cylinder, 122-mark-the-shadow-edge
 - `frontend/src/canvas/freehand.ts` — 40-freehand-shapes, 46-freehand-paths, 50-polygon-closing, 111-a-shape-the-plan-can-draw
 - `frontend/src/canvas/geometry.ts` — 26-drawing-canvas, 40-freehand-shapes, 56-bloom-dots
 - `frontend/src/canvas/handles.ts` — 39-element-stamps, 43-shape-tools
-- `frontend/src/canvas/shapes.ts` — 43-shape-tools, 89-three-steps-in
-- `frontend/src/canvas/sketch.ts` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn
+- `frontend/src/canvas/shapes.ts` — 43-shape-tools, 89-three-steps-in, 122-mark-the-shadow-edge
+- `frontend/src/canvas/sketch.ts` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 116-no-hull
 - `frontend/src/canvas/snap.ts` — 26-drawing-canvas, 112-drawing-at-any-zoom
 - `frontend/src/canvas/useCanvasGestures.ts` — 87-a-workspace-not-a-page, 112-drawing-at-any-zoom, 113-a-plan-that-keeps-up
 - `frontend/src/canvas/useClusterDrag.ts` — 61-planting-clusters, 87-a-workspace-not-a-page, 113-a-plan-that-keeps-up
-- `frontend/src/canvas/useDrawingModes.ts` — 87-a-workspace-not-a-page, 112-drawing-at-any-zoom
+- `frontend/src/canvas/useDrawingModes.ts` — 87-a-workspace-not-a-page, 112-drawing-at-any-zoom, 122-mark-the-shadow-edge
 - `frontend/src/canvas/useElementDrag.ts` — 87-a-workspace-not-a-page, 113-a-plan-that-keeps-up
 - `frontend/src/canvas/useEscapeKey.ts` — 49-drawing-focus, 88-what-the-selection-shows
 - `frontend/src/canvas/useVertexDrag.ts` — 44-vertex-editing, 113-a-plan-that-keeps-up
 - `frontend/src/canvas/useViewport.ts` — 86-the-plan-that-stayed-a-strip, 112-drawing-at-any-zoom
 - `frontend/src/canvas/viewport.ts` — 26-drawing-canvas, 86-the-plan-that-stayed-a-strip, 96-a-theme-is-a-thing
 - `frontend/src/components/BedDetails.tsx` — 88-what-the-selection-shows, 90-a-list-that-fits-a-window
-- `frontend/src/components/BedPanel.tsx` — 11-garden-canvas, 15-timeline-ui, 39-element-stamps, 47-panel-order, 73-which-way-does-it-fall, 88-what-the-selection-shows, 92-one-panel-one-style
+- `frontend/src/components/BedPanel.tsx` — 11-garden-canvas, 15-timeline-ui, 39-element-stamps, 47-panel-order, 73-which-way-does-it-fall, 88-what-the-selection-shows, 92-one-panel-one-style, 118-the-sky-counts
 - `frontend/src/components/BedPlantings.tsx` — 61-planting-clusters, 89-three-steps-in
 - `frontend/src/components/BloomTimeline.tsx` — 15-timeline-ui, 24-month-suggestions, 89-three-steps-in, 92-one-panel-one-style
 - `frontend/src/components/CanopyBox.tsx` — 84-what-else-is-standing-there, 89-three-steps-in
 - `frontend/src/components/CanvasControls.tsx` — 26-drawing-canvas, 40-freehand-shapes, 89-three-steps-in, 112-drawing-at-any-zoom
-- `frontend/src/components/CanvasScene.tsx` — 26-drawing-canvas, 27-object-labelling, 29-bloom-playback, 34-sightlines, 41-garden-style, 49-drawing-focus, 51-element-context-menu, 56-bloom-dots, 65-the-shade-switch, 88-what-the-selection-shows, 89-three-steps-in, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 112-drawing-at-any-zoom, 113-a-plan-that-keeps-up, 114-the-ground-around-the-garden
-- `frontend/src/components/ClusterLayer.tsx` — 61-planting-clusters, 88-what-the-selection-shows
-- `frontend/src/components/ElementDetails.tsx` — 51-element-context-menu, 88-what-the-selection-shows
-- `frontend/src/components/ElementForm.tsx` — 51-element-context-menu, 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `frontend/src/components/CanvasScene.tsx` — 26-drawing-canvas, 27-object-labelling, 29-bloom-playback, 34-sightlines, 41-garden-style, 49-drawing-focus, 51-element-context-menu, 56-bloom-dots, 65-the-shade-switch, 88-what-the-selection-shows, 89-three-steps-in, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 112-drawing-at-any-zoom, 113-a-plan-that-keeps-up, 114-the-ground-around-the-garden, 122-mark-the-shadow-edge
+- `frontend/src/components/ClusterLayer.tsx` — 61-planting-clusters, 88-what-the-selection-shows, 122-mark-the-shadow-edge
+- `frontend/src/components/ElementDetails.tsx` — 51-element-context-menu, 88-what-the-selection-shows, 122-mark-the-shadow-edge
+- `frontend/src/components/ElementForm.tsx` — 51-element-context-menu, 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 121-a-crown-is-not-a-cylinder
 - `frontend/src/components/ElementList.tsx` — 52-element-list, 83-measured-surveyed-or-assumed, 89-three-steps-in
 - `frontend/src/components/FilterControls.tsx` — 23-catalogue-filters, 90-a-list-that-fits-a-window
-- `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 106-which-source-said-so, 113-a-plan-that-keeps-up, 114-the-ground-around-the-garden
+- `frontend/src/components/GardenCanvas.tsx` — 11-garden-canvas, 26-drawing-canvas, 39-element-stamps, 40-freehand-shapes, 43-shape-tools, 49-drawing-focus, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 106-which-source-said-so, 113-a-plan-that-keeps-up, 114-the-ground-around-the-garden, 122-mark-the-shadow-edge
+- `frontend/src/components/GardenCanvasProps.ts` — 87-a-workspace-not-a-page, 122-mark-the-shadow-edge
 - `frontend/src/components/GardenDetails.tsx` — 52-element-list, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/GardenId.tsx` — 30-landing-and-garden-id, 87-a-workspace-not-a-page, 89-three-steps-in
 - `frontend/src/components/GardenSymbols.tsx` — 41-garden-style, 58-painted-plan, 59-osm-streets
-- `frontend/src/components/GardenWorkspace.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in, 91-a-sheet-from-below, 92-one-panel-one-style
+- `frontend/src/components/GardenWorkspace.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in, 91-a-sheet-from-below, 92-one-panel-one-style, 98-what-the-style-has-not-drawn, 122-mark-the-shadow-edge
 - `frontend/src/components/InsectScore.tsx` — 20-score-ui, 89-three-steps-in
 - `frontend/src/components/Inspector.tsx` — 87-a-workspace-not-a-page, 91-a-sheet-from-below
 - `frontend/src/components/InspectorPanels.tsx` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
 - `frontend/src/components/Landing.tsx` — 30-landing-and-garden-id, 53-account-in-header, 54-one-way-in
 - `frontend/src/components/MapPicker.tsx` — 31-map-selection, 32-object-heights, 33-imagery-objects
 - `frontend/src/components/ObjectEditor.tsx` — 27-object-labelling, 39-element-stamps, 45-relabel-and-skin, 46-freehand-paths, 48-garden-soil
-- `frontend/src/components/PlanArea.tsx` — 65-the-shade-switch, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in
+- `frontend/src/components/PlanArea.tsx` — 65-the-shade-switch, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 122-mark-the-shadow-edge
 - `frontend/src/components/PlanCredit.tsx` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 106-which-source-said-so, 114-the-ground-around-the-garden
 - `frontend/src/components/PlanDecorations.tsx` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
 - `frontend/src/components/PlanObjects.tsx` — 96-a-theme-is-a-thing, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
 - `frontend/src/components/ReliefMap.tsx` — 74-say-how-good-it-is, 113-a-plan-that-keeps-up
 - `frontend/src/components/ResizeHandles.tsx` — 39-element-stamps, 43-shape-tools
-- `frontend/src/components/ShadeSwitch.tsx` — 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is, 87-a-workspace-not-a-page
+- `frontend/src/components/SceneWorld.tsx` — 113-a-plan-that-keeps-up, 116-no-hull, 122-mark-the-shadow-edge
+- `frontend/src/components/ShadeSwitch.tsx` — 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is, 87-a-workspace-not-a-page, 117-room-to-compute, 118-the-sky-counts
 - `frontend/src/components/SiteHeader.tsx` — 87-a-workspace-not-a-page, 91-a-sheet-from-below, 100-the-switch
+- `frontend/src/components/SourceCredits.tsx` — 106-which-source-said-so, 118-the-sky-counts
 - `frontend/src/components/SpeciesInfo.tsx` — 22-species-info, 88-what-the-selection-shows
 - `frontend/src/components/SuggestionList.tsx` — 13-bed-suggestions, 15-timeline-ui, 22-species-info, 23-catalogue-filters, 24-month-suggestions, 25-woody-and-birds, 90-a-list-that-fits-a-window
 - `frontend/src/components/SuggestionRow.tsx` — 13-bed-suggestions, 90-a-list-that-fits-a-window
-- `frontend/src/components/SunMap.tsx` — 65-the-shade-switch, 113-a-plan-that-keeps-up
-- `frontend/src/components/ToolRail.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in
-- `frontend/src/garden/selection.ts` — 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `frontend/src/components/SunMap.tsx` — 65-the-shade-switch, 113-a-plan-that-keeps-up, 118-the-sky-counts
+- `frontend/src/components/ToolRail.tsx` — 87-a-workspace-not-a-page, 89-three-steps-in, 122-mark-the-shadow-edge
+- `frontend/src/garden/selection.ts` — 88-what-the-selection-shows, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 121-a-crown-is-not-a-cylinder
 - `frontend/src/garden/useClipboard.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows
 - `frontend/src/garden/useDerived.ts` — 87-a-workspace-not-a-page, 114-the-ground-around-the-garden
 - `frontend/src/garden/useElements.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 111-a-shape-the-plan-can-draw
-- `frontend/src/garden/useGarden.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 114-the-ground-around-the-garden
+- `frontend/src/garden/useGarden.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 114-the-ground-around-the-garden, 122-mark-the-shadow-edge
 - `frontend/src/garden/useLight.ts` — 65-the-shade-switch, 87-a-workspace-not-a-page
 - `frontend/src/garden/useSelection.ts` — 51-element-context-menu, 52-element-list, 88-what-the-selection-shows
 - `frontend/src/garden/useSuggestions.ts` — 87-a-workspace-not-a-page, 88-what-the-selection-shows
-- `frontend/src/heights.ts` — 83-measured-surveyed-or-assumed, 93-where-the-roof-came-from
+- `frontend/src/heights.ts` — 83-measured-surveyed-or-assumed, 93-where-the-roof-came-from, 121-a-crown-is-not-a-cylinder
 - `frontend/src/kinds.ts` — 39-element-stamps, 41-garden-style, 45-relabel-and-skin, 59-osm-streets, 87-a-workspace-not-a-page, 98-what-the-style-has-not-drawn
 - `frontend/src/map/tiles.ts` — 31-map-selection, 33-imagery-objects
 - `frontend/src/map/useMapSurface.ts` — 31-map-selection, 112-drawing-at-any-zoom
@@ -528,10 +577,11 @@ graph TD
 - `frontend/src/sheet/build.ts` — 95-look-before-you-argue, 98-what-the-style-has-not-drawn
 - `frontend/src/sheet/gardens.ts` — 95-look-before-you-argue, 98-what-the-style-has-not-drawn
 - `frontend/src/sheet/main.tsx` — 95-look-before-you-argue, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn
-- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 100-the-switch, 112-drawing-at-any-zoom, 113-a-plan-that-keeps-up, 114-the-ground-around-the-garden
+- `frontend/src/styles.css` — 11-garden-canvas, 15-timeline-ui, 20-score-ui, 41-garden-style, 55-living-background, 74-say-how-good-it-is, 78-you-are-looking-at-the-preview, 86-the-plan-that-stayed-a-strip, 87-a-workspace-not-a-page, 88-what-the-selection-shows, 89-three-steps-in, 90-a-list-that-fits-a-window, 91-a-sheet-from-below, 92-one-panel-one-style, 96-a-theme-is-a-thing, 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 100-the-switch, 112-drawing-at-any-zoom, 113-a-plan-that-keeps-up, 114-the-ground-around-the-garden, 116-no-hull, 122-mark-the-shadow-edge
+- `frontend/src/testing/elementForm.tsx` — 94-which-way-the-ridge-runs, 121-a-crown-is-not-a-cylinder
 - `frontend/src/testing/gardens.ts` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
 - `frontend/src/themes/draft-sketch/Defs.tsx` — 97-draft-sketch-in-svg, 99-paper-bleed-and-a-real-shadow
-- `frontend/src/themes/draft-sketch/draw.tsx` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
+- `frontend/src/themes/draft-sketch/draw.tsx` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow, 116-no-hull
 - `frontend/src/themes/draft-sketch/generated/rules.ts` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn
 - `frontend/src/themes/draft-sketch/generated/symbols.ts` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
 - `frontend/src/themes/draft-sketch/index.ts` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
@@ -546,18 +596,22 @@ graph TD
 - `frontend/src/themes/usePageTheme.ts` — 97-draft-sketch-in-svg, 100-the-switch
 - `frontend/src/usePinch.ts` — 31-map-selection, 91-a-sheet-from-below, 113-a-plan-that-keeps-up
 - `frontend/src/workspace/shortcuts.ts` — 92-one-panel-one-style, 112-drawing-at-any-zoom
-- `frontend/vite.config.ts` — 11-garden-canvas, 97-draft-sketch-in-svg
+- `frontend/vite.config.ts` — 11-garden-canvas, 97-draft-sketch-in-svg, 100-the-switch
 - `ninanatur/api/accounts.py` — 35-accounts, 36-claim-gardens, 85-nothing-worse-than-it-looks
 - `ninanatur/api/bloom_year.py` — 18-insect-score, 19-swap-suggestions, 20-score-ui, 29-bloom-playback
 - `ninanatur/api/candidates.py` — 23-catalogue-filters, 62-manual-colours
-- `ninanatur/api/elements.py` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/api/canopies.py` — 84-what-else-is-standing-there, 121-a-crown-is-not-a-cylinder
+- `ninanatur/api/elements.py` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 121-a-crown-is-not-a-cylinder
 - `ninanatur/api/filters.py` — 13-bed-suggestions, 23-catalogue-filters, 25-woody-and-birds
-- `ninanatur/api/gardens.py` — 09-garden-api, 12-planting-model, 14-bloom-timeline, 16-nativeness, 27-object-labelling, 36-claim-gardens, 48-garden-soil, 57-delete-elements, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
+- `ninanatur/api/gardens.py` — 09-garden-api, 12-planting-model, 14-bloom-timeline, 16-nativeness, 27-object-labelling, 36-claim-gardens, 48-garden-soil, 57-delete-elements, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder
 - `ninanatur/api/geo.py` — 31-map-selection, 33-imagery-objects, 59-osm-streets, 63-neighbours-from-the-plot, 93-where-the-roof-came-from, 111-a-shape-the-plan-can-draw, 114-the-ground-around-the-garden
-- `ninanatur/api/light.py` — 64-light-across-the-bed, 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is, 106-which-source-said-so, 114-the-ground-around-the-garden
+- `ninanatur/api/light.py` — 64-light-across-the-bed, 65-the-shade-switch, 67-sun-plant-in-a-shade-spot, 74-say-how-good-it-is, 106-which-source-said-so, 114-the-ground-around-the-garden, 116-no-hull, 117-room-to-compute, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder
 - `ninanatur/api/planning.py` — 28-existing-plantings, 61-planting-clusters
 - `ninanatur/api/plants.py` — 06-plants-api, 21-german-names, 22-species-info, 30-landing-and-garden-id
-- `ninanatur/api/schemas.py` — 06-plants-api, 09-garden-api, 12-planting-model, 14-bloom-timeline, 18-insect-score, 19-swap-suggestions, 20-score-ui, 22-species-info, 23-catalogue-filters, 27-object-labelling, 28-existing-plantings, 29-bloom-playback, 32-object-heights, 37-object-footprints, 44-vertex-editing, 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
+- `ninanatur/api/ratelimit.py` — 65-the-shade-switch, 114-the-ground-around-the-garden, 116-no-hull, 122-mark-the-shadow-edge
+- `ninanatur/api/schemas.py` — 06-plants-api, 09-garden-api, 12-planting-model, 14-bloom-timeline, 18-insect-score, 19-swap-suggestions, 20-score-ui, 22-species-info, 23-catalogue-filters, 27-object-labelling, 28-existing-plantings, 29-bloom-playback, 32-object-heights, 37-object-footprints, 44-vertex-editing, 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow, 118-the-sky-counts, 119-energy-not-hours, 121-a-crown-is-not-a-cylinder
+- `ninanatur/api/schemas_garden_in.py` — 93-where-the-roof-came-from, 121-a-crown-is-not-a-cylinder
+- `ninanatur/api/schemas_light.py` — 65-the-shade-switch, 116-no-hull, 117-room-to-compute, 118-the-sky-counts
 - `ninanatur/api/schemas_plants.py` — 13-bed-suggestions, 93-where-the-roof-came-from
 - `ninanatur/api/search.py` — 06-plants-api, 13-bed-suggestions, 16-nativeness, 23-catalogue-filters
 - `ninanatur/api/sightlines.py` — 34-sightlines, 38-polygon-shadows
@@ -571,23 +625,34 @@ graph TD
 - `ninanatur/data/traits.py` — 04-trait-resolve, 62-manual-colours
 - `ninanatur/feedback/issues.py` — 60-feedback-box, 79-feedback-knows-where-it-came-from
 - `ninanatur/fit/light_fit.py` — 13-bed-suggestions, 67-sun-plant-in-a-shade-spot
-- `ninanatur/garden/building_sync.py` — 83-measured-surveyed-or-assumed, 84-what-else-is-standing-there, 105-every-roof-in-the-country, 108-the-trees-in-the-other-states
-- `ninanatur/garden/credits.py` — 106-which-source-said-so, 114-the-ground-around-the-garden
-- `ninanatur/garden/element_edits.py` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 111-a-shape-the-plan-can-draw
-- `ninanatur/garden/elements.py` — 42-element-model, 57-delete-elements, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/garden/building_sync.py` — 83-measured-surveyed-or-assumed, 84-what-else-is-standing-there, 105-every-roof-in-the-country, 108-the-trees-in-the-other-states, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/canopy.py` — 25-woody-and-birds, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/casting.py` — 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/cloud_sync.py` — 107-the-cloud-under-the-crown, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/credits.py` — 106-which-source-said-so, 114-the-ground-around-the-garden, 118-the-sky-counts
+- `ninanatur/garden/element_edits.py` — 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 111-a-shape-the-plan-can-draw, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/elements.py` — 42-element-model, 57-delete-elements, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder
 - `ninanatur/garden/footprint.py` — 37-object-footprints, 42-element-model, 111-a-shape-the-plan-can-draw
-- `ninanatur/garden/lightcells.py` — 64-light-across-the-bed, 94-which-way-the-ridge-runs
-- `ninanatur/garden/lightgrid.py` — 64-light-across-the-bed, 67-sun-plant-in-a-shade-spot, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 94-which-way-the-ridge-runs, 106-which-source-said-so
-- `ninanatur/garden/lighting.py` — 64-light-across-the-bed, 66-a-tree-is-not-a-wall, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 73-which-way-does-it-fall
+- `ninanatur/garden/ground.py` — 71-buildings-stand-on-the-ground, 120-a-roof-casts-as-a-roof
+- `ninanatur/garden/lightcells.py` — 64-light-across-the-bed, 94-which-way-the-ridge-runs, 117-room-to-compute, 119-energy-not-hours
+- `ninanatur/garden/lightgrid.py` — 64-light-across-the-bed, 67-sun-plant-in-a-shade-spot, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 94-which-way-the-ridge-runs, 106-which-source-said-so, 117-room-to-compute, 118-the-sky-counts, 119-energy-not-hours, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/lightgrid_cost.py` — 117-room-to-compute, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/garden/lightgrid_extent.py` — 64-light-across-the-bed, 117-room-to-compute, 118-the-sky-counts, 119-energy-not-hours, 120-a-roof-casts-as-a-roof
+- `ninanatur/garden/lightgrid_store.py` — 64-light-across-the-bed, 117-room-to-compute, 118-the-sky-counts
+- `ninanatur/garden/lighting.py` — 64-light-across-the-bed, 66-a-tree-is-not-a-wall, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 73-which-way-does-it-fall, 118-the-sky-counts, 119-energy-not-hours
+- `ninanatur/garden/lightview.py` — 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
 - `ninanatur/garden/measured.py` — 83-measured-surveyed-or-assumed, 85-nothing-worse-than-it-looks, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
-- `ninanatur/garden/models.py` — 08-garden-model, 12-planting-model, 28-existing-plantings, 37-object-footprints, 42-element-model, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/garden/misplaced.py` — 67-sun-plant-in-a-shade-spot, 118-the-sky-counts
+- `ninanatur/garden/models.py` — 08-garden-model, 12-planting-model, 28-existing-plantings, 37-object-footprints, 42-element-model, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder
 - `ninanatur/garden/objects.py` — 27-object-labelling, 37-object-footprints, 59-osm-streets
 - `ninanatur/garden/plantings.py` — 45-relabel-and-skin, 61-planting-clusters
-- `ninanatur/garden/roofs.py` — 64-light-across-the-bed, 82-the-roof-it-actually-has
-- `ninanatur/garden/roofshape.py` — 64-light-across-the-bed, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn
+- `ninanatur/garden/roofs.py` — 64-light-across-the-bed, 82-the-roof-it-actually-has, 120-a-roof-casts-as-a-roof
+- `ninanatur/garden/roofshape.py` — 64-light-across-the-bed, 94-which-way-the-ridge-runs, 98-what-the-style-has-not-drawn, 120-a-roof-casts-as-a-roof
 - `ninanatur/garden/sightlines.py` — 34-sightlines, 38-polygon-shadows
-- `ninanatur/garden/slopes.py` — 72-the-hill-that-eats-the-morning, 73-which-way-does-it-fall
+- `ninanatur/garden/slopes.py` — 72-the-hill-that-eats-the-morning, 73-which-way-does-it-fall, 117-room-to-compute
 - `ninanatur/garden/store.py` — 08-garden-model, 12-planting-model, 25-woody-and-birds, 27-object-labelling, 28-existing-plantings, 37-object-footprints, 38-polygon-shadows, 44-vertex-editing, 45-relabel-and-skin, 48-garden-soil, 93-where-the-roof-came-from, 111-a-shape-the-plan-can-draw
+- `ninanatur/geo/cloud_store.py` — 107-the-cloud-under-the-crown, 121-a-crown-is-not-a-cylinder
+- `ninanatur/geo/horizon.py` — 70-the-horizon-ring, 117-room-to-compute
 - `ninanatur/geo/landcover_store.py` — 106-which-source-said-so, 114-the-ground-around-the-garden
 - `ninanatur/geo/lod2.py` — 82-the-roof-it-actually-has, 85-nothing-worse-than-it-looks, 94-which-way-the-ridge-runs, 105-every-roof-in-the-country
 - `ninanatur/geo/osm.py` — 31-map-selection, 59-osm-streets, 63-neighbours-from-the-plot
@@ -600,19 +665,31 @@ graph TD
 - `ninanatur/geo/tiles.py` — 103-a-tile-not-a-service, 108-the-trees-in-the-other-states, 110-a-package-of-its-own
 - `ninanatur/ingest/db.py` — 01-trait-ingest, 08-garden-model, 12-planting-model, 17-insect-groups, 21-german-names, 22-species-info, 25-woody-and-birds, 27-object-labelling, 28-existing-plantings, 34-sightlines, 35-accounts, 37-object-footprints, 42-element-model, 93-where-the-roof-came-from, 111-a-shape-the-plan-can-draw
 - `ninanatur/ingest/http.py` — 01-trait-ingest, 69-a-window-of-ground, 85-nothing-worse-than-it-looks, 109-is-it-still-there
-- `ninanatur/ingest/migrations.py` — 48-garden-soil, 62-manual-colours, 73-which-way-does-it-fall, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/ingest/light_scale.py` — 07-solar-geometry, 118-the-sky-counts
+- `ninanatur/ingest/migrations.py` — 48-garden-soil, 62-manual-colours, 73-which-way-does-it-fall, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 117-room-to-compute, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder
 - `ninanatur/ingest/schema.py` — 48-garden-soil, 93-where-the-roof-came-from
-- `ninanatur/ingest/schema_computed.py` — 93-where-the-roof-came-from, 107-the-cloud-under-the-crown, 114-the-ground-around-the-garden
-- `ninanatur/ingest/schema_user.py` — 60-feedback-box, 69-a-window-of-ground, 70-the-horizon-ring, 73-which-way-does-it-fall, 83-measured-surveyed-or-assumed, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs
+- `ninanatur/ingest/schema_computed.py` — 93-where-the-roof-came-from, 107-the-cloud-under-the-crown, 114-the-ground-around-the-garden, 117-room-to-compute, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder
+- `ninanatur/ingest/schema_user.py` — 60-feedback-box, 69-a-window-of-ground, 70-the-horizon-ring, 73-which-way-does-it-fall, 83-measured-surveyed-or-assumed, 93-where-the-roof-came-from, 94-which-way-the-ridge-runs, 118-the-sky-counts, 121-a-crown-is-not-a-cylinder, 122-mark-the-shadow-edge
 - `ninanatur/ingest/sources/eive.py` — 01-trait-ingest, 03-niche-fit
 - `ninanatur/ingest/sources/gbif.py` — 01-trait-ingest, 05-insect-checklist-de, 25-woody-and-birds
 - `ninanatur/ingest/sources/gift.py` — 01-trait-ingest, 66-a-tree-is-not-a-wall
-- `ninanatur/solar/field.py` — 64-light-across-the-bed, 66-a-tree-is-not-a-wall, 67-sun-plant-in-a-shade-spot, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning
-- `ninanatur/solar/light.py` — 07-solar-geometry, 27-object-labelling
-- `ninanatur/solar/reach.py` — 38-polygon-shadows, 72-the-hill-that-eats-the-morning
-- `ninanatur/solar/shading.py` — 07-solar-geometry, 25-woody-and-birds, 27-object-labelling, 38-polygon-shadows, 66-a-tree-is-not-a-wall, 71-buildings-stand-on-the-ground
-- `ninanatur/web/app.py` — 02-web-shell, 06-plants-api, 09-garden-api, 11-garden-canvas, 78-you-are-looking-at-the-preview, 85-nothing-worse-than-it-looks
+- `ninanatur/solar/convex_parts.py` — 117-room-to-compute, 120-a-roof-casts-as-a-roof
+- `ninanatur/solar/day.py` — 65-the-shade-switch, 116-no-hull, 117-room-to-compute, 120-a-roof-casts-as-a-roof
+- `ninanatur/solar/drawing.py` — 99-paper-bleed-and-a-real-shadow, 116-no-hull
+- `ninanatur/solar/field.py` — 64-light-across-the-bed, 66-a-tree-is-not-a-wall, 67-sun-plant-in-a-shade-spot, 71-buildings-stand-on-the-ground, 72-the-hill-that-eats-the-morning, 116-no-hull, 117-room-to-compute, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/solar/light.py` — 07-solar-geometry, 27-object-labelling, 117-room-to-compute, 118-the-sky-counts, 119-energy-not-hours, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/solar/raster.py` — 117-room-to-compute, 118-the-sky-counts, 119-energy-not-hours, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/solar/raster_grid.py` — 117-room-to-compute, 118-the-sky-counts, 119-energy-not-hours, 121-a-crown-is-not-a-cylinder
+- `ninanatur/solar/reach.py` — 38-polygon-shadows, 72-the-hill-that-eats-the-morning, 116-no-hull
+- `ninanatur/solar/relative.py` — 118-the-sky-counts, 119-energy-not-hours
+- `ninanatur/solar/shading.py` — 07-solar-geometry, 25-woody-and-birds, 27-object-labelling, 38-polygon-shadows, 66-a-tree-is-not-a-wall, 71-buildings-stand-on-the-ground, 116-no-hull, 117-room-to-compute, 120-a-roof-casts-as-a-roof, 121-a-crown-is-not-a-cylinder
+- `ninanatur/solar/sweep.py` — 116-no-hull, 117-room-to-compute, 120-a-roof-casts-as-a-roof
+- `ninanatur/web/app.py` — 02-web-shell, 06-plants-api, 09-garden-api, 11-garden-canvas, 78-you-are-looking-at-the-preview, 85-nothing-worse-than-it-looks, 122-mark-the-shadow-edge
 - `ninanatur/web/delivery.py` — 85-nothing-worse-than-it-looks, 97-draft-sketch-in-svg
+- `pyproject.toml` — 107-the-cloud-under-the-crown, 116-no-hull, 118-the-sky-counts
+- `requirements-dev.txt` — 85-nothing-worse-than-it-looks, 116-no-hull
+- `requirements.txt` — 85-nothing-worse-than-it-looks, 116-no-hull
+- `scripts/compile_dev_lock.py` — 85-nothing-worse-than-it-looks, 116-no-hull
 - `scripts/draft_sketch/cim.py` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn
 - `scripts/draft_sketch/emit.py` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow
 - `scripts/draft_sketch/outline.py` — 97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn
