@@ -54,7 +54,7 @@ export function GardenCanvas({
   onMoveCluster,
   onShowClusterInfo,
   sunMap,
-  terrain, landcover,
+  terrain, landcover, styleCredit = true,
   shadows,
   viewpoint = null, shadowMarks,
   onPlaceViewpoint,
@@ -292,7 +292,8 @@ export function GardenCanvas({
                      updatedAt={garden.updated_at} />
       {hint !== undefined && <PlanHint text={hint} />}
       </div>
-      <PlanCredit garden={garden} landcover={(landcover?.areas.length ?? 0) > 0} />
+      <PlanCredit garden={garden} landcover={(landcover?.areas.length ?? 0) > 0}
+                  style={styleCredit} />
     </div>
   );
 }
