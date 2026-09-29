@@ -14,7 +14,7 @@ import { GardenId } from './GardenId';
 import { Inspector } from './Inspector';
 import { InspectorPanels } from './InspectorPanels';
 import { PlanArea } from './PlanArea';
-import { StyleCredit } from './PlanCredit';
+import { PlanCredit } from './PlanCredit';
 import { ShortcutHelp } from './ShortcutHelp';
 import { SiteHeader, type SiteProps } from './SiteHeader';
 import { Skeleton } from './Skeleton';
@@ -164,13 +164,16 @@ export function GardenWorkspace({ client, garden, setGarden, status, header, acc
           busy={status.busy}
           orientation={columns ? 'vertical' : 'horizontal'}
         />
-        <PlanArea garden={garden} controller={controller} styleCredit={columns} />
+        <PlanArea garden={garden} controller={controller} creditsBelow={columns} />
         <Inspector wide={wide} onWide={setWide} sheet={columns ? undefined : { snap, onSnap: setSnap, onDrag }}>
           <InspectorPanels garden={garden} controller={controller} busy={status.busy} />
-          {/* On a phone his credit closes the details, still beneath the plan:
-              three lines of it under the drawing took the room the plan has
-              least of (the owner, 2026-09-29). */}
-          {columns ? null : <StyleCredit />}
+          {/* On a phone the credits close the details, still beneath the plan:
+              three lines of his under the drawing took the room the plan has
+              least of, and the map's corner mark stays in sight (the owner,
+              2026-09-29). */}
+          {columns ? null : (
+            <PlanCredit garden={garden} landcover={(derived.landcover?.areas.length ?? 0) > 0} />
+          )}
         </Inspector>
       </main>
 

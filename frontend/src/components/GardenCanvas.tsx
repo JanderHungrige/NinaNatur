@@ -18,7 +18,7 @@ import { usePinch } from '../usePinch';
 import { CanvasControls } from './CanvasControls';
 import { CanvasOverlays } from './CanvasOverlays';
 import { CanvasScene } from './CanvasScene';
-import { PlanCredit } from './PlanCredit';
+import { MapCorner, PlanCredit } from './PlanCredit';
 import { PlanFurniture } from './PlanFurniture';
 import { PlanHint } from './PlanHint';
 import { SunReadout, type SunReadoutHandle } from './SunReadout';
@@ -54,7 +54,7 @@ export function GardenCanvas({
   onMoveCluster,
   onShowClusterInfo,
   sunMap,
-  terrain, landcover, styleCredit = true,
+  terrain, landcover, creditsBelow = true,
   shadows,
   viewpoint = null, shadowMarks,
   onPlaceViewpoint,
@@ -75,6 +75,7 @@ export function GardenCanvas({
   const touchPinch = useRef(false);
   const { view, setView, surface, stage, zoom, moving } = useViewport(size, touchPinch);
   const readout = useRef<SunReadoutHandle>(null);
+  const drawsLand = (landcover?.areas.length ?? 0) > 0;
   // The same functions from render to render, or the memoised scene redraws.
   const handlers = useStableHandlers({
     onSelectBed, onSelectObstacle, onSelectCluster, onShowClusterInfo, onAskWhatItIs,
@@ -291,9 +292,9 @@ export function GardenCanvas({
       <PlanFurniture metresPerPixel={view.spanM / view.widthPx} title={garden.name}
                      updatedAt={garden.updated_at} />
       {hint !== undefined && <PlanHint text={hint} />}
+      {!creditsBelow && <MapCorner garden={garden} landcover={drawsLand} />}
       </div>
-      <PlanCredit garden={garden} landcover={(landcover?.areas.length ?? 0) > 0}
-                  style={styleCredit} />
+      {creditsBelow && <PlanCredit garden={garden} landcover={drawsLand} />}
     </div>
   );
 }

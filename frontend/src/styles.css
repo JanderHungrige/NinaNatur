@@ -1042,6 +1042,22 @@ button[disabled] { opacity: 0.55; cursor: default; }
 /* A credit that links to its terms keeps the caption's ink, underlined. */
 .plan-credit a { color: inherit; }
 
+/* OpenStreetMap's credit in the drawing's corner, on a phone, where the
+   captions close the details (doc 98): its guidelines ask for it where the
+   map is seen, not at the end of a scroll. Bottom right, as they call
+   traditional; a theme's legend stands bottom left. */
+.plan-map-corner {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.4rem;
+  z-index: 2;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
 /* What the sun map says under the pointer. Offset up and right of the cursor so
    it never sits under the thing being pointed at, and `pointer-events: none` so
    it can never intercept the click that follows the look. */
