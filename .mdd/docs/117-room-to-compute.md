@@ -4,7 +4,7 @@ title: Room to Compute — the Raster, Finer Sampling, and a Model with a Versio
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [64-light-across-the-bed, 115-the-measuring-instrument, 116-no-hull]
 relates: [07-solar-geometry, 38-polygon-shadows, 65-the-shade-switch]
 source_files:

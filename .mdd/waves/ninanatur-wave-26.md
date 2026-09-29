@@ -3,11 +3,11 @@ id: ninanatur-wave-26
 title: "Wave 26: Light, not hours"
 initiative: ninanatur
 initiative_version: 23
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-25
-demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und unter einer dichten Krone sagt die Stufe, was Ellenberg dort misst. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
+demo_state: "Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und in einer dichten Baumgruppe sinkt die Stufe mit dem Himmel, den das Beet noch sieht. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell danebenliegt."
 created: 2026-09-07
-hash: 699125da
+hash: 1f2bf9e4
 ---
 
 # Wave 26: Light, not hours
@@ -17,13 +17,23 @@ hash: 699125da
 Ein Beet im Winkel eines L-Hauses bekommt seine vier Stunden Sonne statt
 keiner. Ein Nordbeet zeigt seine Sonnenstunden, daneben den Anteil des
 Himmels, den es sieht, und seinen Anteil am Licht des offenen Felds — und
-unter einer dichten Krone sagt die Stufe, was Ellenberg dort misst. Und wer
-die Schattenkante seines Hauses im Plan markiert, sieht, wie weit das Modell
-danebenliegt.
+in einer dichten Baumgruppe sinkt die Stufe mit dem Himmel, den das Beet noch
+sieht. Und wer die Schattenkante seines Hauses im Plan markiert, sieht, wie
+weit das Modell danebenliegt.
 
 (The second sentence was rewritten at the owner's word on 2026-09-28: it said
 the level follows Ellenberg's relative illuminance, which the owner's
 decision of 2026-09-22 replaced — the hours lead, capped by the sky in leaf.)
+
+(Its close was rewritten at the owner's word on 2026-09-29, option A: it said
+that under a dense crown the level says what Ellenberg measures there. With
+crowns as the owner kept them on 2026-09-28 (doc 121), the production model
+leaves a bed under a single tree at L 9 — 20 m high, 14 m across, its crown
+base typed at 2 m, sky 0.63 — and a grove lowers the level with the sky the
+bed sees: trees 15 m high, crowns 10 m across from 2 m, a bed under one reads
+L 9 (sky 0.69), among four 8.88 (0.41), among eight 7.7 (0.32). The woodland
+floor under a dense crown waits for crowns tuned against shadow marks under
+real trees (doc 122).)
 
 *(This wave is not complete until this can be manually demonstrated.)*
 
@@ -235,6 +245,16 @@ with a new date. The page says which model version computed a map.
   relative light, expected sun and crown base; a laser window's anchor — with
   no one-time migration. A stored map predates the model's version (26.6),
   so each garden's map is computed again when it is next asked for.
+
+- **2026-09-29 — complete**, at the owner's word "A, confirmed". Checked
+  against the production model before closing: the L-house's corner gets
+  3.98 h where the hull left 0.00 (doc 116); a bed's panel says what share of
+  the sky it sees and of the open field's light (docs 118, 119); a shadow
+  mark reads how far the model's edge lies from the hand's (doc 122). The
+  demo-state's dense-crown clause could not be shown with crowns as they were
+  kept — a bed under one tree stays at L 9 — so its close was rewritten to
+  what the model shows (above). All eight features are built and in
+  production since V0.25.232. The header reads V0.26.x from the next build.
 
 ## What each one is
 

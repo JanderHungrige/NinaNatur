@@ -4,7 +4,7 @@ title: A Crown Is Not a Cylinder — an Ellipsoid on a Trunk, Passing Light by I
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [117-room-to-compute, 118-the-sky-counts, 120-a-roof-casts-as-a-roof, 107-the-cloud-under-the-crown]
 relates: [66-a-tree-is-not-a-wall, 84-what-else-is-standing-there, 116-no-hull, 119-energy-not-hours]
 source_files:

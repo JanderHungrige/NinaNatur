@@ -4,7 +4,7 @@ title: A Roof Casts as a Roof — the Shadow of the Planes the Model Already Dra
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [116-no-hull, 117-room-to-compute, 94-which-way-the-ridge-runs]
 relates: [93-where-the-roof-came-from, 98-what-the-style-has-not-drawn, 99-paper-bleed-and-a-real-shadow, 119-energy-not-hours]
 source_files:

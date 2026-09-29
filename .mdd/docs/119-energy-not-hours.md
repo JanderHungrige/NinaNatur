@@ -4,7 +4,7 @@ title: Energy, Not Hours — the Sun's Share Weighted by What It Brings
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [118-the-sky-counts, 117-room-to-compute, 72-the-hill-that-eats-the-morning]
 relates: [71-buildings-stand-on-the-ground, 70-the-horizon-ring, 07-solar-geometry]
 source_files:

@@ -4,7 +4,7 @@ title: The Sky Counts — Sky View, Relative Illuminance and the Sunshine to Exp
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [117-room-to-compute, 64-light-across-the-bed, 106-which-source-said-so]
 relates: [07-solar-geometry, 38-polygon-shadows, 65-the-shade-switch, 70-the-horizon-ring]
 source_files:

@@ -4,7 +4,7 @@ title: No Hull — the Shadow Drawn Is the Shadow Counted
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-26
-wave_status: active
+wave_status: complete
 depends_on: [38-polygon-shadows, 65-the-shade-switch, 99-paper-bleed-and-a-real-shadow, 115-the-measuring-instrument]
 relates: [64-light-across-the-bed]
 source_files:
