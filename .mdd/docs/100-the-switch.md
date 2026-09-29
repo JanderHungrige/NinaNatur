@@ -4,7 +4,7 @@ title: The Switch Between Plan Styles
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-24
-wave_status: active
+wave_status: complete
 depends_on: [96-a-theme-is-a-thing, 97-draft-sketch-in-svg]
 relates: [99-paper-bleed-and-a-real-shadow, 91-a-sheet-from-below]
 source_files:
