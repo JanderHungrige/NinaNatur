@@ -4,7 +4,7 @@ title: Lettered by Hand
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-24
-wave_status: active
+wave_status: complete
 depends_on: [97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn]
 relates: [100-the-switch, 99-paper-bleed-and-a-real-shadow]
 source_files:

@@ -4,7 +4,7 @@ title: Paper, Bleed and a Real Shadow
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-24
-wave_status: active
+wave_status: complete
 depends_on: [97-draft-sketch-in-svg, 98-what-the-style-has-not-drawn]
 relates: [96-a-theme-is-a-thing, 07-solar-geometry, 38-polygon-shadows, 120-a-roof-casts-as-a-roof]
 source_files:

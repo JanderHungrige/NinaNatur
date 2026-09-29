@@ -4,7 +4,7 @@ title: Draft Sketch in SVG
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-24
-wave_status: active
+wave_status: complete
 depends_on: [96-a-theme-is-a-thing, 95-look-before-you-argue]
 relates: [96-a-theme-is-a-thing, 95-look-before-you-argue]
 source_files:

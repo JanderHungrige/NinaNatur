@@ -3,11 +3,11 @@ id: ninanatur-wave-24
 title: "Wave 24: A drawing of a garden"
 initiative: ninanatur
 initiative_version: 23
-status: in_progress
+status: complete
 depends_on: ninanatur-wave-23
-demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen."
+demo_state: "Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert, was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub- und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, ein Nordpfeil und ein Titelblock. Ein Schalter stellt den technischen Plan zurück. Beurteilt wurde am Kontaktbogen."
 created: 2026-09-07
-hash: d77a86f7
+hash: 01b57b15
 ---
 
 # Wave 24: A drawing of a garden
@@ -17,9 +17,14 @@ hash: d77a86f7
 Der Plan ist in Warren Davisons Draft-Sketch-Handschrift gezeichnet — mit
 seiner schriftlichen Erlaubnis, aus seinem Stil geholt und um das erweitert,
 was ein Garten braucht und eine Stadtkarte nicht: Blüten in ihrer Farbe, Laub-
-und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, eine
-Kompassrose und ein Titelblock. Ein Schalter stellt den technischen Plan
-zurück. Beurteilt wurde am Kontaktbogen, und Davison hat es gesehen.
+und Nadelbäume, Sträucher, Hecken, Dächer nach ihrer Form, Hochbeete, ein
+Nordpfeil und ein Titelblock. Ein Schalter stellt den technischen Plan zurück.
+Beurteilt wurde am Kontaktbogen.
+
+(Rewritten at the owner's word on 2026-09-29, closing the wave: it ended "und
+Davison hat es gesehen", and he has not seen it yet — showing him the result
+stays open as a courtesy, the owner's to do. And it said "eine Kompassrose",
+where doc 98 drew a north arrow and a scale.)
 
 *(This wave is not complete until this can be manually demonstrated.)*
 
@@ -88,9 +93,9 @@ Browser pane returns blanks for this SVG; a raster harness is the instrument.
 | 1 | look-before-you-argue | docs/95-look-before-you-argue.md | complete | — |
 | 2 | draft-sketch-in-svg | docs/97-draft-sketch-in-svg.md | complete | 1 |
 | 3 | what-the-style-has-not-drawn | docs/98-what-the-style-has-not-drawn.md | complete | 2 |
-| 4 | paper-bleed-and-a-real-shadow | — | planned | 3 |
-| 5 | lettered-by-hand | — | planned | 2 |
-| 6 | the-switch-and-the-courtesy | — | planned | 0 |
+| 4 | paper-bleed-and-a-real-shadow | docs/99-paper-bleed-and-a-real-shadow.md | complete | 3 |
+| 5 | lettered-by-hand | docs/101-lettered-by-hand.md | complete | 2 |
+| 6 | the-switch-and-the-courtesy | docs/100-the-switch.md | complete, the courtesy open | 0 |
 
 Three stages, with a **review by the owner after stage 2 and after stage 3**,
 and a courtesy round with Davison before stage 3 ships:
@@ -283,6 +288,20 @@ from the `.stylx` alone — his source assets are not asked for.*
   bands, a disc winding the other way cancels against its band and opens a hole
   that lets the ink through inside the road, which is what the first attempt
   drew. Paint 70 ms, Technisch 21 in the same run.
+
+- **2026-09-29 — complete**, at the owner's word "Close wave 24" and "Not
+  yet, close anyway". All seven features are built and in production since
+  V0.25.232, with what Wave 26 added to them at the owner's requests: his
+  style the default since 2026-09-28, the page's buttons in his hand, a legend
+  that can be closed and is only its scale bar on a phone (docs 97, 100, 101),
+  the drawing's 40 % kept under his credit, and on a phone the credits at the
+  foot of the details (doc 98). The demo-state was checked against what is
+  built before closing — blooms as his watercolour dabs, conifers, shrubs,
+  hedges, roofs by their kind, raised beds, the title block, the switch back
+  to Technisch, the contact sheet — and rewritten where it said more than
+  there is (above). **Still open: the courtesy.** Warren Davison has not been
+  shown the result; that is the owner's to do, and nothing in the app waits
+  on it.
 
 ## What each one is
 

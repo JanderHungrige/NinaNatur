@@ -4,7 +4,7 @@ title: What the Style Has Not Drawn
 edition: MDD
 initiative: ninanatur
 wave: ninanatur-wave-24
-wave_status: active
+wave_status: complete
 depends_on: [97-draft-sketch-in-svg, 94-which-way-the-ridge-runs]
 relates: [97-draft-sketch-in-svg, 96-a-theme-is-a-thing]
 source_files:
