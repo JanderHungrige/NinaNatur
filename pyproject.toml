@@ -24,7 +24,7 @@ dependencies = [
     # that moved under a running deployment is the failure doc 109 exists to
     # catch — a new state should arrive by somebody choosing it, not by a
     # resolver.
-    "geokachel==0.1.0",
+    "geokachel==0.2.1",
     # Wave 25, feature 4 (doc 107): the states publish their laser scans as
     # LAZ, which is LAS packed with an arithmetic coder — not something to
     # reimplement. `laspy` reads the format and `lazrs` unpacks it; both are
